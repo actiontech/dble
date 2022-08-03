@@ -60,6 +60,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     private ConnectionPool connectionPool;
     protected MySQLHeartbeat heartbeat;
     private volatile boolean needSkipEvit = false;
+    private volatile boolean needSkipHeartTest = false;
 
     public PhysicalDbInstance(DbInstanceConfig config, DbGroupConfig dbGroupConfig, boolean isReadNode) {
         this.config = config;
@@ -401,9 +402,6 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
             return;
         }
         if ((dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) && !dbGroup.isUseless()) {
-            if (LOGGER.isDebugEnabled()) {
-                ReloadLogHelper.debug("start connection pool :{},reason:{}", LOGGER, this.toString(), reason);
-            }
             this.connectionPool.startEvictor(this.dbGroup.getGroupName() + "." + name, reason);
         }
     }
@@ -464,9 +462,6 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public void stopPool(String reason, boolean closeFront) {
         LOGGER.info("stop connection pool of physical db instance[{}], due to {}", this.dbGroup.getGroupName() + "." + name, reason);
-        if (LOGGER.isDebugEnabled()) {
-            ReloadLogHelper.debug("stop connection pool :{},reason:{},is close front:{}", LOGGER, this.toString(), reason, closeFront);
-        }
         connectionPool.stop(reason, closeFront);
     }
 
@@ -529,6 +524,14 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public final int getIdleConnections(String schema) {
         return connectionPool.getCount(schema, PooledConnection.STATE_NOT_IN_USE);
+    }
+
+    public boolean isNeedSkipHeartTest() {
+        return needSkipHeartTest;
+    }
+
+    public void setNeedSkipHeartTest(boolean needSkipHeartTest) {
+        this.needSkipHeartTest = needSkipHeartTest;
     }
 
     public final int getTotalConnections() {

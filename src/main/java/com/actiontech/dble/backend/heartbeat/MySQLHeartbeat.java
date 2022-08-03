@@ -227,6 +227,10 @@ public class MySQLHeartbeat {
                 Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
                 AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
         }
+        //after the heartbeat changes from failure to success, it needs to be expanded immediately
+        if (source.getTotalConnections() == 0) {
+            source.updatePoolCapacity();
+        }
         if (isStop) {
             LOGGER.warn("heartbeat[{}] had been stop", source.getConfig().getUrl());
             detector.quit();

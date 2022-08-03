@@ -40,7 +40,7 @@ public class SlowQueryLogEntry {
         sb.append("\n");
 
         sb.append("# User@Host: ");
-        sb.append(user);
+        sb.append(user.getFullName());
         sb.append("[");
         sb.append(user.getFullName());
         sb.append("] @  [");

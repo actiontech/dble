@@ -212,4 +212,15 @@ public abstract class MysqlVisitor {
         return whereFilter;
     }
 
+    public boolean isTopQuery() {
+        return isTopQuery;
+    }
+
+    public boolean isExistUnPushDownGroup() {
+        return existUnPushDownGroup;
+    }
+
+    public StringBuilder getSqlBuilder() {
+        return sqlBuilder;
+    }
 }

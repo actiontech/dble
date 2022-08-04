@@ -279,11 +279,6 @@ public class HintPlanParse {
         return tableSet;
     }
 
-
-    private void aliasRepeatCheck() {
-
-    }
-
     private void setLeftNode(Node curNode, Node preNode) {
         curNode.setLeftNode(preNode);
         preNode.setParent(curNode);

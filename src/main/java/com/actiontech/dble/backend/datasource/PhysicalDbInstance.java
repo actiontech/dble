@@ -467,9 +467,11 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public void updatePoolCapacity() {
         //minCon/maxCon/numOfShardingNodes
-        checkPoolSize();
-        connectionPool.evictImmediately();
-        connectionPool.fillPool();
+        if ((dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) && !dbGroup.isUseless()) {
+            checkPoolSize();
+            connectionPool.evictImmediately();
+            connectionPool.fillPool();
+        }
     }
 
     public void closeAllConnection(String reason) {

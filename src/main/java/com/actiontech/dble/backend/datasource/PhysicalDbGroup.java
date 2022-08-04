@@ -458,7 +458,7 @@ public class PhysicalDbGroup {
             if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
                 okSources.add(ds);
             } else {
-                if (!ds.isAlive()) {
+                if (ds.isAlive()) {
                     LOGGER.warn("can't select dbInstance[{}] as read node, please check delay with primary", ds);
                 }
             }

@@ -43,6 +43,7 @@ public class MySQLHeartbeat {
     public static final int OK_STATUS = 1;
     private static final int ERROR_STATUS = -1;
     static final int TIMEOUT_STATUS = -2;
+    static final int STOP_STATUS = -3;
     private final int errorRetryCount;
     private final AtomicBoolean isChecking = new AtomicBoolean(false);
     private final HeartbeatRecorder recorder = new HeartbeatRecorder();
@@ -114,7 +115,7 @@ public class MySQLHeartbeat {
         isStop = true;
         scheduledFuture.cancel(false);
         initHeartbeat.set(false);
-        this.status = INIT_STATUS;
+        this.status = STOP_STATUS;
         if (detector != null && !detector.isQuit()) {
             detector.quit();
             isChecking.set(false);
@@ -269,7 +270,7 @@ public class MySQLHeartbeat {
                 return false;
             }
             return true;
-        } else { // TIMEOUT_STATUS
+        } else { // TIMEOUT_STATUS or STOP_STATUS
             return false;
         }
     }
@@ -296,14 +297,16 @@ public class MySQLHeartbeat {
 
     public String getStatusStr() {
         switch (status) {
-            case 0:
+            case INIT_STATUS:
                 return "init";
-            case 1:
+            case OK_STATUS:
                 return "ok";
-            case -1:
+            case ERROR_STATUS:
                 return "error";
-            case -2:
+            case TIMEOUT_STATUS:
                 return "time_out";
+            case STOP_STATUS:
+                return "stop";
             default:
                 return null;
         }

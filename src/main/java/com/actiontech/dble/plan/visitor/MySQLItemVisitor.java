@@ -174,9 +174,8 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 // is null, or is unknown
                 if (itemRight instanceof ItemNull || itemRight instanceof ItemString) {
                     item = new ItemFuncIsnull(itemLeft, this.charsetIndex);
-                } else if (itemRight instanceof ItemInt) {
-                    ItemInt itemBool = (ItemInt) itemRight;
-                    if (itemBool.valInt().longValue() == 1) { // is true
+                } else if (itemRight instanceof ItemInt || itemRight instanceof ItemBoolean) {
+                    if (itemRight.valInt().longValue() == 1) { // is true
                         item = new ItemFuncIstrue(itemLeft, this.charsetIndex);
                     } else {
                         item = new ItemFuncIsfalse(itemLeft, this.charsetIndex);
@@ -189,9 +188,8 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 // is not null, or is not unknown
                 if (itemRight instanceof ItemNull || itemRight instanceof ItemString) {
                     item = new ItemFuncIsnotnull(itemLeft, this.charsetIndex);
-                } else if (itemRight instanceof ItemInt) {
-                    ItemInt itemBool = (ItemInt) itemRight;
-                    if (itemBool.valInt().longValue() == 1) { // is true
+                } else if (itemRight instanceof ItemInt || itemRight instanceof ItemBoolean) {
+                    if (itemRight.valInt().longValue() == 1) { // is true
                         item = new ItemFuncIsnottrue(itemLeft, this.charsetIndex);
                     } else {
                         item = new ItemFuncIsnotfalse(itemLeft, this.charsetIndex);

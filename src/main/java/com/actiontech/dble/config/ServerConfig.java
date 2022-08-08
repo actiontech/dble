@@ -371,12 +371,6 @@ public class ServerConfig {
                 LOGGER.warn(checkResult);
                 throw new SQLNonTransientException(checkResult, "HY000", ErrorCode.ER_DOING_DDL);
             }
-            try {
-                HaConfigManager.getInstance().init();
-            } catch (Exception e) {
-                throw new SQLNonTransientException("HaConfigManager init failed", "HY000", ErrorCode.ER_YES);
-            }
-
 
             ReloadLogHelper.info("reload config: init new dbGroup start", LOGGER);
             if ((loadAllMode & ManagerParseConfig.OPTR_MODE) != 0) {
@@ -415,6 +409,11 @@ public class ServerConfig {
             this.shardingConfig = shardingJsonConfig;
             this.sequenceConfig = sequenceJsonConfig;
             this.lowerCase = DbleTempConfig.getInstance().isLowerCase();
+            try {
+                HaConfigManager.getInstance().init(true);
+            } catch (Exception e) {
+                throw new SQLNonTransientException("HaConfigManager init failed", "HY000", ErrorCode.ER_YES);
+            }
             CacheService.getInstance().clearCache();
             this.changing = false;
             if (isFullyConfigured) {
@@ -524,7 +523,7 @@ public class ServerConfig {
             PhysicalDbInstance physicalDbInstance = (PhysicalDbInstance) item;
             //delete slave instance
             PhysicalDbGroup physicalDbGroup = oldDbGroupMap.get(physicalDbInstance.getDbGroupConfig().getName());
-            PhysicalDbInstance oldDbInstance = physicalDbGroup.getAllDbInstanceMap().remove(physicalDbInstance.getName());
+            PhysicalDbInstance oldDbInstance = removeDbInstance(physicalDbGroup, physicalDbInstance.getName());
             oldDbInstance.stop("reload config, recycle old instance", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
             oldDbInstance = null;
         } else if (itemType == ChangeItemType.SHARDING_NODE) {
@@ -567,7 +566,7 @@ public class ServerConfig {
             if (changeItem.isAffectHeartbeat() || changeItem.isAffectConnectionPool()) {
                 PhysicalDbInstance physicalDbInstance = (PhysicalDbInstance) item;
                 PhysicalDbGroup physicalDbGroup = oldDbGroupMap.get(physicalDbInstance.getDbGroupConfig().getName());
-                PhysicalDbInstance oldDbInstance = physicalDbGroup.getAllDbInstanceMap().get(physicalDbInstance.getName());
+                PhysicalDbInstance oldDbInstance = removeDbInstance(physicalDbGroup, physicalDbInstance.getName());
                 oldDbInstance.stop("reload config, recycle old instance", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
                 oldDbInstance = null;
                 physicalDbInstance.init("reload config", true);
@@ -592,6 +591,17 @@ public class ServerConfig {
                 shardingNode.getDbGroup().addSchema(shardingNode.getDatabase());
             }
         }
+    }
+
+    public PhysicalDbInstance removeDbInstance(PhysicalDbGroup dbGroup, String instanceName) {
+        PhysicalDbInstance dbInstance = dbGroup.getAllDbInstanceMap().remove(instanceName);
+        if (dbInstance.getConfig().isPrimary()) {
+            dbGroup.setWriteDbInstance(null);
+            dbGroup.getDbGroupConfig().setWriteInstanceConfig(null);
+        } else {
+            dbGroup.getDbGroupConfig().removeReadInstance(dbInstance.getConfig());
+        }
+        return dbInstance;
     }
 
     private void addItem(Object item, ChangeItemType itemType, Map<String, PhysicalDbGroup> oldDbGroupMap, Map<String, ShardingNode> newShardingNodes, boolean isFullyConfigured) {

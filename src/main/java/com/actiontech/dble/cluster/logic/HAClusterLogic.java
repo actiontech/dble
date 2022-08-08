@@ -78,7 +78,7 @@ public class HAClusterLogic extends AbstractClusterLogic {
 
     public void syncDbGroupStatusToCluster() throws Exception {
         LOGGER.info("syncDbGroupStatusToCluster start");
-        HaConfigManager.getInstance().init();
+        HaConfigManager.getInstance().init(false);
         Map<String, RawJson> map = HaConfigManager.getInstance().getSourceJsonList();
         for (Map.Entry<String, RawJson> entry : map.entrySet()) {
             clusterHelper.setKV(ClusterMetaUtil.getHaStatusPath(entry.getKey()), entry.getValue());

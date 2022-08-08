@@ -703,11 +703,22 @@ public class PhysicalDbGroup {
         return this.rwSplitSessionSet.remove(session);
     }
 
+    public void setWriteDbInstance(PhysicalDbInstance writeDbInstance) {
+        this.writeDbInstance = writeDbInstance;
+        if (writeDbInstance == null) {
+            this.writeInstanceList = Lists.newArrayList();
+        } else {
+            this.writeInstanceList = Collections.singletonList(writeDbInstance);
+        }
+    }
+
     public void setDbInstance(PhysicalDbInstance dbInstance) {
         dbInstance.setDbGroup(this);
         if (dbInstance.getConfig().isPrimary()) {
-            this.writeDbInstance = dbInstance;
-            this.writeInstanceList = Collections.singletonList(dbInstance);
+            setWriteDbInstance(dbInstance);
+            this.dbGroupConfig.setWriteInstanceConfig(dbInstance.getConfig());
+        } else {
+            this.dbGroupConfig.addReadInstance(dbInstance.getConfig());
         }
         this.allSourceMap.put(dbInstance.getName(), dbInstance);
     }

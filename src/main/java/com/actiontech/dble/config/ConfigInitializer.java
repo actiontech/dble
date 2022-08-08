@@ -34,6 +34,7 @@ import com.actiontech.dble.services.manager.response.ChangeItemType;
 import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -245,6 +246,7 @@ public class ConfigInitializer implements ProblemReporter {
             // check whether dbInstance is connected
             String dbGroupName;
             PhysicalDbGroup dbGroup;
+            Set<String> dbGroupTested = Sets.newHashSet();
 
             for (ChangeItem changeItem : changeItemList) {
                 ChangeType type = changeItem.getType();
@@ -255,18 +257,10 @@ public class ConfigInitializer implements ProblemReporter {
                         if (itemType == ChangeItemType.PHYSICAL_DB_GROUP) {
                             //test dbGroup
                             dbGroup = (PhysicalDbGroup) item;
-                            dbGroupName = dbGroup.getGroupName();
 
-                            // sharding group
-                            List<Pair<String, String>> schemaList = checkDbGroupMaxConn(hostSchemaMap, dbGroup);
-
-                            for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
-                                //test dbInstance
-                                boolean testResult = checkAndTestDbInstance(ds, dbGroupName, schemaList);
-                                if (!testResult) {
-                                    isAllDbInstanceConnected = false;
-                                    errDbInstanceNames.add("dbInstance[" + dbGroupName + "." + ds.getName() + "]");
-                                }
+                            boolean isDbInstanceConnected = testDbGroup(dbGroup, hostSchemaMap, dbGroupTested, errDbInstanceNames);
+                            if (!isDbInstanceConnected) {
+                                isAllDbInstanceConnected = false;
                             }
                         } else if (itemType == ChangeItemType.PHYSICAL_DB_INSTANCE) {
                             PhysicalDbInstance ds = (PhysicalDbInstance) item;
@@ -282,17 +276,10 @@ public class ConfigInitializer implements ProblemReporter {
                         } else if (itemType == ChangeItemType.SHARDING_NODE) {
                             ShardingNode shardingNode = (ShardingNode) item;
                             dbGroup = shardingNode.getDbGroup();
-                            dbGroupName = dbGroup.getGroupName();
-                            // sharding group
-                            List<Pair<String, String>> schemaList = checkDbGroupMaxConn(hostSchemaMap, dbGroup);
 
-                            for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
-                                //test dbInstance
-                                boolean testResult = checkAndTestDbInstance(ds, dbGroupName, schemaList);
-                                if (!testResult) {
-                                    isAllDbInstanceConnected = false;
-                                    errDbInstanceNames.add("dbInstance[" + dbGroupName + "." + ds.getName() + "]");
-                                }
+                            boolean isDbInstanceConnected = testDbGroup(dbGroup, hostSchemaMap, dbGroupTested, errDbInstanceNames);
+                            if (!isDbInstanceConnected) {
+                                isAllDbInstanceConnected = false;
                             }
                         }
                         break;
@@ -312,17 +299,10 @@ public class ConfigInitializer implements ProblemReporter {
                         } else if (itemType == ChangeItemType.SHARDING_NODE) {
                             ShardingNode shardingNode = (ShardingNode) item;
                             dbGroup = shardingNode.getDbGroup();
-                            dbGroupName = dbGroup.getGroupName();
-                            // sharding group
-                            List<Pair<String, String>> schemaList = checkDbGroupMaxConn(hostSchemaMap, dbGroup);
 
-                            for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
-                                //test dbInstance
-                                boolean testResult = checkAndTestDbInstance(ds, dbGroupName, schemaList);
-                                if (!testResult) {
-                                    isAllDbInstanceConnected = false;
-                                    errDbInstanceNames.add("dbInstance[" + dbGroupName + "." + ds.getName() + "]");
-                                }
+                            boolean isDbInstanceConnected = testDbGroup(dbGroup, hostSchemaMap, dbGroupTested, errDbInstanceNames);
+                            if (!isDbInstanceConnected) {
+                                isAllDbInstanceConnected = false;
                             }
                         }
                         break;
@@ -399,6 +379,25 @@ public class ConfigInitializer implements ProblemReporter {
         } finally {
             TraceManager.finishSpan(traceObject);
         }
+    }
+
+    private boolean testDbGroup(PhysicalDbGroup dbGroup, Map<String, List<Pair<String, String>>> hostSchemaMap, Set<String> dbGroupTested, Set<String> errDbInstanceNames) {
+        String dbGroupName = dbGroup.getGroupName();
+        boolean isAllDbInstanceConnected = true;
+        if (dbGroupTested.add(dbGroupName)) {
+            // sharding group
+            List<Pair<String, String>> schemaList = checkDbGroupMaxConn(hostSchemaMap, dbGroup);
+
+            for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
+                //test dbInstance
+                boolean testResult = checkAndTestDbInstance(ds, dbGroupName, schemaList);
+                if (!testResult) {
+                    isAllDbInstanceConnected = false;
+                    errDbInstanceNames.add("dbInstance[" + dbGroupName + "." + ds.getName() + "]");
+                }
+            }
+        }
+        return isAllDbInstanceConnected;
     }
 
     private List<Pair<String, String>> checkDbInstanceMaxConn(Map<String, List<Pair<String, String>>> hostSchemaMap, PhysicalDbInstance ds) {

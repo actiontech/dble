@@ -114,8 +114,7 @@ public class DBConverter {
             Set<String> instanceUrls = new HashSet<>();
             int readHostSize = dbInstanceList.size() - 1;
             DbInstanceConfig writeDbConf = null;
-            DbInstanceConfig[] readDbConfList = new DbInstanceConfig[readHostSize];
-            int readCnt = 0;
+            List<DbInstanceConfig> readInstanceConfigList = Lists.newArrayList();
             DataBaseType dataBaseType = null;
             for (DBInstance dbInstance : dbInstanceList) {
                 DbInstanceConfig dbInstanceConfig;
@@ -140,16 +139,16 @@ public class DBConverter {
                         throw new ConfigException("dbGroup[" + dbGroupName + "] has multi primary instance!");
                     }
                 } else {
-                    if (readCnt == readHostSize) {
+                    if (readInstanceConfigList.size() == readHostSize) {
                         throw new ConfigException("dbGroup[" + dbGroupName + "] has no primary instance!");
                     }
-                    readDbConfList[readCnt++] = dbInstanceConfig;
+                    readInstanceConfigList.add(dbInstanceConfig);
                 }
                 if (!dataBaseType.equals(dbInstanceConfig.getDataBaseType())) {
                     throw new ConfigException("dbGroup[" + dbGroupName + "]'s child database type must be consistent");
                 }
             }
-            DbGroupConfig dbGroupConf = new DbGroupConfig(dbGroupName, writeDbConf, readDbConfList, delayThreshold, disableHA);
+            DbGroupConfig dbGroupConf = new DbGroupConfig(dbGroupName, writeDbConf, readInstanceConfigList, delayThreshold, disableHA);
             dbGroupConf.setRwSplitMode(rwSplitMode);
             dbGroupConf.setHeartbeatSQL(heartbeatSQL);
             int heartbeatTimeout = Optional.ofNullable(heartbeat.getTimeout()).orElse(0);
@@ -169,7 +168,7 @@ public class DBConverter {
     private static PhysicalDbGroup getPhysicalDBPoolSingleWH(DbGroupConfig conf) {
         //create PhysicalDbInstance for writeDirectly host
         PhysicalDbInstance writeSource = createDbInstance(conf, conf.getWriteInstanceConfig(), false);
-        PhysicalDbInstance[] readSources = new PhysicalDbInstance[conf.getReadInstanceConfigs().length];
+        PhysicalDbInstance[] readSources = new PhysicalDbInstance[conf.getReadInstanceConfigs().size()];
         int i = 0;
         for (DbInstanceConfig readNode : conf.getReadInstanceConfigs()) {
             readSources[i++] = createDbInstance(conf, readNode, true);

@@ -114,10 +114,10 @@ public final class ConfigUtil {
                 Future<KeyVariables> future = entry.getValue();
                 KeyVariables keyVariables = future.get();
                 if (keyVariables != null) {
-                    if (lowerCase != null && keyVariables.isLowerCase() != lowerCase) {
-                        diffGroup.add(dataSourceName);
-                    } else if (lowerCase == null) {
+                    if (dbInstanceList.size() == 1 || lowerCase == null) {
                         lowerCase = keyVariables.isLowerCase();
+                    } else if (keyVariables.isLowerCase() != lowerCase && dbInstanceList.size() > 1) {
+                        diffGroup.add(dataSourceName);
                     }
                     minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                     int version = Integer.parseInt(keyVariables.getVersion().substring(0, 1));

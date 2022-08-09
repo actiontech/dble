@@ -523,9 +523,10 @@ public class ServerConfig {
             PhysicalDbInstance physicalDbInstance = (PhysicalDbInstance) item;
             //delete slave instance
             PhysicalDbGroup physicalDbGroup = oldDbGroupMap.get(physicalDbInstance.getDbGroupConfig().getName());
-            PhysicalDbInstance oldDbInstance = removeDbInstance(physicalDbGroup, physicalDbInstance.getName());
+            PhysicalDbInstance oldDbInstance = physicalDbGroup.getAllDbInstanceMap().get(physicalDbInstance.getName());
             oldDbInstance.stop("reload config, recycle old instance", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
             oldDbInstance = null;
+            removeDbInstance(physicalDbGroup, physicalDbInstance.getName());
         } else if (itemType == ChangeItemType.SHARDING_NODE) {
             ShardingNode shardingNode = (ShardingNode) item;
             if (shardingNode.getDbGroup() != null) {
@@ -566,9 +567,10 @@ public class ServerConfig {
             if (changeItem.isAffectHeartbeat() || changeItem.isAffectConnectionPool()) {
                 PhysicalDbInstance physicalDbInstance = (PhysicalDbInstance) item;
                 PhysicalDbGroup physicalDbGroup = oldDbGroupMap.get(physicalDbInstance.getDbGroupConfig().getName());
-                PhysicalDbInstance oldDbInstance = removeDbInstance(physicalDbGroup, physicalDbInstance.getName());
+                PhysicalDbInstance oldDbInstance = physicalDbGroup.getAllDbInstanceMap().get(physicalDbInstance.getName());
                 oldDbInstance.stop("reload config, recycle old instance", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
                 oldDbInstance = null;
+                removeDbInstance(physicalDbGroup, physicalDbInstance.getName());
                 physicalDbInstance.init("reload config", true);
                 physicalDbGroup.setDbInstance(physicalDbInstance);
             } else {

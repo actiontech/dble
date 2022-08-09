@@ -29,6 +29,7 @@ public class DbGroupConfig {
 
     private int heartbeatTimeout = 0;
     private int errorRetryCount = 1;
+    private int keepAlive = 60;
     private boolean disableHA;
 
     public DbGroupConfig(String name,
@@ -115,6 +116,17 @@ public class DbGroupConfig {
         this.errorRetryCount = errorRetryCount;
     }
 
+    public int getKeepAlive() {
+        return keepAlive;
+    }
+
+    public void setKeepAlive(int keepAlive) {
+        if (keepAlive < 0) {
+            throw new ConfigException("dbGroup " + name + " keepAlive should be greater than 0!");
+        }
+        this.keepAlive = keepAlive;
+    }
+
     public boolean isDisableHA() {
         return disableHA;
     }
@@ -142,6 +154,7 @@ public class DbGroupConfig {
                 delayThreshold == that.delayThreshold &&
                 heartbeatTimeout == that.heartbeatTimeout &&
                 errorRetryCount == that.errorRetryCount &&
+                keepAlive == that.keepAlive &&
                 disableHA == that.disableHA &&
                 Objects.equals(name, that.name) &&
                 Objects.equals(heartbeatSQL, that.heartbeatSQL);
@@ -160,6 +173,7 @@ public class DbGroupConfig {
                 ", delayThreshold=" + delayThreshold +
                 ", heartbeatTimeout=" + heartbeatTimeout +
                 ", errorRetryCount=" + errorRetryCount +
+                ", keepAlive=" + keepAlive +
                 ", disableHA=" + disableHA +
                 '}';
     }

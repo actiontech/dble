@@ -728,7 +728,8 @@ public class PhysicalDbGroup {
     public boolean equalsForHeartbeat(PhysicalDbGroup pool) {
         return pool.getDbGroupConfig().getHeartbeatSQL().equals(this.dbGroupConfig.getHeartbeatSQL()) &&
                 pool.getDbGroupConfig().getHeartbeatTimeout() == this.dbGroupConfig.getHeartbeatTimeout() &&
-                pool.getDbGroupConfig().getErrorRetryCount() == this.dbGroupConfig.getErrorRetryCount();
+                pool.getDbGroupConfig().getErrorRetryCount() == this.dbGroupConfig.getErrorRetryCount() &&
+                pool.getDbGroupConfig().getKeepAlive() == this.getDbGroupConfig().getKeepAlive();
     }
 
 

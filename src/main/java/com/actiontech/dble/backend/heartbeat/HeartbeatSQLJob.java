@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class HeartbeatSQLJob implements ResponseHandler {
@@ -30,12 +31,16 @@ public class HeartbeatSQLJob implements ResponseHandler {
     private BackendConnection connection;
     private AtomicBoolean finished = new AtomicBoolean(false);
     private MySQLHeartbeat heartbeat;
+    private long responseTime;
+    private long keepAlive;
 
     public HeartbeatSQLJob(MySQLHeartbeat heartbeat, SQLJobHandler jobHandler) {
         super();
         this.sql = "/*# from=" + SystemConfig.getInstance().getInstanceName() + " reason=heartbeat*/" + heartbeat.getHeartbeatSQL();
         this.jobHandler = jobHandler;
         this.heartbeat = heartbeat;
+        this.responseTime = System.nanoTime();
+        this.keepAlive = TimeUnit.NANOSECONDS.convert(heartbeat.getKeepAlive(), TimeUnit.SECONDS) + TimeUnit.NANOSECONDS.convert(heartbeat.getSource().getConfig().getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS);
     }
 
     public void terminate() {
@@ -55,6 +60,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("[heartbeat]do heartbeat,conn is " + conn);
             }
+            updateResponseTime();
             conn.getBackendService().query(sql);
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             LOGGER.warn("[heartbeat]send heartbeat error", e);
@@ -75,6 +81,13 @@ public class HeartbeatSQLJob implements ResponseHandler {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("[heartbeat]do heartbeat,conn is " + connection);
                 }
+                if (System.nanoTime() > responseTime + keepAlive) {
+                    String reason = "[heartbeat]connect timeout，the connection may be unreachable for a long time due to TCP retransmission";
+                    LOGGER.warn(reason);
+                    heartbeat.setErrorResult(reason);
+                    doFinished(true);
+                    return;
+                }
                 connection.getBackendService().query(sql);
             } catch (Exception e) { // (UnsupportedEncodingException e) {
                 LOGGER.warn("[heartbeat]send heartbeat error", e);
@@ -93,6 +106,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
     @Override
     public void connectionError(Throwable e, Object attachment) {
         LOGGER.warn("[heartbeat]can't get connection for sql :" + sql, e);
+        updateResponseTime();
         heartbeat.setErrorResult("heartbeat connection Error");
         doFinished(true);
     }
@@ -105,7 +119,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
         LOGGER.warn("[heartbeat]error response errNo: {}, {} from of sql: {} at con: {} db user = {}",
                 errPg.getErrNo(), new String(errPg.getMessage()), sql, service,
                 responseService.getConnection().getInstance().getConfig().getUser());
-
+        updateResponseTime();
         heartbeat.setErrorResult(new String(errPg.getMessage()));
         if (!((MySQLResponseService) service).syncAndExecute()) {
             service.getConnection().businessClose("[heartbeat]unfinished sync");
@@ -117,6 +131,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void okResponse(byte[] ok, @NotNull AbstractService service) {
+        updateResponseTime();
         if (((MySQLResponseService) service).syncAndExecute()) {
             doFinished(false);
         }
@@ -125,28 +140,36 @@ public class HeartbeatSQLJob implements ResponseHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, @NotNull AbstractService service) {
+        updateResponseTime();
         jobHandler.onHeader(fields);
 
     }
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
+        updateResponseTime();
         jobHandler.onRowData(row);
         return false;
     }
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
+        updateResponseTime();
         doFinished(false);
     }
 
     @Override
     public void connectionClose(@NotNull AbstractService service, String reason) {
         LOGGER.warn("[heartbeat]conn for sql[" + sql + "] is closed, due to " + reason + ", we will try again immediately");
+        updateResponseTime();
         if (!heartbeat.doHeartbeatRetry()) {
             heartbeat.setErrorResult("heartbeat conn for sql[" + sql + "] is closed, due to " + reason);
             doFinished(true);
         }
+    }
+
+    private void updateResponseTime() {
+        responseTime = System.nanoTime();
     }
 
     @Override

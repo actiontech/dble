@@ -61,6 +61,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     protected MySQLHeartbeat heartbeat;
     private volatile boolean needSkipEvit = false;
     private volatile boolean needSkipHeartTest = false;
+    private volatile int logCount;
 
     public PhysicalDbInstance(DbInstanceConfig config, DbGroupConfig dbGroupConfig, boolean isReadNode) {
         this.config = config;
@@ -539,6 +540,15 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     public final int getTotalConnections() {
         return connectionPool.size() - connectionPool.getCount(PooledConnection.STATE_REMOVED);
     }
+
+    public int getLogCount() {
+        return logCount;
+    }
+
+    public void setLogCount(int logCount) {
+        this.logCount = logCount;
+    }
+
 
     @Override
     public boolean equals(Object o) {

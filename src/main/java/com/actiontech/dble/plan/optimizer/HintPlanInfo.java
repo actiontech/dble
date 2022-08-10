@@ -25,13 +25,13 @@ public final class HintPlanInfo {
     private HashMap<String, Set<HintPlanNode>> erMap = Maps.newHashMap();
     private LinkedHashMap<String, HintPlanParse.Type> hintPlanNodeMap = Maps.newLinkedHashMap();
 
-    public HintPlanInfo(HashMap<String, Set<HintPlanNode>> dependMap, HashMap<String, Set<HintPlanNode>> erMap, LinkedHashMap<String, HintPlanParse.Type> hintPlanNodeMap) {
-        this.dependMap = dependMap;
-        this.erMap = erMap;
-        this.hintPlanNodeMap = hintPlanNodeMap;
+    public HintPlanInfo() {
     }
 
-    public HintPlanInfo() {
+    public void setRelationMap(HintPlanParse parse) {
+        this.dependMap = parse.getDependMap();
+        this.erMap = parse.getErMap();
+        this.hintPlanNodeMap = parse.getHintPlanNodeMap();
     }
 
     public boolean isLeft2inner() {

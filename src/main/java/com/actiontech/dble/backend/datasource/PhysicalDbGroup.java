@@ -456,10 +456,21 @@ public class PhysicalDbGroup {
             }
 
             if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
+                if (ds.getLogCount() != 0) {
+                    ds.setLogCount(0);
+                }
                 okSources.add(ds);
             } else {
-                if (!ds.isAlive()) {
+                if (ds.isAlive()) {
+                    if (ds.getLogCount() != 0) {
+                        ds.setLogCount(0);
+                    }
                     LOGGER.warn("can't select dbInstance[{}] as read node, please check delay with primary", ds);
+                } else {
+                    if (ds.getLogCount() < 10) {
+                        ds.setLogCount(ds.getLogCount() + 1);
+                        LOGGER.warn("can't select dbInstance[{}] as read node, please check the disabled and heartbeat status", ds);
+                    }
                 }
             }
         }
@@ -703,11 +714,22 @@ public class PhysicalDbGroup {
         return this.rwSplitSessionSet.remove(session);
     }
 
+    public void setWriteDbInstance(PhysicalDbInstance writeDbInstance) {
+        this.writeDbInstance = writeDbInstance;
+        if (writeDbInstance == null) {
+            this.writeInstanceList = Lists.newArrayList();
+        } else {
+            this.writeInstanceList = Collections.singletonList(writeDbInstance);
+        }
+    }
+
     public void setDbInstance(PhysicalDbInstance dbInstance) {
         dbInstance.setDbGroup(this);
         if (dbInstance.getConfig().isPrimary()) {
-            this.writeDbInstance = dbInstance;
-            this.writeInstanceList = Collections.singletonList(dbInstance);
+            setWriteDbInstance(dbInstance);
+            this.dbGroupConfig.setWriteInstanceConfig(dbInstance.getConfig());
+        } else {
+            this.dbGroupConfig.addReadInstance(dbInstance.getConfig());
         }
         this.allSourceMap.put(dbInstance.getName(), dbInstance);
     }

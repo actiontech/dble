@@ -214,7 +214,7 @@ public class JoinUseHintTest extends BaseSqlHintTest {
     public static ThreadLocalRandom random = ThreadLocalRandom.current();
 
     private char getRandomOperator() {
-        switch (random.nextInt(2) ) {
+        switch (random.nextInt(2)) {
             case 0:
                 return '|';
             case 1:
@@ -227,8 +227,8 @@ public class JoinUseHintTest extends BaseSqlHintTest {
     private void verifyHint(String sql, List<String> arr) throws Exception {
 
         StringBuilder sb = randomHint(arr);
-        LOGGER.info("current hint:"+sb.toString());
-        HintPlanInfo hintPlanInfo = HintPlanHandler.parseHint(sb.toString());
+        LOGGER.info("current hint:" + sb.toString());
+        HintPlanInfo hintPlanInfo = HintPlanHandler.parseHint(sb.toString(), null);
         if (hintPlanInfo.nodeSize() != arr.size()) {
             throw new RuntimeException("code error");
         }
@@ -261,7 +261,7 @@ public class JoinUseHintTest extends BaseSqlHintTest {
                 sb.append("(");
                 for (int j = 0; j < list.size(); j++) {
                     sb.append(list.get(j));
-                    if (j < list.size()-1) {
+                    if (j < list.size() - 1) {
                         sb.append(getRandomOperator());
                     }
                 }

@@ -73,7 +73,8 @@ public class TraceResult implements Cloneable {
     }
 
     public void setPreExecuteEnd(SqlTraceType type0) {
-        this.type = type0;
+        if (routeStart != null && preExecuteStart != null)
+            this.type = type0;
         this.preExecuteEnd = TraceRecord.currenTime();
         clearConnReceivedMap();
         clearConnFlagMap();
@@ -385,6 +386,9 @@ public class TraceResult implements Cloneable {
                 return this.previous.genTraceResult();
             }
             return null;
+        } catch (Exception e) {
+            LOGGER.warn("genShowTraceResult exception {}", e);
+            return null;
         } finally {
             this.previous = null;
         }
@@ -406,7 +410,7 @@ public class TraceResult implements Cloneable {
                 return null;
             }
         } else {
-            if (isCompletedV1() && type == null) {
+            if (isCompletedV1() && isNonBusinessSql()) {
                 genTraceRecord(lst, "Read_SQL", requestStart, parseStart);
                 genTraceRecord(lst, "Parse_SQL", parseStart, routeStart, requestEnd);
             } else {
@@ -530,7 +534,7 @@ public class TraceResult implements Cloneable {
                 return null;
             }
         } else {
-            if (isCompletedV1() && type == null) {
+            if (isCompletedV1() && isNonBusinessSql()) {
                 lst.add(genLogRecord("Read_SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
                 lst.add(genLogRecord("Inner_Execute", parseStart.getTimestamp(), requestEnd.getTimestamp()));
                 lst.add(genLogRecord("Write_Client", requestEnd.getTimestamp(), requestEnd.getTimestamp()));
@@ -631,7 +635,11 @@ public class TraceResult implements Cloneable {
     }
 
     public boolean isCompletedV2() {
-        return isCompletedV1() && connFlagMap.size() != 0 && connReceivedMap.size() == connFinishedMap.size() && recordStartMap.size() == recordEndMap.size();
+        return isCompletedV1() && routeStart != null && connFlagMap.size() != 0 && connReceivedMap.size() == connFinishedMap.size() && recordStartMap.size() == recordEndMap.size();
+    }
+
+    public boolean isNonBusinessSql() {
+        return type == null; // || routeStart == null;
     }
 
     private boolean genTraceRecord(List<String[]> lst, String operation, TraceRecord start0, TraceRecord end0) {

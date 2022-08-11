@@ -234,7 +234,7 @@ public class PhysicalDbGroup {
             return;
         }
         for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-            dbInstance.stopDirectly(reason, closeFront);
+            dbInstance.stopDirectly(reason, closeFront, false);
         }
     }
 
@@ -265,7 +265,7 @@ public class PhysicalDbGroup {
     public boolean stopOfBackground(String reason) {
         if (state.intValue() == STATE_DELETING && getBindingCount() == 0) {
             for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-                dbInstance.stopDirectly(reason, false);
+                dbInstance.stopDirectly(reason, false, false);
             }
             return true;
         }

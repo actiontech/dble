@@ -524,7 +524,7 @@ public class ServerConfig {
             //delete slave instance
             PhysicalDbGroup physicalDbGroup = oldDbGroupMap.get(physicalDbInstance.getDbGroupConfig().getName());
             PhysicalDbInstance oldDbInstance = physicalDbGroup.getAllDbInstanceMap().get(physicalDbInstance.getName());
-            oldDbInstance.stop("reload config, recycle old instance", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+            oldDbInstance.stop("reload config, recycle old instance", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0), true);
             oldDbInstance = null;
             removeDbInstance(physicalDbGroup, physicalDbInstance.getName());
         } else if (itemType == ChangeItemType.SHARDING_NODE) {
@@ -568,11 +568,11 @@ public class ServerConfig {
                 PhysicalDbInstance physicalDbInstance = (PhysicalDbInstance) item;
                 PhysicalDbGroup physicalDbGroup = oldDbGroupMap.get(physicalDbInstance.getDbGroupConfig().getName());
                 PhysicalDbInstance oldDbInstance = physicalDbGroup.getAllDbInstanceMap().get(physicalDbInstance.getName());
-                oldDbInstance.stop("reload config, recycle old instance", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+                oldDbInstance.stop("reload config, recycle old instance", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0), true);
                 oldDbInstance = null;
                 removeDbInstance(physicalDbGroup, physicalDbInstance.getName());
-                physicalDbInstance.init("reload config", true);
                 physicalDbGroup.setDbInstance(physicalDbInstance);
+                physicalDbInstance.init("reload config", true);
             } else {
                 PhysicalDbInstance physicalDbInstance = (PhysicalDbInstance) item;
                 PhysicalDbGroup physicalDbGroup = oldDbGroupMap.get(physicalDbInstance.getDbGroupConfig().getName());
@@ -598,8 +598,10 @@ public class ServerConfig {
     public PhysicalDbInstance removeDbInstance(PhysicalDbGroup dbGroup, String instanceName) {
         PhysicalDbInstance dbInstance = dbGroup.getAllDbInstanceMap().remove(instanceName);
         if (dbInstance.getConfig().isPrimary()) {
-            dbGroup.setWriteDbInstance(null);
-            dbGroup.getDbGroupConfig().setWriteInstanceConfig(null);
+            if (dbGroup.getWriteDbInstance() == dbInstance) {
+                dbGroup.setWriteDbInstance(null);
+                dbGroup.getDbGroupConfig().setWriteInstanceConfig(null);
+            }
         } else {
             dbGroup.getDbGroupConfig().removeReadInstance(dbInstance.getConfig());
         }
@@ -617,8 +619,8 @@ public class ServerConfig {
             PhysicalDbInstance dbInstance = (PhysicalDbInstance) item;
             PhysicalDbGroup physicalDbGroup = oldDbGroupMap.get(dbInstance.getDbGroupConfig().getName());
             if (isFullyConfigured) {
-                dbInstance.init("reload config", true);
                 physicalDbGroup.setDbInstance(dbInstance);
+                dbInstance.init("reload config", true);
             } else {
                 LOGGER.info("dbGroup[" + dbInstance.getDbGroupConfig().getName() + "] is not fullyConfigured, so doing nothing");
             }

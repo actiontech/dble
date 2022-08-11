@@ -41,6 +41,7 @@ public class DbleDbGroup extends ManagerWritableTable {
     public static final String COLUMN_HEARTBEAT_STMT = "heartbeat_stmt";
     public static final String COLUMN_HEARTBEAT_TIMEOUT = "heartbeat_timeout";
     public static final String COLUMN_HEARTBEAT_RETRY = "heartbeat_retry";
+    public static final String COLUMN_KEEP_ALIVE = "heartbeat_keep_alive";
     public static final String COLUMN_RW_SPLIT_MODE = "rw_split_mode";
     public static final String COLUMN_DELAY_THRESHOLD = "delay_threshold";
     public static final String COLUMN_DISABLE_HA = "disable_ha";
@@ -49,7 +50,7 @@ public class DbleDbGroup extends ManagerWritableTable {
     private final List<LinkedHashMap<String, String>> tempRowList = Lists.newArrayList();
 
     public DbleDbGroup() {
-        super(TABLE_NAME, 8);
+        super(TABLE_NAME, 9);
         setNotWritableColumnSet(COLUMN_ACTIVE);
         String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + ConfigFileName.DB_XML;
@@ -70,6 +71,9 @@ public class DbleDbGroup extends ManagerWritableTable {
 
         columns.put(COLUMN_HEARTBEAT_RETRY, new ColumnMeta(COLUMN_HEARTBEAT_RETRY, "int(11)", true, "1"));
         columnsType.put(COLUMN_HEARTBEAT_RETRY, Fields.FIELD_TYPE_LONG);
+
+        columns.put(COLUMN_KEEP_ALIVE, new ColumnMeta(COLUMN_KEEP_ALIVE, "int(11)", true, "60"));
+        columnsType.put(COLUMN_KEEP_ALIVE, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_RW_SPLIT_MODE, new ColumnMeta(COLUMN_RW_SPLIT_MODE, "int(11)", false));
         columnsType.put(COLUMN_RW_SPLIT_MODE, Fields.FIELD_TYPE_LONG);
@@ -199,6 +203,9 @@ public class DbleDbGroup extends ManagerWritableTable {
                 case COLUMN_HEARTBEAT_RETRY:
                     heartbeat.setErrorRetryCount(Integer.parseInt(value));
                     break;
+                case COLUMN_KEEP_ALIVE:
+                    heartbeat.setKeepAlive(Integer.parseInt(value));
+                    break;
                 case COLUMN_RW_SPLIT_MODE:
                     dbGroup.setRwSplitMode(Integer.parseInt(value));
                     break;
@@ -272,6 +279,10 @@ public class DbleDbGroup extends ManagerWritableTable {
             if (!StringUtil.isBlank(heartbeatRetryStr) && IntegerUtil.parseInt(heartbeatRetryStr) < 0) {
                 throw new ConfigException("Column '" + COLUMN_HEARTBEAT_RETRY + "' should be an integer greater than or equal to 0!");
             }
+            String heartbeatKeepAliveStr = row.get(COLUMN_KEEP_ALIVE);
+            if (!StringUtil.isBlank(heartbeatKeepAliveStr) && IntegerUtil.parseInt(heartbeatKeepAliveStr) < 0) {
+                throw new ConfigException("Column '" + COLUMN_KEEP_ALIVE + "' should be an integer greater than or equal to 0!");
+            }
         }
     }
 
@@ -281,6 +292,7 @@ public class DbleDbGroup extends ManagerWritableTable {
         map.put(COLUMN_HEARTBEAT_STMT, dbGroupConfig.getHeartbeatSQL());
         map.put(COLUMN_HEARTBEAT_TIMEOUT, String.valueOf(dbGroupConfig.getHeartbeatTimeout() / 1000));
         map.put(COLUMN_HEARTBEAT_RETRY, String.valueOf(dbGroupConfig.getErrorRetryCount()));
+        map.put(COLUMN_KEEP_ALIVE, String.valueOf(dbGroupConfig.getKeepAlive()));
         map.put(COLUMN_RW_SPLIT_MODE, String.valueOf(dbGroupConfig.getRwSplitMode()));
         map.put(COLUMN_DELAY_THRESHOLD, String.valueOf(dbGroupConfig.getDelayThreshold()));
         map.put(COLUMN_DISABLE_HA, String.valueOf(dbGroupConfig.isDisableHA()));

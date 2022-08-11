@@ -17,7 +17,7 @@
     </dbGroup>
 
     <dbGroup name="dbGroup2" rwSplitMode="0" delayThreshold="100" disableHA="true">
-        <heartbeat errorRetryCount="1" timeout="10">show slave status</heartbeat>
+        <heartbeat errorRetryCount="1" timeout="10" keepAlive="60">show slave status</heartbeat>
         <dbInstance name="instanceM2" url="ip2:3306" user="your_user" password="your_psw" maxCon="1000" minCon="10"
                     primary="true">
             <property name="testOnCreate">true</property>
@@ -30,7 +30,7 @@
     </dbGroup>
     <!--for clickhouse-->
     <dbGroup name="dbGroup3" rwSplitMode="0" delayThreshold="100" disableHA="true">
-        <heartbeat errorRetryCount="1" timeout="10">show databases</heartbeat>
+        <heartbeat errorRetryCount="1" timeout="10" keepAlive="60">show databases</heartbeat>
         <dbInstance name="instanceM2" url="ip2:9004" user="your_user" password="your_psw" maxCon="1000" minCon="10" databaseType="clickhouse"
                     primary="true">
             <property name="testOnCreate">true</property>

@@ -40,6 +40,7 @@ public class MySQLHeartbeat {
     public static final String CHECK_STATUS_IDLE = "idle";
 
     private final int errorRetryCount;
+    private final int keepAlive;
     private final AtomicBoolean isChecking = new AtomicBoolean(false);
     private final HeartbeatRecorder recorder = new HeartbeatRecorder();
     private final DbInstanceSyncRecorder asyncRecorder = new DbInstanceSyncRecorder();
@@ -65,6 +66,7 @@ public class MySQLHeartbeat {
         this.status = MySQLHeartbeatStatus.INIT;
         this.errorRetryCount = dbInstance.getDbGroupConfig().getErrorRetryCount();
         this.heartbeatTimeout = dbInstance.getDbGroupConfig().getHeartbeatTimeout();
+        this.keepAlive = dbInstance.getDbGroupConfig().getKeepAlive();
         this.heartbeatSQL = dbInstance.getDbGroupConfig().getHeartbeatSQL();
     }
 
@@ -200,6 +202,7 @@ public class MySQLHeartbeat {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("heartbeat to [" + source.getConfig().getUrl() + "] setOK");
         }
+
         switch (status) {
             case TIMEOUT:
                 this.status = MySQLHeartbeatStatus.INIT;
@@ -330,4 +333,7 @@ public class MySQLHeartbeat {
         this.heartbeatRecoveryTime = heartbeatRecoveryTime;
     }
 
+    public int getKeepAlive() {
+        return keepAlive;
+    }
 }

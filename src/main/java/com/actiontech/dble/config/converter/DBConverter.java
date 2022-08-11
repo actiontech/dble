@@ -155,6 +155,8 @@ public class DBConverter {
             dbGroupConf.setHeartbeatTimeout(heartbeatTimeout * 1000);
             int heartbeatErrorRetryCount = Optional.ofNullable(heartbeat.getErrorRetryCount()).orElse(1);
             dbGroupConf.setErrorRetryCount(heartbeatErrorRetryCount);
+            int heartbeatKeepAlive = Optional.ofNullable(heartbeat.getKeepAlive()).orElse(60);
+            dbGroupConf.setKeepAlive(heartbeatKeepAlive);
 
             PhysicalDbGroup physicalDbGroup = getPhysicalDBPoolSingleWH(dbGroupConf);
             this.dbGroupMap.put(dbGroupConf.getName(), physicalDbGroup);

@@ -15,6 +15,7 @@
                             <xs:extension base="xs:string">
                                 <xs:attribute name="errorRetryCount" type="xs:integer"/>
                                 <xs:attribute name="timeout" type="xs:nonNegativeInteger"/>
+                                <xs:attribute name="keepAlive" type="xs:integer"/>
                             </xs:extension>
                         </xs:simpleContent>
                     </xs:complexType>

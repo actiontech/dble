@@ -26,5 +26,6 @@ public class DbGroupConfig {
 
     private int heartbeatTimeout = 0;
     private int errorRetryCount = 1;
+    private int keepAlive = 60;
     private boolean disableHA;
 }

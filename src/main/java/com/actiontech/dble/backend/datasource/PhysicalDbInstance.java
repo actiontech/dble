@@ -54,6 +54,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     private final LongAdder writeCount = new LongAdder();
 
     private final AtomicBoolean isInitial = new AtomicBoolean(false);
+    private AtomicBoolean initHeartbeat = new AtomicBoolean(false);
 
     // connection pool
     private ConnectionPool connectionPool;
@@ -393,15 +394,20 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         }
 
         heartbeat.start();
-        heartbeat.setScheduledFuture(Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
-            if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
-                if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
-                    return;
-                }
+        if (initHeartbeat.compareAndSet(false, true)) {
 
-                heartbeat.heartbeat();
-            }
-        }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS));
+            heartbeat.setScheduledFuture(Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
+                if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
+                    if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
+                        return;
+                    }
+
+                    heartbeat.heartbeat();
+                }
+            }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS));
+        } else {
+            LOGGER.warn("init dbInstance[{}] heartbeat, but it has been initialized, skip initialization.", heartbeat.getSource().getName());
+        }
     }
 
     void start(String reason, boolean isStartHeartbeat) {

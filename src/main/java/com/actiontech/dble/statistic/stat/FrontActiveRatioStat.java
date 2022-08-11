@@ -113,7 +113,9 @@ public class FrontActiveRatioStat {
         }
 
         private void clear() {
-            list.clear();
+            synchronized (mutex) {
+                list.clear();
+            }
         }
 
         public void readTime(long time) {

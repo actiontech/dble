@@ -55,17 +55,8 @@
 -DusingAIO=0
 
 -DuseThreadUsageStat=1
-#  query time cost statistics
-#-DuseCostTimeStat=0
-#-DmaxCostStatSize=100
-#-DcostSamplePercent=1
 
 
-# consistency
-#  check the consistency of table structure between nodes,default not
--DcheckTableConsistency=0
-#  check period, he default period is 60000 milliseconds
--DcheckTableConsistencyPeriod=60000
 
 #  processor check conn
 -DprocessorCheckPeriod=1000
@@ -82,60 +73,10 @@
 #-DfrontSocketSoSndbuf=4194304
 #-DfrontSocketNoDelay=1
 
-
-#  query memory used for per session,unit is M
--DotherMemSize=4
--DorderMemSize=4
--DjoinMemSize=4
-
-
 #  off Heap unit:bytes
 -DbufferPoolChunkSize=32767
 #-DbufferPoolPageNumber=256
 -DbufferPoolPageSize=2097152
-#-DmappedFileSize=2097152
-
-
-#  sql statistics
-#  1 means use SQL statistics, 0 means not
--DuseSqlStat=1
-#-DbufferUsagePercent=80
--DclearBigSQLResultSetMapMs=600000
-#-DsqlRecordCount=10
-#-DmaxResultSet=524288
-
-
-#  transaction log
-#  1 enable record the transaction log, 0 disable ,the unit of transactionRotateSize is M
--DrecordTxn=0
-#-DtransactionLogBaseDir=/txlogs
-#-DtransactionLogBaseName=server-tx
-#-DtransactionRotateSize=16
-#  XA transaction
-#  use XA transaction ,if the mysql service crash,the unfinished XA commit/rollback will retry for several times , it is the check period for ,default is 1000 milliseconds
--DxaSessionCheckPeriod=1000
-#  use XA transaction ,the finished XA log will removed. the default period is 1000 milliseconds
--DxaLogCleanPeriod=1000
-#  XA Recovery Log path
-# -DxaRecoveryLogBaseDir=/xalogs/
-#  XA Recovery Log name
-#-DxaRecoveryLogBaseName=xalog
-#  XA Retry count, retry times in backend, 0 means always retry until success
-#-DxaRetryCount=0
-
-#-DviewPersistenceConfBaseDir=/viewPath
-#-DviewPersistenceConfBaseName=viewJson
-
-#  for join tmp results
-#-DmergeQueueSize=1024
-#-DorderByQueueSize=1024
-#-DjoinQueueSize=1024
-
-
-#  true is use JoinStrategy, default false
-#-DuseJoinStrategy=true
--DnestLoopConnSize=4
--DnestLoopRowsSize=2000
 
 
 #  if enable the slow query log
@@ -150,14 +91,94 @@
 #  the threshold for judging if the query is slow , unit is millisecond
 -DsqlSlowTime=100
 
-#  used for load data,maxCharsPerColumn means max chars length for per column when load data
-#-DmaxCharsPerColumn=65535
-#  used for load data, because dble need save to disk if loading file contains large size
-#-DmaxRowSizeToFile=10000
+
+#-DenableAsyncRelease=1
+#-DreleaseTimeout=10
+
+
+
+
+
+##### （通用）读写分离无关 begin
+
+#-DviewPersistenceConfBaseDir=/viewPath
+#-DviewPersistenceConfBaseName=viewJson
+
+# consistency
+#  check the consistency of table structure between nodes,default not
+-DcheckTableConsistency=0
+#  check period, he default period is 60000 milliseconds
+-DcheckTableConsistencyPeriod=60000
+
+##### （通用）读写分离无关 end
+
+##### 分库分表 only  begin
+
+#  true is use JoinStrategy, default false
+#-DuseJoinStrategy=true
+-DnestLoopConnSize=4
+-DnestLoopRowsSize=2000
 
 #enableFlowControl=false
 #flowControlStartThreshold=4096
 #flowControlStopThreshold=256
 
-#-DenableAsyncRelease=1
-#-DreleaseTimeout=10
+
+#  for join tmp results
+#-DmergeQueueSize=1024
+#-DorderByQueueSize=1024
+#-DjoinQueueSize=1024
+
+
+#  used for load data,maxCharsPerColumn means max chars length for per column when load data
+#-DmaxCharsPerColumn=65535
+#  used for load data, because dble need save to disk if loading file contains large size
+#-DmaxRowSizeToFile=10000
+
+
+#  query memory used for per session,unit is M
+-DotherMemSize=4
+-DorderMemSize=4
+-DjoinMemSize=4
+
+#  XA transaction
+#  use XA transaction ,if the mysql service crash,the unfinished XA commit/rollback will retry for several times , it is the check period for ,default is 1000 milliseconds
+-DxaSessionCheckPeriod=1000
+#  use XA transaction ,the finished XA log will removed. the default period is 1000 milliseconds
+-DxaLogCleanPeriod=1000
+#  XA Recovery Log path
+# -DxaRecoveryLogBaseDir=/xalogs/
+#  XA Recovery Log name
+#-DxaRecoveryLogBaseName=xalog
+#  XA Retry count, retry times in backend, 0 means always retry until success
+#-DxaRetryCount=0
+
+
+
+
+#  transaction log
+#  1 enable record the transaction log, 0 disable ,the unit of transactionRotateSize is M
+-DrecordTxn=0
+#-DtransactionLogBaseDir=/txlogs
+#-DtransactionLogBaseName=server-tx
+#-DtransactionRotateSize=16
+
+#  query time cost statistics
+#-DuseCostTimeStat=0
+#-DmaxCostStatSize=100
+#-DcostSamplePercent=1
+
+
+#-DmappedFileSize=2097152
+
+
+
+#  sql statistics
+#  1 means use SQL statistics, 0 means not
+-DuseSqlStat=0
+#-DbufferUsagePercent=80
+-DclearBigSQLResultSetMapMs=600000
+#-DsqlRecordCount=10
+#-DmaxResultSet=524288
+
+##### 分库分表 only  end

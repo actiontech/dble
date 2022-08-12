@@ -379,9 +379,6 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     }
 
     public void startHeartbeat() {
-        if (LOGGER.isDebugEnabled()) {
-            ReloadLogHelper.debug("start heartbeat :{}", LOGGER, this.toString());
-        }
         if (this.isDisabled() || this.isFakeNode()) {
             LOGGER.info("the instance[{}] is disabled or fake node, skip to start heartbeat.", this.dbGroup.getGroupName() + "." + name);
             return;
@@ -426,14 +423,22 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public boolean stopOfBackground(String reason) {
         if (dbGroup.getState() == PhysicalDbGroup.STATE_DELETING && dbGroup.getBindingCount() == 0) {
-            stopDirectly(reason, false);
+            stopDirectly(reason, false, false);
             return true;
         }
         return false;
     }
 
-    public void stopDirectly(String reason, boolean closeFront) {
-        stop(reason, closeFront, true, dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this);
+    public void stopDirectly(String reason, boolean closeFront, boolean isStopPool) {
+        stop(reason, closeFront, true, dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this || isStopPool);
+    }
+
+    public void stop(String reason, boolean closeFront, boolean isStopPool) {
+        boolean flag = checkState();
+        if (!flag) {
+            return;
+        }
+        stopDirectly(reason, closeFront, isStopPool);
     }
 
     public void stop(String reason, boolean closeFront) {
@@ -441,7 +446,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         if (!flag) {
             return;
         }
-        stopDirectly(reason, closeFront);
+        stopDirectly(reason, closeFront, false);
     }
 
     protected void stop(String reason, boolean closeFront, boolean isStopHeartbeat, boolean isStopPool) {

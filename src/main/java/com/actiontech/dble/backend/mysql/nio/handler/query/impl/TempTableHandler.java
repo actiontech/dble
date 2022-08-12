@@ -102,10 +102,11 @@ public class TempTableHandler extends BaseDMLHandler {
                 return true;
             }
             if (++rowCount > maxPartSize * maxConnSize) {
-                String errMessage = "Property [nestLoopRowsSize] is " + maxPartSize + ",property [nestLoopConnSize] is " + maxConnSize +
-                        ",nest loop temp table too much rows, number of temp table rows more than product of nestLoopConnSize and nestLoopRowsSize" + maxPartSize * maxConnSize + ", conn info [" + service.toString() + "] !";
+                String msg = "Property [nestLoopRowsSize] is " + maxPartSize + ",property [nestLoopConnSize] is " + maxConnSize +
+                        ",nest loop temp table too much rows, number of temp table rows more than product of nestLoopConnSize and nestLoopRowsSize is " + maxPartSize * maxConnSize;
+                String errMessage = msg + " , conn info [" + service + "] !";
                 LOGGER.info(errMessage);
-                throw new TempTableException(errMessage);
+                throw new TempTableException(msg);
             }
             RowDataPacket row = rowPacket;
             if (row == null) {

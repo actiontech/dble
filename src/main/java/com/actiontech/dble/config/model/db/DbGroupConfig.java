@@ -10,7 +10,7 @@ import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.util.StringUtil;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,8 +20,8 @@ public class DbGroupConfig {
     private static final Pattern HP_PATTERN_READ_ONLY = Pattern.compile("\\s*select\\s+@@read_only\\s*", Pattern.CASE_INSENSITIVE);
     private String name;
     private int rwSplitMode = PhysicalDbGroup.RW_SPLIT_OFF;
-    private final DbInstanceConfig writeInstanceConfig;
-    private final DbInstanceConfig[] readInstanceConfigs;
+    private DbInstanceConfig writeInstanceConfig;
+    private List<DbInstanceConfig> readInstanceConfigList;
     private String heartbeatSQL;
     private boolean isShowSlaveSql = false;
     private boolean isSelectReadOnlySql = false;
@@ -29,14 +29,15 @@ public class DbGroupConfig {
 
     private int heartbeatTimeout = 0;
     private int errorRetryCount = 1;
+    private int keepAlive = 60;
     private boolean disableHA;
 
     public DbGroupConfig(String name,
-                         DbInstanceConfig writeInstanceConfig, DbInstanceConfig[] readInstanceConfigs, int delayThreshold, boolean disableHA) {
+                         DbInstanceConfig writeInstanceConfig, List<DbInstanceConfig> readInstanceConfigs, int delayThreshold, boolean disableHA) {
         super();
         this.name = name;
         this.writeInstanceConfig = writeInstanceConfig;
-        this.readInstanceConfigs = readInstanceConfigs;
+        this.readInstanceConfigList = readInstanceConfigs;
         this.delayThreshold = delayThreshold;
         this.disableHA = disableHA;
     }
@@ -69,9 +70,22 @@ public class DbGroupConfig {
         return writeInstanceConfig;
     }
 
-    public DbInstanceConfig[] getReadInstanceConfigs() {
-        return readInstanceConfigs;
+    public List<DbInstanceConfig> getReadInstanceConfigs() {
+        return readInstanceConfigList;
     }
+
+    public void setWriteInstanceConfig(DbInstanceConfig writeInstanceConfig) {
+        this.writeInstanceConfig = writeInstanceConfig;
+    }
+
+    public void addReadInstance(DbInstanceConfig readInstance) {
+        this.readInstanceConfigList.add(readInstance);
+    }
+
+    public void removeReadInstance(DbInstanceConfig readInstance) {
+        this.readInstanceConfigList.remove(readInstance);
+    }
+
 
     public String getHeartbeatSQL() {
         return heartbeatSQL;
@@ -115,6 +129,17 @@ public class DbGroupConfig {
         this.errorRetryCount = errorRetryCount;
     }
 
+    public int getKeepAlive() {
+        return keepAlive;
+    }
+
+    public void setKeepAlive(int keepAlive) {
+        if (keepAlive < 0) {
+            throw new ConfigException("dbGroup " + name + " keepAlive should be greater than 0!");
+        }
+        this.keepAlive = keepAlive;
+    }
+
     public boolean isDisableHA() {
         return disableHA;
     }
@@ -142,6 +167,7 @@ public class DbGroupConfig {
                 delayThreshold == that.delayThreshold &&
                 heartbeatTimeout == that.heartbeatTimeout &&
                 errorRetryCount == that.errorRetryCount &&
+                keepAlive == that.keepAlive &&
                 disableHA == that.disableHA &&
                 Objects.equals(name, that.name) &&
                 Objects.equals(heartbeatSQL, that.heartbeatSQL);
@@ -153,13 +179,14 @@ public class DbGroupConfig {
                 "name='" + name + '\'' +
                 ", rwSplitMode=" + rwSplitMode +
                 ", writeInstanceConfig=" + writeInstanceConfig +
-                ", readInstanceConfigs=" + Arrays.toString(readInstanceConfigs) +
+                ", readInstanceConfigs=" + readInstanceConfigList +
                 ", heartbeatSQL='" + heartbeatSQL + '\'' +
                 ", isShowSlaveSql=" + isShowSlaveSql +
                 ", isSelectReadOnlySql=" + isSelectReadOnlySql +
                 ", delayThreshold=" + delayThreshold +
                 ", heartbeatTimeout=" + heartbeatTimeout +
                 ", errorRetryCount=" + errorRetryCount +
+                ", keepAlive=" + keepAlive +
                 ", disableHA=" + disableHA +
                 '}';
     }

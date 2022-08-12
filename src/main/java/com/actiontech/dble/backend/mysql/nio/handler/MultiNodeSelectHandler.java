@@ -8,7 +8,9 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
+import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.SendMakeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.backend.mysql.nio.handler.util.ArrayMinHeap;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
@@ -20,6 +22,7 @@ import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,31 +40,44 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     private final int queueSize;
     private Map<BackendConnection, BlockingQueue<HeapItem>> queues;
     private RowDataComparator rowComparator;
-    private OutputHandler outputHandler;
+    private BaseDMLHandler nextHandler;
     private volatile boolean noNeedRows = false;
 
     public MultiNodeSelectHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session, false);
         this.queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
-        outputHandler = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
+        if (CollectionUtil.isEmpty(rrs.getSelectCols())) {
+            nextHandler = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
+        } else {
+            nextHandler = new SendMakeHandler(BaseHandlerBuilder.getSequenceId(), session, rrs.getSelectCols(), rrs.getSchema(), rrs.getTable(), rrs.getTableAlias());
+            nextHandler.setNextHandler(new OutputHandler(BaseHandlerBuilder.getSequenceId(), session));
+        }
+    }
+
+    void nextHandlerCleanBuffer() {
+        if (nextHandler instanceof OutputHandler) {
+            ((OutputHandler) nextHandler).cleanBuffer();
+        } else if (nextHandler instanceof SendMakeHandler) {
+            ((SendMakeHandler) nextHandler).cleanBuffer();
+        }
     }
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        outputHandler.cleanBuffer();
+        nextHandlerCleanBuffer();
         super.connectionClose(conn, reason);
     }
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        outputHandler.cleanBuffer();
+        nextHandlerCleanBuffer();
         super.connectionError(e, conn);
     }
 
     @Override
     public void errorResponse(byte[] data, BackendConnection conn) {
-        outputHandler.cleanBuffer();
+        nextHandlerCleanBuffer();
         super.errorResponse(data, conn);
     }
 
@@ -163,7 +179,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             orderBys.add(new Order(itemField));
         }
         rowComparator = new RowDataComparator(HandlerTool.createFields(fieldPackets), orderBys);
-        outputHandler.fieldEofResponse(null, null, fieldPackets, null, false, conn);
+        nextHandler.fieldEofResponse(null, null, fieldPackets, null, false, conn);
     }
 
     private void startOwnThread() {
@@ -220,7 +236,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                             continue;
                         }
                     }
-                    outputHandler.rowResponse(top.getRowData(), top.getRowPacket(), false, top.getIndex());
+                    nextHandler.rowResponse(top.getRowData(), top.getRowPacket(), false, top.getIndex());
                 }
             }
             Iterator<Map.Entry<BackendConnection, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
@@ -231,7 +247,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                 iterator.remove();
             }
             doSqlStat();
-            outputHandler.rowEofResponse(null, false, null);
+            nextHandler.rowEofResponse(null, false, null);
         } catch (Exception e) {
             String msg = "Merge thread error, " + e.getLocalizedMessage();
             LOGGER.info(msg, e);

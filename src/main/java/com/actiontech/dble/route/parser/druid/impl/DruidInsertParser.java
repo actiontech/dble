@@ -286,7 +286,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             checkDefaultValues(shardingValue, tableConfig.getName(), schemaInfo.getSchema(), partitionColumn);
             Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
             // null means can't find any valid index
-            if (nodeIndex == null) {
+            if (nodeIndex == null || nodeIndex >= tableConfig.getShardingNodes().size()) {
                 String msg = "can't find any valid shardingnode :" + tableName + " -> " + partitionColumn + " -> " + shardingValue;
                 LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);

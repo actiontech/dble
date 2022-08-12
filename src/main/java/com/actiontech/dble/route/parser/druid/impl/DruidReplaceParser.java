@@ -355,7 +355,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             String shardingValue = shardingValueToSting(expr, clientCharset, dataType);
             Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
             // no part find for this record
-            if (nodeIndex == null) {
+            if (nodeIndex == null || nodeIndex >= tableConfig.getShardingNodes().size()) {
                 String msg = "can't find any valid shardingnode :" + tableName + " -> " + partitionColumn + " -> " + shardingValue;
                 LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
@@ -397,7 +397,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         String shardingValue = shardingValueToSting(valueExpr, clientCharset, dataType);
         ShardingTableConfig tableConfig = (ShardingTableConfig) (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()));
         Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
-        if (nodeIndex == null) {
+        if (nodeIndex == null || nodeIndex >= tableConfig.getShardingNodes().size()) {
             String msg = "can't find any valid shardingNode :" + schemaInfo.getTable() + " -> " + partitionColumn + " -> " + shardingValue;
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);

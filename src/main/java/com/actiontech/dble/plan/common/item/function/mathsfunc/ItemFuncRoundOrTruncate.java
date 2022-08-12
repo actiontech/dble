@@ -55,8 +55,7 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
     @Override
     public BigDecimal decimalOp() {
         hybridType = ItemResult.DECIMAL_RESULT;
-        if (args.get(0).isNull() || args.get(1).isNull()) {
-            this.nullValue = true;
+        if (nullValue = (args.get(0).isNull() || args.get(1).isNull())) {
             return BigDecimal.ZERO;
         }
         BigDecimal val0 = args.get(0).valDecimal();
@@ -130,7 +129,7 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
             BigInteger bi = value.toBigInteger();
             return new BigDecimal(getIntRound(bi, round));
         } else {
-            return value.setScale(round, RoundingMode.FLOOR);
+            return value.setScale(round, truncate ? RoundingMode.FLOOR : RoundingMode.HALF_UP);
         }
     }
 }

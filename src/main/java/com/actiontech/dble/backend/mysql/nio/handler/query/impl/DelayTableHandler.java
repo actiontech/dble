@@ -51,6 +51,7 @@ public class DelayTableHandler extends BaseDMLHandler {
     private final Item sourceSel;
     private Field sourceField;
     private Set<String> valueSet;
+    private String tableAlias;
 
     public DelayTableHandler(long id, Session session, Item sourceSel) {
         super(id, session);
@@ -184,4 +185,11 @@ public class DelayTableHandler extends BaseDMLHandler {
         return HandlerType.TEMPTABLE;
     }
 
+    public String getTableAlias() {
+        return tableAlias;
+    }
+
+    public void setTableAlias(String tableAlias) {
+        this.tableAlias = tableAlias;
+    }
 }

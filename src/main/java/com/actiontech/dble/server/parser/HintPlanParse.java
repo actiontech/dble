@@ -58,7 +58,8 @@ public class HintPlanParse {
             nodeStack = buildChildNode(nodeStack, and);
             nodeStack = buildChildNode(nodeStack, or);
         }
-        if (nodeStack.size() > 1 || !nodeStack.peek().isTable()) {
+        Node peek = nodeStack.peek();
+        if (nodeStack.size() > 1 || !(peek.isTable() || peek.getType() == Type.ER)) {
             throw new ConfigException("hint parse failure");
         }
         return nodeStack.pop();
@@ -142,12 +143,14 @@ public class HintPlanParse {
                             if (Strings.isNullOrEmpty(tableName)) {
                                 throw new ConfigException("er Relation need like (a,b,c)");
                             }
+                            nodeNameDuplicateCheck(tableName);
                             nodeMap.putIfAbsent(tableName, HintPlanNode.of(tableName));
                             hintPlanNodeMap.put(tableName, Type.ER);
                         }
                         nodeList.add(new Node(erData, Type.ER));
                     } else if (!StringUtil.isBlank(data)) {
                         nodeList.add(new Node(data));
+                        nodeNameDuplicateCheck(data);
                         nodeMap.putIfAbsent(data, HintPlanNode.of(data));
                         hintPlanNodeMap.put(data, Type.OR);
                     }
@@ -161,13 +164,13 @@ public class HintPlanParse {
                     er.append(c);
                     break;
                 case '|':
-                    addNode(nodeName.toString(), nodeList, erRelation);
+                    addNode(nodeName.toString(), nodeList, erRelation, Type.OR);
                     nodeList.add(new Node(String.valueOf(c), Type.OR));
                     nodeName = new StringBuilder();
                     er = new StringBuilder();
                     break;
                 case '&':
-                    addNode(nodeName.toString(), nodeList, erRelation);
+                    addNode(nodeName.toString(), nodeList, erRelation, Type.AND);
                     nodeList.add(new Node(String.valueOf(c), Type.AND));
                     nodeName = new StringBuilder();
                     er = new StringBuilder();
@@ -191,6 +194,7 @@ public class HintPlanParse {
         String lastTable = nodeName.toString();
         if (!StringUtil.isBlank(lastTable)) {
             nodeList.add(new Node(lastTable));
+            nodeNameDuplicateCheck(lastTable);
             nodeMap.putIfAbsent(lastTable, HintPlanNode.of(lastTable));
             hintPlanNodeMap.put(lastTable, Type.Other);
         }
@@ -198,19 +202,27 @@ public class HintPlanParse {
     }
 
     @NotNull
-    private void addNode(String nodeName, List<Node> nodeList, boolean erRelation) throws ConfigException {
+    private void addNode(String nodeName, List<Node> nodeList, boolean erRelation, Type type) throws ConfigException {
+        nodeNameDuplicateCheck(nodeName);
         if (erRelation) {
             throw new ConfigException("er Relation need like (a,b,c)");
         }
-
         if (nodeName.length() == 0) {
             return;
         }
+
         nodeMap.putIfAbsent(nodeName, HintPlanNode.of(nodeName));
         //table has dependencies will be added to the end
-        hintPlanNodeMap.put(nodeName, Type.OR);
+        hintPlanNodeMap.put(nodeName, type);
         nodeList.add(new Node(nodeName));
     }
+
+    private void nodeNameDuplicateCheck(String nodeName) {
+        if (nodeMap.containsKey(nodeName)) {
+            throw new ConfigException("duplicate alias exist in the hint plan");
+        }
+    }
+
 
     private void buildDependMap(Node root) {
         LinkedList<Node> queue = new LinkedList<>();

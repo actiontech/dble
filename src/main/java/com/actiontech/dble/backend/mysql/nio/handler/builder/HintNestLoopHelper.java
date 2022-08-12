@@ -12,6 +12,8 @@ public class HintNestLoopHelper {
 
     Map<PlanNode, List<DelayTableHandler>> delayTableHandlerMap = new HashMap<>();
     Map<PlanNode, SendMakeHandler> sendMakeHandlerHashMap = new HashMap<>();
+    //hint plan that the node is a dependent node, when in fact the node is not
+    Set<PlanNode> fakeDependSet = new HashSet<>();
     Map<PlanNode, Pair<Item, Item>> itemMap = new HashMap<>();
 
     public Map<PlanNode, SendMakeHandler> getSendMakeHandlerHashMap() {
@@ -32,5 +34,9 @@ public class HintNestLoopHelper {
 
     public Map<PlanNode, Pair<Item, Item>> getItemMap() {
         return itemMap;
+    }
+
+    public Set<PlanNode> getFakeDependSet() {
+        return fakeDependSet;
     }
 }

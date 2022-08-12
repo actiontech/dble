@@ -234,12 +234,15 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
         if (Objects.nonNull(dependNode)) {
             Pair<Item, Item> itemPair = ((TableNode) currentNode).getHintNestLoopHelper().getItemMap().get(currentNode);
             DelayTableHandler delayTableHandler = buildDelayHandler(isLeft, currentNode, itemPair.getKey(), itemPair.getValue());
-            Map<PlanNode, List<DelayTableHandler>> delayTableHandlerMap = dependNode.getHintNestLoopHelper().getDelayTableHandlerMap();
+            HintNestLoopHelper hintNestLoopHelper = dependNode.getHintNestLoopHelper();
+            Map<PlanNode, List<DelayTableHandler>> delayTableHandlerMap = hintNestLoopHelper.getDelayTableHandlerMap();
             List<DelayTableHandler> delayTableHandlerList = Optional.ofNullable(delayTableHandlerMap.get(dependNode)).orElse(new ArrayList<>());
-            delayTableHandlerList.add(delayTableHandler);
+            if (!hintNestLoopHelper.getFakeDependSet().contains(currentNode)) {
+                delayTableHandlerList.add(delayTableHandler);
+            }
             delayTableHandlerMap.put(dependNode, delayTableHandlerList);
             pres.add(delayTableHandler);
-            SendMakeHandler sendMakeHandler = dependNode.getHintNestLoopHelper().getSendMakeHandlerHashMap().get(dependNode);
+            SendMakeHandler sendMakeHandler = hintNestLoopHelper.getSendMakeHandlerHashMap().get(dependNode);
             if (Objects.nonNull(sendMakeHandler)) {
                 sendMakeHandler.getTableHandlers().add(delayTableHandler);
             }
@@ -250,7 +253,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
         } else if (currentNode instanceof TableNode) {
             DMLResponseHandler rh = buildJoinChild(currentNode, isLeft);
             HintNestLoopHelper hintNestLoopHelper = ((TableNode) currentNode).getHintNestLoopHelper();
-            List<DelayTableHandler> delayTableHandlerList = Optional.ofNullable(hintNestLoopHelper.getDelayTableHandlerMap().get(currentNode)).orElse(new ArrayList<>());
+            List<DelayTableHandler> delayTableHandlerList = hintNestLoopHelper.getDelayTableHandlers(node);
             SendMakeHandler sendMakeHandler = ((TableNode) currentNode).getHintNestLoopHelper().getSendMakeHandlerHashMap().get(currentNode);
             for (DelayTableHandler handler : delayTableHandlerList) {
                 sendMakeHandler.getTableHandlers().add(handler);
@@ -314,6 +317,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
 
     private DelayTableHandler buildDelayHandler(boolean isLeft, PlanNode tnBig, Item keySource, Item keyToPass) {
         final DelayTableHandler delayTableHandler = new DelayTableHandler(getSequenceId(), session, keySource);
+        delayTableHandler.setTableAlias(tnBig.getAlias());
         delayTableHandler.setLeft(isLeft);
         CallBackHandler tempDone = () -> {
             Set<String> valueSet = delayTableHandler.getValueSet();

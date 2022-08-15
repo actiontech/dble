@@ -36,11 +36,12 @@ public final class HintPlanHandler {
     }
 
     public static HintPlanInfo parseHint(String hintSQL, SQLStatement statement) {
-        String[] attr = hintSQL.split("\\$");
         HintPlanInfo planInfo = new HintPlanInfo();
 
         String realHint = "";
         boolean useTableIndex = false;
+
+        String[] attr = hintSQL.split("\\$");
         if (attr.length > 1) {
             for (String s : attr) {
                 switch (s.toLowerCase()) {
@@ -61,6 +62,8 @@ public final class HintPlanHandler {
                         break;
                 }
             }
+        } else {
+            realHint = hintSQL;
         }
 
         if (useTableIndex && statement != null) {

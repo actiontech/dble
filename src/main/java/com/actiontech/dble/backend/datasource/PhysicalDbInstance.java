@@ -426,6 +426,9 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     public void stop(String reason, boolean closeFront, boolean isStopHeartbeat) {
         if (isStopHeartbeat) {
             heartbeat.stop(reason);
+            if (!heartbeat.isStop()) {
+                initHeartbeat.set(false);
+            }
         }
         if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) {
             LOGGER.info("stop connection pool of physical db instance[{}], due to {}", this.dbGroup.getGroupName() + "." + name, reason);

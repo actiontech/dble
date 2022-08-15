@@ -593,16 +593,15 @@ public class MySQLPlanNodeVisitor {
             if (column != null && column instanceof ItemField && value != null && value instanceof ItemField) {
                 joinNode.addJoinFilter(filter);
             } else {
-                joinNode.setOtherJoinOnFilter(filter);
+                Item orgOtherJoin = joinNode.getOtherJoinOnFilter();
+                joinNode.setOtherJoinOnFilter(FilterUtils.and(orgOtherJoin, filter));
             }
         } else if (ifilter instanceof ItemCondAnd) {
             ItemCondAnd ilfand = (ItemCondAnd) ifilter;
             List<Item> subFilter = ilfand.arguments();
             if (subFilter != null) {
                 for (Item arg : subFilter) {
-                    Item orgOtherJoin = joinNode.getOtherJoinOnFilter();
                     addJoinOnColumns(arg, joinNode);
-                    joinNode.setOtherJoinOnFilter(FilterUtils.and(orgOtherJoin, joinNode.getOtherJoinOnFilter()));
                 }
             } else {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "and has no other columns , " + ifilter);

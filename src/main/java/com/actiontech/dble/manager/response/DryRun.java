@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
@@ -79,7 +80,7 @@ public final class DryRun {
         }
 
         //check all the config is legal
-        List<ErrorInfo> list = new ArrayList<>();
+        List<ErrorInfo> list = new CopyOnWriteArrayList<>();
         try {
             loader.testConnection();
         } catch (Exception e) {

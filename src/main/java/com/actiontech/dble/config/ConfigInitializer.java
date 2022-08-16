@@ -8,6 +8,7 @@ package com.actiontech.dble.config;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.cluster.zkprocess.entity.Shardings;
 import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.converter.ShardingConverter;
@@ -73,6 +74,8 @@ public class ConfigInitializer implements ProblemReporter {
             }
             if (userConverter.isContainsShardingUser()) {
                 this.shardingConfig = new ShardingConverter().shardingXmlToJson();
+            } else {
+                this.shardingConfig = new ShardingConverter().shardingBeanToJson(new Shardings());
             }
             init(this.userConfig, this.dbConfig, this.shardingConfig, this.sequenceConfig, false);
         } catch (Exception e) {
@@ -101,6 +104,7 @@ public class ConfigInitializer implements ProblemReporter {
         if (StringUtil.isBlank(userJson) || StringUtil.isBlank(dbJson)) {
             throw new ConfigException("the configuration file is missing or the content is empty,pls check the file/zk/ucore configuration");
         }
+        LOGGER.info("dble config is [user]:{},[db]:{},[sharding]:{}", userJson, dbJson, shardingJson);
         //user
         UserConverter userConverter = new UserConverter();
         userConverter.userJsonToMap(userJson, this);
@@ -122,8 +126,8 @@ public class ConfigInitializer implements ProblemReporter {
             this.erRelations = shardingConverter.getErRelations();
             this.shardingNodes = shardingConverter.getShardingNodeMap();
             this.functions = shardingConverter.getFunctionMap();
-            this.shardingConfig = shardingJson;
         }
+        this.shardingConfig = shardingJson;
 
         this.sequenceConfig = sequenceJson;
         checkRwSplitDbGroup();

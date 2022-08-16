@@ -14,6 +14,7 @@ import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
+import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.util.DbXmlWriteJob;
 import com.actiontech.dble.util.ResourceUtil;
 import com.google.gson.Gson;
@@ -57,12 +58,17 @@ public final class HaConfigManager {
         }
     }
 
-    public void init() throws Exception {
-        try {
-            INSTANCE.dbGroups = (DbGroups) xmlProcess.baseParseXmlToBean(ConfigFileName.DB_XML, ConfigFileName.DB_XSD);
-        } catch (Exception e) {
-            HA_LOGGER.warn("DbParseXmlImpl parseXmlToBean JAXBException", e);
-            throw e;
+    public void init(boolean isMemory) throws Exception {
+        if (isMemory) {
+            RawJson dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
+            INSTANCE.dbGroups = new DBConverter().dbJsonToBean(dbConfig, false);
+        } else {
+            try {
+                INSTANCE.dbGroups = (DbGroups) xmlProcess.baseParseXmlToBean(ConfigFileName.DB_XML, ConfigFileName.DB_XSD);
+            } catch (Exception e) {
+                HA_LOGGER.warn("DbParseXmlImpl parseXmlToBean JAXBException", e);
+                throw e;
+            }
         }
         reloadIndex.incrementAndGet();
         //try to clear the waiting list and

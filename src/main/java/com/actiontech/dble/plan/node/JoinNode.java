@@ -177,7 +177,7 @@ public class JoinNode extends PlanNode {
         for (NamedField field : node.getOuterFields().keySet()) {
             String fieldName = field.getName().toLowerCase();
             if (checkDup.contains(fieldName)) {
-                throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", " Duplicate column name '" + fieldName + "'");
+                continue;
             }
             checkDup.add(fieldName);
             fields.add(fieldName);
@@ -194,16 +194,9 @@ public class JoinNode extends PlanNode {
         if (table != null) {
             return new Pair<>(schema, table);
         }
-        boolean found = false;
         for (NamedField field : node.getOuterFields().keySet()) {
             if (field.getName().equalsIgnoreCase(using)) {
-                if (!found) {
-                    found = true;
-                    table = field.getTable();
-                } else {
-                    throw new MySQLOutPutException(ErrorCode.ER_NON_UNIQ_ERROR, "23000",
-                            " Column '" + using + "' in from clause is ambiguous");
-                }
+                table = field.getTable();
             }
         }
         return new Pair<>(schema, table);

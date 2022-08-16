@@ -608,7 +608,8 @@ public class MySQLPlanNodeVisitor {
             }
 
         } else {
-            joinNode.setOtherJoinOnFilter(ifilter);
+            Item orgOtherJoin = joinNode.getOtherJoinOnFilter();
+            joinNode.setOtherJoinOnFilter(FilterUtils.and(orgOtherJoin, ifilter));
         }
     }
 

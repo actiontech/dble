@@ -269,20 +269,10 @@ public class JoinNode extends PlanNode {
                 // add Remaining innerFields
                 for (NamedField field : innerFields.keySet()) {
                     ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
-                    boolean contians = false;
-                    for (Item f : newSels) {
-                        if (f instanceof ItemField) {
-                            if (f.getItemName().equals(field.getName())) {
-                                contians = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!contians) {
+                    if (!newSels.contains(col)) {
                         newSels.add(col);
                     }
                 }
-
             } else {
                 for (String fieldName : usingFields) {
                     ItemField col = new ItemField(tableInfo.getKey(), tableInfo.getValue(), fieldName);

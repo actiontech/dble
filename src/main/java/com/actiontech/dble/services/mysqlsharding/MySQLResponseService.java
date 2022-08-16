@@ -232,6 +232,9 @@ public class MySQLResponseService extends BackendService {
                 protocolResponseHandler = defaultResponseHandler;
             }
             synAndDoExecuteMultiNode(synSQL, rrn, service.getCharset());
+        } catch (Exception e) {
+            LOGGER.info("route error {},{},{}", rrn, this, service);
+            throw e;
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }
@@ -355,8 +358,13 @@ public class MySQLResponseService extends BackendService {
             if (logResponse.compareAndSet(false, true)) {
                 session.setBackendResponseEndTime(this);
             }
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
-            return false;
+            if (SystemConfig.getInstance().getEnableAsyncRelease() == 1) {
+                DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
+                return false;
+            } else {
+                new BackEndRecycleRunnable(this).runSync();
+            }
+
         }
         complexQuery = false;
         attachment = null;

@@ -117,8 +117,8 @@ public final class ShowHeartbeat {
                 if (hb != null) {
                     row.add(ds.getConfig().getIp().getBytes());
                     row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
-                    String code = hb.getStatusStr();
-                    row.add(code == null ? null : code.getBytes());
+                    String code = hb.getStatus().toString();
+                    row.add(code.getBytes());
                     row.add(IntegerUtil.toBytes(hb.getErrorCount()));
                     row.add(hb.isChecking() ? "checking".getBytes() : "idle".getBytes());
                     row.add(LongUtil.toBytes(hb.getHeartbeatTimeout()));

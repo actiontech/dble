@@ -360,9 +360,22 @@ public class PhysicalDbGroup {
             }
 
             if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
+                if (ds.getLogCount() != 0) {
+                    ds.setLogCount(0);
+                }
                 okSources.add(ds);
             } else {
-                LOGGER.warn("can't select dbInstance[{}] as read node, please check delay with primary", ds);
+                if (ds.isAlive()) {
+                    if (ds.getLogCount() != 0) {
+                        ds.setLogCount(0);
+                    }
+                    LOGGER.warn("can't select dbInstance[{}] as read node, please check delay with primary", ds);
+                } else {
+                    if (ds.getLogCount() < 10) {
+                        ds.setLogCount(ds.getLogCount() + 1);
+                        LOGGER.warn("can't select dbInstance[{}] as read node, please check the disabled and heartbeat status", ds);
+                    }
+                }
             }
         }
         if (okSources.size() == 0 && rwSplitMode == RW_SPLIT_ALL_SLAVES_MAY_MASTER && includeWrite) {

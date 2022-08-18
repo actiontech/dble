@@ -54,6 +54,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     private final LongAdder writeCount = new LongAdder();
 
     private final AtomicBoolean isInitial = new AtomicBoolean(false);
+    private AtomicBoolean initHeartbeat = new AtomicBoolean(false);
 
     // connection pool
     private ConnectionPool connectionPool;
@@ -364,15 +365,20 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         }
 
         heartbeat.start();
-        heartbeat.setScheduledFuture(Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
-            if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
-                if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
-                    return;
-                }
+        if (initHeartbeat.compareAndSet(false, true)) {
 
-                heartbeat.heartbeat();
-            }
-        }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS));
+            heartbeat.setScheduledFuture(Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
+                if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
+                    if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
+                        return;
+                    }
+
+                    heartbeat.heartbeat();
+                }
+            }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS));
+        } else {
+            LOGGER.warn("init dbInstance[{}] heartbeat, but it has been initialized, skip initialization.", heartbeat.getSource().getName());
+        }
     }
 
     public void start(String reason) {
@@ -396,6 +402,9 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     public void stop(String reason, boolean closeFront, boolean isStopHeartbeat) {
         if (isStopHeartbeat) {
             heartbeat.stop(reason);
+            if (!heartbeat.isStop()) {
+                initHeartbeat.set(false);
+            }
         }
         if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) {
             LOGGER.info("stop connection pool of physical db instance[{}], due to {}", this.dbGroup.getGroupName() + "." + name, reason);

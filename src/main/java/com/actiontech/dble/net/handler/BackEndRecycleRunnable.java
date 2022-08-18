@@ -41,7 +41,11 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
                         if (!conn.isClosed()) {
                             conn.businessClose("recycle time out");
                         }
+                    } else {
+                        service.release();
                     }
+                } else {
+                    service.release();
                 }
             } catch (Exception e) {
                 service.getConnection().businessClose("recycle exception");

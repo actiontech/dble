@@ -87,13 +87,14 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
                 pingResponse();
                 return;
             }
-            GeneralProvider.beforeAuthSuccess();
-
-            if (needAuthSwitched) {
-                handleSwitchResponse(data);
-            } else {
-                handleAuthPacket(data);
-            }
+            DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+                GeneralProvider.beforeAuthSuccess();
+                if (needAuthSwitched) {
+                    handleSwitchResponse(data);
+                } else {
+                    handleAuthPacket(data);
+                }
+            });
 
         } catch (Exception e) {
             LOGGER.error("illegal auth packet {}", data, e);

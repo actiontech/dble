@@ -329,7 +329,7 @@ public abstract class PlanNode {
                 }
                 String tmpFieldTable = child.getAlias() == null ? coutField.getTable() : child.getAlias();
                 String tmpFieldName = coutField.getName();
-                NamedField tmpField = new NamedField(tmpFieldSchema, tmpFieldTable, tmpFieldName, coutField.planNode);
+                NamedField tmpField = new NamedField(tmpFieldSchema, tmpFieldTable, tmpFieldName, coutField.planNode, coutField.isNatualShow());
                 tmpField.setCharsetIndex(coutField.getCharsetIndex());
                 if (innerFields.containsKey(tmpField) && getParent() != null)
                     throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", "Duplicate column name '" + tmpFieldName + "'");
@@ -492,7 +492,8 @@ public abstract class PlanNode {
             tmpFieldTable = getPureName();
         if (sel.getAlias() != null)
             tmpFieldName = sel.getAlias();
-        return new NamedField(tmpSchema, tmpFieldTable, tmpFieldName, this);
+        boolean isShow = sel instanceof ItemField ? ((ItemField) sel).isNatualShow() : true;
+        return new NamedField(tmpSchema, tmpFieldTable, tmpFieldName, this, isShow);
     }
 
     Item setUpItem(Item sel) {

@@ -93,9 +93,10 @@ public class MySQLHeartbeat {
 
     public void stop(String reason) {
         if (isStop) {
+            LOGGER.warn("heartbeat[{}] had been stop", source.getConfig().getUrl());
             return;
         }
-        LOGGER.info("stop heartbeat of instance[{}], due to {}", source.getName(), reason);
+        LOGGER.info("stop heartbeat of instance[{}], due to {}", source.getConfig().getUrl(), reason);
         isStop = true;
         scheduledFuture.cancel(false);
         this.status = INIT_STATUS;
@@ -194,14 +195,17 @@ public class MySQLHeartbeat {
                 this.errorCount.set(0);
                 this.startErrorTime.set(-1);
                 if (isStop) {
+                    LOGGER.warn("heartbeat[{}] had been stop", source.getConfig().getUrl());
                     detector.quit();
                 } else {
+                    LOGGER.info("heartbeat to [{}] setOk, previous status is timeout", source.getConfig().getUrl());
                     heartbeat(); // timeout, heart beat again
                 }
                 break;
             case OK_STATUS:
                 break;
             default:
+                LOGGER.info("heartbeat to [{}] setOk, previous status is {}", source.getConfig().getUrl(), status);
                 this.status = OK_STATUS;
                 this.errorCount.set(0);
                 this.startErrorTime.set(-1);
@@ -209,11 +213,12 @@ public class MySQLHeartbeat {
                 AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
         }
         if (isStop) {
+            LOGGER.warn("heartbeat[{}] had been stop", source.getConfig().getUrl());
             detector.quit();
         }
     }
 
-    public void recordErrorCount() {
+    private void recordErrorCount() {
         long currentTimeMillis = System.currentTimeMillis();
         if (errorTimeInLast5Min.intValue() == 0) {
             errorTimeInLast5Min.set(currentTimeMillis);
@@ -223,10 +228,14 @@ public class MySQLHeartbeat {
         }
     }
 
-
     private void setTimeout() {
-        LOGGER.warn("heartbeat to [" + source.getConfig().getUrl() + "] setTimeout");
-        status = TIMEOUT_STATUS;
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("heartbeat to [" + source.getConfig().getUrl() + "] setTimeout");
+        }
+        if (status != TIMEOUT_STATUS) {
+            LOGGER.warn("heartbeat to [{}] setTimeout, previous status is {}", source.getConfig().getUrl(), status);
+            status = TIMEOUT_STATUS;
+        }
     }
 
     public boolean isHeartBeatOK() {

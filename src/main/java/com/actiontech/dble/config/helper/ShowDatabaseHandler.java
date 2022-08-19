@@ -25,6 +25,7 @@ public class ShowDatabaseHandler {
     private boolean isFinish = false;
     private String showDatabases = "show databases";
     private String showDataBasesCols;
+    private SQLJob sqlJob;
 
 
     public ShowDatabaseHandler(Map<String, PhysicalDbGroup> dbGroups, String showDataBasesCols) {
@@ -42,7 +43,7 @@ public class ShowDatabaseHandler {
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{showDataBasesCols}, new ShowDatabasesListener(showDataBasesCols));
         PhysicalDbInstance ds = getPhysicalDbInstance(dbGroupName);
         if (ds != null) {
-            SQLJob sqlJob = new SQLJob(showDatabases, null, resultHandler, ds);
+            sqlJob = new SQLJob(showDatabases, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {
@@ -57,7 +58,7 @@ public class ShowDatabaseHandler {
         reset();
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{showDataBasesCols}, new ShowDatabasesListener(showDataBasesCols));
         if (ds != null) {
-            OneTimeConnJob sqlJob = new OneTimeConnJob(showDatabases, null, resultHandler, ds);
+            sqlJob = new OneTimeConnJob(showDatabases, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {
@@ -98,7 +99,11 @@ public class ShowDatabaseHandler {
                 finishCond.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.info("[ClickHouseDatabaseHandler] conn Interrupted: " + e);
+            LOGGER.info("[MysqlDatabaseHandler] conn Interrupted: " + e);
+            if (sqlJob != null) {
+                sqlJob.terminate("thread interrupted");
+            }
+            throw new IllegalStateException(e);
         } finally {
             lock.unlock();
         }

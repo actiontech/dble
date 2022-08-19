@@ -264,13 +264,17 @@ public class NonBlockingSession implements Session {
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
-            if (traceResult.addToConnFlagMap(conn.getId() + ":" + node.getStatementHash()) == null) {
-                ResponseHandler responseHandler = conn.getRespHandler();
-                responseTime = System.nanoTime();
-                TraceRecord record = new TraceRecord(responseTime, node.getName(), node.getStatement());
-                Map<MySQLConnection, TraceRecord> connMap = new ConcurrentHashMap<>();
-                connMap.put(conn, record);
-                traceResult.addToConnReceivedMap(responseHandler, connMap);
+            if (node != null) {
+                if (traceResult.addToConnFlagMap(conn.getId() + ":" + node.getStatementHash()) == null) {
+                    ResponseHandler responseHandler = conn.getRespHandler();
+                    if (responseHandler != null) {
+                        responseTime = System.nanoTime();
+                        TraceRecord record = new TraceRecord(responseTime, node.getName(), node.getStatement());
+                        Map<MySQLConnection, TraceRecord> connMap = new ConcurrentHashMap<>();
+                        connMap.put(conn, record);
+                        traceResult.addToConnReceivedMap(responseHandler, connMap);
+                    }
+                }
             }
         }
         if (!timeCost) {
@@ -348,10 +352,12 @@ public class NonBlockingSession implements Session {
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
             ResponseHandler responseHandler = conn.getRespHandler();
-            TraceRecord record = new TraceRecord(System.nanoTime(), node.getName(), node.getStatement());
-            Map<MySQLConnection, TraceRecord> connMap = new ConcurrentHashMap<>();
-            connMap.put(conn, record);
-            traceResult.addToConnFinishedMap(responseHandler, connMap);
+            if (node != null && responseHandler != null) {
+                TraceRecord record = new TraceRecord(System.nanoTime(), node.getName(), node.getStatement());
+                Map<MySQLConnection, TraceRecord> connMap = new ConcurrentHashMap<>();
+                connMap.put(conn, record);
+                traceResult.addToConnFinishedMap(responseHandler, connMap);
+            }
         }
 
         if (!timeCost) {

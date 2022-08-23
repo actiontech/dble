@@ -24,6 +24,7 @@ public class MysqlDatabaseHandler {
     private Set<String> databases = new HashSet<>();
     private final Condition finishCond = lock.newCondition();
     private boolean isFinish = false;
+    private SQLJob sqlJob;
 
     public MysqlDatabaseHandler(Map<String, PhysicalDbGroup> dbGroups) {
         this.dbGroups = dbGroups;
@@ -40,7 +41,7 @@ public class MysqlDatabaseHandler {
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
         PhysicalDbInstance ds = getPhysicalDbInstance(dbGroupName);
         if (ds != null) {
-            SQLJob sqlJob = new SQLJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
+            sqlJob = new SQLJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {
@@ -55,7 +56,7 @@ public class MysqlDatabaseHandler {
         String mysqlShowDataBasesCols = "Database";
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
         if (ds != null) {
-            OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
+            sqlJob = new OneTimeConnJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {
@@ -97,6 +98,10 @@ public class MysqlDatabaseHandler {
             }
         } catch (InterruptedException e) {
             LOGGER.info("[MysqlDatabaseHandler] conn Interrupted: " + e);
+            if (sqlJob != null) {
+                sqlJob.terminate("thread interrupted");
+            }
+            throw new IllegalStateException(e);
         } finally {
             lock.unlock();
         }

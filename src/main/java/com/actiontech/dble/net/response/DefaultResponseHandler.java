@@ -57,20 +57,23 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     public void error(byte[] data) {
         final ResponseHandler respHand = service.getResponseHandler();
         service.setExecuting(false);
-        if (status != INITIAL) {
-            if (service.getSession() != null) {
-                service.getSession().startExecuteBackend();
-            }
-            service.setRowDataFlowing(false);
-            service.signal();
-            status = INITIAL;
-        }
+        beforeError();
+
         if (respHand != null) {
             StatisticListener.getInstance().record(service.getSession(), r -> r.onBackendSqlEnd(service));
             respHand.errorResponse(data, service);
         } else {
             closeNoHandler();
         }
+    }
+
+    protected void beforeError() {
+        if (service.getSession() != null) {
+            service.getSession().startExecuteBackend();
+        }
+        service.setRowDataFlowing(false);
+        service.signal();
+        status = INITIAL;
     }
 
     @Override

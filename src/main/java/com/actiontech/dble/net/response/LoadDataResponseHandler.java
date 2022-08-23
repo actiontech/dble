@@ -8,7 +8,7 @@ import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 import java.util.ArrayList;
 
-public class LoadDataResponseHandler extends DefaultResponseHandler {
+public class LoadDataResponseHandler extends CustomDataResponseHandler {
     private volatile int status = INITIAL;
 
     public LoadDataResponseHandler(MySQLResponseService service) {
@@ -34,16 +34,19 @@ public class LoadDataResponseHandler extends DefaultResponseHandler {
     public void error(byte[] data) {
         final ResponseHandler respHand = service.getResponseHandler();
         service.setExecuting(false);
-        if (status != INITIAL) {
-            service.setRowDataFlowing(false);
-            service.signal();
-            status = INITIAL;
-        }
+        beforeError();
         if (respHand != null) {
             respHand.errorResponse(data, service);
         } else {
             closeNoHandler();
         }
+    }
+
+    @Override
+    protected void beforeError() {
+        service.setRowDataFlowing(false);
+        service.signal();
+        status = INITIAL;
     }
 
     @Override

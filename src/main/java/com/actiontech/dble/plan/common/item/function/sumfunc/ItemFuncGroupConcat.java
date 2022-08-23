@@ -102,8 +102,9 @@ public class ItemFuncGroupConcat extends ItemSum {
             String s = item.valStr();
             if (item.isNull())
                 return false;
-            rowStr.append(s).append(seperator);
+            rowStr.append(s);
         }
+        rowStr.append(seperator);
         if (orders != null) {
             if (sourceFields != null && rowComparator == null) {
                 rowComparator = new RowDataComparator(sourceFields, orders);
@@ -163,7 +164,7 @@ public class ItemFuncGroupConcat extends ItemSum {
                 append(orderResult.result);
             }
         }
-        return resultSb.substring(0, resultSb.length() - 1);
+        return resultSb.substring(0, resultSb.length() - seperator.length());
     }
 
     // append a row string

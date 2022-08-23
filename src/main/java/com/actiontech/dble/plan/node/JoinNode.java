@@ -53,6 +53,7 @@ public class JoinNode extends PlanNode {
     private List<String> usingFields;
 
     private boolean isNatural = false;
+    private boolean isExistNatural = false;
     /**
      * <pre>
      * leftOuterJoin:
@@ -177,7 +178,7 @@ public class JoinNode extends PlanNode {
         for (NamedField field : node.getOuterFields().keySet()) {
             String fieldName = field.getName().toLowerCase();
             if (checkDup.contains(fieldName)) {
-                throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", " Duplicate column name '" + fieldName + "'");
+                continue;
             }
             checkDup.add(fieldName);
             fields.add(fieldName);
@@ -194,16 +195,9 @@ public class JoinNode extends PlanNode {
         if (table != null) {
             return new Pair<>(schema, table);
         }
-        boolean found = false;
         for (NamedField field : node.getOuterFields().keySet()) {
             if (field.getName().equalsIgnoreCase(using)) {
-                if (!found) {
-                    found = true;
-                    table = field.getTable();
-                } else {
-                    throw new MySQLOutPutException(ErrorCode.ER_NON_UNIQ_ERROR, "23000",
-                            " Column '" + using + "' in from clause is ambiguous");
-                }
+                table = field.getTable();
             }
         }
         return new Pair<>(schema, table);
@@ -241,49 +235,14 @@ public class JoinNode extends PlanNode {
 
     @Override
     protected void dealSingleStarColumn(List<Item> newSels) {
-        if (usingFields == null) {
-            super.dealSingleStarColumn(newSels);
+        if (isNatural || isExistNatural) {
+            dealSingleStarColumnByNatural(newSels);
         } else {
-            PlanNode driverNode = this.isRightOuterJoin() ? this.getRightNode() : this.getLeftNode();
-            Pair<String, String> tableInfo = findTbNameByUsing(driverNode, usingFields.get(0));
-            if (isNatural) {
-                //is the join is a natural join,the fields order is driverNode's column order
-                for (NamedField field : driverNode.getInnerFields().keySet()) {
-                    String name = field.getName();
-                    for (String fieldName : usingFields) {
-                        if (name.equals(fieldName)) {
-                            ItemField col = new ItemField(tableInfo.getKey(), tableInfo.getValue(), fieldName);
-                            newSels.add(col);
-                        }
-                    }
-                }
-
-                for (NamedField field : driverNode.getInnerFields().keySet()) {
-                    if (usingFields.contains(field.getName())) {
-                        continue;
-                    }
-                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
-                    newSels.add(col);
-                }
-
-                // add Remaining innerFields
-                for (NamedField field : innerFields.keySet()) {
-                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
-                    boolean contians = false;
-                    for (Item f : newSels) {
-                        if (f instanceof ItemField) {
-                            if (f.getItemName().equals(field.getName())) {
-                                contians = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!contians) {
-                        newSels.add(col);
-                    }
-                }
-
+            if (usingFields == null) {
+                super.dealSingleStarColumn(newSels);
             } else {
+                PlanNode driverNode = this.isRightOuterJoin() ? this.getRightNode() : this.getLeftNode();
+                Pair<String, String> tableInfo = findTbNameByUsing(driverNode, usingFields.get(0));
                 for (String fieldName : usingFields) {
                     ItemField col = new ItemField(tableInfo.getKey(), tableInfo.getValue(), fieldName);
                     newSels.add(col);
@@ -298,6 +257,98 @@ public class JoinNode extends PlanNode {
                 }
             }
         }
+    }
+
+    /**
+     * https://dev.mysql.com/doc/refman/8.0/en/join.html
+     * First, coalesced common columns of the two joined tables, in the order in which they occur in the first table
+     * Second, columns unique to the first table, in order in which they occur in that table
+     * Third, columns unique to the second table, in order in which they occur in that table
+     */
+    private void dealSingleStarColumnByNatural(List<Item> newSels) {
+        boolean parentIsJoin = this.getParent() instanceof JoinNode;
+        if (parentIsJoin) {
+            ((JoinNode) this.getParent()).isExistNatural = true;
+        }
+        if (usingFields == null) {
+            for (NamedField field : innerFields.keySet()) {
+                if (!parentIsJoin) {
+                    if (field.isNatualShow()) {
+                        ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName(), field.getCharsetIndex());
+                        newSels.add(col);
+                    }
+                } else {
+                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName(), field.getCharsetIndex());
+                    if (!field.isNatualShow())
+                        col.noNatualShow();
+                    newSels.add(col);
+                }
+            }
+            return;
+        } else {
+            dealSingleStarColumnByNaturalByUsingFields(parentIsJoin, newSels);
+        }
+    }
+
+    private void dealSingleStarColumnByNaturalByUsingFields(boolean parentIsJoin, List<Item> newSels) {
+        List<Item> newSelsTmp = new ArrayList<>();
+        List<Item> usingFieldsTmp = new ArrayList<>();
+
+        PlanNode driverNode = this.isRightOuterJoin() ? this.getRightNode() : this.getLeftNode();
+        // First
+        for (String fieldName : usingFields) {
+            for (NamedField field : driverNode.getInnerFields().keySet()) {
+                String name = field.getName();
+                if (name.equals(fieldName)) {
+                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
+                    usingFieldsTmp.add(col);
+                    break;
+                }
+            }
+        }
+
+        // Second
+        newSelsTmp.addAll(usingFieldsTmp);
+        for (NamedField field : driverNode.getInnerFields().keySet()) {
+            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
+            if (usingFieldsTmp.contains(col)) {
+                continue;
+            }
+            if (!field.isNatualShow())
+                col.noNatualShow();
+            newSelsTmp.add(col);
+        }
+        // Third (add Remaining innerFields)
+        List<Item> naturalColumnsSelected = new LinkedList<>(newSelsTmp);
+        for (NamedField field : innerFields.keySet()) {
+            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
+            if (!newSelsTmp.contains(col)) {
+                newSelsTmp.add(col);
+                boolean contians = false;
+                for (Item f : naturalColumnsSelected) {
+                    if (f.getItemName().equals(field.getName())) {
+                        contians = true;
+                        break;
+                    }
+                }
+                if (!contians) {
+                    naturalColumnsSelected.add(col);
+                } else {
+                    col.noNatualShow();
+                    field.noShow();
+                    //innerFields.get(field).noShow();
+                }
+            }
+        }
+        if (!parentIsJoin) {
+            for (NamedField field : innerFields.keySet()) {
+                if (!field.isNatualShow()) {
+                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
+                    newSelsTmp.remove(col);
+                }
+            }
+        }
+        newSels.addAll(newSelsTmp);
     }
 
     /**

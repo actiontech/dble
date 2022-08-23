@@ -378,6 +378,7 @@ public class MySQLResponseService extends BackendService {
                 return false;
             } else {
                 new BackEndRecycleRunnable(this).runSync();
+                return false;
             }
 
         }

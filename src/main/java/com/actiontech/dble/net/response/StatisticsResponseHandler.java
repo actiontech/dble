@@ -4,7 +4,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.rwsplit.StatisticsHandler;
 
-public class StatisticsResponseHandler extends DefaultResponseHandler {
+public class StatisticsResponseHandler extends CustomDataResponseHandler {
 
     public StatisticsResponseHandler(MySQLResponseService service) {
         super(service);

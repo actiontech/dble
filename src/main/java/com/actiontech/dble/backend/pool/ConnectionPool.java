@@ -174,7 +174,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         }
     }
 
-    private void fillPool() {
+    public void fillPool() {
         final int idleCount = getCount(STATE_NOT_IN_USE, STATE_HEARTBEAT);
         int tmpTotalConnections = totalConnections.get();
         if (tmpTotalConnections < 0) {
@@ -375,6 +375,33 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             } else if (poolConfig.getTestWhileIdle() && conn.compareAndSet(STATE_NOT_IN_USE, STATE_HEARTBEAT)) {
                 ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler((BackendConnection) conn, false, this);
                 heartBeatHandler.ping(poolConfig.getConnectionHeartbeatTimeout());
+            }
+        }
+
+    }
+
+    public void evictImmediately() {
+
+        final ArrayList<PooledConnection> idleList = new ArrayList<>(allConnections.size());
+        for (final PooledConnection entry : allConnections) {
+            if (entry.getState() == STATE_NOT_IN_USE) {
+                idleList.add(entry);
+            }
+        }
+
+        int removable = idleList.size() - config.getMinCon();
+        if (removable <= 0) {
+            return;
+        }
+
+        // Sort pool entries on lastAccessed
+        idleList.sort(LAST_ACCESS_COMPARABLE);
+
+        logPoolState("before cleanup ");
+        for (PooledConnection conn : idleList) {
+            if (removable > 0 && conn.compareAndSet(STATE_NOT_IN_USE, STATE_RESERVED)) {
+                conn.close("connection has passed idleTimeout");
+                removable--;
             }
         }
 

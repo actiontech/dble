@@ -129,7 +129,7 @@ public final class DbleServer {
         LOGGER.info("=========================================Config file read finish==================================");
 
         LOGGER.info("=========================================Init Outer Ha Config==================================");
-        HaConfigManager.getInstance().init();
+        HaConfigManager.getInstance().init(false);
 
         if (SystemConfig.getInstance().getEnableAlert() == 1) {
             AlertUtil.switchAlert(true);

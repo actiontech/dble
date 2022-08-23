@@ -364,11 +364,6 @@ public class ServerConfig {
                 LOGGER.warn(checkResult);
                 throw new SQLNonTransientException(checkResult, "HY000", ErrorCode.ER_DOING_DDL);
             }
-            try {
-                HaConfigManager.getInstance().init();
-            } catch (Exception e) {
-                throw new SQLNonTransientException("HaConfigManager init failed", "HY000", ErrorCode.ER_YES);
-            }
             // old dbGroup
             // 1 stop heartbeat
             // 2 backup
@@ -401,6 +396,11 @@ public class ServerConfig {
             this.dbConfig = dbJsonConfig;
             this.shardingConfig = shardingJsonConfig;
             this.sequenceConfig = sequenceJsonConfig;
+            try {
+                HaConfigManager.getInstance().init(true);
+            } catch (Exception e) {
+                throw new SQLNonTransientException("HaConfigManager init failed", "HY000", ErrorCode.ER_YES);
+            }
             CacheService.getInstance().clearCache();
             this.changing = false;
             if (isFullyConfigured) {

@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.Future;
 
 import static com.actiontech.dble.services.mysqlauthenticate.PluginName.caching_sha2_password;
 import static com.actiontech.dble.services.mysqlauthenticate.PluginName.mysql_native_password;
@@ -42,6 +43,7 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
     private volatile AuthPacket authPacket;
     private volatile boolean needAuthSwitched;
     private volatile PluginName pluginName;
+    private volatile Future<?> asyncLogin;
 
     public MySQLFrontAuthService(AbstractConnection connection) {
         super(connection);
@@ -67,21 +69,34 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
                 pingResponse();
                 return;
             }
-            GeneralProvider.beforeAuthSuccess();
-
-            if (needAuthSwitched) {
-                handleSwitchResponse(data);
-            } else {
-                handleAuthPacket(data);
-            }
-
         } catch (Exception e) {
             LOGGER.error("illegal auth packet {}", data, e);
             writeErrMessage(ErrorCode.ER_ACCESS_DENIED_ERROR, "illegal auth packet, the detail error message is " + e.getMessage());
             connection.close("illegal auth packet");
-        } finally {
-            TraceManager.finishSpan(this, traceObject);
+            return;
         }
+        asyncLogin = DbleServer.getInstance().getComplexQueryExecutor().submit(() -> {
+            try {
+                GeneralProvider.beforeAuthSuccess();
+                if (needAuthSwitched) {
+                    handleSwitchResponse(data);
+                } else {
+                    handleAuthPacket(data);
+                }
+            } catch (Exception e) {
+                if (e.getCause() != null && e.getCause() instanceof InterruptedException) {
+                    // print nothing
+                } else {
+                    LOGGER.error("illegal auth {}", data, e);
+                    writeErrMessage(ErrorCode.ER_ACCESS_DENIED_ERROR, "illegal auth , the detail error message is " + e.getMessage());
+                    connection.close("illegal auth");
+                }
+            } finally {
+                TraceManager.finishSpan(this, traceObject);
+            }
+        });
+
+
     }
 
     private void pingResponse() {
@@ -270,5 +285,15 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
     @Override
     public boolean haveNotReceivedMessage() {
         return !receivedMessage;
+    }
+
+    @Override
+    public void cleanup() {
+        final Future<?> loginFuture = this.asyncLogin;
+        if (loginFuture != null && !loginFuture.isDone()) {
+            loginFuture.cancel(true);
+            this.asyncLogin = null;
+        }
+        super.cleanup();
     }
 }

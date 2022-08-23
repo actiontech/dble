@@ -117,8 +117,8 @@ public final class ShowHeartbeat {
                 if (hb != null) {
                     row.add(ds.getConfig().getIp().getBytes());
                     row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
-                    String code = getRdCode(hb.getStatus());
-                    row.add(code == null ? null : code.getBytes());
+                    String code = hb.getStatus().toString();
+                    row.add(code.getBytes());
                     row.add(IntegerUtil.toBytes(hb.getErrorCount()));
                     row.add(hb.isChecking() ? "checking".getBytes() : "idle".getBytes());
                     row.add(LongUtil.toBytes(hb.getHeartbeatTimeout()));
@@ -144,26 +144,4 @@ public final class ShowHeartbeat {
         }
         return list;
     }
-
-    public static String getRdCode(int status) {
-        String code = null;
-        switch (status) {
-            case 0:
-                code = "init";
-                break;
-            case 1:
-                code = "ok";
-                break;
-            case -1:
-                code = "error";
-                break;
-            case -2:
-                code = "time_out";
-                break;
-            default:
-                break;
-        }
-        return code;
-    }
-
 }

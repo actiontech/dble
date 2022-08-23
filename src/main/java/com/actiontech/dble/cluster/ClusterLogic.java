@@ -949,7 +949,7 @@ public final class ClusterLogic {
 
     public static void syncDbGroupStatusToCluster() throws Exception {
         LOGGER.info("syncDbGroupStatusToCluster start");
-        HaConfigManager.getInstance().init();
+        HaConfigManager.getInstance().init(false);
         Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
         for (Map.Entry<String, String> entry : map.entrySet()) {
             ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(entry.getKey()), entry.getValue());

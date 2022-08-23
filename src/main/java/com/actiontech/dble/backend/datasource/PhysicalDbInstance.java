@@ -61,6 +61,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     protected MySQLHeartbeat heartbeat;
     private volatile long heartbeatRecoveryTime;
     private volatile boolean needSkipEvit = false;
+    private volatile int logCount;
 
 
     public PhysicalDbInstance(DbInstanceConfig config, DbGroupConfig dbGroupConfig, boolean isReadNode) {
@@ -343,6 +344,14 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         this.isolationSynced = isolationSynced;
     }
 
+    public int getLogCount() {
+        return logCount;
+    }
+
+    public void setLogCount(int logCount) {
+        this.logCount = logCount;
+    }
+
     public String getDsVersion() {
         return dsVersion;
     }
@@ -436,6 +445,33 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
             connectionPool.stop(reason, closeFront);
         }
         isInitial.set(false);
+    }
+
+    public void updatePoolCapacity() {
+        //minCon/maxCon/numOfShardingNodes
+        if ((dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) && !dbGroup.isUseless()) {
+            checkPoolSize();
+            connectionPool.evictImmediately();
+            connectionPool.fillPool();
+        }
+    }
+
+    protected void checkPoolSize() {
+        int size = config.getMinCon();
+        String[] physicalSchemas = dbGroup.getSchemas();
+        int initSize = physicalSchemas.length;
+        if (size < initSize) {
+            LOGGER.warn("For db instance[{}], minIdle is less than (the count of shardingNodes), so dble will create at least 1 conn for every schema, " +
+                    "minCon size before:{}, now:{}", this.dbGroup.getGroupName() + "." + name, size, initSize);
+            config.setMinCon(initSize);
+        }
+
+        initSize = Math.max(initSize, config.getMinCon());
+        size = config.getMaxCon();
+        if (size < initSize) {
+            LOGGER.warn("For db instance[{}], maxTotal[{}] is less than the minCon or the count of shardingNodes,change the maxCon into {}", this.dbGroup.getGroupName() + "." + name, size, initSize);
+            config.setMaxCon(initSize);
+        }
     }
 
     public void closeAllConnection(String reason) {

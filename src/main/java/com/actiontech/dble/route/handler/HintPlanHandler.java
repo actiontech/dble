@@ -11,6 +11,7 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.server.parser.HintPlanParse;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.google.common.base.Strings;
 
 import java.sql.SQLSyntaxErrorException;
 import java.util.List;
@@ -42,36 +43,32 @@ public final class HintPlanHandler {
         boolean useTableIndex = false;
 
         String[] attr = hintSQL.split("\\$");
-        if (attr.length > 1) {
-            for (String s : attr) {
-                switch (s.toLowerCase()) {
-                    case "left2inner":
-                        planInfo.setLeft2inner(true);
-                        break;
-                    case "right2inner":
-                        planInfo.setRight2inner(true);
-                        break;
-                    case "in2join":
-                        planInfo.setIn2join(true);
-                        break;
-                    case "use_table_index":
-                        useTableIndex = true;
-                        break;
-                    default:
-                        realHint = s;
-                        break;
-                }
+        for (String s : attr) {
+            switch (s.toLowerCase()) {
+                case "left2inner":
+                    planInfo.setLeft2inner(true);
+                    break;
+                case "right2inner":
+                    planInfo.setRight2inner(true);
+                    break;
+                case "in2join":
+                    planInfo.setIn2join(true);
+                    break;
+                case "use_table_index":
+                    useTableIndex = true;
+                    break;
+                default:
+                    realHint = s;
+                    break;
             }
-        } else {
-            realHint = hintSQL;
         }
-
         if (useTableIndex && statement != null) {
             realHint = replaceTableIndex(statement, realHint);
         }
-
         HintPlanParse hintPlanParse = new HintPlanParse();
-        hintPlanParse.parse(realHint);
+        if (!Strings.isNullOrEmpty(realHint)) {
+            hintPlanParse.parse(realHint);
+        }
         planInfo.setRelationMap(hintPlanParse);
         return planInfo;
     }

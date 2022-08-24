@@ -434,8 +434,9 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public void stop(String reason, boolean closeFront, boolean isStopHeartbeat) {
         if (isStopHeartbeat) {
+            final boolean stop = heartbeat.isStop();
             heartbeat.stop(reason);
-            if (!heartbeat.isStop()) {
+            if (!stop) {
                 initHeartbeat.set(false);
             }
         }

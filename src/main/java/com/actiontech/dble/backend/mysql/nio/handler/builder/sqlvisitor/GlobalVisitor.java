@@ -31,6 +31,7 @@ import com.actiontech.dble.util.StringUtil;
 public class GlobalVisitor extends MysqlVisitor {
 
     private final boolean rebuildSubQuery;
+
     public GlobalVisitor(PlanNode globalQuery, boolean isTopQuery, boolean rebuildSubQuery) {
         super(globalQuery, isTopQuery);
         this.rebuildSubQuery = rebuildSubQuery;
@@ -67,20 +68,11 @@ public class GlobalVisitor extends MysqlVisitor {
     }
 
     protected void visit(TableNode query) {
-        /**
-         *  The role of 'parentIsJoinAndHaveWhere':
-         *  In scenario 'right join'，want to keep the TableNode's where condition and send it to the node
-         *
-         *  For example: select * from tabler a right join tabler2 b on a.name = b.name and a.id = 2 where b.id = 2
-         *  expect visit: select * from (select * from tabler2 b where b.id = 2) b left join (select * from tabler a where a.id = 2) a on b.name = a.name
-         */
-        boolean parentIsJoinAndHaveWhere = query.getParent() != null && query.getParent().type() == PlanNodeType.JOIN && !isTopQuery && query.getWhereFilter() != null;
-
         boolean parentIsQuery = query.getParent() != null && query.getParent().type() == PlanNodeType.QUERY;
-        if ((query.isWithSubQuery() && !parentIsQuery && !isTopQuery) || parentIsJoinAndHaveWhere) {
+        if ((query.isWithSubQuery() && !parentIsQuery && !isTopQuery)) {
             sqlBuilder.append(" ( ");
         }
-        if (query.isWithSubQuery() || isTopQuery || parentIsJoinAndHaveWhere) {
+        if (query.isWithSubQuery() || isTopQuery) {
             buildSelect(query);
 
             if (query.getTableName() == null)
@@ -88,7 +80,7 @@ public class GlobalVisitor extends MysqlVisitor {
             sqlBuilder.append(" from ");
         }
         buildTableName(query, sqlBuilder);
-        if (query.isWithSubQuery() || isTopQuery || parentIsJoinAndHaveWhere) {
+        if (query.isWithSubQuery() || isTopQuery) {
             buildWhere(query);
             buildGroupBy(query);
             buildHaving(query);
@@ -98,7 +90,7 @@ public class GlobalVisitor extends MysqlVisitor {
             whereFilter = query.getWhereFilter();
         }
 
-        if ((query.isWithSubQuery() && !parentIsQuery && !isTopQuery) || parentIsJoinAndHaveWhere) {
+        if ((query.isWithSubQuery() && !parentIsQuery && !isTopQuery)) {
             sqlBuilder.append(" ) ");
             if (query.getAlias() != null) {
                 sqlBuilder.append(" ").append(query.getAlias()).append(" ");
@@ -242,7 +234,7 @@ public class GlobalVisitor extends MysqlVisitor {
         }
         sqlBuilder.append(joinOnFilterStr.toString());
         if (join.isWithSubQuery() || isTopQuery) {
-            buildWhere(join);
+            buildWhere(join, leftVisitor, rightVisitor);
             buildGroupBy(join);
             buildHaving(join);
             buildOrderBy(join);

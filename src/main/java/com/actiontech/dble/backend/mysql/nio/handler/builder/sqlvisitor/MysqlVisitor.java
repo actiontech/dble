@@ -13,6 +13,7 @@ import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemFuncNot;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
+import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.node.TableNode;
@@ -104,6 +105,50 @@ public abstract class MysqlVisitor {
             whereBuilder.append(" where ").append(pdName);
         }
 
+        replaceableWhere.set(whereBuilder.toString());
+        // refresh sqlbuilder
+        sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
+    }
+
+    void buildWhere(JoinNode planNode, MysqlVisitor leftVisitor, MysqlVisitor rightVisitor) {
+        if (!visited)
+            replaceableSqlBuilder.getCurrentElement().setRepString(replaceableWhere);
+        StringBuilder whereBuilder = new StringBuilder();
+        Item filter = planNode.getWhereFilter();
+        if (filter != null) {
+            String pdName = visitUnSelPushDownName(filter, false);
+            whereBuilder.append(" where ").append(pdName);
+        } else {
+            whereBuilder.append(" where 1=1 ");
+        }
+        // is not left join
+        if (leftVisitor.getWhereFilter() != null && !planNode.getLeftOuter()) {
+            String pdName = visitUnSelPushDownName(leftVisitor.getWhereFilter(), false);
+            whereBuilder.append(" and (");
+            whereBuilder.append(pdName);
+            whereBuilder.append(")");
+        }
+        // is not right join
+        if (rightVisitor.getWhereFilter() != null && !planNode.getRightOuter()) {
+            String pdName = visitUnSelPushDownName(rightVisitor.getWhereFilter(), false);
+            whereBuilder.append(" and (");
+            whereBuilder.append(pdName);
+            whereBuilder.append(")");
+        }
+        // left join
+        if (leftVisitor.getWhereFilter() != null && !planNode.getRightOuter() && planNode.getLeftOuter()) {
+            String pdName = visitUnSelPushDownName(leftVisitor.getWhereFilter(), false);
+            whereBuilder.append(" and (");
+            whereBuilder.append(pdName);
+            whereBuilder.append(")");
+        }
+        //right join
+        if (rightVisitor.getWhereFilter() != null && !planNode.getLeftOuter() && planNode.getRightOuter()) {
+            String pdName = visitUnSelPushDownName(rightVisitor.getWhereFilter(), false);
+            whereBuilder.append(" and (");
+            whereBuilder.append(pdName);
+            whereBuilder.append(")");
+        }
         replaceableWhere.set(whereBuilder.toString());
         // refresh sqlbuilder
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();

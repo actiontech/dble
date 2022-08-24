@@ -35,6 +35,8 @@ public class ItemField extends ItemIdent {
     /* if index!=-1, means the index of Item_field,need setField before val */
     private int index = -1;
 
+    private boolean isNatualShow = true; // when natual join ,use it
+
     public ItemField(String dbName, String tableName, String fieldName, int charsetIndex) {
         super(dbName, tableName, fieldName);
         this.charsetIndex = charsetIndex;
@@ -360,5 +362,13 @@ public class ItemField extends ItemIdent {
 
     public Field getField() {
         return field;
+    }
+
+    public void noNatualShow() {
+        isNatualShow = false;
+    }
+
+    public boolean isNatualShow() {
+        return isNatualShow;
     }
 }

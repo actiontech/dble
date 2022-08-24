@@ -216,3 +216,6 @@
 #-DgmsslRcaPem=
 #-DgmsslOcaPem=
 #-DsupportSSL=
+
+#-DenableAsyncRelease=0
+#-DreleaseTimeout=600000

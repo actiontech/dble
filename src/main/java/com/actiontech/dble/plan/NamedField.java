@@ -17,8 +17,9 @@ public class NamedField {
     // which node of the field belong
     public final PlanNode planNode;
     private int charsetIndex;
+    private boolean isNatualShow = true; // when natual join ,use it
 
-    public NamedField(String inputSchema, String inputTable, String name, PlanNode planNode) {
+    public NamedField(String inputSchema, String inputTable, String name, PlanNode planNode, boolean isNatualShow) {
         String tempTableSchmea;
         String tempTableName;
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
@@ -38,6 +39,11 @@ public class NamedField {
         int hash = tempTableSchmea == null ? 0 : tempTableSchmea.hashCode();
         hash = hash * prime + (tempTableName == null ? 0 : tempTableName.hashCode());
         this.hashCode = hash * prime + (name == null ? 0 : name.toLowerCase().hashCode());
+        this.isNatualShow = isNatualShow;
+    }
+
+    public NamedField(String inputSchema, String inputTable, String name, PlanNode planNode) {
+        this(inputSchema, inputTable, name, planNode, true);
     }
 
     @Override
@@ -56,6 +62,14 @@ public class NamedField {
 
     public String getName() {
         return name;
+    }
+
+    public boolean isNatualShow() {
+        return isNatualShow;
+    }
+
+    public void noShow() {
+        isNatualShow = false;
     }
 
     public int getCharsetIndex() {

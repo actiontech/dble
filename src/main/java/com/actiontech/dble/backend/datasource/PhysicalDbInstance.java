@@ -366,8 +366,9 @@ public abstract class PhysicalDbInstance {
     }
 
     public void stop(String reason, boolean closeFront) {
+        final boolean stop = heartbeat.isStop();
         heartbeat.stop(reason);
-        if (!heartbeat.isStop()) {
+        if (!stop) {
             initHeartbeat.set(false);
         }
         if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) {

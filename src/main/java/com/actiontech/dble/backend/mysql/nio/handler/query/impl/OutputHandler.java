@@ -37,7 +37,7 @@ public class OutputHandler extends BaseDMLHandler {
     private static Logger logger = LoggerFactory.getLogger(OutputHandler.class);
     protected final ReentrantLock lock;
 
-    private ByteBuffer buffer;
+    private volatile ByteBuffer buffer;
     private boolean isBinary;
     private long netOutBytes;
     private long selectRows;
@@ -49,7 +49,6 @@ public class OutputHandler extends BaseDMLHandler {
         serverSession = (NonBlockingSession) session;
         serverSession.setOutputHandler(this);
         this.lock = new ReentrantLock();
-        this.buffer = serverSession.getSource().allocate();
         this.requestScope = serverSession.getShardingService().getRequestScope();
         this.isBinary = requestScope.isPrepared();
     }
@@ -69,7 +68,7 @@ public class OutputHandler extends BaseDMLHandler {
         lock.lock();
         try {
             HandlerTool.terminateHandlerTree(this);
-            okPacket.write(buffer, sessionShardingService);
+            okPacket.write(sessionShardingService.getConnection());
         } finally {
             lock.unlock();
         }
@@ -83,7 +82,7 @@ public class OutputHandler extends BaseDMLHandler {
         lock.lock();
         try {
             serverSession.resetMultiStatementStatus();
-            errPacket.write(buffer, serverSession.getShardingService());
+            errPacket.write(serverSession.getShardingService().getConnection());
         } finally {
             lock.unlock();
         }
@@ -104,6 +103,11 @@ public class OutputHandler extends BaseDMLHandler {
             if (terminate.get()) {
                 return;
             }
+
+            if (buffer == null) {
+                this.buffer = serverSession.getSource().allocate();
+            }
+
             if (this.isBinary)
                 this.fieldPackets = fieldPackets;
             ResultSetHeaderPacket hp = new ResultSetHeaderPacket();

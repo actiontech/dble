@@ -377,7 +377,7 @@ public class MySQLResponseService extends BackendService {
                 DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
                 return false;
             } else {
-                new BackEndRecycleRunnable(this).runSync();
+                new BackEndRecycleRunnable(this).run();
                 return false;
             }
 

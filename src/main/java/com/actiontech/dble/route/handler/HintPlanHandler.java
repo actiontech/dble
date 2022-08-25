@@ -44,7 +44,7 @@ public final class HintPlanHandler {
 
         String[] attr = hintSQL.split("\\$");
         for (String s : attr) {
-            switch (s.toLowerCase()) {
+            switch (s.toLowerCase().trim()) {
                 case "left2inner":
                     planInfo.setLeft2inner(true);
                     break;

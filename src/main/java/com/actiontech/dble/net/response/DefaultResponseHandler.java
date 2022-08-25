@@ -78,8 +78,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         if (service.getSession() != null) {
             service.getSession().startExecuteBackend();
         }
-        service.setRowDataFlowing(false);
-        service.signal();
+        service.releaseSignal();
         status = INITIAL;
     }
 

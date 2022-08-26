@@ -106,7 +106,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
 
     private void setStatusForNormalHeartbeat(PhysicalDbInstance source) {
         if (checkRecoverFail(source)) return;
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
+        heartbeat.setResult(MySQLHeartbeatStatus.OK);
     }
 
     /**
@@ -117,7 +117,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             LOGGER.warn("heartbeat[{}] had been stop", source.getConfig().getUrl());
             return true;
         }
-        if (heartbeat.getStatus() == MySQLHeartbeat.OK_STATUS) { // ok->ok
+        if (heartbeat.getStatus() == MySQLHeartbeatStatus.OK) { // ok->ok
             if (!heartbeat.getSource().isSalveOrRead() && source.isReadOnly()) { // writehost checkRecoverFail read only status is back?
                 GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(source, true);
                 KeyVariables variables = task.call();
@@ -129,7 +129,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     return true;
                 }
             }
-        } else if (heartbeat.getStatus() != MySQLHeartbeat.TIMEOUT_STATUS) { //error/init ->ok
+        } else if (heartbeat.getStatus() != MySQLHeartbeatStatus.TIMEOUT) { //error/init ->ok
             try {
                 source.testConnection();
             } catch (Exception e) {
@@ -169,7 +169,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     AlertUtil.alertResolve(AlarmCode.DB_INSTANCE_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
                             ToResolveContainer.DB_INSTANCE_LOWER_CASE_ERROR, url);
                 }
-                if (heartbeat.getStatus() == MySQLHeartbeat.INIT_STATUS || !source.isSalveOrRead()) { // writehost checkRecoverFail read only
+                if (heartbeat.getStatus() == MySQLHeartbeatStatus.INIT || !source.isSalveOrRead()) { // writehost checkRecoverFail read only
                     source.setReadOnly(variables.isReadOnly());
                 }
             }
@@ -202,7 +202,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         }
         heartbeat.getAsyncRecorder().setBySlaveStatus(resultResult);
         if (checkRecoverFail(source)) return;
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
+        heartbeat.setResult(MySQLHeartbeatStatus.OK);
     }
 
     private void setStatusByReadOnly(PhysicalDbInstance source, Map<String, String> resultResult) {
@@ -216,7 +216,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             source.setReadOnly(true);
         }
         if (checkRecoverFail(source)) return;
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
+        heartbeat.setResult(MySQLHeartbeatStatus.OK);
     }
 
     public void close() {

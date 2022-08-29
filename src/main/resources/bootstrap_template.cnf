@@ -40,7 +40,7 @@
 #-DbindIp=0.0.0.0
 #-DserverPort=8066
 #-DmanagerPort=9066
-#-DmaxCon=1024
+-DmaxCon=0
 #-DNIOFrontRW=4
 #-DNIOBackendRW=12
 #-DfrontWorker=4
@@ -54,7 +54,7 @@
 # serverBacklog size,default 2048
 -DserverBacklog=2048
 
-#-DusePerformanceMode=0
+-DusePerformanceMode=0
 # if need out HA
 -DuseOuterHa=true
 
@@ -89,14 +89,14 @@
 
 
 #-DbackSocket unit:bytes
-#-DbackSocketSoRcvbuf=4194304
-#-DbackSocketSoSndbuf=1048576
-#-DbackSocketNoDelay=1
+-DbackSocketSoRcvbuf=4194304
+-DbackSocketSoSndbuf=1048576
+-DbackSocketNoDelay=1
 
 #  frontSocket
-#-DfrontSocketSoRcvbuf=1048576
-#-DfrontSocketSoSndbuf=4194304
-#-DfrontSocketNoDelay=1
+-DfrontSocketSoRcvbuf=1048576
+-DfrontSocketSoSndbuf=4194304
+-DfrontSocketNoDelay=1
 
 
 #  query memory used for per session,unit is M
@@ -106,7 +106,7 @@
 
 
 #  off Heap unit:bytes
--DbufferPoolChunkSize=32767
+-DbufferPoolChunkSize=4096
 #-DbufferPoolPageNumber=256
 -DbufferPoolPageSize=2097152
 -DmappedFileSize=67108864

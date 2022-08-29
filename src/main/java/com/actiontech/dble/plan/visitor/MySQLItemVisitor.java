@@ -43,6 +43,7 @@ import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.optimizer.HintPlanInfo;
+import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
@@ -562,6 +563,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                         } else {
                             order = new Order(getItem(orderItem.getExpr()), orderItem.getType());
                         }
+                        orderList.add(order);
+                    }
+                }
+                if (isDistinct && CollectionUtil.isEmpty(orderList)) {
+                    orderList = new ArrayList<>();
+                    for (SQLExpr expr : x.getArguments()) {
+                        Order order = new Order(getItem(expr));
                         orderList.add(order);
                     }
                 }

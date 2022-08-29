@@ -10,6 +10,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
+import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
@@ -24,9 +25,9 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Iterator;
 import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.TreeSet;
 
 
 public class ItemFuncGroupConcat extends ItemSum {
@@ -35,7 +36,7 @@ public class ItemFuncGroupConcat extends ItemSum {
     private List<Order> orders;
     private boolean alwaysNull; // if contains null
     private RowDataComparator rowComparator;
-    private Queue<OrderResult> resultList;
+    private TreeSet<OrderResult> resultList;
 
     public ItemFuncGroupConcat(List<Item> selItems, boolean distinct, List<Order> orders, String isSeparator,
                                boolean isPushDown, List<Field> fields, int charsetIndex) {
@@ -108,17 +109,18 @@ public class ItemFuncGroupConcat extends ItemSum {
         if (orders != null) {
             if (sourceFields != null && rowComparator == null) {
                 rowComparator = new RowDataComparator(sourceFields, orders);
-                resultList = new PriorityQueue<>(11, (o1, o2) -> {
+                resultList = new TreeSet<>((o1, o2) -> {
                     RowDataPacket row1 = o1.row;
                     RowDataPacket row2 = o2.row;
                     if (row1 == null || row2 == null) {
                         if (row1 == row2)
-                            return 0;
+                            return -1; // when row1 equal row2, row2 prior to row1
                         if (row1 == null)
                             return -1;
                         return 1;
                     }
-                    return rowComparator.compare(row1, row2);
+                    int res = rowComparator.compare(row1, row2);
+                    return res == 0 ? -1 : res; // when row1 equal row2, row2 prior to row1
                 });
             }
             resultList.add(new OrderResult(rowStr, row));
@@ -159,9 +161,9 @@ public class ItemFuncGroupConcat extends ItemSum {
         if (nullValue)
             return null;
         if (orders != null) {
-            OrderResult orderResult;
-            while ((orderResult = resultList.poll()) != null) {
-                append(orderResult.result);
+            Iterator<OrderResult> it = resultList.iterator();
+            while (it.hasNext()) {
+                append(it.next().result);
             }
         }
         return resultSb.substring(0, resultSb.length() - seperator.length());
@@ -225,6 +227,7 @@ public class ItemFuncGroupConcat extends ItemSum {
         throw new RuntimeException("not implement");
     }
 
+
     @Override
     public SQLExpr toExpression() {
         SQLAggregateExpr aggregate = new SQLAggregateExpr(funcName());
@@ -262,11 +265,12 @@ public class ItemFuncGroupConcat extends ItemSum {
         }
     }
 
-    public final void fixOrders(NameResolutionContext context) {
+    public final void fixOrders(NameResolutionContext context, ReferContext referContext) {
         if (orders == null) return;
         for (Order order : orders) {
             Item arg = order.getItem();
             Item fixedArg = arg.fixFields(context);
+            arg.fixRefer(referContext);
             if (fixedArg == null)
                 return;
             order.setItem(fixedArg);

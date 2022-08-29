@@ -370,7 +370,7 @@ public abstract class PlanNode {
         for (Item sel : columnsSelected) {
             setUpItem(sel);
             if (sel instanceof ItemFuncGroupConcat) {
-                ((ItemFuncGroupConcat) sel).fixOrders(nameContext);
+                ((ItemFuncGroupConcat) sel).fixOrders(nameContext, referContext);
             }
             NamedField field = makeOutNamedField(sel);
             if (outerFields.containsKey(field) && isDuplicateField(this))

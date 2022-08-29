@@ -38,8 +38,8 @@
 -DinstanceId=1
 -DserverId=xxx1
 #-DbindIp=0.0.0.0
-#-DserverPort=8066
-#-DmanagerPort=9066
+-DserverPort=8066
+-DmanagerPort=9066
 -DmaxCon=0
 #-DNIOFrontRW=4
 #-DNIOBackendRW=12
@@ -217,5 +217,5 @@
 #-DgmsslOcaPem=
 #-DsupportSSL=
 
-#-DenableAsyncRelease=0
-#-DreleaseTimeout=600000
+-DenableAsyncRelease=0
+-DreleaseTimeout=600000

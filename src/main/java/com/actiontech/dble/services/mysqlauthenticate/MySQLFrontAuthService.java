@@ -11,9 +11,9 @@ import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
+import com.actiontech.dble.services.FrontEndService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlauthenticate.util.AuthUtil;
 import com.actiontech.dble.singleton.CapClientFoundRows;
@@ -82,7 +82,9 @@ public class MySQLFrontAuthService extends AuthService {
         TraceManager.serviceTrace(this, "check-auth-result");
         try {
             if (info.isSuccess()) {
-                AbstractService service = BusinessServiceFactory.getBusinessService(info, connection);
+                FrontEndService service = BusinessServiceFactory.getBusinessService(info, connection);
+                // for com_change_user
+                service.setSeed(seed);
                 connection.setService(service);
                 MySQLPacket packet = new OkPacket();
                 packet.setPacketId(needAuthSwitched ? 4 : 2);

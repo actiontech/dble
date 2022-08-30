@@ -25,6 +25,9 @@ public abstract class FrontEndService extends VariablesService {
     protected UserName user;
     protected UserConfig userConfig;
     protected final CommandCount commands;
+    // client capabilities
+    private long clientCapabilities;
+    protected volatile byte[] seed;
 
     public FrontEndService(AbstractConnection connection) {
         super(connection);
@@ -37,6 +40,7 @@ public abstract class FrontEndService extends VariablesService {
         this.schema = info.getMysqlAuthPacket().getDatabase();
         this.userConfig = info.getUserConfig();
         this.connection.initCharsetIndex(info.getMysqlAuthPacket().getCharsetIndex());
+        this.clientCapabilities = auth.getClientFlags();
         boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.getClientFlags());
         boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
         if (clientCompress && usingCompress) {
@@ -75,5 +79,17 @@ public abstract class FrontEndService extends VariablesService {
 
     public void setSchema(String schema) {
         this.schema = schema;
+    }
+
+    public long getClientCapabilities() {
+        return clientCapabilities;
+    }
+
+    public byte[] getSeed() {
+        return seed;
+    }
+
+    public void setSeed(byte[] seed) {
+        this.seed = seed;
     }
 }

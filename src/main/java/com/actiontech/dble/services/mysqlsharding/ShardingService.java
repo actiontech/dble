@@ -263,8 +263,7 @@ public class ShardingService extends BusinessService {
                 break;
             case MySQLPacket.COM_CHANGE_USER:
                 commands.doOther();
-                /* changeUserPacket = new ChangeUserPacket(sc.getClientFlags(), CharsetUtil.getCollationIndex(sc.getCharset().getCollation()));
-                sc.changeUser(data, changeUserPacket, isAuthSwitch);*/
+                protoLogicHandler.changeUser(data);
                 break;
             case MySQLPacket.COM_RESET_CONNECTION:
                 commands.doOther();

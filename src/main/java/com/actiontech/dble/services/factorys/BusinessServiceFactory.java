@@ -8,6 +8,7 @@ import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthResultInfo;
+import com.actiontech.dble.services.FrontEndService;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.MySQLCurrentResponseService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -22,7 +23,7 @@ public final class BusinessServiceFactory {
     private BusinessServiceFactory() {
     }
 
-    public static AbstractService getBusinessService(AuthResultInfo info, AbstractConnection connection) {
+    public static FrontEndService getBusinessService(AuthResultInfo info, AbstractConnection connection) {
         UserConfig userConfig = info.getUserConfig();
         if (userConfig instanceof ShardingUserConfig) {
             ShardingService service = new ShardingService(connection);

@@ -3,9 +3,12 @@ package com.actiontech.dble.services.mysqlsharding;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.mysql.AuthSwitchRequestPackage;
+import com.actiontech.dble.net.mysql.ChangeUserPacket;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.response.FieldList;
+import com.actiontech.dble.services.mysqlauthenticate.PluginName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,5 +127,21 @@ public class MySQLProtoLogicHandler {
 
     public byte[] getMultiQueryData() {
         return multiQueryData;
+    }
+
+    public void changeUser(byte[] data) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("changeUser request");
+        }
+        service.innerCleanUp();
+        ChangeUserPacket changeUserPacket = new ChangeUserPacket(service.getClientCapabilities());
+        changeUserPacket.read(data);
+        if (PluginName.valueOf(changeUserPacket.getAuthPlugin()) == PluginName.mysql_native_password) {
+            AuthSwitchRequestPackage authSwitch = new AuthSwitchRequestPackage(PluginName.mysql_native_password.toString().getBytes(), service.getSeed());
+            authSwitch.setPacketId(changeUserPacket.getPacketId() + 1);
+            authSwitch.bufferWrite(service.getConnection());
+        } else {
+            service.writeErrMessage(ErrorCode.ER_ACCESS_DENIED_ERROR, "unsupport auth plugin");
+        }
     }
 }

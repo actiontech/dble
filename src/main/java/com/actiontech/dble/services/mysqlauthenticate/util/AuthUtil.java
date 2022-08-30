@@ -13,6 +13,7 @@ import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.net.mysql.ChangeUserPacket;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.mysqlauthenticate.PluginName;
 import com.actiontech.dble.services.mysqlauthenticate.SecurityUtil;
@@ -95,6 +96,43 @@ public final class AuthUtil {
         } finally {
             TraceManager.finishSpan(connection.getService(), traceObject);
         }
+    }
+
+    public static String auth(FrontendConnection fconn, byte[] seed, PluginName plugin, ChangeUserPacket changeUserPacket) {
+        UserName user = new UserName(changeUserPacket.getUser(), changeUserPacket.getTenant());
+        UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
+        if (userConfig == null) {
+            return "Access denied for user '" + user + "' with host '" + fconn.getHost() + "'";
+        }
+        //normal user login into manager port
+        if (fconn.isManager() && !(userConfig instanceof ManagerUserConfig)) {
+            return "Access denied for user '" + user + "'";
+        } else if (!fconn.isManager() && userConfig instanceof ManagerUserConfig) {
+            //manager user login into server port
+            return "Access denied for manager user '" + user + "'";
+        }
+        if (!checkWhiteIPs(fconn, userConfig.getWhiteIPs())) {
+            return "Access denied for user '" + user + "' with host '" + fconn.getHost() + "'";
+        }
+        // check password
+        if (!checkPassword(seed, changeUserPacket.getPassword(), userConfig.getPassword(), plugin)) {
+            return "Access denied for user '" + user + "', because password is incorrect";
+        }
+        // check schema
+        final String schema = changeUserPacket.getDatabase();
+        if (userConfig instanceof ShardingUserConfig) {
+            // check sharding
+            switch (checkSchema(schema, (ShardingUserConfig) userConfig)) {
+                case ErrorCode.ER_BAD_DB_ERROR:
+                    return "Unknown database '" + schema + "'";
+                case ErrorCode.ER_DBACCESS_DENIED_ERROR:
+                    return "Access denied for user '" + user + "' to database '" + schema + "'";
+                default:
+                    break;
+            }
+        }
+
+        return null;
     }
 
     private static boolean checkWhiteIPs(FrontendConnection source, Set<String> whiteIPs) {

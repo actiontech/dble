@@ -147,7 +147,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public String toString() {
-        return "HeartbeatSQLJob [sql=" + sql + ",  jobHandler=" + jobHandler + ", backend conn" + connection + "]";
+        return "HeartbeatSQLJob [sql=" + sql + ",  jobHandler=" + jobHandler + ", backend conn id=" + connection.getId() + "]";
     }
 
 }

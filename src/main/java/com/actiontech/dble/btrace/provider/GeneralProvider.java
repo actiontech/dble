@@ -16,4 +16,8 @@ public final class GeneralProvider {
     public static void showGeneralLog() {
     }
 
+    public static void beforeAuthSuccess() {
+
+    }
+
 }

@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class FrontendService<T extends UserConfig> extends AbstractService {
     private static final Logger LOGGER = LogManager.getLogger(FrontendService.class);
-    private final AtomicInteger packetId;
+    protected final AtomicInteger packetId;
     private final Queue<ServiceTask> taskQueue = new PriorityQueue<>();
     // will non null if is dong task
     private volatile Long doingTaskThread = null;

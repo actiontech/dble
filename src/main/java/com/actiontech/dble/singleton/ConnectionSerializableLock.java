@@ -21,7 +21,7 @@ public final class ConnectionSerializableLock {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionSerializableLock.class);
     private boolean working = false;
     private final long frontId;
-    private long index = -1;
+    private volatile long index = -1;
     private final Set<Runnable> callbacks = new LinkedHashSet<>();
     private final FrontendService frontendService;
 
@@ -60,32 +60,42 @@ public final class ConnectionSerializableLock {
      * should be unlocked if is locking.Then the next packet can begin to processing.
      * notice: lock once and unlock twice is a bad idea
      */
-    public synchronized void unLock() {
-        if (working) {
-            LOGGER.debug(" unlock success. connection id : {} , index : {}", frontId, index);
-        }
-        if (!working) {
-            //locked before
-            if (frontendService.getCurrentTaskIndex() == index) {
-                LOGGER.warn("find useless unlock. connection id : {} , index : {}", frontId, index);
-            }
+    public void unLock() {
+        if (index == -1) {
             return;
         }
-        working = false;
-
-
-        for (Runnable callback : this.callbacks) {
-            try {
-                callback.run();
-            } catch (Exception e) {
-                LOGGER.error("", e);
+        synchronized (this) {
+            if (working) {
+                LOGGER.debug(" unlock success. connection id : {} , index : {}", frontId, index);
             }
-        }
+            if (!working) {
+                //locked before
+                if (frontendService.getCurrentTaskIndex() == index) {
+                    LOGGER.warn("find useless unlock. connection id : {} , index : {}", frontId, index); // maybe something wrong
+                }
+                if (!frontendService.isDoingTask() && frontendService.getRecvTaskQueueSize() > 0) {
+                    LOGGER.warn("notify frontend work.service:{}", frontendService); // maybe something wrong
+                    frontendService.notifyTaskThread();
+                }
+                return;
+            }
+            working = false;
 
-        this.callbacks.clear();
 
-        if (frontendService.getRecvTaskQueueSize() > 0 && !frontendService.isDoingTask()) {
-            frontendService.notifyTaskThread();
+            for (Runnable callback : this.callbacks) {
+                try {
+                    callback.run();
+                } catch (Exception e) {
+                    LOGGER.error("", e);
+                }
+            }
+
+            this.callbacks.clear();
+
+            if (!frontendService.isDoingTask() && frontendService.getRecvTaskQueueSize() > 0) {
+                frontendService.notifyTaskThread();
+            }
+
         }
 
     }

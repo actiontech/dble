@@ -219,6 +219,15 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
         }
     }
 
+    @Override
+    public void writeOkPacket() {
+        OkPacket ok = OkPacket.getDefault();
+        byte packet = (byte) this.packetId.incrementAndGet();
+        ok.setPacketId(packet);
+        //prevent service change
+        write(ok, this);
+    }
+
     private void checkForResult(AuthResultInfo info) {
         TraceManager.serviceTrace(this, "check-auth-result");
         try {

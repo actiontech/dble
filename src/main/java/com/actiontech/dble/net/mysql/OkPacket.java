@@ -85,7 +85,7 @@ public class OkPacket extends MySQLPacket {
 
         int size = calcPacketSize();
         buffer = c.checkWriteBuffer(buffer, PACKET_HEADER_SIZE + size,
-                true);
+                false);
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.put(packetId);
         buffer.put(fieldCount);
@@ -108,6 +108,12 @@ public class OkPacket extends MySQLPacket {
     public void bufferWrite(AbstractConnection c) {
         ByteBuffer buffer = write(c.allocate(), c);
         c.getService().writeDirectly(buffer, getLastWriteFlag());
+    }
+
+    @Override
+    public void bufferWrite(AbstractService service) {
+        ByteBuffer buffer = write(service.allocate(), service.getConnection());
+        service.writeDirectly(buffer, getLastWriteFlag());
     }
 
 

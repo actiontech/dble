@@ -213,6 +213,13 @@ public abstract class MySQLPacket {
     }
 
 
+    public void bufferWrite(AbstractService service) {
+        ByteBuffer buffer = service.allocate();
+        buffer = this.write(buffer, service, true);
+        service.writeDirectly(buffer, getLastWriteFlag());
+    }
+
+
     public final EnumSet<WriteFlag> getLastWriteFlag() {
         if (isEndOfSession()) {
             return WriteFlags.SESSION_END;

@@ -78,6 +78,11 @@ public interface WriteAbleService {
         packet.bufferWrite(getConnection());
     }
 
+    default void write(MySQLPacket packet, AbstractService service) {
+        beforePacket(packet);
+        packet.bufferWrite(service);
+    }
+
     default void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
         this.writeDirectly(writeToBuffer(packet, buffer), packet.getLastWriteFlag(), packet.getResultFlag());
     }

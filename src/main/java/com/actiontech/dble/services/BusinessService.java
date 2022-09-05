@@ -117,5 +117,10 @@ public abstract class BusinessService extends FrontEndService {
             handleVariable(autocommitItem);
         }
     }
+
     public abstract void handleVariable(MysqlVariable variable);
+
+    public void innerCleanUp() {
+
+    }
 }

@@ -29,6 +29,7 @@ import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.BusinessService;
+import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
 import com.actiontech.dble.services.mysqlsharding.handler.LoadDataProtoHandlerImpl;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.SerializableLock;
@@ -263,8 +264,9 @@ public class ShardingService extends BusinessService {
                 break;
             case MySQLPacket.COM_CHANGE_USER:
                 commands.doOther();
-                /* changeUserPacket = new ChangeUserPacket(sc.getClientFlags(), CharsetUtil.getCollationIndex(sc.getCharset().getCollation()));
-                sc.changeUser(data, changeUserPacket, isAuthSwitch);*/
+                final MySQLChangeUserService fService = new MySQLChangeUserService(connection, this);
+                connection.setService(fService);
+                fService.handleInnerData(data);
                 break;
             case MySQLPacket.COM_RESET_CONNECTION:
                 commands.doOther();

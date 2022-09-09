@@ -644,15 +644,19 @@ public final class StringUtil {
      * @param value
      * @return
      */
-    public static String isoCharsetReplace(String clientCharset, String value) {
+    public static String isoCharsetReplace(String clientCharset, String value, boolean charsetReplace) {
+        if (!charsetReplace) {
+            return value;
+        }
         try {
-            String isoValues = new String(value.getBytes(ISO_8859_1), ISO_8859_1);
+            byte[] isoBytes = value.getBytes(ISO_8859_1);
+            String isoValues = new String(isoBytes, ISO_8859_1);
             String clientValues = new String(value.getBytes(clientCharset), clientCharset);
             if (!equals(isoValues, clientValues) && equals(value, clientValues)) {
                 return value;
             }
             if (charsetParseString(clientCharset, value.getBytes(clientCharset))) {
-                value = new String(value.getBytes(ISO_8859_1), clientCharset);
+                value = new String(isoBytes, clientCharset);
             }
         } catch (Exception e) {
             return value;

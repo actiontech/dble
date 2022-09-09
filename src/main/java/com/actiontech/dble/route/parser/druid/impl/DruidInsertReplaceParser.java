@@ -114,7 +114,8 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         rrs.setFinishedRoute(true);
     }
 
-    static String shardingValueToSting(SQLExpr valueExpr, String clientCharset, String dataType) throws SQLNonTransientException {
+    static String shardingValueToSting(SQLExpr valueExpr, String clientCharset, String dataType, SchemaInfo schemaInfo) throws SQLNonTransientException {
+        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaInfo.getSchema());
         String shardingValue = null;
         if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr intExpr = (SQLIntegerExpr) valueExpr;
@@ -134,7 +135,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         if (shardingValue == null && !(valueExpr instanceof SQLNullExpr)) {
             throw new SQLNonTransientException("Not Supported of Sharding Value EXPR :" + valueExpr.toString());
         }
-        shardingValue = StringUtil.isoCharsetReplace(clientCharset, shardingValue);
+        shardingValue = StringUtil.isoCharsetReplace(clientCharset, shardingValue, schemaConfig.charsetReplace(schemaInfo.getTable()));
         return shardingValue;
     }
 

@@ -7,6 +7,7 @@ package com.actiontech.dble.singleton;
 
 
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.backend.mysql.xa.XaCheckHandler;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.ParamInfo;
@@ -186,6 +187,7 @@ public final class SystemParams {
         params.add(new ParamInfo("tableByUserByEntryTableSize", StatisticManager.getInstance().getTableByUserByEntryTableSize() + "", "TableByUserByEntry table size, the default is 1024"));
         params.add(new ParamInfo("sqlLogTableSize", StatisticManager.getInstance().getSqlLogSize() + "", "SqlLog table size, the default is 1024"));
         params.add(new ParamInfo("samplingRate", StatisticManager.getInstance().getSamplingRate() + "", "Sampling rate, the default is 0, it is a percentage"));
+        params.add(new ParamInfo("xaIdCheckPeriod", XaCheckHandler.getXaIdCheckPeriod() + "", "The period for check xaId, the default is 300 second"));
         return params;
     }
 }

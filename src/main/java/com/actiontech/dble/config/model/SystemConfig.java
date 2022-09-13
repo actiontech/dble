@@ -108,6 +108,7 @@ public final class SystemConfig {
     private String xaRecoveryLogBaseDir = "xalogs";
     private String xaRecoveryLogBaseName = "xalog";
     private int xaRetryCount = 0;
+    private long xaIdCheckPeriod = 300; // s
 
     //use JoinStrategy
     private boolean useJoinStrategy = false;
@@ -844,6 +845,16 @@ public final class SystemConfig {
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "xaLogCleanPeriod", xaLogCleanPeriod, this.xaLogCleanPeriod));
         }
+    }
+
+    public long getXaIdCheckPeriod() {
+        return xaIdCheckPeriod;
+    }
+
+    @SuppressWarnings("unused")
+    public void setXaIdCheckPeriod(long xaIdCheckPeriod) {
+        if (xaIdCheckPeriod <= 0) xaIdCheckPeriod = -1;
+        this.xaIdCheckPeriod = xaIdCheckPeriod;
     }
 
     public long getSqlExecuteTimeout() {
@@ -1839,6 +1850,7 @@ public final class SystemConfig {
                 ", groupConcatMaxLen='" + groupConcatMaxLen +
                 ", releaseTimeout=" + releaseTimeout +
                 ", enableAsyncRelease=" + enableAsyncRelease +
+                ", xaIdCheckPeriod=" + xaIdCheckPeriod +
                 "]";
     }
 

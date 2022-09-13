@@ -8,7 +8,6 @@ package com.actiontech.dble.singleton;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAnalysisHandler;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -66,7 +65,6 @@ public final class Scheduler {
             scheduledExecutor.scheduleWithFixedDelay(clearStaleData(), 0L, FrontActiveRatioStat.LAST_STAT_MAX, TimeUnit.MILLISECONDS);
         }
         scheduledExecutor.scheduleAtFixedRate(printLongTimeDDL(), 0L, DDL_EXECUTE_CHECK_PERIOD, TimeUnit.SECONDS);
-        scheduledExecutor.scheduleWithFixedDelay(checkResidualXid(), 0L, DEFAULT_CHECK_XAID, TimeUnit.MINUTES);
     }
 
     private Runnable printLongTimeDDL() {
@@ -261,15 +259,5 @@ public final class Scheduler {
 
     public static Scheduler getInstance() {
         return INSTANCE;
-    }
-
-    public Runnable checkResidualXid() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                new XAAnalysisHandler().
-                        checkResidualTask();
-            }
-        };
     }
 }

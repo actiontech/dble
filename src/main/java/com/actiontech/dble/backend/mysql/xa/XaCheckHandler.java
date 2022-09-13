@@ -12,17 +12,26 @@ import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.singleton.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public final class XaCheckHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(XaCheckHandler.class);
 
+    private static final XaCheckHandler INSTANCE = new XaCheckHandler();
+    private ScheduledFuture scheduledFuture;
+    private long xaIdCheckPeriod; // s
+
     private XaCheckHandler() {
+        xaIdCheckPeriod = SystemConfig.getInstance().getXaIdCheckPeriod();
     }
 
     // XA recovery log check
@@ -139,5 +148,54 @@ public final class XaCheckHandler {
             return new CoordinatorLogEntry[0];
         }
         return allCoordinatorLogEntries.toArray(new CoordinatorLogEntry[allCoordinatorLogEntries.size()]);
+    }
+
+    // XaId Check Period
+    public static void initXaIdCheckPeriod() {
+        startXaIdCheckPeriod();
+    }
+
+    public static void adjustXaIdCheckPeriod(long period0) {
+        synchronized (INSTANCE) {
+            if (period0 != INSTANCE.xaIdCheckPeriod) {
+                INSTANCE.xaIdCheckPeriod = period0;
+                if (period0 <= 0) {
+                    if (INSTANCE.scheduledFuture != null)
+                        stopXaIdCheckPeriod();
+                } else {
+                    if (INSTANCE.scheduledFuture != null)
+                        stopXaIdCheckPeriod();
+                    startXaIdCheckPeriod();
+                }
+            }
+        }
+    }
+
+    private static void startXaIdCheckPeriod() {
+        synchronized (INSTANCE) {
+            if (INSTANCE.xaIdCheckPeriod >= 0) {
+                INSTANCE.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleWithFixedDelay(() -> {
+                    (new XAAnalysisHandler()).checkResidualTask();
+                }, 0, INSTANCE.xaIdCheckPeriod, TimeUnit.SECONDS);
+                LOGGER.info("====================================Start XaIdCheckPeriod[{}]=========================================", INSTANCE.xaIdCheckPeriod);
+            }
+        }
+    }
+
+    private static void stopXaIdCheckPeriod() {
+        synchronized (INSTANCE) {
+            ScheduledFuture future = INSTANCE.scheduledFuture;
+            if (future != null) {
+                if (!future.isCancelled()) {
+                    future.cancel(false);
+                }
+                INSTANCE.scheduledFuture = null;
+                LOGGER.info("====================================Stop XaIdCheckPeriod=========================================");
+            }
+        }
+    }
+
+    public static long getXaIdCheckPeriod() {
+        return INSTANCE.xaIdCheckPeriod;
     }
 }

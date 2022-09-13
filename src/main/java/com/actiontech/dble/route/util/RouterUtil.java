@@ -586,7 +586,8 @@ public final class RouterUtil {
                 value = HexFormatUtil.fromHex(((SQLHexExpr) originValue).getHex(), CharsetUtil.getJavaCharset(clientCharset));
             }
         } else {
-            value = StringUtil.isoCharsetReplace(clientCharset, originValue.toString());
+            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
+            value = StringUtil.isoCharsetReplace(clientCharset, originValue.toString(), schemaConfig.charsetReplace(tc.getName()));
         }
         Integer nodeIndex = tc.getFunction().calculate(value);
         if (nodeIndex == null) {

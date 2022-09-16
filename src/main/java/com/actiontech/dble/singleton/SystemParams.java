@@ -187,7 +187,7 @@ public final class SystemParams {
         params.add(new ParamInfo("tableByUserByEntryTableSize", StatisticManager.getInstance().getTableByUserByEntryTableSize() + "", "TableByUserByEntry table size, the default is 1024"));
         params.add(new ParamInfo("sqlLogTableSize", StatisticManager.getInstance().getSqlLogSize() + "", "SqlLog table size, the default is 1024"));
         params.add(new ParamInfo("samplingRate", StatisticManager.getInstance().getSamplingRate() + "", "Sampling rate, the default is 0, it is a percentage"));
-        params.add(new ParamInfo("xaIdCheckPeriod", XaCheckHandler.getXaIdCheckPeriod() + "", "The period for check xaId, the default is 300 second"));
+        params.add(new ParamInfo("xaIdCheckPeriod", XaCheckHandler.getXaIdCheckPeriod() + "s", "The period for check xaId, the default is 300 second"));
         return params;
     }
 }

@@ -159,12 +159,9 @@ public final class XaCheckHandler {
         synchronized (INSTANCE) {
             if (period0 != INSTANCE.xaIdCheckPeriod) {
                 INSTANCE.xaIdCheckPeriod = period0;
-                if (period0 <= 0) {
-                    if (INSTANCE.scheduledFuture != null)
-                        stopXaIdCheckPeriod();
-                } else {
-                    if (INSTANCE.scheduledFuture != null)
-                        stopXaIdCheckPeriod();
+                if (INSTANCE.scheduledFuture != null)
+                    stopXaIdCheckPeriod();
+                if (period0 > 0) {
                     startXaIdCheckPeriod();
                 }
             }
@@ -173,7 +170,7 @@ public final class XaCheckHandler {
 
     private static void startXaIdCheckPeriod() {
         synchronized (INSTANCE) {
-            if (INSTANCE.xaIdCheckPeriod >= 0) {
+            if (INSTANCE.xaIdCheckPeriod > 0) {
                 INSTANCE.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleWithFixedDelay(() -> {
                     (new XAAnalysisHandler()).checkResidualTask();
                 }, 0, INSTANCE.xaIdCheckPeriod, TimeUnit.SECONDS);

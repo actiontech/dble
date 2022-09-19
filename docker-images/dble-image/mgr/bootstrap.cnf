@@ -20,6 +20,7 @@
 -XX:+PrintGCTimeStamps
 -XX:+PrintGCDetails
 -XX:+PrintTenuringDistribution
+-XX:+PrintGCApplicationStoppedTime
 # CMS
 -XX:+UseConcMarkSweepGC
 -XX:+UseParNewGC

@@ -162,6 +162,8 @@ public final class ShowHelp {
         HELPS.put("reload @@user_stat", "Reset show @@sql  @@sql.sum @@sql.slow");
         HELPS.put("reload @@query_cf[=table&column]", "Reset show @@sql.condition");
         HELPS.put("release @@reload_metadata", "Release reload process , unlock the config meta lock");
+        HELPS.put("reload @@load_data.num=?", "Set the value of maxRowSizeToFile");
+        HELPS.put("reload @@xaIdCheck.period=?", "Set the period for check xaId, the unit is second");
 
         // offline/online
         HELPS.put("offline", "Change Server status to OFF");

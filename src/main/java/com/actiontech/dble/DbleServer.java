@@ -287,6 +287,8 @@ public final class DbleServer {
         Scheduler.getInstance().init(timerExecutor);
         LOGGER.info("=======================================Scheduler started==========================================");
 
+        XaCheckHandler.initXaIdCheckPeriod();
+
         CronScheduler.getInstance().init(config.getSchemas());
         LOGGER.info("====================================CronScheduler started=========================================");
 

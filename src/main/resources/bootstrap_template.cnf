@@ -220,3 +220,6 @@
 
 -DenableAsyncRelease=0
 -DreleaseTimeout=600000
+-DenableSessionActiveRatioStat=1
+-DenableConnectionAssociateThread=1
+-DxaIdCheckPeriod=300

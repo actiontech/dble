@@ -28,6 +28,7 @@ public final class ManagerParseReload {
     public static final int STATISTIC_TABLE_SIZE = 13;
     public static final int LOAD_DATA_NUM = 14;
     public static final int SAMPLING_RATE = 15;
+    public static final int XAID_CHECK_PERIOD = 16;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -72,6 +73,9 @@ public final class ManagerParseReload {
                 case 'G':
                 case 'g':
                     return reload2GCheck(stmt, offset);
+                case 'X':
+                case 'x':
+                    return reload2XCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -213,6 +217,50 @@ public final class ManagerParseReload {
                     return reload2GeCheck(stmt, offset);
                 default:
                     return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // RELOAD @@X
+    private static int reload2XCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'A':
+                case 'a':
+                    return reload2XaCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+
+        return OTHER;
+    }
+
+    // reload @@xaIdCheck.period
+    private static int reload2XaCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "aIdCheck.period".length()) {
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            char c11 = stmt.charAt(++offset);
+            char c12 = stmt.charAt(++offset);
+            char c13 = stmt.charAt(++offset);
+            char c14 = stmt.charAt(++offset);
+            char c15 = stmt.charAt(++offset);
+            if ((c2 == 'I' || c2 == 'i') &&
+                    (c3 == 'D' || c3 == 'd') && (c4 == 'C' || c4 == 'c') && (c5 == 'H' || c5 == 'h') &&
+                    (c6 == 'E' || c6 == 'e') && (c7 == 'C' || c7 == 'c') && (c8 == 'K' || c8 == 'k') &&
+                    (c9 == '.') && (c10 == 'P' || c10 == 'p') && (c11 == 'E' || c11 == 'e') &&
+                    (c12 == 'R' || c12 == 'r') && (c13 == 'I' || c13 == 'i') && (c14 == 'O' || c14 == 'o') &&
+                    (c15 == 'D' || c15 == 'd') && (stmt.length() > ++offset)) {
+                return (offset << 8) | XAID_CHECK_PERIOD;
             }
         }
         return OTHER;

@@ -61,6 +61,9 @@ public final class ReloadHandler {
             case ManagerParseReload.LOAD_DATA_NUM:
                 ReloadLoadDataNum.execute(service, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
                 break;
+            case ManagerParseReload.XAID_CHECK_PERIOD:
+                XaidCheck.execute(service, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
+                break;
             default:
                 service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

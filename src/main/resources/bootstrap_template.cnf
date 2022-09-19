@@ -10,7 +10,7 @@
 -Dcom.sun.management.jmxremote.host=127.0.0.1
 -Xmx4G
 -Xms1G
--Xss256k
+-Xss512k
 -XX:MaxDirectMemorySize=2G
 -XX:MetaspaceSize=100M
 -XX:-OmitStackTraceInFastThrow
@@ -20,6 +20,7 @@
 -Xloggc:./logs/gc_%WRAPPER_TIME_YYYYMMDDHHIISS%_%p.log
 -XX:+PrintGCTimeStamps
 -XX:+PrintGCDetails
+-XX:+PrintGCApplicationStoppedTime
 -XX:+PrintTenuringDistribution
 # CMS
 -XX:+UseConcMarkSweepGC

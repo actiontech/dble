@@ -23,6 +23,7 @@ import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.VariablesService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.rwsplit.MysqlPrepareLogicHandler;
+import com.actiontech.dble.services.rwsplit.MysqlStatisticsLogicHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
@@ -66,6 +67,7 @@ public class MySQLResponseService extends VariablesService {
     private volatile boolean complexQuery;
     private volatile boolean isDDL = false;
     private volatile boolean prepareOK = false;
+    private volatile boolean statisticResponse = false;
     private volatile boolean testing = false;
     private volatile StatusSync statusSync;
     private volatile boolean isRowDataFlowing = false;
@@ -77,6 +79,7 @@ public class MySQLResponseService extends VariablesService {
 
     private MysqlBackendLogicHandler baseLogicHandler;
     private MysqlPrepareLogicHandler prepareLogicHandler;
+    private MysqlStatisticsLogicHandler statisticsLogicHandler;
 
     private static final CommandPacket COMMIT = new CommandPacket();
     private static final CommandPacket ROLLBACK = new CommandPacket();
@@ -99,6 +102,7 @@ public class MySQLResponseService extends VariablesService {
         this.proto = new MySQLProtoHandlerImpl();
         this.baseLogicHandler = new MysqlBackendLogicHandler(this);
         this.prepareLogicHandler = new MysqlPrepareLogicHandler(this);
+        this.statisticsLogicHandler = new MysqlStatisticsLogicHandler(this);
     }
 
 
@@ -142,6 +146,8 @@ public class MySQLResponseService extends VariablesService {
             }
             if (prepareOK) {
                 prepareLogicHandler.handleInnerData(data);
+            } else if (statisticResponse) {
+                statisticsLogicHandler.handleInnerData(data);
             } else {
                 baseLogicHandler.handleInnerData(data);
             }
@@ -236,6 +242,8 @@ public class MySQLResponseService extends VariablesService {
         }
         if (prepareOK) {
             prepareLogicHandler.reset();
+        } else if (statisticResponse) {
+            statisticsLogicHandler.reset();
         } else {
             baseLogicHandler.reset();
         }
@@ -623,6 +631,7 @@ public class MySQLResponseService extends VariablesService {
             }
             if (originPacket.length > 4) {
                 prepareOK = originPacket[4] == MySQLPacket.COM_STMT_PREPARE;
+                statisticResponse = originPacket[4] == MySQLPacket.COM_STATISTICS;
             }
 
             isExecuting = true;
@@ -812,6 +821,9 @@ public class MySQLResponseService extends VariablesService {
         this.connection.setSchema(schema);
     }
 
+    public void resetStatisticResponse() {
+        this.statisticResponse = false;
+    }
 
     public boolean isExecuting() {
         return isExecuting;

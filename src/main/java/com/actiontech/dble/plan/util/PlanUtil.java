@@ -161,9 +161,6 @@ public final class PlanUtil {
         if (sel.isWithSubQuery()) {
             return sel;
         }
-        if (sel.getReferTables().size() > 1) {
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can not pushdown sel when refer table's > 1!");
-        }
         if (sel instanceof ItemField) {
             return pushDownCol(node, (ItemField) sel);
         } else if (sel instanceof ItemFunc || sel instanceof ItemSum) {
@@ -183,7 +180,9 @@ public final class PlanUtil {
             }
             refreshReferTables(func);
             func.setPushDownName(null);
-            sel.setPushDownName(sel.getAlias() != null ? sel.getAlias() : func.getItemName());
+            if (sel.getReferTables().size() <= 1) {
+                sel.setPushDownName(sel.getAlias() != null ? sel.getAlias() : func.getItemName());
+            }
             return func;
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported!");

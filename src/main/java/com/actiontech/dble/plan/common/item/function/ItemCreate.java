@@ -140,6 +140,8 @@ public class ItemCreate {
         // proFuncs.put("IS_IPV4_MAPPED", new Item_func_abs(null, defaultCharsetIndex));
         nativFuncs.put("INSERT", new ItemFuncInsert(null, defaultCharsetIndex));
         nativFuncs.put("INSTR", new ItemFuncInstr(null, defaultCharsetIndex));
+        nativFuncs.put("JSON_EXTRACT", new ItemFuncJsonExtract(null, defaultCharsetIndex));
+        nativFuncs.put("JSON_UNQUOTE", new ItemFuncJsonUnQuote((Item) null, defaultCharsetIndex));
         // proFuncs.put("INTERIORRINGN", new Item_func_abs(null, defaultCharsetIndex));
         // proFuncs.put("INTERSECTS", new Item_func_abs(null, defaultCharsetIndex));
         nativFuncs.put("INTERVAL", new ItemFuncInterval(null, defaultCharsetIndex));

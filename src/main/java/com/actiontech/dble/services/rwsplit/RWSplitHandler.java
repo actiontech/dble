@@ -12,11 +12,12 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler, PreparedResponseHandler {
+public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler, PreparedResponseHandler, StatisticsHandler {
 
     private final RWSplitService rwSplitService;
     private final byte[] originPacket;
@@ -220,4 +221,18 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         errPacket.write(frontedConnection);
     }
 
+    @Override
+    public void stringEof(byte[] data, @NotNull AbstractService service) {
+        synchronized (this) {
+            if (!write2Client) {
+                if (buffer == null) {
+                    buffer = frontedConnection.allocate();
+                }
+                buffer = frontedConnection.getService().writeToBuffer(data, buffer);
+                frontedConnection.write(buffer);
+                write2Client = true;
+                buffer = null;
+            }
+        }
+    }
 }

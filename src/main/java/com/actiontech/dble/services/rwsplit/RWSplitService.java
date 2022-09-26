@@ -143,6 +143,10 @@ public class RWSplitService extends BusinessService {
                 commands.doOther();
                 writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "unsupport statement");
                 break;
+            case MySQLPacket.COM_STATISTICS:
+                commands.doOther();
+                session.execute(null, data, null);
+                break;
             default:
                 commands.doOther();
                 // other statement push down to master

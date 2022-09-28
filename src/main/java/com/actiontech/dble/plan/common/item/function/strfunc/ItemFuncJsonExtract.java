@@ -46,33 +46,38 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
     public String valStr() {
         final Item arg1 = args.get(0);
         if (arg1.isNull()) {
+            LOGGER.debug("use inner json_extract() ,arg null");
             this.nullValue = true;
-            return null;
+            return EMPTY;
         }
         String inputStr = arg1.valStr();
         List<String> patterns = new ArrayList<>();
         for (int i = 1; i < args.size(); i++) {
             patterns.add(args.get(i).valStr());
         }
-        final String result = jsonExtract(inputStr, patterns);
+        LOGGER.debug("use inner json_extract() , use arg {},{}", inputStr, patterns);
+        final String result = jsonExtract(inputStr, patterns, false);
         if (result == null) {
             this.nullValue = true;
+            return EMPTY;
         }
         this.nullValue = false;
         return result;
     }
 
-    private static String jsonExtract(String inputStr, List<String> args) {
+    private static String jsonExtract(String inputStr, List<String> args, boolean unquote) {
         if (inputStr == null) {
             return null;
         }
         Queue<JsonElement> results = new LinkedList<>();
+        //could return multi match in one results.
         boolean couldReturnMultipleMatches = args.size() > 1;
         for (int i = 0; i < args.size(); i++) {
             final String arg = args.get(i);
+            //parse the query.
             List<PathLeg> pathLegs = new JsonPath(arg).parsePathLegs();
             final JsonSeeker seeker = new JsonSeeker();
-
+            //find the result
             seeker.seek(inputStr, pathLegs);
             results.addAll(seeker.getResults());
             couldReturnMultipleMatches |= seeker.isCouldReturnMultipleMatches();
@@ -81,7 +86,13 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
         if (results.isEmpty()) {
             outputResult = null;
         } else if (!couldReturnMultipleMatches) {
-            outputResult = (results.peek().toString());
+            final JsonElement result = results.peek();
+            if (unquote && result.isJsonPrimitive()) {
+                outputResult = (result.getAsString());
+            } else {
+                outputResult = (result.toString());
+            }
+
         } else {
             outputResult = (results.toString());
         }
@@ -98,7 +109,7 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
             couldReturnMultipleMatches = false;
             results = new Stack<>();
             {
-                JsonElement result = new JsonParser().parse(inputStr);
+                JsonElement result = JsonParser.parseString(inputStr);
                 results.push(result);
             }
             Stack<JsonElement> nextResults;
@@ -195,6 +206,7 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
                     break;
 
                     case JPL_ELLIPSIS:
+                        //process **， recursive lookup
                         nextResults = processEllipsis(pathLegIt);
                         break;
                     default:
@@ -296,6 +308,10 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
             return pathLeg;
         }
 
+        /**
+         * for **
+         * @return
+         */
         private PathLeg parseEllipsisLeg() {
             index++;
 
@@ -336,7 +352,7 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
                     StringBuilder sb = new StringBuilder();
                     tmpS = sb.append(DOUBLE_QUOTE).append(pattern, beginIndex, endIndex - beginIndex).append(DOUBLE_QUOTE).toString();
                 }
-                tmpS = new JsonParser().parse(tmpS).getAsString();
+                tmpS = JsonParser.parseString(tmpS).getAsString();
                 leg = PathLeg.ofMemberProperty(tmpS);
             }
             return leg;

@@ -48,7 +48,7 @@ public class GeneralLogEntry extends LogEntry {
     private String toPackag() {
         switch (entryType) {
             case 1:
-                String[] arr = GeneralLogHandler.packagLog(data, charset);
+                String[] arr = GeneralLogHandler.packageLog(data, charset);
                 command = arr[0];
                 content = arr[1];
                 return toLogString();

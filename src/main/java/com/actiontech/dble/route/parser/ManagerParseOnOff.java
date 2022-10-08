@@ -21,6 +21,7 @@ public final class ManagerParseOnOff {
     public static final int GENERAL_LOG = 5;
     public static final int STATISTIC = 6;
     public static final int LOAD_DATA_BATCH = 7;
+    public static final int SQLDUMP_SQL = 8;
 
 
     public static int parse(String stmt, int offset) {
@@ -89,19 +90,55 @@ public final class ManagerParseOnOff {
         return OTHER;
     }
 
-    // enable/disable @@SLOW_QUERY_LOG
     private static int sCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 13) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'L':
+                case 'l':
+                    return slCheck(stmt, offset);
+                case 'T':
+                case 't':
+                    return stCheck(stmt, offset);
+                case 'Q':
+                case 'q':
+                    return sqCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // enable/disable @@SLOW_QUERY_LOG
+    private static int slCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 12) {
             String prefix = stmt.substring(offset).toUpperCase();
-            if (prefix.startsWith("SLOW_QUERY_LOG") && (stmt.length() == offset + 14 || ParseUtil.isEOF(stmt, offset + 14))) {
+            if (prefix.startsWith("LOW_QUERY_LOG") && (stmt.length() == offset + 13 || ParseUtil.isEOF(stmt, offset + 13))) {
                 return SLOW_QUERY_LOG;
             }
-        } else if (stmt.length() > offset + 8) {
+        }
+        return OTHER;
+    }
+
+    // enable/disable @@STATISTIC
+    private static int stCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 7) {
             String prefix = stmt.substring(offset).toUpperCase();
-            if (prefix.startsWith("STATISTIC") && (stmt.length() == offset + 9 || ParseUtil.isEOF(stmt, offset + 9))) {
+            if (prefix.startsWith("TATISTIC") && (stmt.length() == offset + 8 || ParseUtil.isEOF(stmt, offset + 8))) {
                 return STATISTIC;
             }
 
+        }
+        return OTHER;
+    }
+
+    // enable/disable @@SQLDUMP_SQL
+    private static int sqCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 9) {
+            String prefix = stmt.substring(offset).toUpperCase();
+            if (prefix.startsWith("QLDUMP_SQL") && (stmt.length() == offset + 10 || ParseUtil.isEOF(stmt, offset + 10))) {
+                return SQLDUMP_SQL;
+            }
         }
         return OTHER;
     }

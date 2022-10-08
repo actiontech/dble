@@ -44,6 +44,15 @@ public class RWSplitNonBlockingSession extends Session {
     private volatile boolean preSendIsWrite = false; // Has the previous SQL been delivered to the write node?
     private volatile long preWriteResponseTime = 0; // Response time of the previous write node
     private int reSelectNum;
+    private volatile String remingSql = null;
+
+    public String getRemingSql() {
+        return remingSql;
+    }
+
+    public void setRemingSql(String remingSql) {
+        this.remingSql = remingSql;
+    }
 
     public RWSplitNonBlockingSession(RWSplitService service) {
         this.rwSplitService = service;

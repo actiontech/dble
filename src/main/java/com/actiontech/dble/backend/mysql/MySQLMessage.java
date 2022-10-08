@@ -259,6 +259,23 @@ public class MySQLMessage {
 
     public java.util.Date readDate() {
         byte size = read();
+        if (size >= 4) {
+            int year = readUB2();
+            byte month = read();
+            byte date = read();
+            int hour = 0;
+            int minute = 0;
+            int second = 0;
+            Calendar cal = getLocalCalendar();
+            cal.set(year, --month, date, hour, minute, second);
+            return new java.sql.Date(cal.getTimeInMillis());
+        } else {
+            return java.sql.Date.valueOf("0000-00-00 00:00:00.000000");
+        }
+    }
+
+    public java.util.Date readDateTime() {
+        byte size = read();
         int year = readUB2();
         byte month = read();
         byte date = read();

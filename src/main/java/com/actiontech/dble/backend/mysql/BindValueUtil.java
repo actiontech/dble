@@ -47,9 +47,11 @@ public final class BindValueUtil {
                 bv.setValue(mm.readTime());
                 break;
             case Fields.FIELD_TYPE_DATE: // the format changed from some version
+                bv.setValue(mm.readDate());
+                break;
             case Fields.FIELD_TYPE_DATETIME:
             case Fields.FIELD_TYPE_TIMESTAMP:
-                bv.setValue(mm.readDate());
+                bv.setValue(mm.readDateTime());
                 break;
             case Fields.FIELD_TYPE_BIT:
             case Fields.FIELD_TYPE_TINY_BLOB:

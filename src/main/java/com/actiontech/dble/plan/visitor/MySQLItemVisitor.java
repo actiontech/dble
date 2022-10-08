@@ -21,6 +21,8 @@ import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncBinaryCast
 import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncConvCharset;
 import com.actiontech.dble.plan.common.item.function.castfunc.ItemNCharTypeCast;
 import com.actiontech.dble.plan.common.item.function.convertfunc.ItemCharTypeConvert;
+import com.actiontech.dble.plan.common.item.function.jsonfunc.ItemFuncJsonExtract;
+import com.actiontech.dble.plan.common.item.function.jsonfunc.ItemFuncJsonUnQuote;
 import com.actiontech.dble.plan.common.item.function.mathsfunc.ItemFuncConv;
 import com.actiontech.dble.plan.common.item.function.mathsfunc.operator.*;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;

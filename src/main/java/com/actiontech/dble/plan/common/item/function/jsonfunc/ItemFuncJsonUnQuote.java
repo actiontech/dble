@@ -1,7 +1,14 @@
-package com.actiontech.dble.plan.common.item.function.strfunc;
+/*
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.actiontech.dble.plan.common.item.function.jsonfunc;
 
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
+import com.actiontech.dble.plan.common.item.function.strfunc.ItemStrFunc;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 

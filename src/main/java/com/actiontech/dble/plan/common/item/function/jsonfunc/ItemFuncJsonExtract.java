@@ -21,6 +21,9 @@ import java.io.StringWriter;
 import java.util.*;
 
 /**
+ * the json extract function.
+ * this implementation learn from mysql's。
+ *
  * @author dcy
  * Create Date: 2022-01-24
  */

@@ -74,7 +74,7 @@ public class CustomJsonWriter implements Closeable, Flushable {
     /**
      * The name/value separator; either ":" or ": ".
      */
-    private String separator = ":";
+    private String separator = ": ";
 
     private boolean lenient;
 
@@ -510,7 +510,7 @@ public class CustomJsonWriter implements Closeable, Flushable {
     private void beforeName() throws IOException {
         int context = peek();
         if (context == NONEMPTY_OBJECT) { // first in object
-            out.write(',');
+            out.write(", ");
         } else if (context != EMPTY_OBJECT) { // not in an object!
             throw new IllegalStateException("Nesting problem.");
         }
@@ -542,7 +542,7 @@ public class CustomJsonWriter implements Closeable, Flushable {
                 break;
 
             case NONEMPTY_ARRAY: // another in array
-                out.append(',');
+                out.append(", ");
                 newline();
                 break;
 

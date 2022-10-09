@@ -9,6 +9,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.backend.delyDetection.DelayDetection;
+import com.actiontech.dble.backend.delyDetection.DelayDetectionStatus;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.cluster.JsonFactory;
@@ -27,6 +29,8 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.singleton.HaConfigManager;
+import com.actiontech.dble.util.StringUtil;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
@@ -38,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class PhysicalDbGroup {
@@ -66,6 +71,9 @@ public class PhysicalDbGroup {
     private boolean analysisUseless = true;
     private Set<Session> rwSplitSessionSet = Sets.newConcurrentHashSet();
     private volatile Integer state = Integer.valueOf(INITIAL);
+
+    //delayDetection
+    private AtomicLong logicTimestamp = new AtomicLong();
 
 
     public static final int STATE_DELETING = 2;
@@ -182,10 +190,14 @@ public class PhysicalDbGroup {
         this.analysisUseless = analysisUseless;
     }
 
-    private boolean checkSlaveSynStatus() {
+    private boolean checkSlaveSynStatus(PhysicalDbInstance ds) {
+        if (ds.getDelayDetectionStatus() != DelayDetectionStatus.STOP) {
+            return false;
+        }
         return (dbGroupConfig.getDelayThreshold() != -1) &&
-                (dbGroupConfig.isShowSlaveSql());
+                (dbGroupConfig.isShowSlaveSql()) && !ds.getDbGroup().isDelayDetectionStart();
     }
+
 
     public PhysicalDbInstance getWriteDbInstance() {
         return writeDbInstance;
@@ -196,14 +208,14 @@ public class PhysicalDbGroup {
             ReloadLogHelper.debug("init new group :{},reason:{}", LOGGER, this.toString(), reason);
         }
         for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
-            entry.getValue().init(reason, true);
+            entry.getValue().init(reason, true, true);
         }
     }
 
     public void startOfFresh(List<String> sourceNames, String reason) {
         for (String sourceName : sourceNames) {
             if (allSourceMap.containsKey(sourceName)) {
-                allSourceMap.get(sourceName).init(reason, false);
+                allSourceMap.get(sourceName).init(reason, false, false);
             }
         }
     }
@@ -242,7 +254,7 @@ public class PhysicalDbGroup {
         for (String sourceName : sourceNames) {
             if (allSourceMap.containsKey(sourceName)) {
                 PhysicalDbInstance dbInstance = allSourceMap.get(sourceName);
-                dbInstance.stop(reason, closeFront, false, dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || writeDbInstance == dbInstance);
+                dbInstance.stop(reason, closeFront, false, dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || writeDbInstance == dbInstance, false);
             }
         }
 
@@ -307,6 +319,21 @@ public class PhysicalDbGroup {
                 dbInstance.heartbeat = new MySQLHeartbeat(dbInstance);
             }
             dbInstance.startHeartbeat();
+        }
+    }
+
+    public void startDelayDetection() {
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+            if (dbInstance.delayDetection.isStop()) {
+                dbInstance.delayDetection = new DelayDetection(dbInstance);
+            }
+            dbInstance.startDelayDetection();
+        }
+    }
+
+    public void stopDelayDetection(String reason) {
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+            dbInstance.stopDelayDetection(reason);
         }
     }
 
@@ -455,7 +482,7 @@ public class PhysicalDbGroup {
                 continue;
             }
 
-            if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
+            if (ds.isAlive() && (!checkSlaveSynStatus(ds) || ds.canSelectAsReadNode(ds))) {
                 if (ds.getLogCount() != 0) {
                     ds.setLogCount(0);
                 }
@@ -562,7 +589,7 @@ public class PhysicalDbGroup {
             newWriteHost.setReadInstance(false);
             String oldWriteInstance = writeDbInstance.getName();
             writeDbInstance = newWriteHost;
-            newWriteHost.start("switch master from " + oldWriteInstance + " to the instance", false);
+            newWriteHost.start("switch master from " + oldWriteInstance + " to the instance", false, false);
             return this.getClusterHaJson();
         } catch (Exception e) {
             LOGGER.warn("switchMaster Exception ", e);
@@ -734,6 +761,19 @@ public class PhysicalDbGroup {
         this.allSourceMap.put(dbInstance.getName(), dbInstance);
     }
 
+    public AtomicLong getLogicTimestamp() {
+        return logicTimestamp;
+    }
+
+    public void setLogicTimestamp(AtomicLong logicTimestamp) {
+        this.logicTimestamp = logicTimestamp;
+    }
+
+    public boolean isDelayDetectionStart() {
+        return !Strings.isNullOrEmpty(dbGroupConfig.getDelayDatabase()) &&
+                dbGroupConfig.getDelayThreshold() > 0 && dbGroupConfig.getDelayPeriodMillis() > 0;
+    }
+
     public boolean equalsBaseInfo(PhysicalDbGroup pool) {
         return pool.dbGroupConfig.equalsBaseInfo(this.dbGroupConfig) &&
                 pool.rwSplitMode == this.rwSplitMode &&
@@ -751,6 +791,13 @@ public class PhysicalDbGroup {
         return pool.getDbGroupConfig().getHeartbeatSQL().equals(this.dbGroupConfig.getHeartbeatSQL()) &&
                 pool.getDbGroupConfig().getHeartbeatTimeout() == this.dbGroupConfig.getHeartbeatTimeout() &&
                 pool.getDbGroupConfig().getErrorRetryCount() == this.dbGroupConfig.getErrorRetryCount() &&
+                pool.getDbGroupConfig().getKeepAlive() == this.getDbGroupConfig().getKeepAlive();
+    }
+
+    public boolean equalsForDelayDetection(PhysicalDbGroup pool) {
+        return pool.getDbGroupConfig().getDelayThreshold() == (this.dbGroupConfig.getDelayThreshold()) &&
+                pool.getDbGroupConfig().getDelayPeriodMillis() == this.dbGroupConfig.getDelayPeriodMillis() &&
+                StringUtil.equals(pool.getDbGroupConfig().getDelayDatabase(), this.dbGroupConfig.getDelayDatabase()) &&
                 pool.getDbGroupConfig().getKeepAlive() == this.getDbGroupConfig().getKeepAlive();
     }
 
@@ -780,4 +827,6 @@ public class PhysicalDbGroup {
                 ", rwSplitUseless=" + rwSplitUseless +
                 '}';
     }
+
+
 }

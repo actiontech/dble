@@ -5,6 +5,7 @@ public class ChangeItem {
     private Object item;
     private ChangeItemType itemType;
     private boolean affectHeartbeat;
+    private boolean affectDelayDetection;
     private boolean affectConnectionPool;
     private boolean affectTestConn;
     private boolean affectEntryDbGroup;
@@ -77,6 +78,14 @@ public class ChangeItem {
         this.item = item;
     }
 
+    public boolean isAffectDelayDetection() {
+        return affectDelayDetection;
+    }
+
+    public void setAffectDelayDetection(boolean affectDelayDetection) {
+        this.affectDelayDetection = affectDelayDetection;
+    }
+
     @Override
     public String toString() {
         return "ChangeItem{" +
@@ -87,6 +96,7 @@ public class ChangeItem {
                 ", affectTestConn=" + affectTestConn +
                 ", affectEntryDbGroup=" + affectEntryDbGroup +
                 ", affectPoolCapacity=" + affectPoolCapacity +
+                ", affectDelayDetection=" + affectDelayDetection +
                 '}';
     }
 }

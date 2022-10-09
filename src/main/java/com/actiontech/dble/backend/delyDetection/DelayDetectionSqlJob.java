@@ -35,7 +35,7 @@ public class DelayDetectionSqlJob implements ResponseHandler {
         this.delayDetection = delayDetection;
         this.jobHandler = jobHandler;
         int delayPeriodMillis = delayDetection.getSource().getDbGroupConfig().getDelayPeriodMillis();
-        this.keepAlive = delayDetection.getSource().getDbGroupConfig().getKeepAlive() + delayPeriodMillis * 2;
+        this.keepAlive = delayDetection.getSource().getDbGroupConfig().getKeepAlive() + delayPeriodMillis;
         sql = delayDetection.getSelectSQL();
         updateResponseTime();
     }

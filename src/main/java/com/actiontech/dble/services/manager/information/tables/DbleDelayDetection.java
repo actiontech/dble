@@ -129,18 +129,17 @@ public class DbleDelayDetection extends ManagerWritableTable {
             for (LinkedHashMap<String, String> affectPk : affectPks) {
                 String groupName = affectPk.get(COLUMN_DB_GROUP_NAME);
                 String name = affectPk.get(COLUMN_NAME);
-                PhysicalDbInstance instance = null;
                 for (PhysicalDbGroup physicalDbGroup : dbGroups.values()) {
                     if (StringUtil.equals(groupName, physicalDbGroup.getGroupName()) && physicalDbGroup.isDelayDetectionStart()) {
-                        instance = physicalDbGroup.getDbInstances(true).stream().filter(dbInstance -> StringUtil.equals(name, dbInstance.getName()) && Objects.nonNull(dbInstance.getDelayDetection())).findFirst().get();
+                        PhysicalDbInstance instance = physicalDbGroup.getDbInstances(true).stream().filter(dbInstance -> StringUtil.equals(name, dbInstance.getName()) && Objects.nonNull(dbInstance.getDelayDetection())).findFirst().get();
+                        DelayDetection delayDetection = instance.getDelayDetection();
+                        int logicUpdate = delayDetection.getLogicUpdate();
+                        if (val != logicUpdate + 1) {
+                            throw new SQLException("parameter only increment is allowed to be 1", "42S22", ErrorCode.ER_TABLE_CANT_HANDLE_AUTO_INCREMENT);
+                        }
+                        instanceList.add(instance);
                     }
                 }
-                DelayDetection delayDetection = instance.getDelayDetection();
-                int logicUpdate = delayDetection.getLogicUpdate();
-                if (val != logicUpdate + 1) {
-                    throw new SQLException("parameter only increment is allowed to be 1", "42S22", ErrorCode.ER_TABLE_CANT_HANDLE_AUTO_INCREMENT);
-                }
-                instanceList.add(instance);
             }
             for (PhysicalDbInstance instance : instanceList) {
                 instance.stopDelayDetection("the management end is shut down manually");

@@ -34,14 +34,16 @@ public class SchemaConfig {
     private final String[] allShardingNodeStrArr;
     private Map<ERTable, Set<ERTable>> fkErRelations;
     private Map<String, Set<ERTable>> funcNodeERMap;
+    private final boolean logicalCreateADrop;
 
     public SchemaConfig(String name, List<String> defaultShardingNodes, AbstractPartitionAlgorithm function,
-                        Map<String, BaseTableConfig> tables, int defaultMaxLimit) {
+                        Map<String, BaseTableConfig> tables, int defaultMaxLimit, boolean logicalCreateADrop) {
         this.name = name;
         this.defaultShardingNodes = defaultShardingNodes;
         this.function = function;
         this.tables = tables;
         this.defaultMaxLimit = defaultMaxLimit;
+        this.logicalCreateADrop = logicalCreateADrop;
         buildERMap();
         this.noSharding = (tables == null || tables.isEmpty()) ? !(defaultShardingNodes != null && defaultShardingNodes.size() > 1) : false;
         if (noSharding && defaultShardingNodes == null) {
@@ -64,6 +66,7 @@ public class SchemaConfig {
         this.function = oldSchemaConfig.getFunction();
         this.tables = oldSchemaConfig.getLowerCaseTables();
         this.defaultMaxLimit = oldSchemaConfig.getDefaultMaxLimit();
+        this.logicalCreateADrop = oldSchemaConfig.isLogicalCreateADrop();
         buildERMap();
         this.noSharding = (tables == null || tables.isEmpty()) ? !(defaultShardingNodes != null && defaultShardingNodes.size() > 1) : false;
         if (noSharding && defaultShardingNodes == null) {
@@ -224,6 +227,10 @@ public class SchemaConfig {
         }
         int index = Math.abs(random.nextInt(Integer.MAX_VALUE)) % allShardingNodeStrArr.length;
         return this.allShardingNodeStrArr[index];
+    }
+
+    public boolean isLogicalCreateADrop() {
+        return logicalCreateADrop;
     }
 
     /**

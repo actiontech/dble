@@ -43,6 +43,8 @@ public final class DruidParserFactory {
             service.getClusterDelayService().markDoingOrDelay(true);
             if (statement instanceof SQLCreateDatabaseStatement) {
                 parser = new DruidCreateDatabaseParser();
+            } else if (statement instanceof SQLDropDatabaseStatement) {
+                parser = new DruidDropDatabaseParser();
             } else if (statement instanceof MySqlCreateTableStatement) {
                 parser = new DruidCreateTableParser();
             } else if (statement instanceof SQLDropTableStatement) {

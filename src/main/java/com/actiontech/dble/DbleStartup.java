@@ -21,9 +21,9 @@ public final class DbleStartup {
         try {
             CheckConfigurationUtil.checkConfiguration();
             ClusterController.loadClusterProperties();
-            // lod system properties
+            // load system properties
             SystemConfigLoader.initSystemConfig();
-            // lod system other properties
+            // load system other properties
             SystemConfigLoader.verifyOtherParam();
             if (StartProblemReporter.getInstance().getErrorConfigs().size() > 0) {
                 for (String errInfo : StartProblemReporter.getInstance().getErrorConfigs()) {

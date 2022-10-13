@@ -86,12 +86,10 @@ public final class SqlDumpLogHelper {
                         INSTANCE.logger = null;
                         SqlDumpLoggerUtil.clearLogger();
                     } catch (Exception eii) {
-                        if (LOGGER.isDebugEnabled())
-                            LOGGER.debug("enable sqlDumpLog failed, rollback exception: {}", eii);
+                        LOGGER.warn("enable sqlDumpLog failed, rollback exception: {}", eii);
                         return "enable sqlDumpLog failed exception: " + ei.getMessage() + ", and rollback exception" + eii.getMessage();
                     }
-                    if (LOGGER.isDebugEnabled())
-                        LOGGER.debug("enable sqlDumpLog failed exception: {}", ei);
+                    LOGGER.warn("enable sqlDumpLog failed exception: {}", ei);
                     return "enable sqlDumpLog failed exception: " + ei.getMessage();
                 }
             } else {
@@ -101,8 +99,7 @@ public final class SqlDumpLogHelper {
                     SqlDumpLog.getInstance().setEnableSqlDumpLog(0);
                     INSTANCE.logger = null;
                 } catch (Exception ei) {
-                    if (LOGGER.isDebugEnabled())
-                        LOGGER.debug("disable sqlDumpLog failed exception: {}", ei);
+                    LOGGER.warn("disable sqlDumpLog failed exception: {}", ei);
                     return "disable sqlDumpLog failed exception: " + ei.getMessage();
                 }
             }
@@ -157,7 +154,7 @@ public final class SqlDumpLogHelper {
                 lock.readLock().unlock();
             }
         } catch (Exception e) {
-            LOGGER.warn("SqlDumpLog.log() happen exception: {}", e.getMessage());
+            LOGGER.warn("SqlDumpLogHelper.info() happen exception: {}", e.getMessage());
         }
     }
 
@@ -174,7 +171,7 @@ public final class SqlDumpLogHelper {
                     return null;
             }
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            LOGGER.warn("SqlDumpLogHelper.packageLog() happen exception: {}", e.getMessage());
         }
         return null;
     }

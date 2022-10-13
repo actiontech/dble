@@ -214,7 +214,7 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     private Boolean canRunOnMaster(Boolean master) {
-        if (!rwSplitService.isAutocommit() || rwSplitService.isTxStart() || rwSplitService.isUsingTmpTable()) {
+        if (((!rwSplitService.isAutocommit() || rwSplitService.isTxStart()) && !rwSplitService.isReadOnly()) || rwSplitService.isUsingTmpTable()) {
             return true;
         }
         return master;

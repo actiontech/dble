@@ -41,6 +41,7 @@ public class SqlDumpLog {
     public void verify() {
         // '-1' means that it is not configured
         if (!sqlDumpLogSizeBasedRotate.equals("-1")) {
+            // default: 50 MB
             sqlDumpLogSizeBasedRotate = FileSize.parse(sqlDumpLogSizeBasedRotate, 52428800L) + "";
         }
 

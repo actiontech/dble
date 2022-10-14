@@ -226,11 +226,15 @@ public final class ShowHelp {
         HELPS.put("enable @@cap_client_found_rows", "Turn on the clientFoundRows capabilities");
         HELPS.put("disable @@cap_client_found_rows", "Turn off the clientFoundRows capabilities");
 
+        // general log
         HELPS.put("show @@general_log", "Show the general log information");
         HELPS.put("enable @@general_log", "Turn on the general log");
         HELPS.put("disable @@general_log", "Turn off the general log");
         HELPS.put("reload @@general_log_file='?'", "Reset file path of general log");
 
+        // sqldump log
+        HELPS.put("enable @@sqldump_sql", "Turn on the sqldump log");
+        HELPS.put("disable @@sqldump_sql", "Turn off the sqldump log");
 
         HELPS.put("show @@statistic", "Turn off statistic information");
         HELPS.put("enable @@statistic", "Turn on statistic sql");

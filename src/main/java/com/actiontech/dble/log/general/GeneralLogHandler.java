@@ -14,7 +14,8 @@ public final class GeneralLogHandler {
     private GeneralLogHandler() {
     }
 
-    public static String[] packagLog(byte[] data, String charset) {
+
+    public static String[] packageLog(byte[] data, String charset) {
         String type, content = null;
         String[] arr = new String[2];
         arr[0] = (type = MySQLPacket.TO_STRING.get(data[4])) == null ? "UNKNOWN" : type;

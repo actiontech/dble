@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.LoadDataResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.PreparedResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.log.sqldump.SqlDumpLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
@@ -90,8 +91,9 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void errorResponse(byte[] data, @NotNull AbstractService service) {
-        StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlError(data));
         MySQLResponseService mysqlService = (MySQLResponseService) service;
+        SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, mysqlService, 0);
+        StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlError(data));
         final boolean syncFinished = mysqlService.syncAndExecute();
         loadDataClean();
         initDbClean();
@@ -122,11 +124,13 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void okResponse(byte[] data, @NotNull AbstractService service) {
         MySQLResponseService mysqlService = (MySQLResponseService) service;
+
         boolean executeResponse = mysqlService.syncAndExecute();
         if (executeResponse) {
             final OkPacket packet = new OkPacket();
             packet.read(data);
             loadDataClean();
+            SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, mysqlService, packet.getAffectedRows());
             StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(packet.getAffectedRows()));
             rwSplitService.getSession2().recordLastSqlResponseTime();
             if ((packet.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
@@ -185,6 +189,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         synchronized (this) {
+            SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, (MySQLResponseService) service, selectRows);
             StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(selectRows));
             selectRows = 0;
             if (!write2Client) {

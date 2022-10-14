@@ -16,6 +16,7 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.log.general.GeneralLogProcessor;
+import com.actiontech.dble.log.sqldump.SqlDumpLogHelper;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.net.IOProcessor;
@@ -242,6 +243,7 @@ public final class DbleServer {
         if (SystemConfig.getInstance().getEnableGeneralLog() == 1) {
             generalLogProcessor.start();
         }
+        SqlDumpLogHelper.init();
 
         SequenceManager.init(ClusterConfig.getInstance().getSequenceHandlerType());
         LOGGER.info("===================================Sequence manager init finish===================================");

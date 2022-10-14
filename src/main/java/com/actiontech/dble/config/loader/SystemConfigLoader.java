@@ -12,6 +12,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.memory.unsafe.Platform;
+import com.actiontech.dble.server.status.SqlDumpLog;
 import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -21,7 +22,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Properties;
+import java.util.Set;
 
 public final class SystemConfigLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemConfigLoader.class);
@@ -145,7 +149,6 @@ public final class SystemConfigLoader {
 
     /**
      * do postCheck and postSetting here
-     *
      */
     private static void postSet(SystemConfig systemConfig) {
         final StartProblemReporter problemReporter = StartProblemReporter.getInstance();
@@ -205,4 +208,17 @@ public final class SystemConfigLoader {
     }
 
 
+    public static void verifyOtherParam() {
+        // other
+        SqlDumpLog.getInstance().verify();
+
+        // base
+        if (SystemConfig.getInstance().getInstanceName() == null) {
+            StartProblemReporter.getInstance().addError("You must config instanceName in bootstrap.cnf and make sure it is an unique key for cluster");
+        }
+        String home = SystemConfig.getInstance().getHomePath();
+        if (home == null) {
+            StartProblemReporter.getInstance().addError("homePath is not set.");
+        }
+    }
 }

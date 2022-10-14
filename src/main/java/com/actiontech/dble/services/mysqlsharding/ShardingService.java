@@ -479,7 +479,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                     StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(this));
                 }
             }
-            controlTx(TransactionOperate.COMMIT);
+            controlTx(TransactionOperate.END);
             session.commit();
         }
     }
@@ -495,7 +495,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(this));
             }
         }
-        controlTx(TransactionOperate.ROLLBACK);
+        controlTx(TransactionOperate.END);
         if (txInterrupted) {
             txInterrupted = false;
         }

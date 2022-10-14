@@ -105,7 +105,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                     case RwSplitServerParse.COMMIT:
                     case RwSplitServerParse.ROLLBACK:
                         session.execute(true, (isSuccess, resp, rwSplitService) -> {
-                            session.getService().controlTx(TransactionOperate.COMMIT);
+                            session.getService().controlTx(TransactionOperate.END);
                             StatisticListener.getInstance().record(session, r -> r.onTxEnd());
                             if (!rwSplitService.isAutocommit()) {
                                 StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly(rwSplitService));

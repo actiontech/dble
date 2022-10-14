@@ -282,6 +282,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 if (callback != null) {
                     callback.callback(true, ok, rwSplitService);
                 }
+                SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, service, 0);
                 frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
                 write2Client = true;
                 buffer = null;
@@ -307,6 +308,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 eof[3] = (byte) rwSplitService.nextPacketId();
                 buffer = frontedConnection.getService().writeToBuffer(eof, buffer);
                 frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
+                SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, service, 0);
                 write2Client = true;
                 buffer = null;
             }

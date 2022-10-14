@@ -31,7 +31,7 @@ public final class XaHandler {
             if (isSuccess) {
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onXaStop());
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onTxEnd());
-                rwSplitService.controlTx(TransactionOperate.COMMIT); // not sure
+                rwSplitService.controlTx(TransactionOperate.END); // not sure
             }
         });
     }

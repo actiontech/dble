@@ -23,7 +23,7 @@ public abstract class TransactionService<T extends UserConfig> extends FrontendS
     public void controlTx(TransactionOperate operate) {
         isLeave.set(false);
         switch (operate) {
-            case BEGIN: //  begin/ start transaction
+            case BEGIN: //  begin、start transaction
                 if (!autocommit) {
                     isLeave.set(true);
                 } else {
@@ -31,9 +31,8 @@ public abstract class TransactionService<T extends UserConfig> extends FrontendS
                 }
                 setTxStart(true);
                 break;
-            case COMMIT:
-            case ROLLBACK:
-            case IMPLICITLY_COMMIT: // DDL. etc
+            case END: // commit、rollback
+            case IMPLICITLY_COMMIT: // DDL. etc(implicitly sql)
                 if (!autocommit) {
                     isLeave.set(true);
                 } else if (txStarted) {

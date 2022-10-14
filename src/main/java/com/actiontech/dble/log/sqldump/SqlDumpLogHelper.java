@@ -1,5 +1,6 @@
 package com.actiontech.dble.log.sqldump;
 
+import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.route.parser.util.ParseUtil;
@@ -9,6 +10,7 @@ import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.status.SqlDumpLog;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
+import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
@@ -121,18 +123,21 @@ public final class SqlDumpLogHelper {
         if (arr == null)
             return;
 
-        // flush
         String sqlDigest;
+        int sqlDigestHash;
         if (arr[1].equalsIgnoreCase("begin")) {
             sqlDigest = "begin";
+            sqlDigestHash = sqlDigest.hashCode();
         } else {
             try {
                 sqlDigest = ParameterizedOutputVisitorUtils.parameterize(arr[1], DbType.mysql).replaceAll("[\\t\\n\\r]", " ");
+                sqlDigestHash = sqlDigest.hashCode();
             } catch (RuntimeException ex) {
-                sqlDigest = arr[1].replaceAll("[\\t\\n\\r]", " ");
+                sqlDigestHash = arr[1].hashCode();
+                sqlDigest = "Other";
             }
         }
-        String digestHash = Integer.toHexString(sqlDigest.hashCode()); // hashcode convert hex
+        String digestHash = Integer.toHexString(sqlDigestHash); // hashcode convert hex
         long dura = responseService.getConnection().getLastReadTime() - responseService.getConnection().getLastWriteTime();
         info0(digestHash, arr[0], rwSplitService.getTxId() + "", affectRows, rwSplitService.getUser().getFullName(),
                 rwSplitService.getConnection().getHost(), rwSplitService.getConnection().getLocalPort(),
@@ -166,11 +171,18 @@ public final class SqlDumpLogHelper {
         try {
             switch (data[4]) {
                 case MySQLPacket.COM_QUERY:
-                case MySQLPacket.COM_STMT_PREPARE:
+                    // case MySQLPacket.COM_STMT_PREPARE: // no record
                     MySQLMessage mm = new MySQLMessage(data);
                     mm.position(5);
                     String originSql = mm.readString(charset);
                     return packageLog(rwSplitService.getSession2(), originSql);
+                case MySQLPacket.COM_STMT_EXECUTE:
+                    long statementId = ByteUtil.readUB4(data, 5);
+                    PreparedStatementHolder holder = rwSplitService.getPrepareStatement(statementId);
+                    MySQLMessage mm2 = new MySQLMessage(holder.getPrepareOrigin());
+                    mm2.position(5);
+                    String originSql2 = mm2.readString(charset);
+                    return packageLog(rwSplitService.getSession2(), originSql2);
                 default:
                     return null;
             }

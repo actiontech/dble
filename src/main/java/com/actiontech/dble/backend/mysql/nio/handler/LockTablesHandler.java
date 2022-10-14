@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.mysql.nio.handler.ddl.ImplicitlyCommitCallback;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
@@ -34,8 +35,9 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
 
     private final RouteResultset rrs;
     private final boolean autocommit;
+    private final ImplicitlyCommitCallback implicitlyCommitCallback;
 
-    public LockTablesHandler(NonBlockingSession session, RouteResultset rrs) {
+    public LockTablesHandler(NonBlockingSession session, RouteResultset rrs, ImplicitlyCommitCallback implicitlyCommitCallback) {
         super(session);
         if (rrs.getNodes() == null) {
             throw new IllegalArgumentException("routeNode is null!");
@@ -43,6 +45,7 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
         this.rrs = rrs;
         unResponseRrns.addAll(Arrays.asList(rrs.getNodes()));
         this.autocommit = session.getShardingService().isAutocommit();
+        this.implicitlyCommitCallback = implicitlyCommitCallback;
         TxnLogHelper.putTxnLog(session.getShardingService(), rrs);
     }
 
@@ -175,6 +178,8 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
     }
 
     private void handleEndPacket(MySQLPacket packet, boolean isSuccess) {
+        if (implicitlyCommitCallback != null)
+            implicitlyCommitCallback.callback();
         session.clearResources(false);
         packet.write(session.getSource());
     }

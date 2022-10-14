@@ -6,11 +6,13 @@
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.backend.mysql.nio.handler.ExecutableHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.ddl.ImplicitlyCommitCallback;
 import com.actiontech.dble.backend.mysql.nio.handler.ddl.DDLHandlerBuilder;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.services.TransactionOperate;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
@@ -43,20 +45,19 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
                         sqlException.getErrorCode() != ErrorCode.ER_PARSE_ERROR) {
                     // Implicit commit does not take effect if a syntax error occurs or if a library is not selected
                     service.getSession2().syncImplicitCommit();
-                    service.transactionsCountInTx();
-                    resetTxState(service);
+                    updateTxState(service);
                 }
                 throw sqlException;
             } else {
                 service.getSession2().syncImplicitCommit();
-                service.transactionsCountInTx();
                 if (rrs.isFinishedExecute()) {
-                    resetTxState(service);
+                    updateTxState(service);
                     service.writeOkPacket();
                 } else {
                     rrs.setFinishedRoute(true);
-                    resetTxState2(service);
-                    rrs.setImplicitlyCommitHandler(visitorParseEnd(rrs, service));
+                    rrs.setImplicitlyCommitHandler(visitorParseEnd(rrs, service, () -> {
+                        updateTxState(service);
+                    }));
                 }
             }
         }
@@ -67,8 +68,8 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
         return schema;
     }
 
-    public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service) {
-        return DDLHandlerBuilder.build(service.getSession2(), rrs);
+    public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service, ImplicitlyCommitCallback implicitlyCommitCallback) {
+        return DDLHandlerBuilder.build(service.getSession2(), rrs, implicitlyCommitCallback);
     }
 
     public void checkSchema(String schema) throws SQLException {
@@ -87,30 +88,17 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
     }
 
     /**
-     * Reset tx state
+     * update tx state
      *
      * @param service
      */
-    private void resetTxState(ShardingService service) {
-        if (service.isTxStart() || !service.isAutocommit()) {
-            service.setTxStart(false);
+    public void updateTxState(ShardingService service) {
+        if (service.isInTransaction()) {
             StatisticListener.getInstance().record(service, r -> r.onTxEnd());
-            service.getAndIncrementXid();
+            if (!service.isAutocommit()) {
+                StatisticListener.getInstance().record(service, r -> r.onTxStartByImplicitly(service));
+            }
         }
-        if (!service.isAutocommit()) {
-            StatisticListener.getInstance().record(service, r -> r.onTxStartByImplicitly(service));
-        }
-    }
-
-    /**
-     * Only record tx here
-     * In fact, the tx state is reset in the com.actiontech.dble.server.NonBlockingSession.clearResources method
-     *
-     * @param service
-     */
-    private void resetTxState2(ShardingService service) {
-        if (service.isTxStart() || !service.isAutocommit()) {
-            StatisticListener.getInstance().record(service, r -> r.onTxEnd());
-        }
+        service.controlTx(TransactionOperate.IMPLICITLY_COMMIT);
     }
 }

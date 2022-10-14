@@ -69,4 +69,36 @@ public abstract class AbstractServerParse implements ServerParse {
             }
         }
     }
+
+    public static boolean isTCL(int sqlType) {
+        switch (sqlType) {
+            case RwSplitServerParse.BEGIN:
+            case RwSplitServerParse.START_TRANSACTION:
+            case RwSplitServerParse.COMMIT:
+            case RwSplitServerParse.ROLLBACK:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static boolean isImplicitlyCommitSql(int sqlType) {
+        switch (sqlType) {
+            case ServerParse.DDL:
+            case ServerParse.ALTER_VIEW:
+            case ServerParse.CREATE_DATABASE:
+            case ServerParse.CREATE_VIEW:
+            case ServerParse.DROP_VIEW:
+            case ServerParse.DROP_TABLE:
+            case RwSplitServerParse.INSTALL:
+            case RwSplitServerParse.RENAME:
+            case RwSplitServerParse.UNINSTALL:
+            case RwSplitServerParse.GRANT:
+            case RwSplitServerParse.REVOKE:
+            case ServerParse.LOCK:
+                return true;
+            default:
+                return false;
+        }
+    }
 }

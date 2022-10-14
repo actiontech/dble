@@ -126,11 +126,15 @@ public final class SqlDumpLogHelper {
         if (arr[1].equalsIgnoreCase("begin")) {
             sqlDigest = "begin";
         } else {
-            sqlDigest = ParameterizedOutputVisitorUtils.parameterize(arr[1], DbType.mysql).replaceAll("[\\t\\n\\r]", " ");
+            try {
+                sqlDigest = ParameterizedOutputVisitorUtils.parameterize(arr[1], DbType.mysql).replaceAll("[\\t\\n\\r]", " ");
+            } catch (RuntimeException ex) {
+                sqlDigest = arr[1].replaceAll("[\\t\\n\\r]", " ");
+            }
         }
         String digestHash = Integer.toHexString(sqlDigest.hashCode()); // hashcode convert hex
         long dura = responseService.getConnection().getLastReadTime() - responseService.getConnection().getLastWriteTime();
-        info0(digestHash, arr[0], rwSplitService.getTransactionsCounter() + "", affectRows, rwSplitService.getUser().getFullName(),
+        info0(digestHash, arr[0], rwSplitService.getTxId() + "", affectRows, rwSplitService.getUser().getFullName(),
                 rwSplitService.getConnection().getHost(), rwSplitService.getConnection().getLocalPort(),
                 responseService.getConnection().getHost(), responseService.getConnection().getPort(), dura, sqlDigest);
     }

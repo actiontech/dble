@@ -174,10 +174,6 @@ public class MySQLResponseService extends BackendService {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-result");
         TraceManager.log(ImmutableMap.of("route-result-set", rrn, "service-detail", this.compactInfo()), traceObject);
         try {
-            if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
-                service.setTxStart(true);
-                //Optional.ofNullable(StatisticListener2.getInstance().getRecorder(service, r ->r.onTxStartByBegin(service));
-            }
             if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
             }
@@ -221,9 +217,6 @@ public class MySQLResponseService extends BackendService {
         TraceManager.log(ImmutableMap.of("route-result-set", rrn.toString(), "service-detail", this.toString()), traceObject);
         try {
             String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
-            if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
-                service.setTxStart(true);
-            }
             if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
             }
@@ -418,9 +411,6 @@ public class MySQLResponseService extends BackendService {
         TraceManager.log(ImmutableMap.of("route-result-set", rrn.toString(), "service-detail", this.toString()), traceObject);
         try {
             String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
-            if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
-                service.setTxStart(true);
-            }
             if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
             }

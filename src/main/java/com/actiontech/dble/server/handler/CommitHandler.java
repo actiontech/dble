@@ -12,7 +12,6 @@ public final class CommitHandler {
     }
 
     public static void handle(String stmt, ShardingService service) {
-        service.transactionsCount();
         service.commit(stmt);
     }
 }

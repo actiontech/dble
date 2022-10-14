@@ -11,10 +11,7 @@ import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.NormalServiceTask;
-import com.actiontech.dble.net.service.ServiceTask;
-import com.actiontech.dble.net.service.ServiceTaskType;
+import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.RwSplitServerParseSelect;
@@ -25,6 +22,7 @@ import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.BusinessService;
+import com.actiontech.dble.services.TransactionOperate;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
 import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
 import com.actiontech.dble.singleton.TraceManager;
@@ -36,12 +34,10 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
@@ -87,19 +83,14 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                     StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                     session.execute(true, (isSuccess, resp, rwSplitService) -> {
                         session.getConn().getBackendService().setAutocommit(true);
-                        rwSplitService.setAutocommit(true);
-                        rwSplitService.setTxStart(false);
-                        this.transactionsCount();
+                        controlTx(TransactionOperate.AUTOCOMMIT);
                     });
                     return;
-                } else if (!txStarted) {
-                    this.transactionsCount();
                 }
             } else {
                 if (autocommit) {
                     StatisticListener.getInstance().record(this, r -> r.onTxStartBySet(this));
-                    autocommit = false;
-                    txStarted = true;
+                    controlTx(TransactionOperate.UNAUTOCOMMIT);
                     StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
                     writeOkPacket();
                     return;
@@ -224,6 +215,12 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         }
     }
 
+    @Override
+    public void beforeWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags, ResultFlag resultFlag) {
+        redressControlTx();
+        super.beforeWriteFinish(writeFlags, resultFlag);
+    }
+
     private void handleComInitDb(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
         mm.position(5);
@@ -340,16 +337,12 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
     public void implicitlyDeal() {
         if (!this.isAutocommit()) {
             StatisticListener.getInstance().record(session, r -> r.onTxEnd());
-            getAndIncrementXid();
             StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly(this));
         }
         if (this.isTxStart()) {
             StatisticListener.getInstance().record(session, r -> r.onTxEnd());
         }
-        if (this.isTxStart() || !this.isAutocommit()) {
-            this.setTxStart(false);
-            this.transactionsCount();
-        }
+        controlTx(TransactionOperate.IMPLICITLY_COMMIT);
     }
 
     public boolean isInLoadData() {
@@ -403,12 +396,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
     }
 
     public boolean isKeepBackendConn() {
-        return isAutocommit() && !isTxStart() && !isInLoadData() && psHolder.isEmpty() && !isLockTable() && !isUsingTmpTable() && nameSet.isEmpty();
-    }
-
-    @Override
-    public void setTxStart(boolean txStart) {
-        this.txStarted = txStart;
+        return !isInTransaction() && !isInLoadData() && psHolder.isEmpty() && !isLockTable() && !isUsingTmpTable() && nameSet.isEmpty();
     }
 
     public boolean isInitDb() {
@@ -440,11 +428,10 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
 
         setLockTable(false);
         inLoadData = false;
-        txStarted = false;
         Optional.ofNullable(tmpTableSet).ifPresent((tmpTables) -> tmpTables.clear());
         Optional.ofNullable(sysVariables).ifPresent((sysVariableMap) -> sysVariableMap.clear());
         Optional.ofNullable(usrVariables).ifPresent((usrVariableMap) -> usrVariableMap.clear());
-        autocommit = SystemConfig.getInstance().getAutocommit() == 1;
+        restTxStatus();
         txIsolation = SystemConfig.getInstance().getTxIsolation();
         setCharacterSet(SystemConfig.getInstance().getCharset());
     }

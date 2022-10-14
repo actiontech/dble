@@ -12,8 +12,8 @@ import org.jetbrains.annotations.Nullable;
 
 public class SingleNodeDDLExecuteHandler extends BaseDDLHandler {
 
-    public SingleNodeDDLExecuteHandler(NonBlockingSession session, RouteResultset rrs, @Nullable Object attachment) {
-        super(session, rrs, attachment);
+    public SingleNodeDDLExecuteHandler(NonBlockingSession session, RouteResultset rrs, @Nullable Object attachment, ImplicitlyCommitCallback implicitlyCommitCallback) {
+        super(session, rrs, attachment, implicitlyCommitCallback);
         TxnLogHelper.putTxnLog(session.getShardingService(), this.rrs);
     }
 }

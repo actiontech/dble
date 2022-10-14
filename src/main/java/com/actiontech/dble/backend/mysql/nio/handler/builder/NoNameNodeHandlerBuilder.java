@@ -66,7 +66,7 @@ class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
         RouteResultsetNode[] rrss = new RouteResultsetNode[]{new RouteResultsetNode(randomDatenode, ServerParse.SELECT, sql)};
         hBuilder.checkRRSs(rrss);
         MultiNodeMergeHandler mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrss,
-                session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(),
+                !session.getShardingService().isInTransaction(),
                 session, schemaConfig.getAllShardingNodes());
         addHandler(mh);
     }

@@ -14,6 +14,7 @@ import com.actiontech.dble.server.handler.*;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.parser.ShardingServerParse;
+import com.actiontech.dble.services.TransactionOperate;
 import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
@@ -70,9 +71,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 }
                 service.execute(sql, rs & 0xff);
             } else {
-                if (sqlType != ServerParse.START && sqlType != ServerParse.BEGIN &&
-                        sqlType != ServerParse.COMMIT && sqlType != ServerParse.ROLLBACK && sqlType != ServerParse.SET) {
-                    this.service.transactionsCountOutTx();
+                if (!ShardingServerParse.isTCL(sqlType) &&
+                        !ShardingServerParse.isImplicitlyCommitSql(sqlType) &&
+                        sqlType != ShardingServerParse.SET) {
+                    service.controlTx(TransactionOperate.QUERY);
                 }
                 switch (sqlType) {
                     //explain sql

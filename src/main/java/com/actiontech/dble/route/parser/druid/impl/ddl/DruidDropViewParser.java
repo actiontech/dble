@@ -7,6 +7,7 @@ package com.actiontech.dble.route.parser.druid.impl.ddl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.ExecutableHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.ddl.ImplicitlyCommitCallback;
 import com.actiontech.dble.backend.mysql.nio.handler.ddl.DDLHandlerBuilder;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -82,8 +83,8 @@ public class DruidDropViewParser extends DruidImplicitCommitParser {
     }
 
     @Override
-    public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service) {
-        return DDLHandlerBuilder.buildView(service.getSession2(), rrs, null);
+    public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service, ImplicitlyCommitCallback implicitlyCommitCallback) {
+        return DDLHandlerBuilder.buildView(service.getSession2(), rrs, null, implicitlyCommitCallback);
     }
 
     private void checkView(String defaultSchema, SQLDropViewStatement dropViewStatement) throws SQLException {

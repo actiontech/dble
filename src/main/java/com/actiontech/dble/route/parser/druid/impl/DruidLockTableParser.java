@@ -8,6 +8,7 @@ package com.actiontech.dble.route.parser.druid.impl;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.ExecutableHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.LockTablesHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.ddl.ImplicitlyCommitCallback;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.plan.common.item.Item;
@@ -83,8 +84,8 @@ public class DruidLockTableParser extends DruidImplicitCommitParser {
     }
 
     @Override
-    public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service) {
-        return new LockTablesHandler(service.getSession2(), rrs);
+    public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service, ImplicitlyCommitCallback implicitlyCommitCallback) {
+        return new LockTablesHandler(service.getSession2(), rrs, implicitlyCommitCallback);
     }
 
     /**

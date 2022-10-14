@@ -92,7 +92,6 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void errorResponse(byte[] data, @NotNull AbstractService service) {
         MySQLResponseService mysqlService = (MySQLResponseService) service;
-        SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, mysqlService, 0);
         StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlError(data));
         final boolean syncFinished = mysqlService.syncAndExecute();
         loadDataClean();
@@ -109,6 +108,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         }
         synchronized (this) {
             if (!write2Client) {
+                SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, mysqlService, 0);
                 data[3] = (byte) rwSplitService.nextPacketId();
                 if (buffer != null) {
                     buffer = rwSplitService.writeToBuffer(data, buffer);
@@ -130,7 +130,6 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             final OkPacket packet = new OkPacket();
             packet.read(data);
             loadDataClean();
-            SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, mysqlService, packet.getAffectedRows());
             StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(packet.getAffectedRows()));
             rwSplitService.getSession2().recordLastSqlResponseTime();
             if ((packet.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
@@ -142,6 +141,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
             synchronized (this) {
                 if (!write2Client) {
+                    SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, mysqlService, packet.getAffectedRows());
                     data[3] = (byte) rwSplitService.nextPacketId();
                     if ((packet.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
                         rwSplitService.write(data, WriteFlags.QUERY_END);

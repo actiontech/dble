@@ -111,7 +111,7 @@ public final class DDLTraceHelper {
             this.sql = sql;
             this.startTime = System.currentTimeMillis();
             LOGGER.info("================ {} [DDL_{}] ================", Stage.init_ddl_trace, this.id);
-            LOGGER.info("[DDL_{}] <{}> Routes end and Start ddl{{}} execution stage. In {}", this.id, Stage.init_ddl_trace, this.sql, s.getConnection()); // TODO 希望打印前端的事务状态，如autocommit、isStartTx
+            LOGGER.info("[DDL_{}] <{}> Routes end and Start ddl{{}} execution stage. In {}", this.id, Stage.init_ddl_trace, this.sql, s.getConnection());
         }
 
         public void info(Stage stage0, String... context0) {

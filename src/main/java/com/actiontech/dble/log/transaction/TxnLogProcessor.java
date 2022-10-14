@@ -84,7 +84,7 @@ public class TxnLogProcessor extends Thread {
         date.setTime(System.currentTimeMillis());
         log.setExecuteTime(dateFormat.format(date));
         log.setConnId(service.getConnection().getId());
-        log.setXid(service.getXid());
+        log.setXid(service.getTxId());
         log.setQuery(sql);
         try {
             this.queue.put(log);

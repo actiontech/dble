@@ -86,7 +86,7 @@ public abstract class BackendService extends AbstractService {
         }
         initCharacterSet(SystemConfig.getInstance().getCharset());
         boolean sysAutocommit = SystemConfig.getInstance().getAutocommit() == 1;
-        this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
+        this.setAutocommit(sysAutocommit == autocommitSynced); // T + T-> T, T + F-> F, F +T ->F, F + F->T
         if (isolationSynced) {
             this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         } else {
@@ -328,7 +328,7 @@ public abstract class BackendService extends AbstractService {
             this.txIsolation = -1;
         }
         boolean sysAutocommit = SystemConfig.getInstance().getAutocommit() == 1;
-        this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
+        this.setAutocommit(sysAutocommit == autocommitSynced); // T + T-> T, T + F-> F, F +T ->F, F + F->T
         this.initCharacterSet(SystemConfig.getInstance().getCharset());
         this.usrVariables.clear();
         this.sysVariables.clear();
@@ -620,7 +620,7 @@ public abstract class BackendService extends AbstractService {
                 service.txIsolation = txIsolation;
             }
             if (autocommit != null) {
-                service.autocommit = autocommit;
+                service.setAutocommit(autocommit);
             }
             if (readOnly != null) {
                 service.sessionReadOnly = readOnly;

@@ -17,45 +17,16 @@ import com.actiontech.dble.statistic.CommandCount;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class BusinessService<T extends UserConfig> extends FrontendService<T> {
+public abstract class BusinessService<T extends UserConfig> extends TransactionService<T> {
 
     private final AtomicLong queriesCounter = new AtomicLong(0);
-    private final AtomicLong transactionsCounter = new AtomicLong(0);
-    private final AtomicLong txId = new AtomicLong(0);
 
     private volatile boolean isLockTable;
-    protected volatile boolean txChainBegin;
-    protected volatile boolean txStarted;
     protected final CommandCount commands;
 
     public BusinessService(AbstractConnection connection, AuthResultInfo info) {
         super(connection, info);
         this.commands = connection.getProcessor().getCommands();
-    }
-
-    public boolean isTxStart() {
-        return txStarted;
-    }
-
-    public void setTxStart(boolean txStart) {
-        if (!txStart && txChainBegin) {
-            txChainBegin = false;
-        } else {
-            this.txStarted = txStart;
-        }
-    }
-
-    public boolean isTxChainBegin() {
-        return txChainBegin;
-    }
-
-    // xid
-    public void getAndIncrementXid() {
-        txId.getAndIncrement();
-    }
-
-    public long getXid() {
-        return txId.get();
     }
 
     public boolean isLockTable() {
@@ -66,40 +37,18 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
         isLockTable = locked;
     }
 
-    // query and transaction count
-    public void transactionsCountInTx() {
-        if (txStarted || !autocommit) {
-            transactionsCounter.incrementAndGet();
-        }
-    }
-
-    public void transactionsCountOutTx() {
-        if (!txStarted && autocommit) {
-            transactionsCounter.incrementAndGet();
-        }
-    }
-
     public void queryCount() {
         queriesCounter.incrementAndGet();
-    }
-
-    public void transactionsCount() {
-        transactionsCounter.incrementAndGet();
     }
 
     public long getQueriesCounter() {
         return queriesCounter.get();
     }
 
-    public long getTransactionsCounter() {
-        return transactionsCounter.get();
-    }
-
     public void resetCounter() {
         queriesCounter.set(Long.MIN_VALUE);
-        transactionsCounter.set(Long.MIN_VALUE);
+        resetTxId();
     }
-
 
     public void executeContextSetTask(MysqlVariable[] contextTask) {
         MysqlVariable autocommitItem = null;
@@ -153,7 +102,7 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
         }
 
         if (autocommitItem == null) {
-            this.transactionsCountOutTx();
+            controlTx(TransactionOperate.QUERY);
             writeOkPacket();
         } else {
             handleVariable(autocommitItem);

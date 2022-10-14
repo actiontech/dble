@@ -7,6 +7,7 @@ package com.actiontech.dble.route.parser.druid.impl.ddl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.ExecutableHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.ddl.ImplicitlyCommitCallback;
 import com.actiontech.dble.backend.mysql.nio.handler.ddl.DDLHandlerBuilder;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.meta.ViewMeta;
@@ -53,9 +54,9 @@ public class DruidAlterViewParser extends DruidImplicitCommitParser {
         return schema;
     }
 
-    public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service) {
+    public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service, ImplicitlyCommitCallback implicitlyCommitCallback) {
         if (null != isCreate) {
-            return DDLHandlerBuilder.buildView(service.getSession2(), rrs, vm);
+            return DDLHandlerBuilder.buildView(service.getSession2(), rrs, vm, implicitlyCommitCallback);
         }
         return null;
     }

@@ -38,6 +38,9 @@ public final class EnableHandler {
             case ManagerParseOnOff.LOAD_DATA_BATCH:
                 OnOffLoadDataBatch.execute(service, true);
                 break;
+            case ManagerParseOnOff.SQLDUMP_SQL:
+                SqlDumpLog.OnOff.execute(service, true);
+                break;
             default:
                 service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

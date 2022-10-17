@@ -18,6 +18,7 @@ import com.actiontech.dble.net.ssl.SSLWrapperRegistry;
 import com.actiontech.dble.server.status.GeneralLog;
 import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
+import com.actiontech.dble.server.status.SqlDumpLog;
 import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.stat.FrontActiveRatioStat;
 
@@ -163,7 +164,14 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("enableAsyncRelease", sysConfig.getEnableAsyncRelease() + "", "Whether enable async release . default value is 0(off)."));
         readOnlyParams.add(new ParamInfo("releaseTimeout", sysConfig.getReleaseTimeout() + "", "time wait for release ,unit is ms,  default value is 10mins"));
 
-
+        readOnlyParams.add(new ParamInfo("sqlDumpLogBasePath", SqlDumpLog.getInstance().getSqlDumpLogBasePath() + "", "The base path of sqldump log, the default value is 'sqldump'"));
+        readOnlyParams.add(new ParamInfo("sqlDumpLogFileName", SqlDumpLog.getInstance().getSqlDumpLogFileName() + "", "The sqldump log file name, the default value is 'sqldump.log'"));
+        readOnlyParams.add(new ParamInfo("sqlDumpLogCompressFilePattern", SqlDumpLog.getInstance().getSqlDumpLogCompressFilePattern() + "", "The compression of sqldump log file, the default value is '${date:yyyy-MM}/sqldump-%d{MM-dd}-%i.log.gz'"));
+        readOnlyParams.add(new ParamInfo("sqlDumpLogOnStartupRotate", SqlDumpLog.getInstance().getSqlDumpLogOnStartupRotate() + "", "The onStartup of rotate policy, the default value is 1"));
+        readOnlyParams.add(new ParamInfo("sqlDumpLogSizeBasedRotate", SqlDumpLog.getInstance().getSqlDumpLogSizeBasedRotate() + "(byte)", "The sizeBased of rotate policy, the default value is '50 MB'"));
+        readOnlyParams.add(new ParamInfo("sqlDumpLogTimeBasedRotate", SqlDumpLog.getInstance().getSqlDumpLogTimeBasedRotate() + "", "The timeBased of rotate policy, the default value is 1"));
+        readOnlyParams.add(new ParamInfo("sqlDumpLogDeleteFileAge", SqlDumpLog.getInstance().getSqlDumpLogDeleteFileAge() + "", "The expiration time deletion strategy, the default value is '90d'"));
+        readOnlyParams.add(new ParamInfo("sqlDumpLogCompressFilePath", SqlDumpLog.getInstance().getSqlDumpLogCompressFilePath() + "", "The compression of sqldump log file path, the default value is '*/sqldump-*.log.gz'"));
     }
 
     public List<ParamInfo> getVolatileParams() {
@@ -188,6 +196,7 @@ public final class SystemParams {
         params.add(new ParamInfo("sqlLogTableSize", StatisticManager.getInstance().getSqlLogSize() + "", "SqlLog table size, the default is 1024"));
         params.add(new ParamInfo("samplingRate", StatisticManager.getInstance().getSamplingRate() + "", "Sampling rate, the default is 0, it is a percentage"));
         params.add(new ParamInfo("xaIdCheckPeriod", XaCheckHandler.getXaIdCheckPeriod() + "s", "The period for check xaId, the default is 300 second"));
+        params.add(new ParamInfo("enableSqlDumpLog", SqlDumpLog.getInstance().getEnableSqlDumpLog() + "", "Whether enable sqlDumpLog, the default value is 0(off)"));
         return params;
     }
 }

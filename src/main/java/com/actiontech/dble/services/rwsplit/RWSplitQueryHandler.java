@@ -90,7 +90,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                     case RwSplitServerParse.START_TRANSACTION:
                     case RwSplitServerParse.BEGIN:
                         StatisticListener.getInstance().record(session, r -> r.onTxPreStart());
-                        session.execute(true, (isSuccess, resp, rwSplitService) -> {
+                        session.execute(!session.getService().isReadOnly(), (isSuccess, resp, rwSplitService) -> {
                             boolean isImplicitly = false;
                             if (rwSplitService.isTxStart() || !rwSplitService.isAutocommit()) {
                                 rwSplitService.transactionsCount();

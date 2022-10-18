@@ -143,7 +143,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         } else {
             if (service instanceof ShardingService) {
                 NonBlockingSession session = ((ShardingService) service).getSession2();
-                row.put("in_transaction", String.valueOf(((ShardingService) service).isTxStart() || !service.isAutocommit()));
+                row.put("in_transaction", String.valueOf(((ShardingService) service).isInTransaction()));
                 row.put("sql_stage", session.getSessionStage().toString());
                 String xaid = session.getSessionXaID();
                 row.put("xa_id", xaid == null ? "NULL" : xaid);

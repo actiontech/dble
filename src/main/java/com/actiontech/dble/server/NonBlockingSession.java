@@ -662,9 +662,6 @@ public class NonBlockingSession extends Session {
     }
 
     public void commit() {
-        if (!shardingService.isAutocommit() || shardingService.isTxStart()) {
-            StatisticListener.getInstance().record(this, r -> r.onTxEnd());
-        }
         checkBackupStatus();
         transactionManager.commit();
     }
@@ -674,7 +671,7 @@ public class NonBlockingSession extends Session {
     }
 
     public void syncImplicitCommit() throws SQLException {
-        if (shardingService.isTxStart() || !shardingService.isAutocommit()) {
+        if (shardingService.isInTransaction()) {
             if (shardingService.isTxInterrupted()) {
                 throw new SQLException(shardingService.getTxInterruptMsg(), "HY000", ErrorCode.ER_YES);
             }
@@ -718,7 +715,7 @@ public class NonBlockingSession extends Session {
      */
     public void terminate() {
         // XA MUST BE FINISHED
-        if ((shardingService.isTxStart() && transactionManager.getXAStage() != null) ||
+        if ((shardingService.isInTransaction() && transactionManager.getXAStage() != null) ||
                 needWaitFinished) {
             return;
         }
@@ -730,7 +727,7 @@ public class NonBlockingSession extends Session {
 
     public void closeAndClearResources(String reason) {
         // XA MUST BE FINISHED
-        if (shardingService.isTxStart() && transactionManager.getXAStage() != null) {
+        if (shardingService.isInTransaction() && transactionManager.getXAStage() != null) {
             return;
         }
         for (BackendConnection node : target.values()) {
@@ -877,18 +874,6 @@ public class NonBlockingSession extends Session {
             transactionManager.setRetryXa(true);
         }
         needWaitFinished = false;
-        if (shardingService.isTxChainBegin() && shardingService.isAutocommit()) {
-            StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(shardingService));
-        }
-        shardingService.setTxStart(false);
-        shardingService.getAndIncrementXid();
-        if (shardingService.isSetNoAutoCommit()) {
-            shardingService.setSetNoAutoCommit(false);
-        } else {
-            if (!shardingService.isAutocommit()) {
-                StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(shardingService));
-            }
-        }
     }
 
     public boolean closed() {

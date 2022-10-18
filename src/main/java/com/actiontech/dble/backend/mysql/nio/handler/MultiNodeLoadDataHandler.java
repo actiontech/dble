@@ -150,7 +150,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
 
     @Override
     public void clearAfterFailExecute() {
-        if (!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart()) {
+        if (session.getShardingService().isInTransaction()) {
             session.getShardingService().setTxInterrupt("ROLLBACK");
         }
         cleanBuffer();
@@ -614,7 +614,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         }
         if (service != null && !service.isFakeClosed()) {
             errConnection.add(service);
-            if (service.getConnection().isClosed() && (!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart())) {
+            if (service.getConnection().isClosed() && session.getShardingService().isInTransaction()) {
                 session.getShardingService().setTxInterrupt(error);
             }
         }
@@ -679,7 +679,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         ShardingService service = session.getShardingService();
         service.getLoadDataInfileHandler().clear();
 
-        if (service.isAutocommit() && !service.isTxStart() && this.modifiedSQL && !this.session.isKilled()) {
+        if (!service.isInTransaction() && this.modifiedSQL && !this.session.isKilled()) {
             //Implicit Distributed Transaction,send commit or rollback automatically
             TransactionHandler handler = new AutoCommitHandler(session, curPacket, rrs.getNodes(), errConnection);
             if (txOperation == AutoTxOperation.COMMIT) {
@@ -691,7 +691,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                 handler.rollback();
             }
         } else {
-            boolean inTransaction = !service.isAutocommit() || service.isTxStart();
+            boolean inTransaction = service.isInTransaction();
             if (!inTransaction) {
                 if (errConnection != null) {
                     for (MySQLResponseService servicex : errConnection) {

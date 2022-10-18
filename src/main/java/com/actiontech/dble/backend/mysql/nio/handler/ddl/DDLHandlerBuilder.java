@@ -16,27 +16,27 @@ public final class DDLHandlerBuilder {
     private DDLHandlerBuilder() {
     }
 
-    public static BaseDDLHandler build(NonBlockingSession session, RouteResultset rrs) {
+    public static BaseDDLHandler build(NonBlockingSession session, RouteResultset rrs, ImplicitlyCommitCallback implicitlyCommitCallback) {
         if (rrs.getNodes().length == 1) {
-            return new SingleNodeDDLExecuteHandler(session, rrs, null);
+            return new SingleNodeDDLExecuteHandler(session, rrs, null, implicitlyCommitCallback);
         } else {
-            return new MultiNodeDdlPrepareHandler(session, rrs, null);
+            return new MultiNodeDdlPrepareHandler(session, rrs, null, implicitlyCommitCallback);
         }
     }
 
-    public static BaseDDLHandler buildView(NonBlockingSession session, RouteResultset rrs, ViewMeta vm) {
+    public static BaseDDLHandler buildView(NonBlockingSession session, RouteResultset rrs, ViewMeta vm, ImplicitlyCommitCallback implicitlyCommitCallback) {
         if (rrs.getNodes().length == 1) {
-            return new SingleNodeViewHandler(session, rrs, vm);
+            return new SingleNodeViewHandler(session, rrs, vm, implicitlyCommitCallback);
         } else {
-            return new MultiNodeViewHandler(session, rrs, vm);
+            return new MultiNodeViewHandler(session, rrs, vm, implicitlyCommitCallback);
         }
     }
 
     // In mysql drop\create view
     // single node
     static class SingleNodeViewHandler extends SingleNodeDDLExecuteHandler {
-        SingleNodeViewHandler(NonBlockingSession session, RouteResultset rrs, ViewMeta vm) {
-            super(session, rrs, vm);
+        SingleNodeViewHandler(NonBlockingSession session, RouteResultset rrs, ViewMeta vm, ImplicitlyCommitCallback implicitlyCommitCallback) {
+            super(session, rrs, vm, implicitlyCommitCallback);
         }
 
         @Override
@@ -62,8 +62,8 @@ public final class DDLHandlerBuilder {
 
     // multi node
     static class MultiNodeViewHandler extends MultiNodeDdlPrepareHandler {
-        MultiNodeViewHandler(NonBlockingSession session, RouteResultset rrs, ViewMeta vm) {
-            super(session, rrs, vm);
+        MultiNodeViewHandler(NonBlockingSession session, RouteResultset rrs, ViewMeta vm, ImplicitlyCommitCallback implicitlyCommitCallback) {
+            super(session, rrs, vm, implicitlyCommitCallback);
         }
 
         @Override

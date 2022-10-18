@@ -5,20 +5,13 @@
 
 package com.actiontech.dble.server.handler;
 
-import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 
 public final class RollBackHandler {
     private RollBackHandler() {
     }
 
     public static void handle(String stmt, ShardingService service) {
-        if (service.isTxStart() || !service.isAutocommit()) {
-            StatisticListener.getInstance().record(service, r -> r.onTxEnd());
-            TxnLogHelper.putTxnLog(service, stmt);
-        }
-        service.transactionsCount();
-        service.rollback();
+        service.rollback(stmt);
     }
 }

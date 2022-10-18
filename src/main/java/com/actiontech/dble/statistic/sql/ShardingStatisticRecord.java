@@ -48,7 +48,7 @@ public class ShardingStatisticRecord extends StatisticRecord {
                     node.getSqlType(), node.getStatement(), System.nanoTime());
 
             if (txEntry != null) {
-                entry.setTxId(shardingService.getXid());
+                entry.setTxId(shardingService.getTxId());
             }
             String key = connection.getId() + ":" + node.getName() + ":" + node.getStatementHash();
             frontendSqlEntry.put(key, entry);

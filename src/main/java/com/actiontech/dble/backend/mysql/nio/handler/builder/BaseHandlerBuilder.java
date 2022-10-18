@@ -43,7 +43,6 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import com.google.common.collect.Lists;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -264,7 +263,7 @@ public abstract class BaseHandlerBuilder {
         }
 
         MultiNodeMergeHandler mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrss,
-                session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(),
+                !session.getShardingService().isInTransaction(),
                 session, node.getNoshardNode());
         addHandler(mh);
     }
@@ -507,9 +506,9 @@ public abstract class BaseHandlerBuilder {
             if (planNode.getUnGlobalTableCount() == 0) {
                 globalBackNodes = planNode.getNoshardNode();
             }
-            mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrssArray, session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(), session, globalBackNodes);
+            mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrssArray, !session.getShardingService().isInTransaction(), session, globalBackNodes);
         } else {
-            mh = new MultiNodeMergeAndOrderHandler(getSequenceId(), rrssArray, session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(), session, orderBys, planNode.haveDependOnNode());
+            mh = new MultiNodeMergeAndOrderHandler(getSequenceId(), rrssArray, !session.getShardingService().isInTransaction(), session, orderBys, planNode.haveDependOnNode());
         }
         addHandler(mh);
     }
@@ -654,11 +653,11 @@ public abstract class BaseHandlerBuilder {
         return false;
     }
 
-    @NotNull
     private DMLResponseHandler getSubQueryHandler(PlanNode planNode, SubQueryHandler tempHandler) {
         BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, isExplain);
         DMLResponseHandler endHandler = builder.getEndHandler();
-        endHandler.setNextHandler(tempHandler);
+        if (endHandler != null)
+            endHandler.setNextHandler(tempHandler);
         subQueryBuilderList.add(builder);
         return endHandler;
     }

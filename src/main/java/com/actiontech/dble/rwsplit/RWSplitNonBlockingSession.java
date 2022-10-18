@@ -207,14 +207,14 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     private boolean isWriteStatistical(boolean writeStatistical) {
-        if (!rwSplitService.isAutocommit() || rwSplitService.isTxStart() || rwSplitService.isUsingTmpTable()) {
+        if (rwSplitService.isInTransaction() || rwSplitService.isUsingTmpTable()) {
             return true;
         }
         return writeStatistical;
     }
 
     private Boolean canRunOnMaster(Boolean master) {
-        if (((!rwSplitService.isAutocommit() || rwSplitService.isTxStart()) && !rwSplitService.isReadOnly()) || rwSplitService.isUsingTmpTable()) {
+        if ((rwSplitService.isInTransaction() && !rwSplitService.isReadOnly()) || rwSplitService.isUsingTmpTable()) {
             return true;
         }
         return master;

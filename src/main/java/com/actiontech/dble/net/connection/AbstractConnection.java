@@ -15,8 +15,9 @@ import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.BusinessService;
-import com.actiontech.dble.singleton.FlowController;
+import com.actiontech.dble.services.TransactionOperate;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLFrontAuthService;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.statistic.stat.FrontActiveRatioStat;
 import com.actiontech.dble.util.CompressUtil;
@@ -158,7 +159,7 @@ public abstract class AbstractConnection implements Connection {
     private void closeImmediatelyInner(String reason) {
         if (isClosed.compareAndSet(false, true)) {
             if (service instanceof BusinessService)
-                ((BusinessService) service).transactionsCountInTx();
+                ((BusinessService) service).controlTx(TransactionOperate.QUERY);
             StatisticListener.getInstance().record(service, r -> r.onExit(reason));
             StatisticListener.getInstance().remove(service);
             FrontActiveRatioStat.getInstance().remove(this);

@@ -119,7 +119,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setSession(session);
-        conn.getBackendService().execute(node, session.getShardingService(), session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart());
+        conn.getBackendService().execute(node, session.getShardingService(), !session.getShardingService().isInTransaction());
     }
 
     protected void executeInExistsConnection(BackendConnection conn) {

@@ -15,8 +15,8 @@ import org.jetbrains.annotations.Nullable;
 
 public class MultiNodeDDLExecuteHandler extends BaseDDLHandler {
 
-    public MultiNodeDDLExecuteHandler(NonBlockingSession session, RouteResultset rrs, @Nullable Object attachment) {
-        super(session, rrs, attachment);
+    public MultiNodeDDLExecuteHandler(NonBlockingSession session, RouteResultset rrs, @Nullable Object attachment, ImplicitlyCommitCallback implicitlyCommitCallback) {
+        super(session, rrs, attachment, implicitlyCommitCallback);
         TxnLogHelper.putTxnLog(session.getShardingService(), this.rrs);
     }
 

@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
 import static com.actiontech.dble.singleton.DDLTraceHelper.Stage.exec_ddl_sql;
 
 /**
@@ -71,8 +72,9 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
     protected DDLTraceHelper.Stage stage = exec_ddl_sql;
 
     protected Object attachment;
+    protected ImplicitlyCommitCallback implicitlyCommitCallback;
 
-    public BaseDDLHandler(NonBlockingSession session, RouteResultset rrs, @Nullable Object attachment) {
+    public BaseDDLHandler(NonBlockingSession session, RouteResultset rrs, @Nullable Object attachment, ImplicitlyCommitCallback implicitlyCommitCallback) {
         if (session == null)
             throw new IllegalArgumentException("session is null!");
         if (rrs.getNodes() == null)
@@ -83,6 +85,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
         this.oriRrs = rrs;
         this.sessionAutocommit = session.getShardingService().isAutocommit();
         this.attachment = attachment;
+        this.implicitlyCommitCallback = implicitlyCommitCallback;
     }
 
     @Override
@@ -122,7 +125,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
     }
 
     protected boolean isMustWrite() {
-        return session.getShardingService().isTxStart();
+        return session.getShardingService().isInTransaction();
     }
 
     protected void executeInExistsConnection(BackendConnection conn, RouteResultsetNode node) {
@@ -379,6 +382,9 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
 
     public final boolean specialHandling(boolean isExecSucc, String errInfo) {
         if (specialHandleFlag.compareAndSet(false, true)) {
+            if (implicitlyCommitCallback != null)
+                implicitlyCommitCallback.callback();
+
             if (isExecSucc)
                 DDLTraceHelper.log(session.getShardingService(), d -> d.info(stage, DDLTraceHelper.Status.succ));
             else

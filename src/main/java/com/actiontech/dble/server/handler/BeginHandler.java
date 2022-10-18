@@ -5,22 +5,13 @@
  */
 package com.actiontech.dble.server.handler;
 
-import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 
 public final class BeginHandler {
     private BeginHandler() {
     }
 
     public static void handle(String stmt, ShardingService service) {
-        if (service.isTxStart() || !service.isAutocommit()) {
-            service.beginInTx(stmt);
-        } else {
-            service.setTxStart(true);
-            StatisticListener.getInstance().record(service, r -> r.onTxStart(service));
-            TxnLogHelper.putTxnLog(service, stmt);
-            service.writeOkPacket();
-        }
+        service.begin(stmt);
     }
 }

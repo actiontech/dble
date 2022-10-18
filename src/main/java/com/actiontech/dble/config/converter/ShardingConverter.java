@@ -248,7 +248,7 @@ public class ShardingConverter {
                 throw new ConfigException(
                         "sharding " + schemaName + " didn't config tables,so you must set shardingNode property!");
             }
-            SchemaConfig schemaConfig = new SchemaConfig(schemaName, shardingNodeList, algorithm, tableConfigMap, schemaSqlMaxLimit);
+            SchemaConfig schemaConfig = new SchemaConfig(schemaName, shardingNodeList, algorithm, tableConfigMap, schemaSqlMaxLimit, schema.isLogicalCreateADrop());
             mergeFuncNodeERMap(schemaConfig);
             mergeFkERMap(schemaConfig);
             this.schemaConfigMap.put(schemaName, schemaConfig);

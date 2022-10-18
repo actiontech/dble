@@ -25,6 +25,9 @@ public class Schema implements Named {
     protected Integer sqlMaxLimit;
 
     @XmlAttribute
+    protected boolean logicalCreateADrop = true;
+
+    @XmlAttribute
     protected String shardingNode;
 
     @XmlAttribute
@@ -74,6 +77,10 @@ public class Schema implements Named {
 
     public void setFunction(String function) {
         this.function = function;
+    }
+
+    public boolean isLogicalCreateADrop() {
+        return logicalCreateADrop;
     }
 
     @Override

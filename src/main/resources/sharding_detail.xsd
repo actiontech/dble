@@ -69,6 +69,7 @@
             <xs:attribute name="sqlMaxLimit" type="xs:integer"/>
             <xs:attribute name="shardingNode" type="xs:string"/>
             <xs:attribute name="function" type="xs:string"/>
+            <xs:attribute name="logicalCreateADrop" type="xs:boolean"/>
         </xs:complexType>
     </xs:element>
     <xs:element name="shardingNode">

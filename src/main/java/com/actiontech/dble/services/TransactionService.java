@@ -84,7 +84,7 @@ public abstract class TransactionService<T extends UserConfig> extends FrontendS
     }
 
     public void resetTxId() {
-        txId.set(Long.MIN_VALUE);
+        txId.set(0);
     }
 
     // ========================= get/set

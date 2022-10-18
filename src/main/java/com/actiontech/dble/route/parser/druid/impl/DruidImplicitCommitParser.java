@@ -45,18 +45,18 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
                         sqlException.getErrorCode() != ErrorCode.ER_PARSE_ERROR) {
                     // Implicit commit does not take effect if a syntax error occurs or if a library is not selected
                     service.getSession2().syncImplicitCommit();
-                    updateTxState(service);
+                    implicitlyCommitAfterUpdateTxState(service);
                 }
                 throw sqlException;
             } else {
                 service.getSession2().syncImplicitCommit();
                 if (rrs.isFinishedExecute()) {
-                    updateTxState(service);
+                    implicitlyCommitAfterUpdateTxState(service);
                     service.writeOkPacket();
                 } else {
                     rrs.setFinishedRoute(true);
                     rrs.setImplicitlyCommitHandler(visitorParseEnd(rrs, service, () -> {
-                        updateTxState(service);
+                        implicitlyCommitAfterUpdateTxState(service);
                     }));
                 }
             }
@@ -92,7 +92,7 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
      *
      * @param service
      */
-    public void updateTxState(ShardingService service) {
+    public void implicitlyCommitAfterUpdateTxState(ShardingService service) {
         if (service.isInTransaction()) {
             StatisticListener.getInstance().record(service, r -> r.onTxEnd());
             if (!service.isAutocommit()) {

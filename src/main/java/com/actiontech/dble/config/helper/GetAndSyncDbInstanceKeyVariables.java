@@ -10,10 +10,7 @@ import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.meta.ReloadLogHelper;
-import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
-import com.actiontech.dble.sqlengine.OneTimeConnJob;
-import com.actiontech.dble.sqlengine.SQLQueryResult;
-import com.actiontech.dble.sqlengine.SQLQueryResultListener;
+import com.actiontech.dble.sqlengine.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +27,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
     private static final String COLUMN_READONLY = "@@read_only";
     private static final String COLUMN_MAX_PACKET = "@@max_allowed_packet";
     private static final String COLUMN_VERSION = "@@version";
+    private static final String COLUMN_BACK_LOG = "@@back_log";
     private ReentrantLock lock = new ReentrantLock();
     private volatile boolean isFinish = false;
     private Condition finishCond = lock.newCondition();
@@ -55,7 +53,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
         if (columnIsolation == null) {
             return keyVariables;
         }
-        String[] columns = new String[]{COLUMN_LOWER_CASE, COLUMN_AUTOCOMMIT, COLUMN_READONLY, COLUMN_MAX_PACKET, columnIsolation, COLUMN_VERSION};
+        String[] columns = new String[]{COLUMN_LOWER_CASE, COLUMN_AUTOCOMMIT, COLUMN_READONLY, COLUMN_MAX_PACKET, columnIsolation, COLUMN_VERSION, COLUMN_BACK_LOG};
         StringBuilder sql = new StringBuilder("select ");
         for (int i = 0; i < columns.length; i++) {
             if (i != 0) {
@@ -84,7 +82,6 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
         }
         return keyVariables;
     }
-
 
     private class GetDbInstanceKeyVariablesListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
         @Override
@@ -119,6 +116,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
                 keyVariables.setTargetMaxPacketSize(SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE);
                 keyVariables.setReadOnly(result.getResult().get(COLUMN_READONLY).equals("1"));
                 keyVariables.setVersion(result.getResult().get(COLUMN_VERSION));
+                keyVariables.setBackLog(Integer.parseInt(result.getResult().get(COLUMN_BACK_LOG)));
 
                 if (needSync) {
                     boolean checkNeedSync = false;

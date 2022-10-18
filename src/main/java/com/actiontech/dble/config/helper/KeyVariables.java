@@ -14,6 +14,7 @@ public class KeyVariables {
     private int targetIsolation = -1;
     private int targetMaxPacketSize = -1;
     private String version;
+    private int backLog = -1;
 
     private boolean readOnly = false;
     private boolean lowerCase = true;
@@ -90,6 +91,14 @@ public class KeyVariables {
         this.version = version;
     }
 
+    public int getBackLog() {
+        return backLog;
+    }
+
+    public void setBackLog(int backLog) {
+        this.backLog = backLog;
+    }
+
     @Override
     public String toString() {
         return "KeyVariables{" +
@@ -102,6 +111,7 @@ public class KeyVariables {
                 ", version='" + version + '\'' +
                 ", readOnly=" + readOnly +
                 ", lowerCase=" + lowerCase +
+                ", backLog=" + backLog +
                 '}';
     }
 }

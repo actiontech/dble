@@ -10,11 +10,13 @@ import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.singleton.Scheduler;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
@@ -42,9 +44,9 @@ public class DelayDetection {
     private volatile long delayVal = 0;
     private volatile int logicUpdate = 0;
 
-    private StringBuilder updatePrefix;
     //table source field
-    private String name;
+    private String sourceName;
+    private String sqlTableName;
     private String updateSQL;
     private String selectSQL;
     private String crateTabletSQL;
@@ -62,28 +64,25 @@ public class DelayDetection {
     }
 
     private void synSql() {
-        String[] str = {"dble", SystemConfig.getInstance().getInstanceName(), dbGroupConfig.getName(), source.getName()};
-        name = Joiner.on("_").join(str);
+        String[] str = {"dble", SystemConfig.getInstance().getInstanceName(), dbGroupConfig.getName()};
+        sourceName = Joiner.on("_").join(str);
         String schema = dbGroupConfig.getDelayDatabase();
         String tableName = ".u_delay ";
-        updatePrefix = new StringBuilder("replace into ");
-        updatePrefix.append(schema).append(tableName);
+        sqlTableName = schema + tableName;
+        StringBuilder select = new StringBuilder("select logic_timestamp from ? where source = '?'");
+        selectSQL = convert(select, Lists.newArrayList(sqlTableName, sourceName));
+        StringBuilder create = new StringBuilder("create table if not exists ? (source VARCHAR(256) primary key,real_timestamp varchar(26) NOT NULL,logic_timestamp BIGINT default 0)");
+        crateTabletSQL = convert(create, Lists.newArrayList(sqlTableName));
+    }
 
-        StringBuilder select = new StringBuilder("select logic_timestamp from ");
-        select.append(schema).append(tableName)
-                .append("where source = ")
-                .append("'").append(name).append("'");
-        selectSQL = select.toString();
-
-        StringBuilder create = new StringBuilder("create table if not exists ");
-        create.append(schema)
-                .append(tableName)
-                .append("(")
-                .append("source VARCHAR(256) primary key,")
-                .append("real_timestamp varchar(26) NOT NULL,")
-                .append("logic_timestamp BIGINT default 0")
-                .append(")");
-        crateTabletSQL = create.toString();
+    private String convert(StringBuilder template, List<String> list) {
+        StringBuilder sb = new StringBuilder(template);
+        String replace = "?";
+        for (String str : list) {
+            int index = sb.indexOf(replace);
+            sb.replace(index, index + 1, str);
+        }
+        return sb.toString();
     }
 
     public void start(long initialDelay) {
@@ -102,16 +101,9 @@ public class DelayDetection {
                 delayDetectionTask = new DelayDetectionTask(this);
             }
             if (!source.isReadInstance()) {
-                String quotes = "'";
-                String comma = ",";
-                StringBuilder update = new StringBuilder(updatePrefix);
-                update.append("(").append("source,").append("real_timestamp,").append("logic_timestamp").append(")").append(" values ")
-                        .append("(")
-                        .append(quotes).append(name).append(quotes).append(comma)
-                        .append(quotes).append(LocalDateTime.now()).append(quotes).append(comma)
-                        .append(source.getDbGroup().getLogicTimestamp().incrementAndGet())
-                        .append(")");
-                updateSQL = update.toString();
+                StringBuilder update = new StringBuilder("replace into ? (source,real_timestamp,logic_timestamp) values ('?','?',?)");
+                List<String> strings = Lists.newArrayList(sqlTableName, sourceName, String.valueOf(LocalDateTime.now()), String.valueOf(source.getDbGroup().getLogicTimestamp().incrementAndGet()));
+                updateSQL = convert(update, strings);
             }
             delayDetectionTask.execute();
         } else {

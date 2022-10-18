@@ -22,6 +22,7 @@ import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
+import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.Session;
@@ -771,7 +772,7 @@ public class PhysicalDbGroup {
 
     public boolean isDelayDetectionStart() {
         return !Strings.isNullOrEmpty(dbGroupConfig.getDelayDatabase()) &&
-                dbGroupConfig.getDelayThreshold() > 0 && dbGroupConfig.getDelayPeriodMillis() > 0;
+                dbGroupConfig.getDelayThreshold() > 0 && dbGroupConfig.getDelayPeriodMillis() > 0 && getDbGroupConfig().getWriteInstanceConfig().getDataBaseType() == DataBaseType.MYSQL;
     }
 
     public boolean equalsBaseInfo(PhysicalDbGroup pool) {

@@ -150,7 +150,25 @@ public final class DryRun {
             list.add(new ErrorInfo("Cluster", "NOTICE", "Dble is in single mod"));
         }
 
+        delayDetection(serverConfig, list);
+
+
         printResult(service, list);
+    }
+
+    private static void delayDetection(ServerConfig serverConfig, List<ErrorInfo> list) {
+        Map<String, PhysicalDbGroup> dbGroups = serverConfig.getDbGroups();
+        dbGroups.forEach((k, v) -> {
+            DataBaseType dataBaseType = v.getDbGroupConfig().instanceDatabaseType();
+            if (dataBaseType == DataBaseType.MYSQL && v.isDelayDetectionStart()) {
+                String delayDatabase = v.getDbGroupConfig().getDelayDatabase();
+                ShowDatabaseHandler mysqlShowDatabaseHandler = new ShowDatabaseHandler(dbGroups, "Database");
+                Set<String> databases = mysqlShowDatabaseHandler.execute(v.getWriteDbInstance());
+                if (!databases.contains(delayDatabase)) {
+                    list.add(new ErrorInfo("Xml", "WARNING", "database " + delayDatabase + " doesn't exists in dbGroup[" + v.getGroupName() + "]"));
+                }
+            }
+        });
     }
 
     private static void ucoreConnectionTest(List<ErrorInfo> list) {

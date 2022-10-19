@@ -181,15 +181,15 @@ public final class SystemConfig {
     private int generalLogQueueSize = 4096;
 
     //sqldump log
-    private int enableSqlDumpLog = 0;
-    private String sqlDumpLogBasePath = "sqldump";
-    private String sqlDumpLogFileName = "sqldump.log";
-    private String sqlDumpLogCompressFilePattern = "${date:yyyy-MM}/sqldump-%d{MM-dd}-%i.log.gz";
-    private int sqlDumpLogOnStartupRotate = 1; // 1-on, 0-off
-    private String sqlDumpLogSizeBasedRotate = "50 MB";
-    private int sqlDumpLogTimeBasedRotate = 1; // interval 1 day
-    private String sqlDumpLogDeleteFileAge = "90d"; // expiration time day，default 90 day
-    private String sqlDumpLogCompressFilePath = "*/sqldump-*.log.gz"; // log.gz path
+    private String enableSqlDumpLog = null;
+    private String sqlDumpLogBasePath = null;
+    private String sqlDumpLogFileName = null;
+    private String sqlDumpLogCompressFilePattern = null;
+    private String sqlDumpLogOnStartupRotate = null;
+    private String sqlDumpLogSizeBasedRotate = null;
+    private String sqlDumpLogTimeBasedRotate = null;
+    private String sqlDumpLogDeleteFileAge = null;
+    private String sqlDumpLogCompressFilePath = null;
 
     //alert switch
     private int enableAlert = 1;
@@ -518,17 +518,13 @@ public final class SystemConfig {
 
     }
 
-    public int getEnableSqlDumpLog() {
+    public String getEnableSqlDumpLog() {
         return enableSqlDumpLog;
     }
 
     @SuppressWarnings("unused")
-    public void setEnableSqlDumpLog(int enableSqlDumpLog) {
-        if (enableSqlDumpLog >= 0 && enableSqlDumpLog <= 1) {
-            this.enableSqlDumpLog = enableSqlDumpLog;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "enableSqlDumpLog", enableSqlDumpLog, this.enableSqlDumpLog));
-        }
+    public void setEnableSqlDumpLog(String enableSqlDumpLog) {
+        this.enableSqlDumpLog = enableSqlDumpLog;
     }
 
     public String getSqlDumpLogBasePath() {
@@ -537,9 +533,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setSqlDumpLogBasePath(String sqlDumpLogBasePath) {
-        if (!StringUtil.isBlank(sqlDumpLogBasePath)) {
-            this.sqlDumpLogBasePath = sqlDumpLogBasePath;
-        }
+        this.sqlDumpLogBasePath = sqlDumpLogBasePath;
     }
 
     public String getSqlDumpLogFileName() {
@@ -548,9 +542,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setSqlDumpLogFileName(String sqlDumpLogFileName) {
-        if (!StringUtil.isBlank(sqlDumpLogFileName)) {
-            this.sqlDumpLogFileName = sqlDumpLogFileName;
-        }
+        this.sqlDumpLogFileName = sqlDumpLogFileName;
     }
 
     public String getSqlDumpLogCompressFilePattern() {
@@ -559,9 +551,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setSqlDumpLogCompressFilePattern(String sqlDumpLogCompressFilePattern) {
-        if (!StringUtil.isBlank(sqlDumpLogCompressFilePattern)) {
-            this.sqlDumpLogCompressFilePattern = sqlDumpLogCompressFilePattern;
-        }
+        this.sqlDumpLogCompressFilePattern = sqlDumpLogCompressFilePattern;
     }
 
     public String getSqlDumpLogCompressFilePath() {
@@ -570,17 +560,15 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setSqlDumpLogCompressFilePath(String sqlDumpLogCompressFilePath) {
-        if (!StringUtil.isBlank(sqlDumpLogCompressFilePath)) {
-            this.sqlDumpLogCompressFilePath = sqlDumpLogCompressFilePath;
-        }
+        this.sqlDumpLogCompressFilePath = sqlDumpLogCompressFilePath;
     }
 
-    public int getSqlDumpLogOnStartupRotate() {
+    public String getSqlDumpLogOnStartupRotate() {
         return sqlDumpLogOnStartupRotate;
     }
 
     @SuppressWarnings("unused")
-    public void setSqlDumpLogOnStartupRotate(int sqlDumpLogOnStartupRotate) {
+    public void setSqlDumpLogOnStartupRotate(String sqlDumpLogOnStartupRotate) {
         this.sqlDumpLogOnStartupRotate = sqlDumpLogOnStartupRotate;
     }
 
@@ -595,12 +583,12 @@ public final class SystemConfig {
         }
     }
 
-    public int getSqlDumpLogTimeBasedRotate() {
+    public String getSqlDumpLogTimeBasedRotate() {
         return sqlDumpLogTimeBasedRotate;
     }
 
     @SuppressWarnings("unused")
-    public void setSqlDumpLogTimeBasedRotate(int sqlDumpLogTimeBasedRotate) {
+    public void setSqlDumpLogTimeBasedRotate(String sqlDumpLogTimeBasedRotate) {
         this.sqlDumpLogTimeBasedRotate = sqlDumpLogTimeBasedRotate;
     }
 
@@ -610,9 +598,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setSqlDumpLogDeleteFileAge(String sqlDumpLogDeleteFileAge) {
-        if (!StringUtil.isBlank(sqlDumpLogDeleteFileAge)) {
-            this.sqlDumpLogDeleteFileAge = sqlDumpLogDeleteFileAge;
-        }
+        this.sqlDumpLogDeleteFileAge = sqlDumpLogDeleteFileAge;
     }
 
     public int getTransactionRotateSize() {

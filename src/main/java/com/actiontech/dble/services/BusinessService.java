@@ -127,6 +127,11 @@ public abstract class BusinessService<T extends UserConfig> extends TransactionS
         writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Set Option ERROR!");
     }
 
+    public void multiStatementNextSql(boolean flag, byte[] multiQueryData) {
+        if (flag)
+            taskMultiQueryCreate(multiQueryData);
+    }
+
     public abstract void resetConnection();
 
     public abstract void handleVariable(MysqlVariable variable);

@@ -29,7 +29,6 @@ import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
-import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
@@ -37,7 +36,6 @@ import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
@@ -107,9 +105,6 @@ public class NonBlockingSession extends Session {
     private volatile boolean timeCost = false;
     private final AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
-
-    private final AtomicBoolean isMultiStatement = new AtomicBoolean(false);
-    private volatile String remingSql = null;
     private volatile boolean traceEnable = false;
     private final TraceResult traceResult = new TraceResult();
     private volatile RouteResultset complexRrs = null;
@@ -917,11 +912,7 @@ public class NonBlockingSession extends Session {
         return errConn.getBackendService();
     }
 
-    public void multiStatementPacket(MySQLPacket packet) {
-        if (this.isMultiStatement.get()) {
-            packet.markMoreResultsExists();
-        }
-    }
+
 
     public void rowCountRolling() {
         rowCountLastSQL = rowCountCurrentSQL;
@@ -930,28 +921,6 @@ public class NonBlockingSession extends Session {
 
     public void setRowCount(long rowCount) {
         this.rowCountCurrentSQL = rowCount;
-    }
-
-    /**
-     * reset the session multiStatementStatus
-     */
-    public void resetMultiStatementStatus() {
-        //clear the record
-        this.isMultiStatement.set(false);
-        this.remingSql = null;
-    }
-
-    boolean generalNextStatement(String sql) {
-        int index = ParseUtil.findNextBreak(sql);
-        if (index + 1 < sql.length() && !ParseUtil.isEOF(sql, index)) {
-            this.remingSql = sql.substring(index + 1);
-            this.isMultiStatement.set(true);
-            return true;
-        } else {
-            this.remingSql = null;
-            this.isMultiStatement.set(false);
-            return false;
-        }
     }
 
     public MemSizeController getJoinBufferMC() {
@@ -964,14 +933,6 @@ public class NonBlockingSession extends Session {
 
     public MemSizeController getOtherBufferMC() {
         return otherBufferMC;
-    }
-
-    public AtomicBoolean getIsMultiStatement() {
-        return isMultiStatement;
-    }
-
-    public String getRemingSql() {
-        return remingSql;
     }
 
     public AtomicInteger getPacketId() {

@@ -3,7 +3,6 @@ package com.actiontech.dble.log.sqldump;
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
@@ -111,14 +110,12 @@ public final class SqlDumpLogHelper {
         }
     }
 
-    public static void info(byte[] originPacket, boolean isHint, RWSplitService rwSplitService, MySQLResponseService responseService, long affectRows) {
-        String[] arr = null;
-        if (originPacket != null) {
-            arr = packageLog(rwSplitService, originPacket, rwSplitService.getCharset().getResults());
-        } else if (isHint) {
-            arr = packageLog(rwSplitService.getSession2(), rwSplitService.getExecuteSql());
+    public static void info(String sql, byte[] originPacket, RWSplitService rwSplitService, MySQLResponseService responseService, long affectRows) {
+        String[] arr;
+        if (sql != null) {
+            arr = packageLog(rwSplitService.getSession2(), sql);
         } else {
-            arr = packageLog(rwSplitService, rwSplitService.getExecuteSqlBytes(), rwSplitService.getCharset().getResults());
+            arr = packageLog(rwSplitService, originPacket, rwSplitService.getCharset().getResults());
         }
         if (arr == null)
             return;
@@ -192,22 +189,8 @@ public final class SqlDumpLogHelper {
         return null;
     }
 
-    private static String[] packageLog(RWSplitNonBlockingSession session2, String originSql) {
-        String sql = originSql;
-        if (session2.getRemingSql() != null)
-            sql = session2.getRemingSql();
-
-        int index = ParseUtil.findNextBreak(sql);
-        boolean isMultiStatement = index + 1 < sql.length() && !ParseUtil.isEOF(sql, index);
-        if (isMultiStatement) {
-            session2.setRemingSql(sql.substring(index + 1));
-            sql = sql.substring(0, ParseUtil.findNextBreak(sql));
-        } else {
-            session2.setRemingSql(null);
-            if (sql.endsWith(";"))
-                sql = sql.substring(0, sql.length() - 1);
-        }
-        return packageLog(sql.trim());
+    private static String[] packageLog(RWSplitNonBlockingSession session2, String sql) {
+        return packageLog(sql);
     }
 
     private static String[] packageLog(String originSql) {

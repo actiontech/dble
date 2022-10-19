@@ -32,7 +32,8 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RWSplitHandler.class);
     private final RWSplitService rwSplitService;
-    private final byte[] originPacket;
+    private byte[] originPacket;
+    private String executeSql;
     private final AbstractConnection frontedConnection;
     protected volatile ByteBuffer buffer;
     private long selectRows = 0;
@@ -43,14 +44,13 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
      */
     private boolean write2Client = false;
     private final Callback callback;
-    private boolean isHint;
 
-    public RWSplitHandler(RWSplitService service, byte[] originPacket, Callback callback, boolean isHint) {
+    public RWSplitHandler(RWSplitService service, String executeSql, byte[] originPacket, Callback callback) {
         this.rwSplitService = service;
-        this.originPacket = originPacket;
         this.frontedConnection = service.getConnection();
+        this.executeSql = executeSql;
+        this.originPacket = originPacket;
         this.callback = callback;
-        this.isHint = isHint;
     }
 
     public void execute(final BackendConnection conn) {
@@ -58,14 +58,13 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         mysqlService.setResponseHandler(this);
         mysqlService.setSession(rwSplitService.getSession2());
         StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlStart(conn));
-        if (originPacket != null) {
+
+        if (!StringUtil.isEmpty(executeSql)) {
+            mysqlService.execute(rwSplitService, executeSql);
+        } else if (originPacket != null) {
             mysqlService.execute(rwSplitService, originPacket);
-        } else if (isHint) {
-            //remove comment sentences
-            mysqlService.execute(rwSplitService, rwSplitService.getExecuteSql());
         } else {
-            //ensure that the character set is consistent with the client
-            mysqlService.execute(rwSplitService, rwSplitService.getExecuteSqlBytes());
+            // not happen
         }
     }
 
@@ -108,7 +107,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         }
         synchronized (this) {
             if (!write2Client) {
-                SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, mysqlService, 0);
+                SqlDumpLogHelper.info(executeSql, originPacket, rwSplitService, mysqlService, 0);
                 data[3] = (byte) rwSplitService.nextPacketId();
                 if (buffer != null) {
                     buffer = rwSplitService.writeToBuffer(data, buffer);
@@ -132,23 +131,17 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             loadDataClean();
             StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(packet.getAffectedRows()));
             rwSplitService.getSession2().recordLastSqlResponseTime();
-            if ((packet.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
-                if (callback != null) {
-                    callback.callback(true, null, rwSplitService);
-                }
-                rwSplitService.getSession2().unbindIfSafe();
+            if (callback != null) {
+                callback.callback(true, null, rwSplitService);
             }
+            rwSplitService.getSession2().unbindIfSafe();
 
             synchronized (this) {
                 if (!write2Client) {
-                    SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, mysqlService, packet.getAffectedRows());
-                    data[3] = (byte) rwSplitService.nextPacketId();
-                    if ((packet.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
-                        rwSplitService.write(data, WriteFlags.QUERY_END);
-                        write2Client = true;
-                    } else {
-                        rwSplitService.write(data, WriteFlags.PART);
-                    }
+                    SqlDumpLogHelper.info(executeSql, originPacket, rwSplitService, mysqlService, packet.getAffectedRows());
+                    packet.setPacketId(rwSplitService.nextPacketId());
+                    rwSplitService.write(packet);
+                    write2Client = true;
                 }
             }
         }
@@ -189,39 +182,17 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         synchronized (this) {
-            SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, (MySQLResponseService) service, selectRows);
+            SqlDumpLogHelper.info(executeSql, originPacket, rwSplitService, (MySQLResponseService) service, selectRows);
             StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(selectRows));
             selectRows = 0;
             if (!write2Client) {
-                eof[3] = (byte) rwSplitService.nextPacketId();
-                rwSplitService.getSession2().recordLastSqlResponseTime();
-                if ((eof[7] & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
-                    /*
-                    last resultset will call this
-                     */
-                    rwSplitService.getSession2().unbindIfSafe();
-                } else {
-                    LOGGER.debug("Because of multi query had send.It would receive more than one ResultSet. recycle resource should be delayed. client:{}", service);
-                }
-                buffer = frontedConnection.getService().writeToBuffer(eof, buffer);
-                /*
-                multi statement all cases are as follows:
-                1. if an resultSet is followed by an resultSet. buffer will re-assign in fieldEofResponse()
-                2. if an resultSet is followed by an okResponse. okResponse() send directly without use buffer.
-                3. if an resultSet is followed by  an errorResponse. buffer will be used if it is not null.
-
-                We must prevent  same buffer called connection.write() twice.
-                According to the above, you need write buffer immediately and set buffer to null.
-                 */
-                if ((eof[7] & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
-                    frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
-                } else {
-                    frontedConnection.getService().writeDirectly(buffer, WriteFlags.PART);
-                }
+                EOFRowPacket eofPacket = new EOFRowPacket();
+                eofPacket.read(eof);
+                eofPacket.setPacketId(rwSplitService.nextPacketId());
+                rwSplitService.getSession2().unbindIfSafe();
+                eofPacket.write(buffer, rwSplitService);
+                write2Client = true;
                 buffer = null;
-                if ((eof[7] & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
-                    write2Client = true;
-                }
             }
         }
     }
@@ -234,7 +205,6 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             }
         }
     }
-
 
     @Override
     public void connectionClose(@NotNull AbstractService service, String reason) {
@@ -282,7 +252,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 if (callback != null) {
                     callback.callback(true, ok, rwSplitService);
                 }
-                SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, service, 0);
+                SqlDumpLogHelper.info(executeSql, originPacket, rwSplitService, service, 0);
                 frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
                 write2Client = true;
                 buffer = null;
@@ -308,7 +278,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 eof[3] = (byte) rwSplitService.nextPacketId();
                 buffer = frontedConnection.getService().writeToBuffer(eof, buffer);
                 frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
-                SqlDumpLogHelper.info(originPacket, isHint, rwSplitService, service, 0);
+                SqlDumpLogHelper.info(executeSql, originPacket, rwSplitService, service, 0);
                 write2Client = true;
                 buffer = null;
             }
@@ -370,6 +340,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 if (buffer == null) {
                     buffer = frontedConnection.allocate();
                 }
+                rwSplitService.getSession2().unbindIfSafe();
                 buffer = frontedConnection.getService().writeToBuffer(data, buffer);
                 frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
                 write2Client = true;

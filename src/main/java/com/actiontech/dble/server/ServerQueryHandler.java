@@ -48,8 +48,8 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             this.service.queryCount();
             this.service.getSession2().rowCountRolling();
 
-            if (this.service.getSession2().getRemingSql() != null) {
-                sql = this.service.getSession2().getRemingSql();
+            if (this.service.getSession2().getRemainingSql() != null) {
+                sql = this.service.getSession2().getRemainingSql();
             }
             //Preliminary judgment of multi statement
             if (this.service.isMultiStatementAllow() && this.service.getSession2().generalNextStatement(sql)) {

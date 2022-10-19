@@ -81,7 +81,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
             if (Boolean.parseBoolean(var.getValue())) {
                 if (!autocommit) {
                     StatisticListener.getInstance().record(this, r -> r.onTxEnd());
-                    session.execute(true, (isSuccess, resp, rwSplitService) -> {
+                    session.execute("SET autocommit=1", true, (isSuccess, resp, rwSplitService) -> {
                         session.getConn().getBackendService().setAutocommit(true);
                         controlTx(TransactionOperate.AUTOCOMMIT);
                     });
@@ -120,7 +120,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         GeneralLogHelper.putGLog(this, data);
         // if the statement is load data, directly push down
         if (inLoadData) {
-            session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
+            session.execute(data, true, (isSuccess, resp, rwSplitService) -> {
                 rwSplitService.setInLoadData(false);
             });
             return;
@@ -168,7 +168,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                 if (connection.isClosed()) {
                     return;
                 }
-                session.execute(true, data, null);
+                session.execute(data, true, null);
                 // COM_STMT_CLOSE No response is sent back to the client.
                 long statementId = ByteUtil.readUB4(data, 5);
                 psHolder.remove(statementId);
@@ -205,7 +205,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                 break;
             case MySQLPacket.COM_STATISTICS:
                 commands.doOther();
-                session.execute(null, data, null);
+                session.execute(data, null, null);
                 break;
             default:
                 commands.doOther();
@@ -221,13 +221,28 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         super.beforeWriteFinish(writeFlags, resultFlag);
     }
 
+    @Override
+    public void afterWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags) {
+        if (writeFlags.contains(WriteFlag.END_OF_QUERY)) {
+            multiStatementNextSql(session.getIsMultiStatement().get(), executeSqlBytes);
+        } else if (writeFlags.contains(WriteFlag.END_OF_SESSION)) {
+            session.resetMultiStatementStatus();
+        }
+        super.afterWriteFinish(writeFlags);
+    }
+
+    @Override
+    public void beforePacket(MySQLPacket packet) {
+        session.multiStatementPacket(packet);
+    }
+
     private void handleComInitDb(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
         mm.position(5);
         String switchSchema;
         try {
             switchSchema = mm.readString(getCharset().getClient());
-            session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
+            session.execute(data, true, (isSuccess, resp, rwSplitService) -> {
                 if (isSuccess) rwSplitService.setSchema(switchSchema);
             });
             initDb = true;
@@ -248,6 +263,11 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                 } else {
                     expectedDest = null;
                 }
+            }
+            sql = sql.trim();
+            // remove last ';'
+            if (sql.endsWith(";")) {
+                sql = sql.substring(0, sql.length() - 1);
             }
             executeSql = sql;
             executeSqlBytes = data;
@@ -287,24 +307,24 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
             if (sqlType == ServerParse.SELECT) {
                 int rs2 = RwSplitServerParseSelect.parseSpecial(sql);
                 if (rs2 == RwSplitServerParseSelect.LOCK_READ) {
-                    session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
+                    session.execute(data, true, (isSuccess, resp, rwSplitService) -> {
                         if (isSuccess) {
                             long statementId = ByteUtil.readUB4(resp, 5);
                             int paramCount = ByteUtil.readUB2(resp, 11);
                             psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true));
                         }
-                    }, false);
+                    });
                 } else {
-                    session.execute(null, data, (isSuccess, resp, rwSplitService) -> {
+                    session.execute(data, null, (isSuccess, resp, rwSplitService) -> {
                         if (isSuccess) {
                             long statementId = ByteUtil.readUB4(resp, 5);
                             int paramCount = ByteUtil.readUB2(resp, 11);
                             psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false));
                         }
-                    }, false);
+                    });
                 }
             } else {
-                session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
+                session.execute(data, true, (isSuccess, resp, rwSplitService) -> {
                     if (isSuccess) {
                         long statementId = ByteUtil.readUB4(resp, 5);
                         int paramCount = ByteUtil.readUB2(resp, 11);
@@ -318,7 +338,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
     }
 
     private void execute(byte[] data) {
-        session.execute(true, data, null);
+        session.execute(data, true, null);
     }
 
     public RWSplitNonBlockingSession getSession2() {

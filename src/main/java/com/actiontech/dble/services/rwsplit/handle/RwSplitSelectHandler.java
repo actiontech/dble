@@ -26,10 +26,10 @@ public final class RwSplitSelectHandler {
                 int rs2 = RwSplitServerParseSelect.parseSpecial(stmt);
                 switch (rs2) {
                     case RwSplitServerParseSelect.LOCK_READ:
-                        service.getSession2().execute(true, null, false, true);
+                        service.getSession2().execute(stmt, true, null, false, true);
                         break;
                     default:
-                        service.getSession2().execute(null, null, false, true);
+                        service.getSession2().execute(stmt, null, null, false, true);
                         break;
                 }
                 break;

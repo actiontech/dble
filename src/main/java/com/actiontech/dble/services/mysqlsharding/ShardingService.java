@@ -560,7 +560,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     @Override
     public void afterWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags) {
         if (writeFlags.contains(WriteFlag.END_OF_QUERY)) {
-            multiStatementNextSql(session.getIsMultiStatement().get());
+            multiStatementNextSql(session.getIsMultiStatement().get(), protoLogicHandler.getMultiQueryData());
         } else if (writeFlags.contains(WriteFlag.END_OF_SESSION)) {
             session.resetMultiStatementStatus();
         }
@@ -577,12 +577,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             StatisticListener.getInstance().record(session, r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
         }
         session.multiStatementPacket(packet);
-    }
-
-    public void multiStatementNextSql(boolean flag) {
-        if (flag) {
-            taskMultiQueryCreate(protoLogicHandler.getMultiQueryData());
-        }
     }
 
     @Override

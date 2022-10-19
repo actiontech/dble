@@ -17,7 +17,7 @@ public final class XaHandler {
 
     public static void xaStart(String stmt, RWSplitService service, int offset) {
         String xaId = StringUtil.removeAllApostrophe(stmt.substring(offset).trim());
-        service.getSession2().execute(true, (isSuccess, resp, rwSplitService) -> {
+        service.getSession2().execute(stmt, true, (isSuccess, resp, rwSplitService) -> {
             if (isSuccess) {
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onXaStart(xaId));
                 rwSplitService.controlTx(TransactionOperate.BEGIN);
@@ -26,8 +26,8 @@ public final class XaHandler {
         });
     }
 
-    public static void xaFinish(RWSplitService service) {
-        service.getSession2().execute(true, (isSuccess, resp, rwSplitService) -> {
+    public static void xaFinish(String stmt, RWSplitService service) {
+        service.getSession2().execute(stmt, true, (isSuccess, resp, rwSplitService) -> {
             if (isSuccess) {
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onXaStop());
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onTxEnd());

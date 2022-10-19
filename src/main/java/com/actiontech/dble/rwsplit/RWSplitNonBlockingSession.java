@@ -44,15 +44,6 @@ public class RWSplitNonBlockingSession extends Session {
     private volatile boolean preSendIsWrite = false; // Has the previous SQL been delivered to the write node?
     private volatile long preWriteResponseTime = 0; // Response time of the previous write node
     private int reSelectNum;
-    private volatile String remingSql = null;
-
-    public String getRemingSql() {
-        return remingSql;
-    }
-
-    public void setRemingSql(String remingSql) {
-        this.remingSql = remingSql;
-    }
 
     public RWSplitNonBlockingSession(RWSplitService service) {
         this.rwSplitService = service;
@@ -65,7 +56,6 @@ public class RWSplitNonBlockingSession extends Session {
 
     @Override
     public void stopFlowControl(int currentWritingSize) {
-
         synchronized (this) {
             if (rwSplitService.isFlowControlled()) {
                 LOGGER.info("Session stop flow control " + this.getSource());
@@ -112,40 +102,54 @@ public class RWSplitNonBlockingSession extends Session {
         }
     }
 
-    public void execute(Boolean master, Callback callback) {
-        execute(master, null, callback);
+    public void execute(String sql, Boolean master, Callback callback) {
+        execute0(master, sql, null, callback, false, false);
     }
 
-    public void execute(Boolean master, Callback callback, boolean writeStatistical) {
-        execute(master, null, callback, writeStatistical, false);
+    public void execute(String sql, Boolean master, Callback callback, boolean writeStatistical, boolean localRead) {
+        execute0(master, sql, null, callback, writeStatistical, localRead);
     }
 
-    /**
-     * @param master
-     * @param callback
-     * @param writeStatistical
-     * @param localRead        only the SELECT and show statements attempt to localRead
-     */
-    public void execute(Boolean master, Callback callback, boolean writeStatistical, boolean localRead) {
-        execute(master, null, callback, writeStatistical, localRead && !rwGroup.isRwSplitUseless());
+    public void execute(byte[] originPacket, Boolean master, Callback callback) {
+        execute0(master, null, originPacket, callback, false, false);
     }
 
-    public void execute(Boolean master, byte[] originPacket, Callback callback) {
-        execute(master, originPacket, callback, false, false);
-    }
-
-    public void execute(Boolean master, byte[] originPacket, Callback callback, boolean writeStatistical) {
-        execute(master, originPacket, callback, writeStatistical, false);
-    }
-
-    public void execute(Boolean master, byte[] originPacket, Callback callback, boolean writeStatistical, boolean localRead) {
+    private void execute0(Boolean master, String sql, byte[] originPacket, Callback callback, boolean writeStatistical, boolean localRead) {
         try {
-            RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
+            RWSplitHandler handler = getRwSplitHandler(sql, originPacket, callback);
             if (handler == null) return;
             getConnection(handler, master, isWriteStatistical(writeStatistical), localRead);
         } catch (SQLSyntaxErrorException | IOException se) {
             rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
         }
+    }
+
+    public void executeHint(DbleHintParser.HintInfo hintInfo, int sqlType, String sql, Callback callback) throws SQLException, IOException {
+        try {
+            PhysicalDbInstance dbInstance = routeRwSplit(hintInfo, sqlType, rwSplitService);
+            if (dbInstance == null) {
+                return;
+            }
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("route sql {} to {}", sql, dbInstance);
+            }
+            RWSplitHandler handler = new RWSplitHandler(rwSplitService, hintInfo.getRealSql(), null, callback);
+            dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
+        } catch (Exception e) {
+            rwSplitService.executeException(e, sql);
+        }
+    }
+
+    private PhysicalDbInstance routeRwSplit(DbleHintParser.HintInfo hintInfo, int sqlType, RWSplitService service) throws SQLException {
+        PhysicalDbInstance dbInstance = null;
+        int type = hintInfo.getType();
+        if (type == DbleHintParser.DB_INSTANCE_URL || type == DbleHintParser.UPROXY_DEST) {
+            dbInstance = HintDbInstanceHandler.route(hintInfo.getRealSql(), service, hintInfo.getHintValue());
+        } else if (type == DbleHintParser.UPROXY_MASTER || type == DbleHintParser.DB_TYPE) {
+            dbInstance = HintMasterDBHandler.route(hintInfo.getHintValue(), sqlType, hintInfo.getRealSql(), service);
+        }
+        service.setExecuteSql(hintInfo.getRealSql());
+        return dbInstance;
     }
 
     public void getConnection(RWSplitHandler handler, Boolean master, Boolean writeStatistical, boolean localRead) {
@@ -182,8 +186,31 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     @Nullable
-    private RWSplitHandler getRwSplitHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException, IOException {
-        RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback, false);
+    private RWSplitHandler getRwSplitHandler(String sql, byte[] originPacket, Callback callback) throws SQLSyntaxErrorException, IOException {
+        if (sql != null) {
+            return getRwSplitHandlerBySql(sql, callback);
+        } else if (originPacket != null) {
+            return getRwSplitHandlerByOriginPacket(originPacket, callback);
+        } else {
+            return getRwSplitHandlerByOriginPacket(getService().getExecuteSqlBytes(), callback);
+        }
+    }
+
+    private RWSplitHandler getRwSplitHandlerBySql(String sql, Callback callback) throws SQLSyntaxErrorException, IOException {
+        RWSplitHandler handler = new RWSplitHandler(rwSplitService, sql, null, callback);
+        if (conn != null && !conn.isClosed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("select bind conn[id={}]", conn.getId());
+            }
+            checkDest(!conn.getInstance().isReadInstance());
+            handler.execute(conn);
+            return null;
+        }
+        return handler;
+    }
+
+    private RWSplitHandler getRwSplitHandlerByOriginPacket(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException, IOException {
+        RWSplitHandler handler = new RWSplitHandler(rwSplitService, null, originPacket, callback);
         if (conn != null && !conn.isClosed()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select bind conn[id={}]", conn.getId());
@@ -258,41 +285,6 @@ public class RWSplitNonBlockingSession extends Session {
         return dbGroup;
     }
 
-    public PhysicalDbGroup getRwGroup() {
-        return rwGroup;
-    }
-
-    public void executeHint(DbleHintParser.HintInfo hintInfo, int sqlType, String sql, Callback callback) throws SQLException, IOException {
-        RWSplitHandler handler = new RWSplitHandler(rwSplitService, null, callback, true);
-        try {
-            PhysicalDbInstance dbInstance = routeRwSplit(hintInfo, sqlType, rwSplitService);
-            if (dbInstance == null) {
-                return;
-            }
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("route sql {} to {}", sql, dbInstance);
-            }
-            dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
-        } catch (Exception e) {
-            rwSplitService.executeException(e, sql);
-        }
-    }
-
-    private PhysicalDbInstance routeRwSplit(DbleHintParser.HintInfo hintInfo, int sqlType, RWSplitService service) throws SQLException {
-        PhysicalDbInstance dbInstance = null;
-        int type = hintInfo.getType();
-        if (type == DbleHintParser.DB_INSTANCE_URL || type == DbleHintParser.UPROXY_DEST) {
-            dbInstance = HintDbInstanceHandler.route(hintInfo.getRealSql(), service, hintInfo.getHintValue());
-        } else if (type == DbleHintParser.UPROXY_MASTER || type == DbleHintParser.DB_TYPE) {
-            dbInstance = HintMasterDBHandler.route(hintInfo.getHintValue(), sqlType, hintInfo.getRealSql(), service);
-        }
-        service.setExecuteSql(hintInfo.getRealSql());
-        return dbInstance;
-    }
-
-    public void setRwGroup(PhysicalDbGroup rwGroup) {
-        this.rwGroup = rwGroup;
-    }
 
     public void bind(BackendConnection bindConn) {
         final BackendConnection tmp = conn;
@@ -329,6 +321,14 @@ public class RWSplitNonBlockingSession extends Session {
         if (tmp != null) {
             tmp.close(reason);
         }
+    }
+
+    public PhysicalDbGroup getRwGroup() {
+        return rwGroup;
+    }
+
+    public void setRwGroup(PhysicalDbGroup rwGroup) {
+        this.rwGroup = rwGroup;
     }
 
     public void setPreSendIsWrite(boolean preSendIsWrite) {

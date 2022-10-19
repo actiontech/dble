@@ -33,6 +33,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
     private MySQLHeartbeat heartbeat;
     private long responseTime;
     private long keepAlive;
+    private final AtomicBoolean isQuit;
 
     public HeartbeatSQLJob(MySQLHeartbeat heartbeat, SQLJobHandler jobHandler) {
         super();
@@ -40,19 +41,28 @@ public class HeartbeatSQLJob implements ResponseHandler {
         this.jobHandler = jobHandler;
         this.heartbeat = heartbeat;
         this.responseTime = System.nanoTime();
+        this.isQuit = new AtomicBoolean(false);
         this.keepAlive = TimeUnit.NANOSECONDS.convert(heartbeat.getKeepAlive(), TimeUnit.SECONDS) + TimeUnit.NANOSECONDS.convert(heartbeat.getSource().getConfig().getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS);
     }
 
     public void terminate() {
-        if (connection != null && !connection.isClosed()) {
-            String errMsg = heartbeat.getMessage() == null ? "heart beat quit" : heartbeat.getMessage();
-            LOGGER.info("[heartbeat]terminate this job reason:" + errMsg + " con:" + connection + " sql " + this.sql);
-            connection.businessClose("[heartbeat] quit");
+        if (isQuit.compareAndSet(false, true)) {
+            if (connection != null && !connection.isClosed()) {
+                String errMsg = heartbeat.getMessage() == null ? "heart beat quit" : heartbeat.getMessage();
+                LOGGER.info("[heartbeat]terminate this job reason:" + errMsg + " con:" + connection + " sql " + this.sql);
+                connection.businessClose("[heartbeat] quit");
+            }
         }
     }
 
     @Override
     public void connectionAcquired(final BackendConnection conn) {
+        if (isQuit.get()) {
+            String errMsg = "[heartbeat]timeout connection[id=" + connection.getId() + "] is acquired, but the conn is useless.";
+            LOGGER.info(errMsg);
+            conn.businessClose(errMsg);
+            return;
+        }
         this.connection = conn;
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setComplexQuery(true);
@@ -174,7 +184,10 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public String toString() {
-        return "HeartbeatSQLJob [sql=" + sql + ",  jobHandler=" + jobHandler + ", backend conn" + connection + "]";
+        return "HeartbeatSQLJob [sql=" + sql + ", isQuit=" + isQuit.get() + ",  jobHandler=" + jobHandler + ", backend conn" + connection + "]";
     }
 
+    public boolean isQuit() {
+        return isQuit.get();
+    }
 }

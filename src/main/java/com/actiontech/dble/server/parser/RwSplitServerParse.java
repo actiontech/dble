@@ -18,13 +18,6 @@ public final class RwSplitServerParse extends AbstractServerParse {
         super();
     }
 
-    public static final int GRANT = 201;
-    public static final int REVOKE = 202;
-    public static final int INSTALL = 205;
-    public static final int RENAME = 206;
-    public static final int UNINSTALL = 207;
-    public static final int START_TRANSACTION = 208;
-
     @Override
     public int parse(String stmt) {
         int length = stmt.length();
@@ -490,8 +483,7 @@ public final class RwSplitServerParse extends AbstractServerParse {
             if ((c1 == 'A' || c1 == 'a') && (c2 == 'R' || c2 == 'r') &&
                     (c3 == 'T' || c3 == 't') &&
                     (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
-                stmt = stmt.substring(offset).trim();
-                return RwSplitServerParseStart.parse(stmt, 0);
+                return (new RwSplitServerParseStart()).parse(stmt, offset);
             }
         }
         return OTHER;

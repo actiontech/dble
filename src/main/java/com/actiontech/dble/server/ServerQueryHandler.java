@@ -97,9 +97,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                     case ServerParse.SELECT:
                         SelectHandler.handle(sql, service, rs >>> 8);
                         break;
-                    case ServerParse.START:
-                        StartHandler.handle(sql, service, rs >>> 8);
-                        break;
+                    case ServerParse.START_TRANSACTION:
                     case ServerParse.BEGIN:
                         BeginHandler.handle(sql, service);
                         break;

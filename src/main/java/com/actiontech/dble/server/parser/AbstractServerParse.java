@@ -72,10 +72,13 @@ public abstract class AbstractServerParse implements ServerParse {
 
     public static boolean isTCL(int sqlType) {
         switch (sqlType) {
-            case RwSplitServerParse.BEGIN:
-            case RwSplitServerParse.START_TRANSACTION:
-            case RwSplitServerParse.COMMIT:
-            case RwSplitServerParse.ROLLBACK:
+            case ServerParse.BEGIN:
+            case ServerParse.START_TRANSACTION:
+            case ServerParse.COMMIT:
+            case ServerParse.ROLLBACK:
+            case ServerParse.XA_START:
+            case ServerParse.XA_COMMIT:
+            case ServerParse.XA_ROLLBACK:
                 return true;
             default:
                 return false;

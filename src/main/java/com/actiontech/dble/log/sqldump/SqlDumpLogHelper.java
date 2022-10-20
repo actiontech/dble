@@ -167,7 +167,7 @@ public final class SqlDumpLogHelper {
     private static String[] packageLog(RWSplitService rwSplitService, byte[] data, String charset) {
         try {
             switch (data[4]) {
-                case MySQLPacket.COM_QUERY:
+                case MySQLPacket.COM_QUERY: // in theory, does not go into here
                     // case MySQLPacket.COM_STMT_PREPARE: // no record
                     MySQLMessage mm = new MySQLMessage(data);
                     mm.position(5);
@@ -176,10 +176,12 @@ public final class SqlDumpLogHelper {
                 case MySQLPacket.COM_STMT_EXECUTE:
                     long statementId = ByteUtil.readUB4(data, 5);
                     PreparedStatementHolder holder = rwSplitService.getPrepareStatement(statementId);
-                    MySQLMessage mm2 = new MySQLMessage(holder.getPrepareOrigin());
-                    mm2.position(5);
-                    String originSql2 = mm2.readString(charset);
-                    return packageLog(rwSplitService.getSession2(), originSql2);
+                    originSql = holder.getPrepareSql();
+                    if (!StringUtil.isBlank(originSql)) {
+                        return packageLog(rwSplitService.getSession2(), originSql);
+                    } else {
+                        return null;
+                    }
                 default:
                     return null;
             }

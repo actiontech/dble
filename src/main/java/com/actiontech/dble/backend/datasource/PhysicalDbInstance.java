@@ -377,19 +377,20 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     }
 
     boolean canSelectAsReadNode(PhysicalDbInstance ds) {
+        if (dbGroup.isDelayDetectionStart()) {
+            DelayDetectionStatus status = ds.getDelayDetectionStatus();
+            if (status == DelayDetectionStatus.ERROR || status == DelayDetectionStatus.TIMEOUT) {
+                return false;
+            }
+            return true;
+        }
         Integer slaveBehindMaster = heartbeat.getSlaveBehindMaster();
         int dbSynStatus = heartbeat.getDbSynStatus();
         if (slaveBehindMaster == null || dbSynStatus == MySQLHeartbeat.DB_SYN_ERROR) {
             return false;
         }
         boolean isSync = dbSynStatus == MySQLHeartbeat.DB_SYN_NORMAL;
-        boolean isNotDelay;
-        if (dbGroup.isDelayDetectionStart()) {
-            DelayDetectionStatus status = ds.getDelayDetectionStatus();
-            isNotDelay = status == DelayDetectionStatus.ERROR || status == DelayDetectionStatus.TIMEOUT;
-        } else {
-            isNotDelay = slaveBehindMaster <= this.dbGroupConfig.getDelayThreshold();
-        }
+        boolean isNotDelay = slaveBehindMaster <= this.dbGroupConfig.getDelayThreshold();
         return isSync && isNotDelay;
     }
 

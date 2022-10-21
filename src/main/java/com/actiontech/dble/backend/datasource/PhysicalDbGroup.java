@@ -10,7 +10,6 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.delyDetection.DelayDetection;
-import com.actiontech.dble.backend.delyDetection.DelayDetectionStatus;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.cluster.JsonFactory;
@@ -192,11 +191,8 @@ public class PhysicalDbGroup {
     }
 
     private boolean checkSlaveSynStatus(PhysicalDbInstance ds) {
-        if (ds.getDelayDetectionStatus() != DelayDetectionStatus.STOP) {
-            return false;
-        }
-        return (dbGroupConfig.getDelayThreshold() != -1) &&
-                (dbGroupConfig.isShowSlaveSql()) && !ds.getDbGroup().isDelayDetectionStart();
+        return (dbGroupConfig.getDelayThreshold() != -1 &&
+                dbGroupConfig.isShowSlaveSql()) || ds.getDbGroup().isDelayDetectionStart() ;
     }
 
 

@@ -78,6 +78,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             for (PooledConnection conn : allConnections) {
                 if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
                     final int waiting = waiterNum;
+                    ConnectionPoolProvider.getWaiterCountAfter();
                     if (waiting > 0 && conn.getCreateByWaiter().compareAndSet(true, false)) {
                         ConnectionPoolProvider.newConnectionBorrowDirectly();
                         newPooledEntry(schema, waiting, true);

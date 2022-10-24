@@ -44,7 +44,7 @@ public class DelayDetectionSqlJob implements ResponseHandler {
         updateResponseTime();
         finished.set(false);
         if (!delayDetection.isTableExists()) {
-            sql = delayDetection.getCrateTabletSQL();
+            sql = delayDetection.getCreateTableSQL();
         } else if (delayDetection.getSource().isReadInstance()) {
             sql = delayDetection.getSelectSQL();
         } else {

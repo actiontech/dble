@@ -49,7 +49,7 @@ public class DelayDetection {
     private String sqlTableName;
     private String updateSQL;
     private String selectSQL;
-    private String crateTabletSQL;
+    private String createTableSQL;
     private String errorMessage;
 
 
@@ -72,7 +72,7 @@ public class DelayDetection {
         StringBuilder select = new StringBuilder("select logic_timestamp from ? where source = '?'");
         selectSQL = convert(select, Lists.newArrayList(sqlTableName, sourceName));
         StringBuilder create = new StringBuilder("create table if not exists ? (source VARCHAR(256) primary key,real_timestamp varchar(26) NOT NULL,logic_timestamp BIGINT default 0)");
-        crateTabletSQL = convert(create, Lists.newArrayList(sqlTableName));
+        createTableSQL = convert(create, Lists.newArrayList(sqlTableName));
     }
 
     private String convert(StringBuilder template, List<String> list) {
@@ -270,8 +270,8 @@ public class DelayDetection {
         this.tableExists = tableExists;
     }
 
-    public String getCrateTabletSQL() {
-        return crateTabletSQL;
+    public String getCreateTableSQL() {
+        return createTableSQL;
     }
 
     public long getDelayVal() {

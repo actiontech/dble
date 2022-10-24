@@ -75,6 +75,7 @@ public final class ManagerSchemaInfo {
         registerTable(new DbleBackendConnectionsAssociateThread());
         registerTable(new DbleClusterRenewThread());
         registerTable(new RecyclingResource());
+        registerTable(new DbleDelayDetection());
     }
 
     private void initViews() {

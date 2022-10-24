@@ -14,6 +14,8 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.bitfunc.ItemFuncBitCount;
 import com.actiontech.dble.plan.common.item.function.castfunc.*;
 import com.actiontech.dble.plan.common.item.function.convertfunc.*;
+import com.actiontech.dble.plan.common.item.function.jsonfunc.ItemFuncJsonExtract;
+import com.actiontech.dble.plan.common.item.function.jsonfunc.ItemFuncJsonUnQuote;
 import com.actiontech.dble.plan.common.item.function.mathsfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.controlfunc.ItemFuncIfnull;

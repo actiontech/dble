@@ -148,9 +148,13 @@ public class DBConverter {
                     throw new ConfigException("dbGroup[" + dbGroupName + "]'s child database type must be consistent");
                 }
             }
+            int delayPeriodMillis = Optional.ofNullable(dbGroup.getDelayPeriodMillis()).orElse(-1);
+            String delayDatabase = dbGroup.getDelayDatabase();
             DbGroupConfig dbGroupConf = new DbGroupConfig(dbGroupName, writeDbConf, readInstanceConfigList, delayThreshold, disableHA);
             dbGroupConf.setRwSplitMode(rwSplitMode);
             dbGroupConf.setHeartbeatSQL(heartbeatSQL);
+            dbGroupConf.setDelayDatabase(delayDatabase);
+            dbGroupConf.setDelayPeriodMillis(delayPeriodMillis);
             int heartbeatTimeout = Optional.ofNullable(heartbeat.getTimeout()).orElse(0);
             dbGroupConf.setHeartbeatTimeout(heartbeatTimeout * 1000);
             int heartbeatErrorRetryCount = Optional.ofNullable(heartbeat.getErrorRetryCount()).orElse(1);

@@ -6,6 +6,8 @@
 package com.actiontech.dble.backend.datasource;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.delyDetection.DelayDetection;
+import com.actiontech.dble.backend.delyDetection.DelayDetectionStatus;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
@@ -53,6 +55,9 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     private volatile boolean fakeNode = false;
     private final LongAdder readCount = new LongAdder();
     private final LongAdder writeCount = new LongAdder();
+    private volatile DelayDetectionStatus delayDetectionStatus = DelayDetectionStatus.STOP;
+    protected DelayDetection delayDetection;
+
 
     private final AtomicBoolean isInitial = new AtomicBoolean(false);
 
@@ -62,6 +67,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     private volatile boolean needSkipEvit = false;
     private volatile boolean needSkipHeartTest = false;
     private volatile int logCount;
+
 
     public PhysicalDbInstance(DbInstanceConfig config, DbGroupConfig dbGroupConfig, boolean isReadNode) {
         this.config = config;
@@ -81,7 +87,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         this.disabled = new AtomicBoolean(org.disabled.get());
     }
 
-    public void init(String reason, boolean isInitHeartbeat) {
+    public void init(String reason, boolean isInitHeartbeat, boolean delayDetectionStart) {
         if (disabled.get() || fakeNode) {
             LOGGER.info("init dbInstance[{}] because {}, but it is disabled or a fakeNode, skip initialization.", this.dbGroup.getGroupName() + "." + name, reason);
             return;
@@ -95,7 +101,10 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         checkPoolSize();
 
         LOGGER.info("init dbInstance[{}]", this.dbGroup.getGroupName() + "." + name);
-        start(reason, isInitHeartbeat);
+        if (delayDetectionStart) {
+            delayDetection = new DelayDetection(this);
+        }
+        start(reason, isInitHeartbeat, delayDetectionStart);
     }
 
     protected void checkPoolSize() {
@@ -367,7 +376,14 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         return config;
     }
 
-    boolean canSelectAsReadNode() {
+    boolean canSelectAsReadNode(PhysicalDbInstance ds) {
+        if (dbGroup.isDelayDetectionStart()) {
+            DelayDetectionStatus status = ds.getDelayDetectionStatus();
+            if (status == DelayDetectionStatus.ERROR || status == DelayDetectionStatus.TIMEOUT) {
+                return false;
+            }
+            return true;
+        }
         Integer slaveBehindMaster = heartbeat.getSlaveBehindMaster();
         int dbSynStatus = heartbeat.getDbSynStatus();
         if (slaveBehindMaster == null || dbSynStatus == MySQLHeartbeat.DB_SYN_ERROR) {
@@ -387,10 +403,40 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         heartbeat.start(config.getPoolConfig().getHeartbeatPeriodMillis());
     }
 
-    void start(String reason, boolean isStartHeartbeat) {
+    public void startDelayDetection() {
+        if (this.isDisabled() || this.isFakeNode()) {
+            LOGGER.info("the instance[{}] is disabled or fake node, skip to start delayDetection.", this.dbGroup.getGroupName() + "." + name);
+            return;
+        }
+        if (!dbGroup.isDelayDetectionStart()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("this instance does not require delay detection to be enabled");
+            }
+            return;
+        }
+        long initialDelay = 0;
+        if (readInstance) {
+            initialDelay = dbGroupConfig.getDelayPeriodMillis();
+        }
+        delayDetection.start(initialDelay);
+    }
+
+    public void start() {
+        if (this.isDisabled() || this.isFakeNode()) {
+            LOGGER.info("the instance[{}] is disabled or fake node, skip to start heartbeat.", this.dbGroup.getGroupName() + "." + name);
+            return;
+        }
+
+        heartbeat.start(config.getPoolConfig().getHeartbeatPeriodMillis());
+    }
+
+    void start(String reason, boolean isStartHeartbeat, boolean delayDetectionStart) {
         startPool(reason);
         if (isStartHeartbeat) {
             startHeartbeat();
+        }
+        if (delayDetectionStart && dbGroup.isDelayDetectionStart()) {
+            startDelayDetection();
         }
     }
 
@@ -430,7 +476,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     }
 
     public void stopDirectly(String reason, boolean closeFront, boolean isStopPool) {
-        stop(reason, closeFront, true, dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this || isStopPool);
+        stop(reason, closeFront, true, dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this || isStopPool, true);
     }
 
     public void stop(String reason, boolean closeFront, boolean isStopPool) {
@@ -449,9 +495,12 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         stopDirectly(reason, closeFront, false);
     }
 
-    protected void stop(String reason, boolean closeFront, boolean isStopHeartbeat, boolean isStopPool) {
+    protected void stop(String reason, boolean closeFront, boolean isStopHeartbeat, boolean isStopPool, boolean delayDetectionStop) {
         if (isStopHeartbeat) {
             stopHeartbeat(reason);
+        }
+        if (delayDetectionStop) {
+            stopDelayDetection(reason);
         }
         if (isStopPool) {
             stopPool(reason, closeFront);
@@ -464,6 +513,15 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
             ReloadLogHelper.debug("stop heartbeat :{},reason:{}", LOGGER, this.toString(), reason);
         }
         heartbeat.stop(reason);
+    }
+
+    public void stopDelayDetection(String reason) {
+        if (LOGGER.isDebugEnabled()) {
+            ReloadLogHelper.debug("stop delayDetection :{},reason:{}", LOGGER, this.toString(), reason);
+        }
+        if (Objects.nonNull(delayDetection)) {
+            delayDetection.stop(reason);
+        }
     }
 
     public void stopPool(String reason, boolean closeFront) {
@@ -512,7 +570,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public boolean enable() {
         if (disabled.compareAndSet(true, false)) {
-            start("execute manager cmd of enable", true);
+            start("execute manager cmd of enable", true, true);
             return true;
         }
         return false;
@@ -554,6 +612,17 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         this.logCount = logCount;
     }
 
+    public DelayDetectionStatus getDelayDetectionStatus() {
+        return delayDetectionStatus;
+    }
+
+    public void setDelayDetectionStatus(DelayDetectionStatus delayDetectionStatus) {
+        this.delayDetectionStatus = delayDetectionStatus;
+    }
+
+    public DelayDetection getDelayDetection() {
+        return delayDetection;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -568,6 +637,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                 dbGroup.equalsBaseInfo(that.dbGroup) &&
                 Objects.equals(disabled.get(), that.disabled.get());
     }
+
 
     @Override
     public int hashCode() {
@@ -596,6 +666,15 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                 this.config.getPassword().equals(dbInstance.getConfig().getPassword()) &&
                 this.config.isUsingDecrypt() == dbInstance.getConfig().isUsingDecrypt() &&
                 this.config.getPoolConfig().getHeartbeatPeriodMillis() == dbInstance.getConfig().getPoolConfig().getHeartbeatPeriodMillis() &&
+                this.disabled.get() == dbInstance.isDisabled();
+    }
+
+    public boolean equalsForDelayDetection(PhysicalDbInstance dbInstance) {
+        return this.config.getUrl().equals(dbInstance.getConfig().getUrl()) &&
+                this.config.getPort() == dbInstance.getConfig().getPort() &&
+                this.config.getUser().equals(dbInstance.getConfig().getUser()) &&
+                this.config.getPassword().equals(dbInstance.getConfig().getPassword()) &&
+                this.config.isUsingDecrypt() == dbInstance.getConfig().isUsingDecrypt() &&
                 this.disabled.get() == dbInstance.isDisabled();
     }
 

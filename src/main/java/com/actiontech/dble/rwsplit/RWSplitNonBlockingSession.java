@@ -157,7 +157,11 @@ public class RWSplitNonBlockingSession extends Session {
             Boolean isMaster = canRunOnMaster(master); //  first
             boolean firstValue = isMaster == null ? false : isMaster;
             long rwStickyTime = SystemConfig.getInstance().getRwStickyTime();
-            if (rwGroup.getRwSplitMode() != PhysicalDbGroup.RW_SPLIT_OFF && (rwStickyTime > 0) && !firstValue) {
+            boolean rwSticky = rwStickyTime > 0;
+            if (rwGroup.isDelayDetectionStart()) {
+                rwSticky = false;
+            }
+            if (rwGroup.getRwSplitMode() != PhysicalDbGroup.RW_SPLIT_OFF && rwSticky && !firstValue) {
                 if (this.getPreWriteResponseTime() > 0 && System.currentTimeMillis() - this.getPreWriteResponseTime() <= rwStickyTime) {
                     isMaster = true;
                     if (LOGGER.isDebugEnabled()) {

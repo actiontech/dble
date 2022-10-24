@@ -34,6 +34,8 @@ public abstract class PooledConnection extends AbstractConnection {
 
     public static final Comparator<PooledConnection> LAST_ACCESS_COMPARABLE;
 
+    private AtomicBoolean createByWaiter = new AtomicBoolean(false);
+
     static {
         LAST_ACCESS_COMPARABLE = Comparator.comparingLong(entryOne -> entryOne.lastTime);
     }
@@ -121,5 +123,9 @@ public abstract class PooledConnection extends AbstractConnection {
 
     public AtomicBoolean getIsCreateFail() {
         return isCreateFail;
+    }
+
+    public AtomicBoolean getCreateByWaiter() {
+        return createByWaiter;
     }
 }

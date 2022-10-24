@@ -224,7 +224,8 @@ public class MySQLHeartbeat {
                 AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
         }
         //after the heartbeat changes from failure to success, it needs to be expanded immediately
-        if (source.getTotalConnections() == 0) {
+        if (source.getTotalConnections() == 0 && !status.equals(MySQLHeartbeatStatus.INIT) && !status.equals(MySQLHeartbeatStatus.OK)) {
+            LOGGER.debug("[updatePoolCapacity] heartbeat to [{}] setOk, previous status is {}", source, status);
             source.updatePoolCapacity();
         }
         if (isStop) {

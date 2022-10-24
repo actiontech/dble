@@ -74,9 +74,12 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         }
         try {
             ConnectionPoolProvider.getConnGetFrenshLocekAfter();
+            int waiting = waiters.get();
             for (PooledConnection conn : allConnections) {
                 if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
-                    newPooledEntry(schema, waiters.get());
+                    if (waiting > 0 && conn.getCreateByWaiter().compareAndSet(true, false)) {
+                        newPooledEntry(schema, waiting, true);
+                    }
                     return conn;
                 }
             }
@@ -94,11 +97,12 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         try {
             final int waiting = waiterNum;
             ConnectionPoolProvider.getConnGetFrenshLocekAfter();
+            ConnectionPoolProvider.borrowConnectionBefore();
             for (PooledConnection conn : allConnections) {
                 if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
                     // If we may have stolen another waiter's connection, request another bag add.
-                    if (waiting > 1) {
-                        newPooledEntry(schema, waiting - 1);
+                    if (waiting > 0 && conn.getCreateByWaiter().compareAndSet(true, false)) {
+                        newPooledEntry(schema, waiting, true);
                     }
                     return conn;
                 }
@@ -106,14 +110,18 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
 
             waiterNum = waiters.incrementAndGet();
             try {
-                newPooledEntry(schema, waiterNum);
+                newPooledEntry(schema, waiterNum, true);
 
+                ConnectionPoolProvider.newConnectionAfter();
                 timeout = timeUnit.toNanos(timeout);
 
                 do {
                     final long start = System.nanoTime();
                     final PooledConnection bagEntry = handoffQueue.poll(timeout, NANOSECONDS);
                     if (bagEntry == null || bagEntry.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                        if (bagEntry != null) {
+                            bagEntry.getCreateByWaiter().set(false);
+                        }
                         return bagEntry;
                     }
 
@@ -129,7 +137,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         }
     }
 
-    private void newPooledEntry(final String schema, final int waiting) {
+    private void newPooledEntry(final String schema, final int waiting, boolean createByWaiter) {
         if (instance.isDisabled() || isClosed.get()) {
             return;
         }
@@ -138,7 +146,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", alertKey);
         if (waiting > 0) {
             if (totalConnections.incrementAndGet() <= config.getMaxCon()) {
-                newConnection(schema, ConnectionPool.this);
+                newConnection(schema, ConnectionPool.this, createByWaiter);
                 if (ToResolveContainer.REACH_MAX_CON.contains(alertKey)) {
                     AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", config.getId(), labels,
                             ToResolveContainer.REACH_MAX_CON, alertKey);
@@ -188,7 +196,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         }
         for (int i = 0; i < connectionsToAdd; i++) {
             // newPooledEntry(schemas[i % schemas.length]);
-            newPooledEntry(null, 1);
+            newPooledEntry(null, 1, false);
         }
     }
 
@@ -201,6 +209,8 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             heartBeatHandler.ping(poolConfig.getConnectionHeartbeatTimeout());
             return;
         }
+
+        LOGGER.debug("connection create success: createByWaiter:{},new connection:{}", conn.getCreateByWaiter().get(), conn);
 
         conn.lazySet(STATE_NOT_IN_USE);
         // spin until a thread takes it or none are waiting
@@ -218,6 +228,9 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     @Override
     public void onCreateFail(PooledConnection conn, Throwable e) {
         if (conn == null || conn.getIsCreateFail().compareAndSet(false, true)) {
+            if (conn != null) {
+                LOGGER.debug("connection create fail: createByWaiter:{},new connection:{}", conn.getCreateByWaiter().get(), conn);
+            }
             LOGGER.warn("create connection fail " + e.getMessage());
             totalConnections.decrementAndGet();
             // conn can be null if newChannel crashed (eg SocketException("too many open files"))

@@ -17,5 +17,13 @@ public final class ConnectionPoolProvider {
 
     }
 
+    public static void newConnectionAfter() {
+
+    }
+
+    public static void borrowConnectionBefore() {
+
+    }
+
 
 }

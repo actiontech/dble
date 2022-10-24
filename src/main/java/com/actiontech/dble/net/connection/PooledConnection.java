@@ -36,6 +36,8 @@ public abstract class PooledConnection extends AbstractConnection {
 
     protected long connectionTimeout;
 
+    private AtomicBoolean createByWaiter = new AtomicBoolean(false);
+
     static {
         LAST_ACCESS_COMPARABLE = Comparator.comparingLong(entryOne -> entryOne.lastTime);
     }
@@ -123,5 +125,9 @@ public abstract class PooledConnection extends AbstractConnection {
 
     public AtomicBoolean getIsCreateFail() {
         return isCreateFail;
+    }
+
+    public AtomicBoolean getCreateByWaiter() {
+        return createByWaiter;
     }
 }

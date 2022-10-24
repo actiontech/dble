@@ -30,6 +30,12 @@ public class DBGroup implements Named {
     @XmlAttribute
     protected String disableHA;
 
+    @XmlAttribute
+    protected Integer delayPeriodMillis;
+
+    @XmlAttribute
+    protected String delayDatabase;
+
     protected HeartBeat heartbeat;
 
     protected List<DBInstance> dbInstance;
@@ -106,6 +112,21 @@ public class DBGroup implements Named {
         this.disableHA = disableHA;
     }
 
+    public Integer getDelayPeriodMillis() {
+        return delayPeriodMillis;
+    }
+
+    public void setDelayPeriodMillis(Integer delayPeriodMillis) {
+        this.delayPeriodMillis = delayPeriodMillis;
+    }
+
+    public String getDelayDatabase() {
+        return delayDatabase;
+    }
+
+    public void setDelayDatabase(String delayDatabase) {
+        this.delayDatabase = delayDatabase;
+    }
 
     @Override
     public String toString() {
@@ -115,6 +136,10 @@ public class DBGroup implements Named {
                 name +
                 ", delayThreshold=" +
                 delayThreshold +
+                ", delayPeriodMillis=" +
+                delayPeriodMillis +
+                ", delayDatabase=" +
+                delayDatabase +
                 ", disableHA=" +
                 disableHA +
                 ", heartbeat=" +

@@ -41,7 +41,7 @@ import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -489,7 +489,7 @@ public class ServerConfig {
 
     private void initDbGroupByMap(List<ChangeItem> changeItemList, Map<String, PhysicalDbGroup> oldDbGroupMap, Map<String, ShardingNode> newShardingNodes,
                                   boolean isFullyConfigured, int loadAllMode) {
-        List<PhysicalDbGroup> updateDbGroupList = Lists.newArrayList();
+        Map<ChangeItem, PhysicalDbGroup> updateDbGroupMap = Maps.newHashMap();
         for (ChangeItem changeItem : changeItemList) {
             Object item = changeItem.getItem();
             ChangeItemType itemType = changeItem.getItemType();
@@ -498,7 +498,7 @@ public class ServerConfig {
                     addItem(item, itemType, oldDbGroupMap, newShardingNodes, isFullyConfigured);
                     break;
                 case UPDATE:
-                    updateItem(item, itemType, oldDbGroupMap, newShardingNodes, changeItem, updateDbGroupList, loadAllMode);
+                    updateItem(item, itemType, oldDbGroupMap, newShardingNodes, changeItem, updateDbGroupMap, loadAllMode);
                     break;
                 case DELETE:
                     deleteItem(item, itemType, oldDbGroupMap, loadAllMode);
@@ -507,9 +507,14 @@ public class ServerConfig {
                     break;
             }
         }
-        for (PhysicalDbGroup physicalDbGroup : updateDbGroupList) {
-            physicalDbGroup.startHeartbeat();
-        }
+        updateDbGroupMap.forEach((changeItem, dbGroup) -> {
+            if (changeItem.isAffectHeartbeat()) {
+                dbGroup.startHeartbeat();
+            }
+            if (changeItem.isAffectDelayDetection() && dbGroup.isDelayDetectionStart()) {
+                dbGroup.startDelayDetection();
+            }
+        });
     }
 
     private void deleteItem(Object item, ChangeItemType itemType, Map<String, PhysicalDbGroup> oldDbGroupMap, int loadAllMode) {
@@ -536,17 +541,28 @@ public class ServerConfig {
     }
 
     private void updateItem(Object item, ChangeItemType itemType, Map<String, PhysicalDbGroup> oldDbGroupMap, Map<String, ShardingNode> newShardingNodes, ChangeItem changeItem,
-                            List<PhysicalDbGroup> updateDbGroupList, int loadAllMode) {
+                            Map<ChangeItem, PhysicalDbGroup> updateDbGroupMap, int loadAllMode) {
         if (itemType == ChangeItemType.PHYSICAL_DB_GROUP) {
             //change dbGroup
             PhysicalDbGroup physicalDbGroup = (PhysicalDbGroup) item;
             PhysicalDbGroup oldDbGroup = oldDbGroupMap.get(physicalDbGroup.getGroupName());
+            boolean dbGroupCopy = false;
             if (changeItem.isAffectHeartbeat()) {
                 oldDbGroup.stopHeartbeat("reload config, stop group heartbeat");
                 oldDbGroup.copyBaseInfo(physicalDbGroup);
+                dbGroupCopy = true;
                 //create a new heartbeat in the follow-up
-                updateDbGroupList.add(oldDbGroup);
-            } else {
+                updateDbGroupMap.put(changeItem, oldDbGroup);
+            }
+            if (changeItem.isAffectDelayDetection()) {
+                oldDbGroup.stopDelayDetection("reload config, stop group delayDetection");
+                if (!dbGroupCopy) {
+                    oldDbGroup.copyBaseInfo(physicalDbGroup);
+                    dbGroupCopy = true;
+                }
+                updateDbGroupMap.put(changeItem, oldDbGroup);
+            }
+            if (!dbGroupCopy) {
                 oldDbGroup.copyBaseInfo(physicalDbGroup);
             }
             reloadSchema(oldDbGroup, newShardingNodes);
@@ -564,15 +580,15 @@ public class ServerConfig {
             }
             oldDbGroupMap.put(physicalDbGroup.getGroupName(), oldDbGroup);
         } else if (itemType == ChangeItemType.PHYSICAL_DB_INSTANCE) {
-            if (changeItem.isAffectHeartbeat() || changeItem.isAffectConnectionPool()) {
+            if (changeItem.isAffectHeartbeat() || changeItem.isAffectConnectionPool() || changeItem.isAffectDelayDetection()) {
                 PhysicalDbInstance physicalDbInstance = (PhysicalDbInstance) item;
                 PhysicalDbGroup physicalDbGroup = oldDbGroupMap.get(physicalDbInstance.getDbGroupConfig().getName());
                 PhysicalDbInstance oldDbInstance = physicalDbGroup.getAllDbInstanceMap().get(physicalDbInstance.getName());
-                oldDbInstance.stop("reload config, recycle old instance", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0), true);
+                oldDbInstance.stopDirectly("reload config, recycle old instance", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0), true);
                 oldDbInstance = null;
                 removeDbInstance(physicalDbGroup, physicalDbInstance.getName());
                 physicalDbGroup.setDbInstance(physicalDbInstance);
-                physicalDbInstance.init("reload config", true);
+                physicalDbInstance.init("reload config", true, true);
             } else {
                 PhysicalDbInstance physicalDbInstance = (PhysicalDbInstance) item;
                 PhysicalDbGroup physicalDbGroup = oldDbGroupMap.get(physicalDbInstance.getDbGroupConfig().getName());
@@ -620,7 +636,7 @@ public class ServerConfig {
             PhysicalDbGroup physicalDbGroup = oldDbGroupMap.get(dbInstance.getDbGroupConfig().getName());
             if (isFullyConfigured) {
                 physicalDbGroup.setDbInstance(dbInstance);
-                dbInstance.init("reload config", true);
+                dbInstance.init("reload config", true, true);
             } else {
                 LOGGER.info("dbGroup[" + dbInstance.getDbGroupConfig().getName() + "] is not fullyConfigured, so doing nothing");
             }

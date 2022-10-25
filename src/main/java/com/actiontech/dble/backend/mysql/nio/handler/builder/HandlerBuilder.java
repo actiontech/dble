@@ -6,8 +6,13 @@
 package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
+import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeEasyMergeHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.SendMakeHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.TempTableHandler;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.util.RouterUtil;
@@ -82,6 +87,11 @@ public class HandlerBuilder {
         try {
             final long startTime = System.nanoTime();
             BaseHandlerBuilder builder = getBuilder(session, node, false);
+            if (builder.isFastBack()) {
+                //fast back
+                session.getShardingService().write(OkPacket.getDefault());
+                return null;
+            }
             DMLResponseHandler endHandler = builder.getEndHandler();
             DMLResponseHandler fh = FinalHandlerFactory.createFinalHandler(session);
             endHandler.setNextHandler(fh);
@@ -97,7 +107,7 @@ public class HandlerBuilder {
                         }
                     }
                 }
-                for (BaseSelectHandler baseHandler : mergeHandler.getExeHandlers()) {
+                for (BaseDMLHandler baseHandler : mergeHandler.getExeHandlers()) {
                     baseHandler.getRrss().setRunOnSlave(this.session.getComplexRrs().getRunOnSlave());
                 }
             }
@@ -255,6 +265,8 @@ public class HandlerBuilder {
             return new NoNameNodeHandlerBuilder(nonBlockingSession, (NoNameNode) planNode, this, isExplain);
         } else if (i == PlanNode.PlanNodeType.JOIN_INNER) {
             return new JoinInnerHandlerBuilder(nonBlockingSession, (JoinInnerNode) planNode, this, isExplain);
+        } else if (i == PlanNode.PlanNodeType.MODIFY) {
+            return new ModifyNodeHandlerBuilder(nonBlockingSession, (ModifyNode) planNode, this, isExplain);
         }
         throw new RuntimeException("not supported tree node type:" + planNode.type());
     }

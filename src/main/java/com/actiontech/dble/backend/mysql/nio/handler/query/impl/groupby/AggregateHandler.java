@@ -248,4 +248,9 @@ public class AggregateHandler extends BaseDMLHandler {
             store.close();
         }
     }
+
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.AGGREGATE;
+    }
 }

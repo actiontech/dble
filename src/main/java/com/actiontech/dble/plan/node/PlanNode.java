@@ -35,7 +35,7 @@ public abstract class PlanNode {
     }
 
     public enum PlanNodeType {
-        NONAME, TABLE, JOIN, MERGE, QUERY, JOIN_INNER, MANAGER_TABLE
+        NONAME, TABLE, JOIN, MERGE, QUERY, JOIN_INNER, MANAGER_TABLE, MODIFY
     }
 
     public abstract PlanNodeType type();
@@ -119,7 +119,7 @@ public abstract class PlanNode {
 
     NameResolutionContext nameContext;
 
-    private ReferContext referContext;
+    protected ReferContext referContext;
 
     protected boolean keepFieldSchema = true;
     private boolean singleRoute = false;
@@ -476,7 +476,7 @@ public abstract class PlanNode {
         columnsSelected = newSels;
     }
 
-    private NamedField makeOutNamedField(Item sel) {
+    protected NamedField makeOutNamedField(Item sel) {
         String tmpSchema = null;
         if (keepFieldSchema) {
             tmpSchema = sel.getDbName();

@@ -172,4 +172,9 @@ public class UnionHandler extends BaseDMLHandler {
         }
     }
 
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.UNION_ALL;
+    }
+
 }

@@ -160,4 +160,9 @@ public class OrderByHandler extends OwnThreadDMLHandler {
             this.localResult.close();
     }
 
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.ORDER;
+    }
+
 }

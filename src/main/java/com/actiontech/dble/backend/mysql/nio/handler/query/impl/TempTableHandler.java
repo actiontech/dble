@@ -191,4 +191,9 @@ public class TempTableHandler extends BaseDMLHandler {
         return HandlerType.TEMPTABLE;
     }
 
+
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.NEST_LOOP;
+    }
 }

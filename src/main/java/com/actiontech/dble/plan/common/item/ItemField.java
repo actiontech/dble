@@ -218,7 +218,9 @@ public class ItemField extends ItemIdent {
         return tableName;
     }
 
-
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
 
     @Override
     public boolean fixFields() {

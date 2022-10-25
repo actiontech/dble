@@ -25,23 +25,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.List;
 
-/**
- * for execute Sql,transform the response data to next handler
- */
-public class BaseSelectHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BaseSelectHandler.class);
+public class BaseUpdateHandler extends BaseDMLHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseUpdateHandler.class);
 
     private final boolean autocommit;
-    private volatile int fieldCounts = -1;
-
+    private final RouteResultsetNode rrss;
     private final NonBlockingSession serverSession;
 
-    public BaseSelectHandler(long id, RouteResultsetNode rrss, boolean autocommit, Session session) {
+    public BaseUpdateHandler(long id, RouteResultsetNode rrss, boolean autocommit, Session session) {
         super(id, session, rrss);
         serverSession = (NonBlockingSession) session;
+        this.rrss = rrss;
         this.autocommit = autocommit;
     }
 
@@ -85,55 +81,31 @@ public class BaseSelectHandler extends BaseDMLHandler {
         service.executeMultiNode(rrss, serverSession.getShardingService(), autocommit);
     }
 
+    public RouteResultsetNode getRrss() {
+        return rrss;
+    }
 
     @Override
     public void okResponse(byte[] ok, @NotNull AbstractService service) {
         LOGGER.debug("receive ok packet for sync context, service {}", service);
-        ((MySQLResponseService) service).syncAndExecute();
+        if (terminate.get()) {
+            return;
+        }
+        nextHandler.okResponse(ok, service);
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, @NotNull AbstractService service) {
-        serverSession.setHandlerEnd(this);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(service.toString() + "'s field is reached.");
-        }
-        if (terminate.get()) {
-            return;
-        }
-        if (fieldCounts == -1) {
-            fieldCounts = fields.size();
-        }
-        List<FieldPacket> fieldPackets = new ArrayList<>();
-
-        for (byte[] field1 : fields) {
-            FieldPacket field = new FieldPacket();
-            field.read(field1);
-            fieldPackets.add(field);
-        }
-        nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, service);
     }
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService conn) {
-        if (terminate.get())
-            return true;
-        RowDataPacket rp = new RowDataPacket(fieldCounts);
-        rp.read(row);
-        nextHandler.rowResponse(null, rp, this.isLeft, conn);
         return false;
     }
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(service + " 's rowEof is reached.");
-        }
-        if (this.terminate.get()) {
-            return;
-        }
-        nextHandler.rowEofResponse(data, this.isLeft, service);
     }
 
     /**
@@ -195,7 +167,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     @Override
     public HandlerType type() {
-        return HandlerType.BASESEL;
+        return HandlerType.BASE_UPDATE;
     }
 
 }

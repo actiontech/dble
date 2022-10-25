@@ -19,4 +19,9 @@ public class JoinInnerHandler extends JoinHandler {
     public JoinInnerHandler(long id, NonBlockingSession session, boolean isLeftJoin, List<Order> leftOrder, List<Order> rightOrder, Item otherJoinOn) {
         super(id, session, isLeftJoin, leftOrder, rightOrder, otherJoinOn);
     }
+
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.INNER_FUNC_ADD;
+    }
 }

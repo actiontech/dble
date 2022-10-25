@@ -995,6 +995,10 @@ public abstract class Item {
         return null;
     }
 
+    public void setTableName(String tableName) {
+
+    }
+
     public String getDbName() {
         return null;
     }

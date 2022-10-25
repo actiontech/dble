@@ -329,4 +329,9 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         }
     }
 
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.DIRECT_GROUP;
+    }
+
 }

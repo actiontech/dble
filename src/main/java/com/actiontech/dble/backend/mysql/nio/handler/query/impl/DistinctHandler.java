@@ -116,4 +116,9 @@ public class DistinctHandler extends BaseDMLHandler {
             this.localResult.close();
     }
 
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.DISTINCT;
+    }
+
 }

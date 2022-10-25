@@ -265,4 +265,9 @@ public class NotInHandler extends OwnThreadDMLHandler {
             local = deque.poll();
         }
     }
+
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.NOT_IN;
+    }
 }

@@ -23,10 +23,12 @@ import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
+import com.actiontech.dble.plan.optimizer.SelectedProcessor;
 import com.actiontech.dble.plan.util.ComplexQueryPlanUtil;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.util.ReferenceHandlerInfo;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
+import com.actiontech.dble.plan.visitor.UpdatePlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -36,8 +38,10 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -86,17 +90,40 @@ public final class ExplainHandler {
     }
 
     private static BaseHandlerBuilder buildNodes(RouteResultset rrs, ShardingService service) {
-        SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables(), rrs.getHintPlanInfo());
-        visitor.visit(ast);
+        SQLStatement sqlStatement = rrs.getSqlStatement();
+        if (sqlStatement instanceof SQLSelectStatement) {
+            return buildSelectNodes((SQLSelectStatement) sqlStatement, service, rrs);
+        } else if (sqlStatement instanceof SQLUpdateStatement) {
+            return buildUpdateNodes((SQLUpdateStatement) sqlStatement, service, rrs);
+        }
+        return null;
+    }
+
+    private static BaseHandlerBuilder buildUpdateNodes(SQLUpdateStatement sqlStatement, ShardingService service, RouteResultset rrs) {
+        UpdatePlanNodeVisitor visitor = new UpdatePlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables(), rrs.getHintPlanInfo());
+        visitor.visit(sqlStatement);
         PlanNode node = visitor.getTableNode();
         node.setSql(rrs.getStatement());
         node.setUpFields();
-        PlanUtil.checkTablesPrivilege(service, node, ast);
+        PlanUtil.checkTablesPrivilege(service, node, sqlStatement);
+        //sub query
+        node = SelectedProcessor.optimize(node);
+
+        HandlerBuilder builder = new HandlerBuilder(node, service.getSession2());
+        return builder.getBuilder(service.getSession2(), node, true);
+    }
+
+    private static BaseHandlerBuilder buildSelectNodes(SQLSelectStatement sqlStatement, ShardingService service, RouteResultset rrs) {
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables(), rrs.getHintPlanInfo());
+        visitor.visit(sqlStatement);
+        PlanNode node = visitor.getTableNode();
+        node.setSql(rrs.getStatement());
+        node.setUpFields();
+        PlanUtil.checkTablesPrivilege(service, node, sqlStatement);
         node = MyOptimizer.optimize(node, rrs.getHintPlanInfo());
 
         if (!PlanUtil.containsSubQuery(node) && !visitor.isContainSchema()) {
-            node.setAst(ast);
+            node.setAst(sqlStatement);
         }
         HandlerBuilder builder = new HandlerBuilder(node, service.getSession2());
         return builder.getBuilder(service.getSession2(), node, true);
@@ -278,9 +305,9 @@ public final class ExplainHandler {
                 List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
                 for (ReferenceHandlerInfo result : results) {
                     RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                    row.add(StringUtil.encode(result.getName(), service.getCharset().getResults()));
-                    row.add(StringUtil.encode(result.getType(), service.getCharset().getResults()));
-                    row.add(StringUtil.encode(result.getRefOrSQL(), service.getCharset().getResults()));
+                    row.add(StringUtil.encode(getRowStr(result.getName(), result.isIndentation()), service.getCharset().getResults()));
+                    row.add(StringUtil.encode(getRowStr(result.getType(), result.isIndentation()), service.getCharset().getResults()));
+                    row.add(StringUtil.encode(getRowStr(result.getRefOrSQL(), result.isIndentation()), service.getCharset().getResults()));
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, service, true);
                 }
@@ -290,5 +317,10 @@ public final class ExplainHandler {
         EOFRowPacket lastEof = new EOFRowPacket();
         lastEof.setPacketId(++packetId);
         lastEof.write(buffer, service);
+    }
+
+    private static String getRowStr(String content, boolean indentation) {
+        String indentationStr = "------ ";
+        return indentation ? indentationStr + content : content;
     }
 }

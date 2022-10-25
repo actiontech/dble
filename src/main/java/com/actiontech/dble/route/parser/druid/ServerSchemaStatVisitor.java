@@ -470,6 +470,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             } else {
                 tableSource.getLeft().accept(this);
             }
+            SQLExpr condition = tableSource.getCondition();
+            if (condition != null) {
+                condition.accept(this);
+            }
         } else {
             SQLName identName = x.getTableName();
             if (identName != null) {

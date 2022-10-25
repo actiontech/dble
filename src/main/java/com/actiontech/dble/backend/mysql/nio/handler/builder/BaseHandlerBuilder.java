@@ -12,10 +12,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SubQueryHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.*;
 import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -25,10 +22,7 @@ import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
-import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
-import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
-import com.actiontech.dble.plan.common.item.subquery.ItemSingleRowSubQuery;
-import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.*;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
@@ -76,6 +70,7 @@ public abstract class BaseHandlerBuilder {
 
     protected boolean isExplain;
     private final List<BaseHandlerBuilder> subQueryBuilderList = new CopyOnWriteArrayList<>();
+    protected boolean isFastBack;
 
     protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder, boolean isExplain) {
         this.session = session;
@@ -114,6 +109,9 @@ public abstract class BaseHandlerBuilder {
         } else {
             //need to split to simple query
             preHandlers = buildPre();
+            if (isFastBack) {
+                return;
+            }
             buildOwn();
         }
         if (!node.isSingleRoute()) {
@@ -535,6 +533,11 @@ public abstract class BaseHandlerBuilder {
                 final SubQueryHandler tempHandler = new AllAnySubQueryHandler(getSequenceId(), session, (ItemAllAnySubQuery) itemSubQuery, isExplain);
                 DMLResponseHandler endHandler = getSubQueryHandler(itemSubQuery.getPlanNode(), tempHandler);
                 endHandlers.add(endHandler);
+            } else if (itemSubQuery instanceof UpdateItemSubQuery) {
+                SubQueryHandler tempHandler = new UpdateSubQueryHandler(getSequenceId(), session, (UpdateItemSubQuery) itemSubQuery, isExplain);
+                PlanNode queryNode = ((UpdateItemSubQuery) itemSubQuery).getQueryNode();
+                DMLResponseHandler endHandler = getSubQueryHandler(queryNode == null ? itemSubQuery.getPlanNode() : queryNode, tempHandler);
+                endHandlers.add(endHandler);
             }
         }
         return endHandlers;
@@ -682,6 +685,9 @@ public abstract class BaseHandlerBuilder {
         return subQueryBuilderList.stream().anyMatch(BaseHandlerBuilder::isExistView) || node.isExistView();
     }
 
+    public boolean isFastBack() {
+        return isFastBack;
+    }
 
     public boolean isContainSubQuery(PlanNode planNode) {
         return planNode.getSubQueries().size() > 0 || planNode.getChildren().stream().anyMatch(this::isContainSubQuery);

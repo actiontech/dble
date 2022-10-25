@@ -41,7 +41,9 @@ public abstract class ItemSubQuery extends ItemResultField {
         this.metaManager = metaManager;
         this.usrVariables = usrVariables;
         this.hintPlanInfo = hintPlanInfo;
-        init();
+        if (query != null) {
+            init();
+        }
     }
 
     @Override

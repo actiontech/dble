@@ -76,6 +76,9 @@ public class DruidDeleteParser extends DruidModifyParser {
                 //try to route to single Node for each table
                 routeShardingNodes = checkForSingleNodeTable(rrs, service.getCharset().getClient());
             }
+            if (routeShardingNodes == null) {
+                throw new SQLNonTransientException(getErrorMsg());
+            }
 
             if (ctx.getTables().isEmpty()) {
                 RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tableSet);

@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.ArrayMinHeap;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HeapItem;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
@@ -47,7 +48,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
 
     public MultiNodeMergeAndOrderHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session,
                                          List<Order> orderBys, boolean nestLoopDependOn) {
-        super(id, route, autocommit, session);
+        super(id, route, autocommit, session, true);
         this.orderBys = orderBys;
         this.queueSize = SystemConfig.getInstance().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
@@ -76,16 +77,19 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
     }
 
     private void doExecute() {
-        for (BaseSelectHandler exeHandler : exeHandlers) {
-            session.setHandlerStart(exeHandler); //base start execute
-            try {
-                BackendConnection exeConn = exeHandler.initConnection();
-                exeConn.getBackendService().setComplexQuery(true);
-                queues.put(exeConn.getBackendService(), new LinkedBlockingQueue<>(queueSize));
-                exeHandler.execute(exeConn.getBackendService());
-            } catch (Exception e) {
-                exeHandler.connectionError(e, exeHandler.getRrss());
-                return;
+        for (BaseDMLHandler exeHandler : exeHandlers) {
+            if (exeHandler instanceof BaseSelectHandler) {
+                BaseSelectHandler baseSelectHandler = (BaseSelectHandler) exeHandler;
+                session.setHandlerStart(baseSelectHandler); //base start execute
+                try {
+                    BackendConnection exeConn = baseSelectHandler.initConnection();
+                    exeConn.getBackendService().setComplexQuery(true);
+                    queues.put(exeConn.getBackendService(), new LinkedBlockingQueue<>(queueSize));
+                    baseSelectHandler.execute(exeConn.getBackendService());
+                } catch (Exception e) {
+                    baseSelectHandler.connectionError(e, baseSelectHandler.getRrss());
+                    return;
+                }
             }
         }
     }

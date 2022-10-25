@@ -19,6 +19,7 @@ import java.util.List;
 public class RenameFieldHandler extends BaseDMLHandler {
     private String alias;
     private PlanNode.PlanNodeType childType;
+
     public RenameFieldHandler(long id, Session session, String alias, PlanNode.PlanNodeType childType) {
         super(id, session);
         this.alias = alias;
@@ -57,5 +58,10 @@ public class RenameFieldHandler extends BaseDMLHandler {
 
     @Override
     protected void onTerminate() throws Exception {
+    }
+
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.RENAME_DERIVED_SUB_QUERY;
     }
 }

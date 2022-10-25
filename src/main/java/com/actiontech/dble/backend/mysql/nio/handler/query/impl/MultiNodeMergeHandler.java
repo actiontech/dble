@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
+import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.config.ErrorCode;
@@ -26,12 +27,12 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 
     protected final ReentrantLock lock;
-    final List<BaseSelectHandler> exeHandlers;
+    final List<BaseDMLHandler> exeHandlers;
     protected RouteResultsetNode[] route;
     int reachedConCount = 0;
     private Set<String> dependencies;
 
-    public MultiNodeMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, Session session) {
+    public MultiNodeMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, Session session, boolean isSelect) {
         super(id, session);
         this.exeHandlers = new ArrayList<>();
         dependencies = new HashSet<>();
@@ -39,8 +40,14 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         if (route.length == 0)
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "can not execute empty rrss!");
         for (RouteResultsetNode rrss : route) {
-            BaseSelectHandler exeHandler = new BaseSelectHandler(id, rrss, autocommit, session);
-            exeHandler.setNextHandler(this);
+            BaseDMLHandler exeHandler;
+            if (isSelect) {
+                exeHandler = new BaseSelectHandler(id, rrss, autocommit, session);
+                exeHandler.setNextHandler(this);
+            } else {
+                exeHandler = new BaseUpdateHandler(id, rrss, autocommit, session);
+                exeHandler.setNextHandler(this);
+            }
             this.exeHandlers.add(exeHandler);
         }
         this.route = route;
@@ -55,13 +62,13 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 
     public abstract void execute() throws Exception;
 
-    public List<BaseSelectHandler> getExeHandlers() {
+    public List<BaseDMLHandler> getExeHandlers() {
         return exeHandlers;
     }
 
     protected void recycleConn() {
         synchronized (exeHandlers) {
-            for (BaseSelectHandler exeHandler : exeHandlers) {
+            for (BaseDMLHandler exeHandler : exeHandlers) {
                 terminatePreHandler(exeHandler);
             }
         }

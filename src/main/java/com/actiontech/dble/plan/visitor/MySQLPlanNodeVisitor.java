@@ -46,14 +46,14 @@ import java.util.Map;
 import static com.alibaba.druid.sql.ast.statement.SQLJoinTableSource.JoinType.INNER_JOIN;
 
 public class MySQLPlanNodeVisitor {
-    private final String currentDb;
-    private final int charsetIndex;
-    private final ProxyMetaManager metaManager;
-    private PlanNode tableNode;
-    private boolean containSchema = false;
-    private boolean isSubQuery = false;
-    private Map<String, String> usrVariables;
-    private HintPlanInfo hintPlanInfo;
+    protected final String currentDb;
+    protected final int charsetIndex;
+    protected final ProxyMetaManager metaManager;
+    protected PlanNode tableNode;
+    protected boolean containSchema = false;
+    protected boolean isSubQuery = false;
+    protected Map<String, String> usrVariables;
+    protected HintPlanInfo hintPlanInfo;
 
     public MySQLPlanNodeVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager, boolean isSubQuery, Map<String, String> usrVariables, @Nullable HintPlanInfo hintPlanInfo) {
         this.currentDb = currentDb;
@@ -261,6 +261,7 @@ public class MySQLPlanNodeVisitor {
         }
         return true;
     }
+
     public boolean visit(SQLJoinTableSource joinTables) {
         SQLTableSource left = joinTables.getLeft();
         MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery, this.usrVariables, this.hintPlanInfo);
@@ -373,6 +374,7 @@ public class MySQLPlanNodeVisitor {
             MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery, this.usrVariables, this.hintPlanInfo);
             mtv.visit(subQueryTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
+            this.tableNode.setSql(subQueryTables.toString());
             this.tableNode.setContainsSubQuery(mtv.getTableNode().isContainsSubQuery());
             this.containSchema = mtv.isContainSchema();
         }
@@ -418,7 +420,7 @@ public class MySQLPlanNodeVisitor {
                 alias = StringUtil.removeBackQuote(alias);
             }
             selItem.setAlias(alias);
-            if (isSubQuery && selItem.getAlias() == null) {
+            if (isSubQuery && selItem.getAlias() == null && items.size() == 1) {
                 selItem.setAlias("autoalias_scalar");
             }
             selectItems.add(selItem);
@@ -426,7 +428,7 @@ public class MySQLPlanNodeVisitor {
         return selectItems;
     }
 
-    private void setSubQueryNode(Item selItem) {
+    protected void setSubQueryNode(Item selItem) {
         if (selItem instanceof ItemScalarSubQuery) {
             ((ItemScalarSubQuery) selItem).setField(true);
             tableNode.getSubQueries().add((ItemScalarSubQuery) selItem);
@@ -453,7 +455,7 @@ public class MySQLPlanNodeVisitor {
         tableNode.setCorrelatedSubQuery(selItem.isCorrelatedSubQuery());
     }
 
-    private void handleWhereCondition(SQLExpr whereExpr) {
+    protected void handleWhereCondition(SQLExpr whereExpr) {
         MySQLItemVisitor mev = new MySQLItemVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.usrVariables, this.hintPlanInfo);
         whereExpr.accept(mev);
         if (this.tableNode != null) {
@@ -480,7 +482,7 @@ public class MySQLPlanNodeVisitor {
         }
     }
 
-    private void handleOrderBy(SQLOrderBy orderBy) {
+    protected void handleOrderBy(SQLOrderBy orderBy) {
         for (SQLSelectOrderByItem p : orderBy.getItems()) {
             SQLExpr expr = p.getExpr();
             MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.usrVariables, this.hintPlanInfo);
@@ -585,7 +587,7 @@ public class MySQLPlanNodeVisitor {
         tableNode.setLimitTo(to);
     }
 
-    private void addJoinOnColumns(Item ifilter, JoinNode joinNode) {
+    protected void addJoinOnColumns(Item ifilter, JoinNode joinNode) {
         if (ifilter instanceof ItemFuncEqual) {
             ItemFuncEqual filter = (ItemFuncEqual) ifilter;
             Item column = filter.arguments().get(0);
@@ -613,7 +615,7 @@ public class MySQLPlanNodeVisitor {
         }
     }
 
-    private List<String> getUsingFields(List<SQLExpr> using) {
+    protected List<String> getUsingFields(List<SQLExpr> using) {
         List<String> fds = new ArrayList<>(using.size());
         for (SQLExpr us : using) {
             fds.add(StringUtil.removeBackQuote(us.toString().toLowerCase()));

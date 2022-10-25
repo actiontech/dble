@@ -410,4 +410,9 @@ public class JoinHandler extends OwnThreadDMLHandler {
     public void setNestLoopDependOn(boolean nestLoopDependOn) {
         this.nestLoopDependOn = nestLoopDependOn;
     }
+
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.JOIN;
+    }
 }

@@ -14,29 +14,29 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemNull;
 import com.actiontech.dble.plan.common.item.ItemString;
-import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.UpdateItemSubQuery;
 import com.actiontech.dble.plan.node.ManagerTableNode;
 import com.actiontech.dble.plan.node.PlanNode;
+import com.google.common.collect.Lists;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
 
-import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
+public class UpdateSubQueryHandler extends SubQueryHandler {
 
-public class InSubQueryHandler extends SubQueryHandler {
-    private int maxPartSize = 2000;
-    private int maxConnSize = 4;
-    private int rowCount = 0;
-    private Field sourceField;
-    private ItemInSubQuery itemSubQuery;
+    public static final String NEED_REPLACE = "{CHILD}";
+    private long maxRowsSize;
+    private long rowCount = 0;
+    private List<Field> sourceFieldList;
+    private UpdateItemSubQuery itemSubQuery;
 
-    public InSubQueryHandler(long id, Session session, ItemInSubQuery itemSubQuery, boolean isExplain) {
+    public UpdateSubQueryHandler(long id, Session session, UpdateItemSubQuery itemSubQuery, boolean isExplain) {
         super(id, session);
         this.itemSubQuery = itemSubQuery;
-        this.maxPartSize = SystemConfig.getInstance().getNestLoopRowsSize();
-        this.maxConnSize = SystemConfig.getInstance().getNestLoopConnSize();
+        this.maxRowsSize = SystemConfig.getInstance().getQueryForUpdateMaxRowsSize();
         if (isExplain) {
             setForExplain();
         }
@@ -54,14 +54,20 @@ public class InSubQueryHandler extends SubQueryHandler {
             // create field for first time
             if (this.fieldPackets.isEmpty()) {
                 this.fieldPackets = fieldPackets;
-                sourceField = HandlerTool.createField(this.fieldPackets.get(0));
-                Item select = itemSubQuery.getSelect();
-                PlanNode planNode = itemSubQuery.getPlanNode();
-                if (!(planNode instanceof ManagerTableNode) || ((ManagerTableNode) planNode).isNeedSendMaker()) {
-                    select.setPushDownName(select.getAlias());
+                sourceFieldList = HandlerTool.createFields(this.fieldPackets);
+
+                int i = 0;
+                for (Item item : itemSubQuery.getSelect()) {
+                    PlanNode planNode = itemSubQuery.getPlanNode();
+                    if (!(planNode instanceof ManagerTableNode) || ((ManagerTableNode) planNode).isNeedSendMaker()) {
+                        item.setPushDownName(item.getAlias());
+                    }
+                    item.setTableName(sourceFieldList.get(i).getTable());
+                    Item tmpItem = HandlerTool.createItem(item, Collections.singletonList(sourceFieldList.get(i)), 0, isAllPushDown(), type());
+                    itemSubQuery.getField().add(tmpItem);
+                    i++;
                 }
-                Item tmpItem = HandlerTool.createItem(select, Collections.singletonList(this.sourceField), 0, isAllPushDown(), type());
-                itemSubQuery.setFiled(tmpItem);
+                itemSubQuery.setSelect(itemSubQuery.getField());
             }
         } finally {
             lock.unlock();
@@ -75,8 +81,8 @@ public class InSubQueryHandler extends SubQueryHandler {
             if (terminate.get()) {
                 return true;
             }
-            if (++rowCount > maxPartSize * maxConnSize) {
-                String errMessage = "sub query too much rows!";
+            if (++rowCount > maxRowsSize) {
+                String errMessage = "update involves too many rows in query,the maximum number of rows allowed is " + maxRowsSize;
                 LOGGER.info(errMessage);
                 genErrorPackage(ErrorCode.ER_UNKNOWN_ERROR, errMessage);
                 service.getConnection().close(errMessage);
@@ -92,28 +98,37 @@ public class InSubQueryHandler extends SubQueryHandler {
                 row = new RowDataPacket(this.fieldPackets.size());
                 row.read(rowNull);
             }
-            sourceField.setPtr(row.getValue(0));
-            Item value = itemSubQuery.getFiled().getResultItem();
-            if (value == null) {
-                itemSubQuery.setContainNull(true);
-            } else {
-                itemSubQuery.getValue().add(value);
+            int i = 0;
+            for (byte[] fieldValue : row.getFieldValues()) {
+                sourceFieldList.get(i).setPtr(fieldValue);
+                i++;
             }
+            List<Item> valueList = Lists.newArrayList();
+            for (Item item : itemSubQuery.getField()) {
+                if (item != null) {
+                    Item resultItem = item.getResultItem();
+                    valueList.add(resultItem == null ? new ItemNull() : resultItem);
+                }
+            }
+            itemSubQuery.getValue().add(valueList);
         } finally {
             lock.unlock();
         }
         return false;
     }
 
-
     @Override
     public HandlerType type() {
-        return HandlerType.IN_SUB_QUERY;
+        return HandlerType.UPDATE_QUERY;
     }
 
     @Override
     public void setForExplain() {
-        itemSubQuery.getValue().add(new ItemString(NEED_REPLACE, itemSubQuery.getCharsetIndex()));
+        List<Item> valueItemList = Lists.newArrayList();
+        for (Item ignored : itemSubQuery.getSelect()) {
+            valueItemList.add(new ItemString(NEED_REPLACE, itemSubQuery.getCharsetIndex()));
+        }
+        itemSubQuery.getValue().add(valueItemList);
     }
 
 
@@ -122,9 +137,10 @@ public class InSubQueryHandler extends SubQueryHandler {
         itemSubQuery.getValue().clear();
     }
 
+
     @Override
     public ExplainType explainType() {
-        return ExplainType.IN_SUB_QUERY;
+        return ExplainType.TYPE_UPDATE_SUB_QUERY;
     }
 
 }

@@ -255,6 +255,9 @@ public final class SystemConfig {
     //unit: ms
     private long releaseTimeout = 10 * 60 * 1000L;
 
+    //maximum number of rows in select result set in multi-table update
+    private long queryForUpdateMaxRowsSize = 20000;
+
     public int getEnableAsyncRelease() {
         return enableAsyncRelease;
     }
@@ -1840,6 +1843,14 @@ public final class SystemConfig {
         this.supportSSL = supportSSL;
     }
 
+    public long getQueryForUpdateMaxRowsSize() {
+        return queryForUpdateMaxRowsSize;
+    }
+
+    public void setQueryForUpdateMaxRowsSize(long queryForUpdateMaxRowsSize) {
+        this.queryForUpdateMaxRowsSize = queryForUpdateMaxRowsSize;
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1968,6 +1979,7 @@ public final class SystemConfig {
                 ", sqlDumpLogSizeBasedRotate='" + sqlDumpLogSizeBasedRotate + '\'' +
                 ", sqlDumpLogTimeBasedRotate=" + sqlDumpLogTimeBasedRotate +
                 ", sqlDumpLogDeleteFileAge='" + sqlDumpLogDeleteFileAge + '\'' +
+                ", queryForUpdateMaxRowsSize=" + queryForUpdateMaxRowsSize +
                 "]";
     }
 

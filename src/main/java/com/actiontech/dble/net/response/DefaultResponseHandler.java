@@ -8,6 +8,7 @@ package com.actiontech.dble.net.response;
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.btrace.provider.IODelayProvider;
+import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -70,6 +71,18 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
             IODelayProvider.beforeErrorResponse(service);
             respHand.errorResponse(data, service);
         } else {
+            try {
+                ErrorPacket errPkg = new ErrorPacket();
+                errPkg.read(data);
+                String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+                LOGGER.warn("no handler process the execute sql err,just close it, sql error:{},back con:{}", errMsg, service);
+                if (service.getOriginSession() != null) {
+                    LOGGER.warn("no handler process the execute sql err,front conn {}", service.getOriginSession().getSource());
+                }
+
+            } catch (RuntimeException e) {
+                LOGGER.info("", e);
+            }
             closeNoHandler();
         }
     }

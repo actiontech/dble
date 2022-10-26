@@ -2,6 +2,7 @@ package com.actiontech.dble.net.response;
 
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -63,6 +64,18 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
             StatisticListener.getInstance().record(service.getSession(), r -> r.onBackendSqlEnd(service));
             respHand.errorResponse(data, service);
         } else {
+            try {
+                ErrorPacket errPkg = new ErrorPacket();
+                errPkg.read(data);
+                String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+                LOGGER.warn("no handler process the execute sql err,just close it, sql error:{},back con:{}", errMsg, service);
+                if (service.getSession() != null) {
+                    LOGGER.warn("no handler process the execute sql err,front conn {}", service.getSession().getSource());
+                }
+
+            } catch (RuntimeException e) {
+                LOGGER.info("error handle error-packet", e);
+            }
             closeNoHandler();
         }
     }

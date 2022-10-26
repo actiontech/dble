@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage;
 
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.StageRecorder;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.VariationSQLException;
@@ -22,12 +22,12 @@ public class CommitStage extends Stage implements TransactionStage {
 
     private final NonBlockingSession session;
     private final List<BackendConnection> conns;
-    private ImplicitCommitHandler handler;
+    private ImplicitHandler implicitHandler;
 
-    public CommitStage(NonBlockingSession session, List<BackendConnection> conns, ImplicitCommitHandler handler) {
+    public CommitStage(NonBlockingSession session, List<BackendConnection> conns, ImplicitHandler implicitHandler) {
         this.session = session;
         this.conns = conns;
-        this.handler = handler;
+        this.implicitHandler = implicitHandler;
     }
 
     public CommitStage(NonBlockingSession session, List<BackendConnection> conns, StageRecorder stageRecorder) {
@@ -60,8 +60,6 @@ public class CommitStage extends Stage implements TransactionStage {
         } else {
             // clear all resources
             session.clearResources(false);
-            if (session.closed())
-                return null;
             asyncNext(isFail, errMsg, sendData);
         }
         session.clearSavepoint();
@@ -69,18 +67,20 @@ public class CommitStage extends Stage implements TransactionStage {
     }
 
     private void asyncNext(boolean isFail, String errMsg, MySQLPacket sendData) {
+        if (session.closed())
+            return;
+
+        session.setFinishedCommitTime();
+        if (implicitHandler != null)
+            implicitHandler.next();
+
         if (isFail) {
-            session.setFinishedCommitTime();
             if (sendData != null) {
                 sendData.write(session.getSource());
             } else {
                 session.getShardingService().writeErrMessage(ErrorCode.ER_YES, "Unexpected error when commit fail:with no message detail");
             }
-        } else if (handler != null) {
-            // continue to execute sql
-            handler.next();
         } else {
-            session.setFinishedCommitTime();
             if (sendData != null) {
                 session.getShardingService().write(sendData);
             } else {

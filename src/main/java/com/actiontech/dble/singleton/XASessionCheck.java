@@ -47,7 +47,7 @@ public final class XASessionCheck {
             xaStage = session.getTransactionManager().getXAStage();
             if (XAStage.COMMIT_FAIL_STAGE.equals(xaStage)) {
                 this.commitSession.remove(session.getSource().getId());
-                session.commit();
+                session.commit(null);
             }
         }
     }
@@ -55,7 +55,7 @@ public final class XASessionCheck {
     private void checkRollbackSession() {
         for (NonBlockingSession session : rollbackSession.values()) {
             this.rollbackSession.remove(session.getSource().getId());
-            session.rollback();
+            session.rollback(null);
         }
     }
 

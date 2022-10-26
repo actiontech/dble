@@ -34,12 +34,8 @@ public class AutoCommitHandler implements TransactionHandler {
     }
 
     @Override
-    public void commit() {
-        realHandler.commit();
-    }
-
-    @Override
-    public void implicitCommit(ImplicitCommitHandler implicitCommitHandler) {
+    public void commit(ImplicitHandler implicitHandler) {
+        realHandler.commit(null);
     }
 
     @Override
@@ -48,7 +44,7 @@ public class AutoCommitHandler implements TransactionHandler {
     }
 
     @Override
-    public void rollback() {
+    public void rollback(ImplicitHandler implicitHandler) {
         if (errConnection != null && nodes.length == errConnection.size()) {
             for (MySQLResponseService service : errConnection) {
                 service.getConnection().businessClose(" rollback all connection error");
@@ -68,7 +64,7 @@ public class AutoCommitHandler implements TransactionHandler {
             }
             errConnection.clear();
         }
-        realHandler.rollback();
+        realHandler.rollback(implicitHandler);
     }
 
     @Override

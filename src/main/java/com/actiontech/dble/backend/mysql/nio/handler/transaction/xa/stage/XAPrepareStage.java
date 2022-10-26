@@ -34,11 +34,13 @@ public class XAPrepareStage extends XAStage {
                 errPacket.setPacketId(session.getShardingService().nextPacketId());
                 xaHandler.setPacketIfSuccess(errPacket);
             } else if (xaHandler.isInterruptTx()) {
+                // In transaction: expect to follow up by manually executing rollback
                 session.getShardingService().setTxInterrupt(errMsg);
                 errPacket.setPacketId(session.getShardingService().nextPacketId());
                 errPacket.write(session.getSource());
                 return null;
             }
+            // Not in transaction, automatic rollback directly
             return new XARollbackStage(session, xaHandler, false);
         }
         return new XACommitStage(session, xaHandler);
@@ -98,13 +100,6 @@ public class XAPrepareStage extends XAStage {
 
     @Override
     public void onConnectionClose(MySQLResponseService service) {
-        prepareUnconnect = true;
-        service.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
-        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
-    }
-
-    @Override
-    public void onConnectError(MySQLResponseService service) {
         prepareUnconnect = true;
         service.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);

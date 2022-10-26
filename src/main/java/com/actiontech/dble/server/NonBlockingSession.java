@@ -14,7 +14,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.ddl.BaseDDLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ddl.MultiNodeDdlPrepareHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandlerManager;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
@@ -661,13 +661,14 @@ public class NonBlockingSession extends Session {
         return transactionManager;
     }
 
-    public void commit() {
+    public void commit(ImplicitHandler handler) {
         checkBackupStatus();
-        transactionManager.commit();
+        transactionManager.commit(handler);
     }
 
-    public void implicitCommit(ImplicitCommitHandler handler) {
-        transactionManager.implicitCommit(handler);
+    public void rollback(ImplicitHandler handler) {
+        checkBackupStatus();
+        transactionManager.rollback(handler);
     }
 
     public void syncImplicitCommit() throws SQLException {
@@ -675,7 +676,7 @@ public class NonBlockingSession extends Session {
             if (shardingService.isTxInterrupted()) {
                 throw new SQLException(shardingService.getTxInterruptMsg(), "HY000", ErrorCode.ER_YES);
             }
-            shardingService.getSession2().checkBackupStatus();
+            checkBackupStatus();
             transactionManager.syncImplicitCommit();
         }
     }
@@ -700,9 +701,7 @@ public class NonBlockingSession extends Session {
         needWaitFinished = true;
     }
 
-    public void rollback() {
-        transactionManager.rollback();
-    }
+
 
     public void unLockTable(String sql) {
         UnLockTablesHandler handler = new UnLockTablesHandler(this, this.shardingService.isAutocommit(), sql);

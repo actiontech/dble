@@ -26,8 +26,12 @@ import java.util.concurrent.ConcurrentMap;
 public class XARollbackStage extends XAStage {
 
     private static Logger logger = LoggerFactory.getLogger(XARollbackStage.class);
-    private boolean lastStageIsXAEnd;
+    protected boolean lastStageIsXAEnd = true;
     protected ConcurrentMap<Object, Long> xaOldThreadIds;
+
+    public XARollbackStage(NonBlockingSession session, AbstractXAHandler handler) {
+        this(session, handler, true);
+    }
 
     public XARollbackStage(NonBlockingSession session, AbstractXAHandler handler, boolean isFromEndStage) {
         super(session, handler);
@@ -42,7 +46,7 @@ public class XARollbackStage extends XAStage {
         }
         // success
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
-        feedback(false);
+        feedback(lastStageIsXAEnd);
         return null;
     }
 
@@ -132,17 +136,6 @@ public class XARollbackStage extends XAStage {
     public void onConnectionClose(MySQLResponseService service) {
         if (lastStageIsXAEnd) {
             service.getConnection().businessClose("conn has been closed");
-            service.setXaStatus(TxState.TX_ROLLBACKED_STATE);
-        } else {
-            service.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);
-        }
-        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
-    }
-
-    @Override
-    public void onConnectError(MySQLResponseService service) {
-        if (lastStageIsXAEnd) {
-            service.getConnection().businessClose("conn connect error");
             service.setXaStatus(TxState.TX_ROLLBACKED_STATE);
         } else {
             service.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);

@@ -74,19 +74,11 @@ public class TransactionHandlerManager {
         }
     }
 
-    public void commit() {
+    public void commit(ImplicitHandler handler) {
         if (xaTxId != null) {
-            xaHandler.commit();
+            xaHandler.commit(handler);
         } else {
-            normalHandler.commit();
-        }
-    }
-
-    public void implicitCommit(ImplicitCommitHandler handler) {
-        if (xaTxId != null) {
-            xaHandler.implicitCommit(handler);
-        } else {
-            normalHandler.implicitCommit(handler);
+            normalHandler.commit(handler);
         }
     }
 
@@ -99,11 +91,11 @@ public class TransactionHandlerManager {
         }
     }
 
-    public void rollback() {
+    public void rollback(ImplicitHandler handler) {
         if (xaTxId != null) {
-            xaHandler.rollback();
+            xaHandler.rollback(handler);
         } else {
-            normalHandler.rollback();
+            normalHandler.rollback(handler);
         }
     }
 

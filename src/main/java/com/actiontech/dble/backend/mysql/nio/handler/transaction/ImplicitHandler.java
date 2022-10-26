@@ -5,6 +5,6 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction;
 
-public interface ImplicitCommitHandler {
+public interface ImplicitHandler {
     void next();
 }

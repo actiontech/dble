@@ -1,15 +1,29 @@
-package com.actiontech.dble.plan.common.item.function.strfunc;
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.actiontech.dble.plan.common.item.function.jsonfunc;
 
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
+import com.actiontech.dble.plan.common.item.function.strfunc.ItemStrFunc;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.internal.Streams;
+import com.google.gson.stream.JsonWriter;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.*;
 
 /**
+ * the json extract function.
+ * this implementation learn from mysql's。
+ *
  * @author dcy
  * Create Date: 2022-01-24
  */
@@ -90,15 +104,42 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
             if (unquote && result.isJsonPrimitive()) {
                 outputResult = (result.getAsString());
             } else {
-                outputResult = (result.toString());
+                outputResult = jsonToString(result);
             }
 
         } else {
-            outputResult = (results.toString());
+            outputResult = jsonToString(results);
         }
         return outputResult;
     }
 
+    /**
+     * migrate from JsonElement#toString()
+     *
+     * @param node
+     * @return
+     */
+    private static String jsonToString(JsonElement node) {
+        try {
+            StringWriter stringWriter = new StringWriter();
+            final CustomJsonWriter originWriter = new CustomJsonWriter(stringWriter);
+            originWriter.setLenient(true);
+            JsonWriter jsonWriter = new JsonWriterAdaptor(stringWriter, originWriter);
+            Streams.write(node, jsonWriter);
+            return stringWriter.toString();
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+
+    private static String jsonToString(Collection<JsonElement> results) {
+        final JsonArray jsonArray = new JsonArray();
+        for (JsonElement result : results) {
+            jsonArray.add(result);
+        }
+        return jsonToString(jsonArray);
+    }
 
     private static class JsonSeeker {
         boolean couldReturnMultipleMatches = false;
@@ -310,6 +351,7 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
 
         /**
          * for **
+         *
          * @return
          */
         private PathLeg parseEllipsisLeg() {
@@ -343,6 +385,7 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
             } else {
                 findEndOfMemberName();
                 int endIndex = index;
+                //decode escape string
                 boolean wasQuoted = (pattern[beginIndex] == DOUBLE_QUOTE);
                 String tmpS;
                 if (wasQuoted) {

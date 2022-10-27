@@ -95,7 +95,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         if (result.isSuccess()) {
             PhysicalDbInstance source = heartbeat.getSource();
             Map<String, String> resultResult = result.getResult();
-            if (source.getDbGroupConfig().isShowSlaveSql()) {
+            if (source.getDbGroupConfig().isShowSlaveSql() && !source.getDbGroup().isDelayDetectionStart()) {
                 setStatusBySlave(source, resultResult);
             } else if (source.getDbGroupConfig().isSelectReadOnlySql()) {
                 setStatusByReadOnly(source, resultResult);
@@ -190,7 +190,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             String secondsBehindMaster = resultResult.get("Seconds_Behind_Master");
             if (null != secondsBehindMaster && !"".equals(secondsBehindMaster) && !"NULL".equalsIgnoreCase(secondsBehindMaster)) {
                 int behindMaster = Integer.parseInt(secondsBehindMaster);
-                int delayThreshold = source.getDbGroupConfig().getDelayThreshold();
+                int delayThreshold = source.getDbGroupConfig().getDelayThreshold() / 1000;
                 if (delayThreshold > 0) {
                     String alertKey = source.getDbGroupConfig().getName() + "-" + source.getConfig().getInstanceName();
                     if (behindMaster > delayThreshold) {

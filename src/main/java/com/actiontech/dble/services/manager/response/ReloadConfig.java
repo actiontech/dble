@@ -494,6 +494,9 @@ public final class ReloadConfig {
                     if (!newDbGroup.equalsForHeartbeat(oldDbGroup)) {
                         changeItem.setAffectHeartbeat(true);
                     }
+                    if (!newDbGroup.equalsForDelayDetection(oldDbGroup)) {
+                        changeItem.setAffectDelayDetection(true);
+                    }
                     changeItemList.add(changeItem);
                 }
 
@@ -519,6 +522,9 @@ public final class ReloadConfig {
                     }
                     if (!newDbInstance.equalsForHeartbeat(oldDbInstance)) {
                         changeItem.setAffectHeartbeat(true);
+                    }
+                    if (!newDbInstance.equalsForDelayDetection(oldDbInstance)) {
+                        changeItem.setAffectDelayDetection(true);
                     }
                     if (!newDbInstance.equalsForTestConn(oldDbInstance)) {
                         changeItem.setAffectTestConn(true);

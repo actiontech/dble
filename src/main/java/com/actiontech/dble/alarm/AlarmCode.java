@@ -40,4 +40,5 @@ public final class AlarmCode {
     public static final String SHARDING_NODE_LACK = "DBLE_SHARDING_NODE_LACK"; //Resolve by trigger
     public static final String DB_INSTANCE_LOWER_CASE_ERROR = "DBLE_DB_INSTANCE_LOWER_CASE_ERROR"; //Resolve by trigger
     public static final String DB_SLAVE_INSTANCE_DELAY = "DBLE_DB_SLAVE_INSTANCE_DELAY"; //Resolve by trigger
+    public static final String DB_MASTER_INSTANCE_DELAY_FAIL = "DB_MASTER_INSTANCE_DELAY_FAIL";
 }

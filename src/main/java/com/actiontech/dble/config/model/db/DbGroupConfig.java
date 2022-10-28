@@ -26,6 +26,9 @@ public class DbGroupConfig {
     private boolean isShowSlaveSql = false;
     private boolean isSelectReadOnlySql = false;
     private int delayThreshold;
+    private int delayPeriodMillis;
+    private String delayDatabase;
+
 
     private int heartbeatTimeout = 0;
     private int errorRetryCount = 1;
@@ -156,6 +159,22 @@ public class DbGroupConfig {
         return writeInstanceConfig.getDataBaseType();
     }
 
+    public int getDelayPeriodMillis() {
+        return delayPeriodMillis;
+    }
+
+    public void setDelayPeriodMillis(int delayPeriodMillis) {
+        this.delayPeriodMillis = delayPeriodMillis;
+    }
+
+    public String getDelayDatabase() {
+        return delayDatabase;
+    }
+
+    public void setDelayDatabase(String delayDatabase) {
+        this.delayDatabase = delayDatabase;
+    }
+
     public boolean equalsBaseInfo(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -169,6 +188,8 @@ public class DbGroupConfig {
                 errorRetryCount == that.errorRetryCount &&
                 keepAlive == that.keepAlive &&
                 disableHA == that.disableHA &&
+                delayPeriodMillis == that.delayPeriodMillis &&
+                delayDatabase == that.delayDatabase &&
                 Objects.equals(name, that.name) &&
                 Objects.equals(heartbeatSQL, that.heartbeatSQL);
     }
@@ -184,6 +205,8 @@ public class DbGroupConfig {
                 ", isShowSlaveSql=" + isShowSlaveSql +
                 ", isSelectReadOnlySql=" + isSelectReadOnlySql +
                 ", delayThreshold=" + delayThreshold +
+                ", delayPeriodMillis=" + delayPeriodMillis +
+                ", delayDatabase=" + delayDatabase +
                 ", heartbeatTimeout=" + heartbeatTimeout +
                 ", errorRetryCount=" + errorRetryCount +
                 ", keepAlive=" + keepAlive +

@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.datasource;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -86,12 +87,12 @@ public class ShardingNode {
     }
 
     public void syncGetConnection(String schema, boolean isMustWrite, boolean autoCommit, RouteResultsetNode rrs,
-                              ResponseHandler handler, Object attachment) throws Exception {
+                                  ResponseHandler handler, Object attachment) throws Exception {
 
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-sharding-node");
         try {
             checkRequest(schema);
-            PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, !isMustWrite && autoCommit), rrs.isForUpdate());
+            PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, !isMustWrite && autoCommit), rrs.isForUpdate(), localRead(rrs.getSqlType()));
             instance.syncGetConnection(schema, handler, attachment, isMustWrite);
         } finally {
             TraceManager.finishSpan(traceObject);
@@ -104,7 +105,7 @@ public class ShardingNode {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-sharding-node");
         try {
             checkRequest(schema);
-            PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, !isMustWrite && autoCommit), rrs.isForUpdate());
+            PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, !isMustWrite && autoCommit), rrs.isForUpdate(), localRead(rrs.getSqlType()));
             instance.getConnection(schema, handler, attachment, isMustWrite);
         } finally {
             TraceManager.finishSpan(traceObject);
@@ -114,7 +115,7 @@ public class ShardingNode {
     public BackendConnection getConnection(String schema, boolean autocommit, Object attachment) throws IOException {
         checkRequest(schema);
         RouteResultsetNode rrs = (RouteResultsetNode) attachment;
-        PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, autocommit), rrs.isForUpdate());
+        PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, autocommit), rrs.isForUpdate(), localRead(rrs.getSqlType()));
         return instance.getConnection(schema, attachment);
     }
 
@@ -136,6 +137,10 @@ public class ShardingNode {
             }
         }
         return master;
+    }
+
+    private boolean localRead(int sqlType) {
+        return sqlType == ServerParse.SELECT;
     }
 
 

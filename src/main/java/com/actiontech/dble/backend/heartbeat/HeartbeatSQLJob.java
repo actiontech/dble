@@ -101,6 +101,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
                 heartbeat.setErrorResult("send heartbeat error, because of [" + e.getMessage() + "]");
                 doFinished(true);
             }
+            return;
         }
 
         // heartbeat connection had been closed

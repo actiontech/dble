@@ -81,7 +81,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
                 }
 
             } catch (RuntimeException e) {
-                LOGGER.info("", e);
+                LOGGER.info("error handle error-packet", e);
             }
             closeNoHandler();
         }

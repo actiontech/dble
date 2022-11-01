@@ -29,6 +29,7 @@ public final class ManagerParseReload {
     public static final int LOAD_DATA_NUM = 14;
     public static final int SAMPLING_RATE = 15;
     public static final int XAID_CHECK_PERIOD = 16;
+    public static final int SLOW_QUERY_QUEUE_POLICY = 17;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -320,6 +321,9 @@ public final class ManagerParseReload {
                     case 'F':
                     case 'f':
                         return slowQueryFlushCheck(stmt, offset);
+                    case 'Q':
+                    case 'q':
+                        return slowQueryQueuePolicyCheck(stmt, offset);
                     default:
                         return OTHER;
                 }
@@ -420,6 +424,32 @@ public final class ManagerParseReload {
                 }
             }
 
+            return OTHER;
+        }
+        return OTHER;
+    }
+
+    private static int slowQueryQueuePolicyCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            char c11 = stmt.charAt(++offset);
+
+            // reload @@slow_query.queue_policy
+            if ((c1 == 'U' || c1 == 'u') && (c2 == 'E' || c2 == 'e') && (c3 == 'U' || c3 == 'u') &&
+                    (c4 == 'E' || c4 == 'e') && (c5 == '_') && (c6 == 'P' || c6 == 'p') && (c7 == 'O' || c7 == 'o') &&
+                    (c8 == 'L' || c8 == 'l') && (c9 == 'I' || c9 == 'i') && (c10 == 'C' || c10 == 'c') &&
+                    (c11 == 'Y' || c11 == 'y') && (stmt.length() > ++offset)) {
+                return (offset << 8) | SLOW_QUERY_QUEUE_POLICY;
+            }
             return OTHER;
         }
         return OTHER;

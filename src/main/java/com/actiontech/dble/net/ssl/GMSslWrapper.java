@@ -24,8 +24,6 @@ public class GMSslWrapper extends OpenSSLWrapper {
 
     public boolean initContext() {
         try {
-            Security.insertProviderAt((Provider) Class.forName("cn.gmssl.jce.provider.GMJCE").newInstance(), 1);
-            Security.insertProviderAt((Provider) Class.forName("cn.gmssl.jsse.provider.GMJSSE").newInstance(), 2);
 
             String pfxfile = SystemConfig.getInstance().getGmsslBothPfx();
             String pwd = SystemConfig.getInstance().getGmsslBothPfxPwd();
@@ -42,6 +40,8 @@ public class GMSslWrapper extends OpenSSLWrapper {
                 LOGGER.warn("Neither [gmsslRcaPem] nor [gmsslOcaPem] are empty.");
                 return false;
             }
+            Security.insertProviderAt((Provider) Class.forName("cn.gmssl.jce.provider.GMJCE").newInstance(), 1);
+            Security.insertProviderAt((Provider) Class.forName("cn.gmssl.jsse.provider.GMJSSE").newInstance(), 2);
 
             // load key pair
             KeyManager[] kms = createKeyManagers(pfxfile, pwd);

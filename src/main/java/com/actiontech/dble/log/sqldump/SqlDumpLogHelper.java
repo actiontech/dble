@@ -269,10 +269,10 @@ public final class SqlDumpLogHelper {
                 OnStartupTriggeringPolicy onStartupTriggeringPolicy = OnStartupTriggeringPolicy.createPolicy(1);
                 policies.add(onStartupTriggeringPolicy);
             }
-            if (participate(sizeBasedRotate)) {
-                SizeBasedTriggeringPolicy sizeBasedTriggeringPolicy = SizeBasedTriggeringPolicy.createPolicy(sizeBasedRotate);
-                policies.add(sizeBasedTriggeringPolicy);
-            }
+
+            SizeBasedTriggeringPolicy sizeBasedTriggeringPolicy = SizeBasedTriggeringPolicy.createPolicy(sizeBasedRotate);
+            policies.add(sizeBasedTriggeringPolicy);
+
             if (participate(timeBasedRotate)) {
                 TimeBasedTriggeringPolicy timeBasedTriggeringPolicy = TimeBasedTriggeringPolicy.createPolicy(timeBasedRotate + "", "false");
                 policies.add(timeBasedTriggeringPolicy);
@@ -286,12 +286,9 @@ public final class SqlDumpLogHelper {
             //         </IfFileName>
             //     </Delete>
             //  </DefaultRolloverStrategy>
-            DeleteAction deleteAction = null;
-            if (participate(deleteFileAge)) {
-                IfLastModified ifLastModified = IfLastModified.createAgeCondition(Duration.parse(deleteFileAge), new PathCondition[0]);
-                IfFileName ifFileName = IfFileName.createNameCondition(compressFilePath, null, new PathCondition[]{ifLastModified});
-                deleteAction = DeleteAction.createDeleteAction(basePath, false, 5, false, null, new PathCondition[]{ifFileName}, null, config);
-            }
+            IfLastModified ifLastModified = IfLastModified.createAgeCondition(Duration.parse(deleteFileAge), new PathCondition[0]);
+            IfFileName ifFileName = IfFileName.createNameCondition(compressFilePath, null, new PathCondition[]{ifLastModified});
+            DeleteAction deleteAction = DeleteAction.createDeleteAction(basePath, false, 5, false, null, new PathCondition[]{ifFileName}, null, config);
             DefaultRolloverStrategy strategy = DefaultRolloverStrategy.newBuilder().withMax(ROLLOVER_MAX).withConfig(config).withCustomActions(new Action[]{deleteAction}).build();
 
             /**
@@ -336,7 +333,7 @@ public final class SqlDumpLogHelper {
         public static void clearLogger() {
             final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
             final Configuration config = ctx.getConfiguration();
-            config.getAppender(LOG_NAME).stop();
+            if (config == null) return;
             Appender appender = config.getAppenders().remove(LOG_NAME);
             if (appender != null)
                 appender.stop();
@@ -345,7 +342,8 @@ public final class SqlDumpLogHelper {
 
         private static boolean participate(Object value) {
             if (value instanceof String) {
-                if (value.equals("-1"))
+                String value0 = ((String) value).trim();
+                if (StringUtil.isBlank(value0) || value.equals("-1") || value0.equalsIgnoreCase("null"))
                     return false;
             } else {
                 if ((int) value == -1)

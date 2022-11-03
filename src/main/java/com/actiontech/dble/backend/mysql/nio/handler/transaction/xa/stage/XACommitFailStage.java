@@ -83,6 +83,10 @@ public class XACommitFailStage extends XACommitStage {
             XaDelayProvider.beforeAddXaToQueue(backgroundRetryTimes.get(), xaId);
             XASessionCheck.getInstance().addCommitSession(session);
             XaDelayProvider.afterAddXaToQueue(backgroundRetryTimes.get(), xaId);
+        } else {
+            String warnStr = "The background retry mechanism for xa transaction " + xaId + " stops when the threshold[" + backgroundRetryCount + "] is reached.";
+            logger.warn(warnStr);
+            AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_STOP, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
         }
         return null;
     }

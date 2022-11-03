@@ -6,10 +6,14 @@
 package com.actiontech.dble.services.mysqlsharding;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.delyDetection.DelayDetectionSqlJob;
+import com.actiontech.dble.backend.heartbeat.HeartbeatSQLJob;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
+import com.actiontech.dble.buffer.BufferPoolRecord;
+import com.actiontech.dble.buffer.BufferType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.Session;
@@ -62,6 +66,7 @@ public class MySQLResponseService extends BackendService {
     private volatile boolean isDDL = false;
     private volatile boolean testing = false;
     private volatile TxState xaStatus = TxState.TX_INITIALIZE_STATE;
+    private volatile String executeSql = null;
 
     private final AtomicBoolean logResponse = new AtomicBoolean(false);
     private static final CommandPacket COMMIT = new CommandPacket();
@@ -337,6 +342,7 @@ public class MySQLResponseService extends BackendService {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+        executeSql = query;
         isExecuting = true;
         connection.setLastTime(TimeUtil.currentTimeMillis());
         int size = packet.calcPacketSize();
@@ -466,6 +472,7 @@ public class MySQLResponseService extends BackendService {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+        executeSql = query;
         isExecuting = true;
         connection.setLastTime(TimeUtil.currentTimeMillis());
         return new WriteToBackendTask(this, packet);
@@ -481,10 +488,12 @@ public class MySQLResponseService extends BackendService {
     }
 
     public void rollback() {
+        executeSql = "rollback";
         ROLLBACK.write(this);
     }
 
     public void commit() {
+        executeSql = "commit";
         COMMIT.write(this);
     }
 
@@ -509,6 +518,16 @@ public class MySQLResponseService extends BackendService {
         if (session != null) {
             session.setBackendResponseTime(this);
         }
+    }
+
+    @Override
+    public BufferPoolRecord.Builder generateRecordBuilder() {
+        final BufferPoolRecord.Builder builder = BufferPoolRecord.builder();
+        if (responseHandler instanceof HeartbeatSQLJob || responseHandler instanceof DelayDetectionSqlJob) {
+            builder.withType(BufferType.HEARTBEAT);
+        }
+        return builder.withSql(executeSql);
+
     }
 
     @Override

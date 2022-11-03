@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query;
 
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -118,5 +119,9 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     public void connectionAcquired(BackendConnection conn) {
         // TODO Auto-generated method stub
 
+    }
+
+    protected BufferPoolRecord.Builder generateRecordBuilder() {
+        return (session != null && session.getSource() != null) ? session.getSource().generateRecordBuilder() : BufferPoolRecord.builder();
     }
 }

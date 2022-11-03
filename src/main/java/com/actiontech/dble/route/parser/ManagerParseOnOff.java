@@ -22,6 +22,7 @@ public final class ManagerParseOnOff {
     public static final int STATISTIC = 6;
     public static final int LOAD_DATA_BATCH = 7;
     public static final int SQLDUMP_SQL = 8;
+    public static final int MEMORY_BUFFER_MONITOR = 9;
 
 
     public static int parse(String stmt, int offset) {
@@ -61,6 +62,9 @@ public final class ManagerParseOnOff {
                 case 'L':
                 case 'l':
                     return lCheck(stmt, offset);
+                case 'm':
+                case 'M':
+                    return mCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -75,6 +79,15 @@ public final class ManagerParseOnOff {
             if (prefix.startsWith("ALERT") && (stmt.length() == offset + 5 || ParseUtil.isEOF(stmt, offset + 5))) {
                 return ALERT;
             }
+        }
+        return OTHER;
+    }
+
+    // enable/disable  @@memory_buffer_monitor
+    private static int mCheck(String stmt, int offset) {
+        final String keyword = "MEMORY_BUFFER_MONITOR";
+        if (ParseUtil.compare(stmt, offset, keyword) && ParseUtil.isEOF(stmt, offset + keyword.length())) {
+            return MEMORY_BUFFER_MONITOR;
         }
         return OTHER;
     }

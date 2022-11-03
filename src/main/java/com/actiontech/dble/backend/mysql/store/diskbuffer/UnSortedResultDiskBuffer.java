@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.mysql.store.diskbuffer;
 
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -25,14 +26,14 @@ public class UnSortedResultDiskBuffer extends ResultDiskBuffer {
      */
     private final ResultDiskTape mainTape;
 
-    public UnSortedResultDiskBuffer(BufferPool pool, int columnCount) {
-        super(pool, columnCount);
-        mainTape = new ResultDiskTape(pool, file, columnCount);
+    public UnSortedResultDiskBuffer(BufferPool pool, int columnCount, BufferPoolRecord.Builder recordBuilder) {
+        super(pool, columnCount, recordBuilder);
+        mainTape = new ResultDiskTape(pool, file, columnCount, recordBuilder);
     }
 
-    public UnSortedResultDiskBuffer(BufferPool pool, int columnCount, int maxReadMemorySize) {
-        super(pool, columnCount);
-        mainTape = new ResultDiskTape(pool, file, columnCount, maxReadMemorySize);
+    public UnSortedResultDiskBuffer(BufferPool pool, int columnCount, int maxReadMemorySize, BufferPoolRecord.Builder recordBuilder) {
+        super(pool, columnCount, recordBuilder);
+        mainTape = new ResultDiskTape(pool, file, columnCount, maxReadMemorySize, recordBuilder);
     }
 
     @Override

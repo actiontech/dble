@@ -8,23 +8,24 @@ package com.actiontech.dble.backend.mysql.store;
 import com.actiontech.dble.backend.mysql.store.diskbuffer.UnSortedResultDiskBuffer;
 import com.actiontech.dble.backend.mysql.store.result.ResultExternal;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 
 public class UnSortedLocalResult extends LocalResult {
 
-    public UnSortedLocalResult(int fieldsCount, BufferPool pool, String charset) {
-        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, charset);
+    public UnSortedLocalResult(int fieldsCount, BufferPool pool, String charset, BufferPoolRecord.Builder recordBuilder) {
+        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, charset, recordBuilder);
     }
 
-    public UnSortedLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, String charset) {
-        super(initialCapacity, fieldsCount, pool, charset);
+    public UnSortedLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, String charset, BufferPoolRecord.Builder recordBuilder) {
+        super(initialCapacity, fieldsCount, pool, charset, recordBuilder);
     }
 
     @Override
     protected ResultExternal makeExternal() {
         if (maxReadMemorySize != -1) {
-            return new UnSortedResultDiskBuffer(pool, fieldsCount, maxReadMemorySize);
+            return new UnSortedResultDiskBuffer(pool, fieldsCount, maxReadMemorySize, recordBuilder);
         } else {
-            return new UnSortedResultDiskBuffer(pool, fieldsCount);
+            return new UnSortedResultDiskBuffer(pool, fieldsCount, recordBuilder);
         }
     }
 

@@ -8,6 +8,7 @@ package com.actiontech.dble.services;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.VariationSQLException;
 import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
@@ -375,6 +376,12 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     public void afterWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags) {
         clusterDelayService.markDone();
         connectionSerializableLock.unLock();
+    }
+
+
+    @Override
+    public BufferPoolRecord.Builder generateRecordBuilder() {
+        return BufferPoolRecord.builder().withSql(executeSql);
     }
 
 

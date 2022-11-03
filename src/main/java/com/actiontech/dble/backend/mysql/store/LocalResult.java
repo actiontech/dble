@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.store;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.backend.mysql.store.result.ResultExternal;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.external.ResultStore;
 
@@ -35,11 +36,13 @@ public abstract class LocalResult implements ResultStore {
     protected String charset = "UTF-8";
     protected MemSizeController bufferMC;
     protected volatile int maxReadMemorySize = -1;
+    protected BufferPoolRecord.Builder recordBuilder;
 
-    public LocalResult(int initialCapacity, int fieldsCount, BufferPool pool, String charset) {
+    public LocalResult(int initialCapacity, int fieldsCount, BufferPool pool, String charset, BufferPoolRecord.Builder recordBuilder) {
         this.rows = new ArrayList<>(initialCapacity);
         this.fieldsCount = fieldsCount;
         this.pool = pool;
+        this.recordBuilder = recordBuilder;
         init();
         this.isClosed = false;
         this.lock = new ReentrantLock();

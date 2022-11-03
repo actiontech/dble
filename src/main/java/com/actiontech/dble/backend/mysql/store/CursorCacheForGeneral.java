@@ -6,6 +6,7 @@
 
 package com.actiontech.dble.backend.mysql.store;
 
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.external.ResultStore;
@@ -23,8 +24,8 @@ public class CursorCacheForGeneral implements CursorCache {
     private volatile boolean complete = false;
 
 
-    public CursorCacheForGeneral(int fieldCount) {
-        final UnSortedLocalResult unSortedLocalResult = new UnSortedLocalResult(fieldCount, BufferPoolManager.getBufferPool(), CHARSET);
+    public CursorCacheForGeneral(int fieldCount, BufferPoolRecord.Builder recordBuilder) {
+        final UnSortedLocalResult unSortedLocalResult = new UnSortedLocalResult(fieldCount, BufferPoolManager.getBufferPool(), CHARSET, recordBuilder);
         /*
             max-memory before persist.
          */

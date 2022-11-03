@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.backend.mysql.store.FileStore;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
@@ -41,8 +42,8 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
      * @param sumFunctions
      */
     public GroupResultDiskBuffer(BufferPool pool, int fieldsCount, RowDataComparator cmp, List<FieldPacket> packets,
-                                 List<ItemSum> sumFunctions, boolean isAllPushDown, String charset) {
-        super(pool, fieldsCount, cmp);
+                                 List<ItemSum> sumFunctions, boolean isAllPushDown, String charset, BufferPoolRecord.Builder recordBuilder) {
+        super(pool, fieldsCount, cmp, recordBuilder);
         /*
       store the origin row fields,(already contains the item_sum fields in
       rowpackets we should calculate the item_sums again when next() is
@@ -62,7 +63,7 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
 
     @Override
     protected ResultDiskTape makeResultDiskTape() {
-        return new GroupResultDiskTape(pool, file, columnCount, sums.size());
+        return new GroupResultDiskTape(pool, file, columnCount, sums.size(), recordBuilder);
     }
 
     @Override
@@ -117,8 +118,8 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
         private final int orgFieldCount;
         private final int sumSize;
 
-        GroupResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int sumSize) {
-            super(pool, file, sumSize + fieldCount);
+        GroupResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int sumSize, BufferPoolRecord.Builder recordBuilder) {
+            super(pool, file, sumSize + fieldCount, recordBuilder);
             this.orgFieldCount = fieldCount;
             this.sumSize = sumSize;
         }

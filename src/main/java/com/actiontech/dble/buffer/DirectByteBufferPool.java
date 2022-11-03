@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.buffer;
 
+import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
@@ -28,6 +29,7 @@ public class DirectByteBufferPool implements BufferPool {
     private AtomicLong prevAllocatedPage;
     private final int pageSize;
     private final short pageCount;
+    final MemoryBufferMonitor bufferPoolMonitor = MemoryBufferMonitor.getInstance();
 
     public DirectByteBufferPool(int pageSize, short chunkSize, short pageCount) {
         allPages = new ByteBufferPage[pageCount];
@@ -41,12 +43,11 @@ public class DirectByteBufferPool implements BufferPool {
     }
 
 
-
-    public ByteBuffer allocate() {
-        return allocate(chunkSize);
+    public ByteBuffer allocate(BufferPoolRecord.Builder recordBuilder) {
+        return allocate(chunkSize, recordBuilder);
     }
 
-    public ByteBuffer allocate(int size) {
+    public ByteBuffer allocate(int size, BufferPoolRecord.Builder recordBuilder) {
         final int theChunkCount = size / chunkSize + (size % chunkSize == 0 ? 0 : 1);
         int selectedPage = (int) (prevAllocatedPage.incrementAndGet() % allPages.length);
         ByteBuffer byteBuf = allocateBuffer(theChunkCount, selectedPage, allPages.length);
@@ -63,14 +64,22 @@ public class DirectByteBufferPool implements BufferPool {
             }
             return ByteBuffer.allocate(allocatedSize);
         }
+        bufferPoolMonitor.addRecord(recordBuilder, byteBuf.hashCode(), size);
         return byteBuf;
     }
+
 
     public void recycle(ByteBuffer theBuf) {
         if (!(theBuf.isDirect())) {
             theBuf.clear();
             return;
         }
+
+        if (SystemConfig.getInstance().getDisableRecycleBuffer() == 1) {
+            return;
+        }
+        bufferPoolMonitor.remove(theBuf.hashCode());
+
 
         boolean recycled = false;
         DirectBuffer thisNavBuf = (DirectBuffer) theBuf;
@@ -85,6 +94,7 @@ public class DirectByteBufferPool implements BufferPool {
         if (!recycled) {
             LOGGER.info("warning ,not recycled buffer " + theBuf);
         }
+
     }
 
     private ByteBuffer allocateBuffer(int theChunkCount, int startPage, int endPage) {

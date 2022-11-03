@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2022 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2022 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql;
 
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
@@ -94,9 +94,9 @@ public class PreparedStatement implements Closeable {
             /*
             todo:could use optimized implementation here
              */
-            cursorCache = new CursorCacheForGeneral(fieldCount);
+            cursorCache = new CursorCacheForGeneral(fieldCount, session.getSource().generateRecordBuilder());
         } else {
-            cursorCache = new CursorCacheForGeneral(fieldCount);
+            cursorCache = new CursorCacheForGeneral(fieldCount, session.getSource().generateRecordBuilder());
         }
 
         this.fieldPackets = new ArrayList<>(tmpFieldPackets);

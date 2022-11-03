@@ -291,7 +291,7 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
 
     @Override
     public BufferPoolRecord.Builder generateRecordBuilder() {
-        return BufferPoolRecord.builder().withSql("<<BACK_AUTH>>");
+        return BufferPoolRecord.builder().withSql("<<BACK>>");
     }
 
     @Override

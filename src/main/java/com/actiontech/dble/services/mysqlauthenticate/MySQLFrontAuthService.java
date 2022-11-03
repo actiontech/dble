@@ -339,6 +339,6 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
 
     @Override
     public BufferPoolRecord.Builder generateRecordBuilder() {
-        return BufferPoolRecord.builder().withSql("<<FRONT_AUTH>>");
+        return BufferPoolRecord.builder().withSql("<<FRONT>>");
     }
 }

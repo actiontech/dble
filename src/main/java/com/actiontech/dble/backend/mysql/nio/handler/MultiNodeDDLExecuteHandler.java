@@ -198,6 +198,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
                         ok.setMessage(null);
                         ok.setAffectedRows(0);
                         ok.setServerStatus(source.isAutocommit() ? 2 : 1);
+                        session.multiStatementPacket(ok, packetId);
                         doSqlStat();
                         handleEndPacket(ok.toBytes(), true);
                     }

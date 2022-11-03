@@ -394,15 +394,11 @@ public class PhysicalDbGroup {
      * @return
      * @throws IOException
      */
-    public PhysicalDbInstance select(Boolean master, boolean isForUpdate) throws IOException {
+    public PhysicalDbInstance select(Boolean master, boolean isForUpdate, boolean localRead) throws IOException {
         if (Objects.nonNull(master)) {
-            return select(master, isForUpdate, master);
+            return select(master, isForUpdate, master, localRead);
         }
-        return select(master, isForUpdate, false);
-    }
-
-    public PhysicalDbInstance select(Boolean master, boolean isForUpdate, boolean writeStatistical) throws IOException {
-        return select(master, isForUpdate, writeStatistical, false);
+        return select(master, isForUpdate, false, localRead);
     }
 
     /**

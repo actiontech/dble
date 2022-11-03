@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author mycat
@@ -41,15 +40,22 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             "Last_IO_Error"};
     private static final String[] MYSQL_READ_ONLY_COLS = new String[]{"@@read_only"};
 
-    private final AtomicBoolean isQuit;
-    private MySQLHeartbeat heartbeat;
+    private final MySQLHeartbeat heartbeat;
     private volatile long lastSendQryTime;
     private volatile long lastReceivedQryTime;
-    private volatile HeartbeatSQLJob sqlJob;
+    private final HeartbeatSQLJob sqlJob;
 
     public MySQLDetector(MySQLHeartbeat heartbeat) {
         this.heartbeat = heartbeat;
-        this.isQuit = new AtomicBoolean(false);
+        String[] fetchCols = {};
+        if (heartbeat.getSource().getDbGroupConfig().isShowSlaveSql()) {
+            fetchCols = MYSQL_SLAVE_STATUS_COLS;
+        } else if (heartbeat.getSource().getDbGroupConfig().isSelectReadOnlySql()) {
+            fetchCols = MYSQL_READ_ONLY_COLS;
+        }
+
+        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(fetchCols, this);
+        this.sqlJob = new HeartbeatSQLJob(heartbeat, resultHandler);
     }
 
     boolean isHeartbeatTimeout() {
@@ -61,31 +67,21 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     }
 
     public void heartbeat() {
-        lastSendQryTime = System.currentTimeMillis();
-        if (sqlJob == null) {
-            String[] fetchCols = {};
-            if (heartbeat.getSource().getDbGroupConfig().isShowSlaveSql()) {
-                fetchCols = MYSQL_SLAVE_STATUS_COLS;
-            } else if (heartbeat.getSource().getDbGroupConfig().isSelectReadOnlySql()) {
-                fetchCols = MYSQL_READ_ONLY_COLS;
-            }
-
-            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(fetchCols, this);
-            sqlJob = new HeartbeatSQLJob(heartbeat, resultHandler);
+        if (lastSendQryTime <= 0) {
+            lastSendQryTime = System.currentTimeMillis();
             heartbeat.getSource().createConnectionSkipPool(null, sqlJob);
         } else {
+            lastSendQryTime = System.currentTimeMillis();
             sqlJob.execute();
         }
     }
 
     public void quit() {
-        if (isQuit.compareAndSet(false, true)) {
-            close();
-        }
+        sqlJob.terminate();
     }
 
     public boolean isQuit() {
-        return isQuit.get();
+        return sqlJob.isQuit();
     }
 
     @Override
@@ -236,11 +232,4 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         heartbeat.setResult(MySQLHeartbeatStatus.OK);
     }
 
-    public void close() {
-        HeartbeatSQLJob curJob = sqlJob;
-        if (curJob != null) {
-            curJob.terminate();
-            sqlJob = null;
-        }
-    }
 }

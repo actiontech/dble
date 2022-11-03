@@ -686,9 +686,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (txOperation == AutoTxOperation.COMMIT) {
                 session.checkBackupStatus();
                 session.setBeginCommitTime();
-                handler.commit(null);
+                handler.commit();
             } else {
-                handler.rollback(null);
+                handler.rollback();
             }
         } else {
             boolean inTransaction = service.isInTransaction();

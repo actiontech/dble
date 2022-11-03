@@ -101,6 +101,13 @@ public class XAEndStage extends XAStage {
     }
 
     @Override
+    public void onConnectError(MySQLResponseService service) {
+        service.getConnection().businessClose("conn connect error");
+        service.setXaStatus(TxState.TX_CONN_QUIT);
+        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
+    }
+
+    @Override
     public String getStage() {
         return END_STAGE;
     }

@@ -11,9 +11,13 @@ import java.sql.SQLException;
 
 public interface TransactionHandler {
 
+    void commit();
+
     void commit(ImplicitHandler implicitHandler);
 
     void syncImplicitCommit() throws SQLException;
+
+    void rollback();
 
     void rollback(ImplicitHandler implicitHandler);
 

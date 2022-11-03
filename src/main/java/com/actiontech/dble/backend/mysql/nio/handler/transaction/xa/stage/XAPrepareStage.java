@@ -106,6 +106,13 @@ public class XAPrepareStage extends XAStage {
     }
 
     @Override
+    public void onConnectError(MySQLResponseService service) {
+        prepareUnconnect = true;
+        service.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
+        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
+    }
+
+    @Override
     public String getStage() {
         return PREPARE_STAGE;
     }

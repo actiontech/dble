@@ -30,6 +30,11 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
     }
 
     @Override
+    public void commit() {
+        commit(null);
+    }
+
+    @Override
     public void commit(ImplicitHandler implicitHandler) {
         this.implicitHandler = implicitHandler;
         if (session.getTargetCount() <= 0) {
@@ -51,6 +56,11 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
     @Override
     public void syncImplicitCommit() throws SQLException {
         // implicit commit is not supported in XA transactions, so ignore
+    }
+
+    @Override
+    public void rollback() {
+        rollback(null);
     }
 
     @Override

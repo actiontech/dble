@@ -712,10 +712,10 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             if (txOperation == AutoTxOperation.COMMIT) {
                 session.checkBackupStatus();
                 session.setBeginCommitTime();
-                handler.commit(null);
+                handler.commit();
             } else {
                 service.getLoadDataInfileHandler().clearFile(LoadDataBatch.getInstance().getSuccessFileNames());
-                handler.rollback(null);
+                handler.rollback();
             }
         } else {
             boolean inTransaction = service.isInTransaction();

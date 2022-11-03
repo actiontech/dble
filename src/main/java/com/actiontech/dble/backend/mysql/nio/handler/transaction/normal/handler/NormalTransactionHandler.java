@@ -41,6 +41,11 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
     }
 
     @Override
+    public void commit() {
+        commit(null);
+    }
+
+    @Override
     public void commit(ImplicitHandler implicitHandler) {
         if (session.getTargetCount() <= 0) {
             CommitStage commitStage = new CommitStage(session, null, implicitHandler);
@@ -81,6 +86,11 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
         }
         changeStageTo(new CommitStage(session, conns, stageRecorder));
         stageRecorder.check();
+    }
+
+    @Override
+    public void rollback() {
+        rollback(null);
     }
 
     @Override

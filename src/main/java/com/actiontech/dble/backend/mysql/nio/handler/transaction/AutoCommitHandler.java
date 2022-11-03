@@ -34,6 +34,11 @@ public class AutoCommitHandler implements TransactionHandler {
     }
 
     @Override
+    public void commit() {
+        commit(null);
+    }
+
+    @Override
     public void commit(ImplicitHandler implicitHandler) {
         realHandler.commit(null);
     }
@@ -41,6 +46,11 @@ public class AutoCommitHandler implements TransactionHandler {
     @Override
     public void syncImplicitCommit() throws SQLException {
         // ignore
+    }
+
+    @Override
+    public void rollback() {
+        rollback(null);
     }
 
     @Override

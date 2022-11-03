@@ -96,11 +96,9 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
                 session.releaseConnectionIfSafe(conn, false);
                 session.setResponseTime(true);
                 session.multiStatementPacket(ok, packetId);
-                boolean multiStatementFlag = session.getIsMultiStatement().get();
                 if (writeToClient.compareAndSet(false, true)) {
                     handleEndPacket(ok.toBytes(), true);
                 }
-                session.multiStatementNextSql(multiStatementFlag);
             }
         }
     }
@@ -117,12 +115,10 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
         session.releaseConnectionIfSafe(conn, false);
         session.setResponseTime(false);
         session.multiStatementPacket(errPacket, packetId);
-        boolean multiStatementFlag = session.getIsMultiStatement().get();
         doSqlStat();
         if (writeToClient.compareAndSet(false, true)) {
             handleEndPacket(errPacket.toBytes(), false);
         }
-        session.multiStatementNextSql(multiStatementFlag);
     }
 
     @Override

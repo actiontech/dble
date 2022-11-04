@@ -429,7 +429,7 @@ public abstract class BackendService extends AbstractService {
     }
 
     /**
-     * Temporary way，it will be revised in the future
+     * Temporary way,it will be revised in the future
      *
      * @param service
      * @return

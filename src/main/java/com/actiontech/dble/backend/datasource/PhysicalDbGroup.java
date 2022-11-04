@@ -790,8 +790,7 @@ public class PhysicalDbGroup {
     public boolean equalsForDelayDetection(PhysicalDbGroup pool) {
         return pool.getDbGroupConfig().getDelayThreshold() == (this.dbGroupConfig.getDelayThreshold()) &&
                 pool.getDbGroupConfig().getDelayPeriodMillis() == this.dbGroupConfig.getDelayPeriodMillis() &&
-                StringUtil.equals(pool.getDbGroupConfig().getDelayDatabase(), this.dbGroupConfig.getDelayDatabase()) &&
-                pool.getDbGroupConfig().getKeepAlive() == this.getDbGroupConfig().getKeepAlive();
+                StringUtil.equals(pool.getDbGroupConfig().getDelayDatabase(), this.dbGroupConfig.getDelayDatabase());
     }
 
 

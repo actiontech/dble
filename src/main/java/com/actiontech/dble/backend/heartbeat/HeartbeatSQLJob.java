@@ -92,7 +92,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
                     LOGGER.debug("[heartbeat]do heartbeat,conn is " + connection);
                 }
                 if (System.nanoTime() > responseTime + keepAlive) {
-                    String reason = "[heartbeat]connect timeout，the connection may be unreachable for a long time due to TCP retransmission";
+                    String reason = "[heartbeat]connect timeout,the connection may be unreachable for a long time due to TCP retransmission";
                     LOGGER.warn(reason);
                     heartbeat.setErrorResult(reason);
                     doFinished(true);

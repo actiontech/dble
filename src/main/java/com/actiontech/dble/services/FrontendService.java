@@ -52,9 +52,9 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     // will non null if is dong task
     private volatile Long doingTaskThread = null;
     private AtomicLong taskId = new AtomicLong(1);
-    // current task index，Will increased when every new task is processed。
+    // current task index,Will increased when every new task is processed。
     private long currentTaskIndex = 0;
-    // consumed task  id，Used to indicate next task id.(this=nextTaskId-1)
+    // consumed task  id,Used to indicate next task id.(this=nextTaskId-1)
     private volatile long consumedTaskId = 0;
     // client capabilities
     private final long clientCapabilities;

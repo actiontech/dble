@@ -65,7 +65,7 @@ public class DelayDetectionSqlJob implements ResponseHandler {
             Duration duration = Duration.between(responseTime, now);
             if (duration.toMillis() > keepAlive) {
                 LOGGER.warn("[delayDetection]connection execution timeout {},please pay attention to network latency or packet loss.", duration.toMillis());
-                delayDetection.cancel("connection execution timeout，");
+                delayDetection.cancel("connection execution timeout");
                 doFinished(true);
             }
             conn.getBackendService().query(sql);

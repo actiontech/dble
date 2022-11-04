@@ -1973,7 +1973,7 @@ public final class SystemConfig {
         }
         int length = 11;
         if (val.length() > length) {
-            problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal，the value contains a maximum of " + length + " characters");
+            problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal,the value contains a maximum of " + length + " characters");
         }
 
         String chinese = val.replaceAll(DBConverter.PATTERN_DB.toString(), "");
@@ -1982,7 +1982,7 @@ public final class SystemConfig {
         }
 
         if (!StringUtil.isChinese(chinese)) {
-            problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal，the " + Charset.defaultCharset().name() + " encoding is recommended, Property [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
+            problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal,the " + Charset.defaultCharset().name() + " encoding is recommended, Property [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
         }
     }
 }

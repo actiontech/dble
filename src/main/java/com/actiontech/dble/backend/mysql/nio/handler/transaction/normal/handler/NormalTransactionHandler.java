@@ -6,8 +6,8 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.handler;
 
 import com.actiontech.dble.backend.mysql.nio.handler.MultiNodeHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.StageRecorder;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionCallback;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage.CommitStage;
@@ -42,13 +42,13 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
 
     @Override
     public void commit() {
-        implicitCommit(null);
+        commit(null);
     }
 
     @Override
-    public void implicitCommit(ImplicitCommitHandler implicitCommitHandler) {
+    public void commit(TransactionCallback transactionCallback) {
         if (session.getTargetCount() <= 0) {
-            CommitStage commitStage = new CommitStage(session, null, implicitCommitHandler);
+            CommitStage commitStage = new CommitStage(session, null, transactionCallback);
             commitStage.next(false, null, null);
             return;
         }
@@ -62,9 +62,8 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
             conn.getBackendService().setResponseHandler(this);
             conns.add(conn);
         }
-        changeStageTo(new CommitStage(session, conns, implicitCommitHandler));
+        changeStageTo(new CommitStage(session, conns, transactionCallback));
     }
-
 
     @Override
     public void syncImplicitCommit() throws SQLException {
@@ -91,9 +90,14 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
 
     @Override
     public void rollback() {
+        rollback(null);
+    }
+
+    @Override
+    public void rollback(TransactionCallback transactionCallback) {
         RollbackStage rollbackStage;
         if (session.getTargetCount() <= 0) {
-            rollbackStage = new RollbackStage(session, null);
+            rollbackStage = new RollbackStage(session, null, transactionCallback);
             rollbackStage.next(false, null, sendData);
             return;
         }
@@ -111,10 +115,10 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
         }
 
         if (conns.isEmpty()) {
-            rollbackStage = new RollbackStage(session, null);
+            rollbackStage = new RollbackStage(session, null, transactionCallback);
             rollbackStage.next(false, null, null);
         } else {
-            rollbackStage = new RollbackStage(session, conns);
+            rollbackStage = new RollbackStage(session, conns, transactionCallback);
             changeStageTo(rollbackStage);
         }
     }

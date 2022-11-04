@@ -47,7 +47,9 @@ public abstract class TransactionService<T extends UserConfig> extends FrontendS
                     txIdCount();
                 } // else not deal
 
-                setTxStart(false);
+                if (!autocommit) {
+                    setTxStart(false);
+                }
                 setAutocommit(true);
                 break;
             case UNAUTOCOMMIT: // = 0/false

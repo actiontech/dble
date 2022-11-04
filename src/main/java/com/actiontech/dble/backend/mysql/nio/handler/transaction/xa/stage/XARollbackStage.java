@@ -26,8 +26,12 @@ import java.util.concurrent.ConcurrentMap;
 public class XARollbackStage extends XAStage {
 
     private static Logger logger = LoggerFactory.getLogger(XARollbackStage.class);
-    private boolean lastStageIsXAEnd;
+    protected boolean lastStageIsXAEnd = true;
     protected ConcurrentMap<Object, Long> xaOldThreadIds;
+
+    public XARollbackStage(NonBlockingSession session, AbstractXAHandler handler) {
+        this(session, handler, true);
+    }
 
     public XARollbackStage(NonBlockingSession session, AbstractXAHandler handler, boolean isFromEndStage) {
         super(session, handler);
@@ -42,7 +46,7 @@ public class XARollbackStage extends XAStage {
         }
         // success
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
-        feedback(false);
+        feedback(lastStageIsXAEnd);
         return null;
     }
 

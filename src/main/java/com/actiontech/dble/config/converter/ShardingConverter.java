@@ -153,7 +153,8 @@ public class ShardingConverter {
             shardingBean = (Shardings) xmlParseBase.baseParseXmlToBean(xmlPath, xsdPath);
         } catch (Exception e) {
             LOGGER.warn("parseXmlToBean Exception", e);
-            throw e;
+            String message = e.getMessage() == null ? e.toString() : e.getMessage();
+            throw new ConfigException("sharding xml to json occurred  parse errors, The detailed errors are as follows. " + message, e);
         }
 
         if (LOGGER.isDebugEnabled()) {

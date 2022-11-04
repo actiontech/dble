@@ -14,7 +14,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.ddl.BaseDDLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ddl.MultiNodeDdlPrepareHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionCallback;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandlerManager;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
@@ -661,14 +661,14 @@ public class NonBlockingSession extends Session {
         return transactionManager;
     }
 
-    public void commit(ImplicitHandler handler) {
+    public void commit(TransactionCallback callback) {
         checkBackupStatus();
-        transactionManager.commit(handler);
+        transactionManager.commit(callback);
     }
 
-    public void rollback(ImplicitHandler handler) {
+    public void rollback(TransactionCallback callback) {
         checkBackupStatus();
-        transactionManager.rollback(handler);
+        transactionManager.rollback(callback);
     }
 
     public void syncImplicitCommit() throws SQLException {

@@ -74,11 +74,11 @@ public class TransactionHandlerManager {
         }
     }
 
-    public void commit(ImplicitHandler handler) {
+    public void commit(TransactionCallback callback) {
         if (xaTxId != null) {
-            xaHandler.commit(handler);
+            xaHandler.commit(callback);
         } else {
-            normalHandler.commit(handler);
+            normalHandler.commit(callback);
         }
     }
 
@@ -91,11 +91,11 @@ public class TransactionHandlerManager {
         }
     }
 
-    public void rollback(ImplicitHandler handler) {
+    public void rollback(TransactionCallback callback) {
         if (xaTxId != null) {
-            xaHandler.rollback(handler);
+            xaHandler.rollback(callback);
         } else {
-            normalHandler.rollback(handler);
+            normalHandler.rollback(callback);
         }
     }
 

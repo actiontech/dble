@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage;
 
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionCallback;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.BackendConnection;
@@ -20,12 +20,12 @@ public class RollbackStage implements TransactionStage {
     private static final Logger LOGGER = LoggerFactory.getLogger(RollbackStage.class);
     private NonBlockingSession session;
     private final List<BackendConnection> conns;
-    private ImplicitHandler implicitHandler;
+    private TransactionCallback transactionCallback;
 
-    public RollbackStage(NonBlockingSession session, List<BackendConnection> conns, ImplicitHandler implicitHandler) {
+    public RollbackStage(NonBlockingSession session, List<BackendConnection> conns, TransactionCallback transactionCallback) {
         this.session = session;
         this.conns = conns;
-        this.implicitHandler = implicitHandler;
+        this.transactionCallback = transactionCallback;
     }
 
     @Override
@@ -43,8 +43,8 @@ public class RollbackStage implements TransactionStage {
         if (session.closed()) {
             return null;
         }
-        if (implicitHandler != null)
-            implicitHandler.next();
+        if (transactionCallback != null)
+            transactionCallback.callback();
 
         LOGGER.info("GET INTO THE NET LEVEL AND THE RESULT IS " + isFail);
         if (isFail) {

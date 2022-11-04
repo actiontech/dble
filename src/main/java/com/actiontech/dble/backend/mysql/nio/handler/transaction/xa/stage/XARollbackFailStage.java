@@ -63,8 +63,8 @@ public class XARollbackFailStage extends XARollbackStage {
                 closeReason.append(errMsg);
             }
             session.getSource().close(closeReason.toString());
-            if (xaHandler.getImplicitHandler() != null) {
-                xaHandler.getImplicitHandler().next();
+            if (xaHandler.getTransactionCallback() != null) {
+                xaHandler.getTransactionCallback().callback();
             }
         }
 

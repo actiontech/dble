@@ -61,8 +61,8 @@ public abstract class XAStage implements TransactionStage {
         }
 
         if (this instanceof XACommitStage) session.setFinishedCommitTime();
-        if (isSuccess && xaHandler.getImplicitHandler() != null) {
-            xaHandler.getImplicitHandler().next();
+        if (isSuccess && xaHandler.getTransactionCallback() != null) {
+            xaHandler.getTransactionCallback().callback();
         }
 
         MySQLPacket sendData = xaHandler.getPacketIfSuccess();

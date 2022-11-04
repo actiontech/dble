@@ -6,7 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler;
 
 import com.actiontech.dble.backend.mysql.nio.handler.MultiNodeHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionCallback;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAStage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.BackendConnection;
@@ -32,7 +32,7 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
     protected volatile XAStage currentStage;
     protected volatile boolean interruptTx = true;
     protected volatile MySQLPacket packetIfSuccess;
-    protected volatile ImplicitHandler implicitHandler;
+    protected volatile TransactionCallback transactionCallback;
 
     public AbstractXAHandler(NonBlockingSession session) {
         super(session);
@@ -158,7 +158,7 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         this.currentStage = null;
         this.interruptTx = true;
         this.packetIfSuccess = null;
-        this.implicitHandler = null;
+        this.transactionCallback = null;
     }
 
     @Override
@@ -204,8 +204,8 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         return errPacket;
     }
 
-    public ImplicitHandler getImplicitHandler() {
-        return implicitHandler;
+    public TransactionCallback getTransactionCallback() {
+        return transactionCallback;
     }
 
     @Override

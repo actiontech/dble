@@ -13,13 +13,13 @@ public interface TransactionHandler {
 
     void commit();
 
-    void commit(ImplicitHandler implicitHandler);
+    void commit(TransactionCallback transactionCallback);
 
     void syncImplicitCommit() throws SQLException;
 
     void rollback();
 
-    void rollback(ImplicitHandler implicitHandler);
+    void rollback(TransactionCallback transactionCallback);
 
     void turnOnAutoCommit(MySQLPacket previousSendData);
 }

@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage;
 
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionCallback;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.StageRecorder;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.VariationSQLException;
@@ -22,12 +22,12 @@ public class CommitStage extends Stage implements TransactionStage {
 
     private final NonBlockingSession session;
     private final List<BackendConnection> conns;
-    private ImplicitHandler implicitHandler;
+    private TransactionCallback transactionCallback;
 
-    public CommitStage(NonBlockingSession session, List<BackendConnection> conns, ImplicitHandler implicitHandler) {
+    public CommitStage(NonBlockingSession session, List<BackendConnection> conns, TransactionCallback transactionCallback) {
         this.session = session;
         this.conns = conns;
-        this.implicitHandler = implicitHandler;
+        this.transactionCallback = transactionCallback;
     }
 
     public CommitStage(NonBlockingSession session, List<BackendConnection> conns, StageRecorder stageRecorder) {
@@ -71,8 +71,8 @@ public class CommitStage extends Stage implements TransactionStage {
             return;
 
         session.setFinishedCommitTime();
-        if (implicitHandler != null)
-            implicitHandler.next();
+        if (transactionCallback != null)
+            transactionCallback.callback();
 
         if (isFail) {
             if (sendData != null) {

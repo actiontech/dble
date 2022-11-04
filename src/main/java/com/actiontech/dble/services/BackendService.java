@@ -315,10 +315,8 @@ public abstract class BackendService extends AbstractService {
 
     public void releaseSignal() {
         isRowDataFlowing = false;
-        if (recycler != null) {
-            recycler.signal();
-            recycler = null;
-        }
+        Optional.ofNullable(recycler).ifPresent(recycler -> recycler.signal());
+        recycler = null;
     }
 
     public void resetContextStatus() {

@@ -69,7 +69,7 @@ public abstract class AbstractConnection implements Connection {
 
     protected volatile IOProcessor processor;
     protected volatile String closeReason;
-    private volatile ByteBuffer readBuffer;
+    private volatile ByteBuffer bottomReadBuffer;
     protected volatile boolean frontWriteFlowControlled = false;
     protected int readBufferChunk;
     protected final long startupTime;
@@ -323,7 +323,7 @@ public abstract class AbstractConnection implements Connection {
         }
         buffer.limit(buffer.position());
         buffer.position(offset);
-        this.setReadBuffer(buffer.compact());
+        this.setBottomReadBuffer(buffer.compact());
     }
 
     public BufferPoolRecord.Builder generateBufferRecordBuilder() {
@@ -337,7 +337,7 @@ public abstract class AbstractConnection implements Connection {
             lastLargeMessageTime = TimeUtil.currentTimeMillis();
             buffer.position(offset);
             newBuffer.put(buffer);
-            setReadBuffer(newBuffer);
+            setBottomReadBuffer(newBuffer);
             recycle(buffer);
         } else {
             if (offset != 0) {
@@ -353,14 +353,14 @@ public abstract class AbstractConnection implements Connection {
         // if cur buffer is temper none direct byte buffer and not
         // received large message in recent 30 seconds
         // then change to direct buffer for performance
-        ByteBuffer localReadBuffer = this.getReadBuffer();
+        ByteBuffer localReadBuffer = this.getBottomReadBuffer();
         if (localReadBuffer != null && !localReadBuffer.isDirect() &&
                 lastLargeMessageTime < lastReadTime - 30 * 1000L) {  // used temp heap
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + localReadBuffer.capacity());
             }
             recycle(localReadBuffer);
-            this.setReadBuffer(allocate(readBufferChunk, generateBufferRecordBuilder().withType(BufferType.POOL)));
+            this.setBottomReadBuffer(allocate(readBufferChunk, generateBufferRecordBuilder().withType(BufferType.POOL)));
         } else {
             if (localReadBuffer != null) {
                 IODelayProvider.inReadReachEnd();
@@ -517,21 +517,21 @@ public abstract class AbstractConnection implements Connection {
         return isClosed.get();
     }
 
-    public ByteBuffer findNetReadBuffer() {
-        ByteBuffer tmpReadBuffer = getReadBuffer();
+    public ByteBuffer findReadBuffer() {
+        ByteBuffer tmpReadBuffer = getBottomReadBuffer();
         if (tmpReadBuffer == null) {
             tmpReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateBufferRecordBuilder().withType(BufferType.POOL));
-            setReadBuffer(tmpReadBuffer);
+            setBottomReadBuffer(tmpReadBuffer);
         }
         return tmpReadBuffer;
     }
 
 
     public synchronized void recycleReadBuffer() {
-        final ByteBuffer tmpReadBuffer = getReadBuffer();
+        final ByteBuffer tmpReadBuffer = getBottomReadBuffer();
         if (tmpReadBuffer != null) {
             this.recycle(tmpReadBuffer);
-            this.setReadBuffer(null);
+            this.setBottomReadBuffer(null);
         }
     }
 
@@ -543,9 +543,9 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public synchronized void baseCleanup(String reason) {
-        if (getReadBuffer() != null) {
-            this.recycle(getReadBuffer());
-            this.setReadBuffer(null);
+        if (getBottomReadBuffer() != null) {
+            this.recycle(getBottomReadBuffer());
+            this.setBottomReadBuffer(null);
         }
 
         if (service != null && !service.isFakeClosed()) {
@@ -622,6 +622,16 @@ public abstract class AbstractConnection implements Connection {
     }
 
 
+    public final ByteBuffer findBottomReadBuffer() {
+        ByteBuffer tmpReadBuffer = getBottomReadBuffer();
+        if (tmpReadBuffer == null) {
+            tmpReadBuffer = allocate(processor.getBufferPool().getChunkSize());
+            setBottomReadBuffer(tmpReadBuffer);
+        }
+        return tmpReadBuffer;
+    }
+
+
     /**
      * heartbeat of SLB/LVS only create an tcp connection and then close it immediately without any data write to dble .(send reset)
      *
@@ -630,6 +640,10 @@ public abstract class AbstractConnection implements Connection {
     public boolean isOnlyFrontTcpConnected() {
         final AbstractService tmpService = getService();
         return tmpService != null && tmpService instanceof MySQLFrontAuthService && ((MySQLFrontAuthService) tmpService).haveNotReceivedMessage();
+    }
+
+    ByteBuffer getReadBuffer() {
+        return bottomReadBuffer;
     }
 
     public abstract void setProcessor(IOProcessor processor);
@@ -686,8 +700,8 @@ public abstract class AbstractConnection implements Connection {
         this.readBufferChunk = readBufferChunk;
     }
 
-    public ByteBuffer getReadBuffer() {
-        return this.readBuffer;
+    public ByteBuffer getBottomReadBuffer() {
+        return this.bottomReadBuffer;
     }
 
     public String getCloseReason() {
@@ -730,7 +744,7 @@ public abstract class AbstractConnection implements Connection {
         this.proto = proto;
     }
 
-    public void setReadBuffer(ByteBuffer readBuffer) {
-        this.readBuffer = readBuffer;
+    public void setBottomReadBuffer(ByteBuffer bottomReadBuffer) {
+        this.bottomReadBuffer = bottomReadBuffer;
     }
 }

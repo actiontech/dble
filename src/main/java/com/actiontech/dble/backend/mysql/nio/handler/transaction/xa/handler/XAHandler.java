@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler;
 
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionCallback;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage.CommitStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage.RollbackStage;
@@ -31,8 +31,14 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
 
     @Override
     public void commit() {
+        commit(null);
+    }
+
+    @Override
+    public void commit(TransactionCallback transactionCallback) {
+        this.transactionCallback = transactionCallback;
         if (session.getTargetCount() <= 0) {
-            CommitStage commitStage = new CommitStage(session, null, implicitCommitHandler);
+            CommitStage commitStage = new CommitStage(session, null, this.transactionCallback);
             commitStage.next(false, null, null);
             return;
         }
@@ -48,20 +54,20 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
     }
 
     @Override
-    public void implicitCommit(ImplicitCommitHandler handler) {
-        this.implicitCommitHandler = handler;
-        commit();
-    }
-
-    @Override
     public void syncImplicitCommit() throws SQLException {
         // implicit commit is not supported in XA transactions, so ignore
     }
 
     @Override
     public void rollback() {
+        rollback(null);
+    }
+
+    @Override
+    public void rollback(TransactionCallback transactionCallback) {
+        this.transactionCallback = transactionCallback;
         if (session.getTargetCount() <= 0) {
-            RollbackStage rollbackStage = new RollbackStage(session, null);
+            RollbackStage rollbackStage = new RollbackStage(session, null, this.transactionCallback);
             rollbackStage.next(false, null, null);
             return;
         }
@@ -79,7 +85,7 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
         }
 
         if (currentStage instanceof XAEndStage) {
-            changeStageTo(new XARollbackStage(session, this, true));
+            changeStageTo(new XARollbackStage(session, this));
             return;
         }
         interruptTx = false;

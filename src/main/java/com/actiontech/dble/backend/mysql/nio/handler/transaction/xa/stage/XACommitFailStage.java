@@ -66,6 +66,9 @@ public class XACommitFailStage extends XACommitStage {
         // close this session ,add to schedule job
         if (!session.closed()) {
             session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in background until it is success!");
+            if (xaHandler.getTransactionCallback() != null) {
+                xaHandler.getTransactionCallback().callback();
+            }
         }
         // kill xa or retry to commit xa in background
         if (!session.isRetryXa()) {

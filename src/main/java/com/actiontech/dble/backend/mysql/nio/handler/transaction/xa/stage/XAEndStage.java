@@ -34,17 +34,19 @@ public class XAEndStage extends XAStage {
     @Override
     public TransactionStage next(boolean isFail, String errMsg, MySQLPacket errPacket) {
         if (isRollback) {
-            return new XARollbackStage(session, xaHandler, true);
+            return new XARollbackStage(session, xaHandler);
         }
 
         if (isFail) {
             if (xaHandler.isInterruptTx()) {
+                // In transaction: expect to follow up by manually executing rollback
                 session.getShardingService().setTxInterrupt(errMsg);
                 errPacket.setPacketId(session.getShardingService().nextPacketId());
                 errPacket.write(session.getSource());
                 return null;
             } else {
-                return new XARollbackStage(session, xaHandler, true);
+                // Not in transaction, automatic rollback directly
+                return new XARollbackStage(session, xaHandler);
             }
         }
 

@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage;
 
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler.AbstractXAHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
@@ -61,22 +60,18 @@ public abstract class XAStage implements TransactionStage {
             return;
         }
 
-        if (isSuccess) {
-            session.setFinishedCommitTime();
-            ImplicitCommitHandler implicitCommitHandler = xaHandler.getImplicitCommitHandler();
-            if (implicitCommitHandler != null) {
-                xaHandler.clearResources();
-                implicitCommitHandler.next();
-                return;
-            }
+        if (this instanceof XACommitStage) session.setFinishedCommitTime();
+        if (isSuccess && xaHandler.getTransactionCallback() != null) {
+            xaHandler.getTransactionCallback().callback();
         }
+
         MySQLPacket sendData = xaHandler.getPacketIfSuccess();
+        xaHandler.clearResources();
         if (sendData != null) {
             sendData.write(session.getSource());
         } else {
             session.getShardingService().writeOkPacket();
         }
-        xaHandler.clearResources();
     }
 
     // return ok

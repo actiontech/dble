@@ -148,7 +148,7 @@ public class RWSplitNonBlockingSession extends Session {
                 if (this.getPreWriteResponseTime() > 0 && System.currentTimeMillis() - this.getPreWriteResponseTime() <= rwStickyTime) {
                     isMaster = true;
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("because in the sticky time range，so select write instance");
+                        LOGGER.debug("because in the sticky time range,so select write instance");
                     }
                 } else {
                     resetLastSqlResponseTime();

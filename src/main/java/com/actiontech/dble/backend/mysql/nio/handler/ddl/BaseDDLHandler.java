@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.ExecutableHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.LoadDataResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.meta.DDLProxyMetaManager;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
@@ -32,7 +33,9 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -54,6 +57,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
     protected static final int STATUS_OK = 9;
 
     protected final NonBlockingSession session;
+    protected RouteResultset preRrs;
     protected RouteResultset rrs;
     protected RouteResultset oriRrs;
     protected final boolean sessionAutocommit;
@@ -384,6 +388,10 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
         if (specialHandleFlag.compareAndSet(false, true)) {
             if (implicitlyCommitCallback != null)
                 implicitlyCommitCallback.callback();
+
+            if (preRrs != null)
+                TxnLogHelper.putTxnLog(session.getShardingService(), this.preRrs);
+            TxnLogHelper.putTxnLog(session.getShardingService(), this.rrs);
 
             if (isExecSucc)
                 DDLTraceHelper.log(session.getShardingService(), d -> d.info(stage, DDLTraceHelper.Status.succ));

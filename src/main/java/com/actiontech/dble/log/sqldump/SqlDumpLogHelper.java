@@ -2,12 +2,13 @@ package com.actiontech.dble.log.sqldump;
 
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
+import com.actiontech.dble.server.parser.ShardingServerParse;
 import com.actiontech.dble.server.status.SqlDumpLog;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
+import com.actiontech.dble.util.SqlStringUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
@@ -37,7 +38,7 @@ public final class SqlDumpLogHelper {
     private volatile boolean isOpen = false;
     private volatile ExtendedLogger logger;
     private static final ReentrantReadWriteLock LOCK = new ReentrantReadWriteLock();
-    private static final RwSplitServerParse PARSER = ServerParseFactory.getRwSplitParser();
+    private static final ShardingServerParse PARSER = ServerParseFactory.getShardingParser(); // the uniform use of ShardingServerParse
 
     private SqlDumpLogHelper() {
     }
@@ -147,7 +148,7 @@ public final class SqlDumpLogHelper {
             try {
                 final ExtendedLogger log = INSTANCE.logger;
                 if (log != null) {
-                    sqlDigest = sqlDigest.length() > 100 ? sqlDigest.substring(0, 100) : sqlDigest;
+                    sqlDigest = sqlDigest.length() > 1024 ? sqlDigest.substring(0, 1024) : sqlDigest;
                     log.info("[{}][{}][{}][{}][{}][{}:{}][{}:{}][{}] {}",
                             digestHash, sqlType, transactionId, affectRows, userName,
                             clientHost, clientPort, backHost, backPort, dura, sqlDigest);
@@ -179,26 +180,7 @@ public final class SqlDumpLogHelper {
         String[] arr = new String[2];
         int rs = PARSER.parse(originSql);
         int sqlType = rs & 0xff;
-        switch (sqlType) {
-            case RwSplitServerParse.SELECT:
-                arr[0] = "SELECT";
-                break;
-            case RwSplitServerParse.INSERT:
-                arr[0] = "INSERT";
-                break;
-            case RwSplitServerParse.DELETE:
-                arr[0] = "DELETE";
-                break;
-            case RwSplitServerParse.UPDATE:
-                arr[0] = "UPDATE";
-                break;
-            case RwSplitServerParse.DDL:
-                arr[0] = "DDL";
-                break;
-            default:
-                arr[0] = "OTHER";
-                break;
-        }
+        arr[0] = SqlStringUtil.getSqlType(sqlType);
         arr[1] = originSql;
         return arr;
     }

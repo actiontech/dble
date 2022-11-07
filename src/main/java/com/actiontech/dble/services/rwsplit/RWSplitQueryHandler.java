@@ -56,6 +56,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             int sqlType = rs & 0xff;
             if (hintInfo != null) {
                 session.executeHint(hintInfo, sqlType, sql, null);
+                session.getService().controlTx(TransactionOperate.QUERY);
             } else {
                 if (!RwSplitServerParse.isTCL(sqlType) &&
                         !RwSplitServerParse.isImplicitlyCommitSql(sqlType) &&

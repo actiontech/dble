@@ -8,6 +8,7 @@ package com.actiontech.dble.server.parser;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 
 import java.util.LinkedList;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -16,6 +17,7 @@ import java.util.regex.Pattern;
 public abstract class AbstractServerParse implements ServerParse {
 
     static final Pattern CALL_PATTERN = Pattern.compile("\\w*\\;\\s*\\s*(call)+\\s+\\w*\\s*", Pattern.CASE_INSENSITIVE);
+    static final Pattern AUTOCOMMIT_PATTERN = Pattern.compile("^\\s*set\\s+(([a-zA-Z0-9]+\\s*=\\s*[a-zA-Z0-9]+)\\s*,)*\\s*autocommit\\s*=(\\s*(0|1|on|off))\\s*$", Pattern.CASE_INSENSITIVE);
 
     @Override
     public boolean startWithHint(String stmt) {
@@ -70,12 +72,28 @@ public abstract class AbstractServerParse implements ServerParse {
         }
     }
 
+    public static int isSetAutocommitSql(String sql) {
+        Matcher matcher = AUTOCOMMIT_PATTERN.matcher(sql);
+        if (matcher.matches()) {
+            String value = matcher.group(4);
+            if (value != null) {
+                value = value.trim();
+                if (value.equals("1") || value.toLowerCase().equalsIgnoreCase("on")) {
+                    return 1;
+                } else if (value.equals("0") || value.toLowerCase().equalsIgnoreCase("off")) {
+                    return 0;
+                }
+            }
+        }
+        return -1;
+    }
+
     public static boolean isTCL(int sqlType) {
         switch (sqlType) {
-            case RwSplitServerParse.BEGIN:
-            case RwSplitServerParse.START_TRANSACTION:
-            case RwSplitServerParse.COMMIT:
-            case RwSplitServerParse.ROLLBACK:
+            case ServerParse.BEGIN:
+            case ServerParse.START_TRANSACTION:
+            case ServerParse.COMMIT:
+            case ServerParse.ROLLBACK:
                 return true;
             default:
                 return false;

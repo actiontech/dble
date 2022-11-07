@@ -8,10 +8,15 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.parser.util.ParseUtil;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class Session {
 
+    protected final AtomicBoolean isMultiStatement = new AtomicBoolean(false);
+    protected volatile String remainingSql = null;
     /**
      * get frontend conn
      */
@@ -53,4 +58,44 @@ public abstract class Session {
     public abstract void stopFlowControl(int currentWritingSize);
 
     public abstract void releaseConnectionFromFlowControlled(BackendConnection con);
+
+    public void multiStatementPacket(MySQLPacket packet) {
+        if (this.isMultiStatement.get()) {
+            packet.markMoreResultsExists();
+        }
+    }
+
+    /**
+     * reset the session multiStatementStatus
+     */
+    public void resetMultiStatementStatus() {
+        //clear the record
+        this.isMultiStatement.set(false);
+        this.remainingSql = null;
+    }
+
+    public boolean generalNextStatement(String sql) {
+        int index = ParseUtil.findNextBreak(sql);
+        if (index + 1 < sql.length() && !ParseUtil.isEOF(sql, index)) {
+            this.remainingSql = sql.substring(index + 1);
+            this.isMultiStatement.set(true);
+            return true;
+        } else {
+            this.remainingSql = null;
+            this.isMultiStatement.set(false);
+            return false;
+        }
+    }
+
+    public AtomicBoolean getIsMultiStatement() {
+        return isMultiStatement;
+    }
+
+    public String getRemainingSql() {
+        return remainingSql;
+    }
+
+    public void setRemainingSql(String remainingSql) {
+        this.remainingSql = remainingSql;
+    }
 }

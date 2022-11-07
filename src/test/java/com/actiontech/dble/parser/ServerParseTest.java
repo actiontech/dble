@@ -151,14 +151,6 @@ public class ServerParseTest {
     }
 
     @Test
-    public void testStart() {
-        String sql = "start ";
-        int result = serverParse.parse(sql);
-        int sqlType = result & 0xff;
-        Assert.assertEquals(ServerParse.START, sqlType);
-    }
-
-    @Test
     public void testUpdate() {
         String sql = "update a set name='wdw' where id = 1";
         int result = serverParse.parse(sql);

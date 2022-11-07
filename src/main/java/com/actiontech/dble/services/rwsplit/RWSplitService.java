@@ -11,7 +11,10 @@ import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.service.*;
+import com.actiontech.dble.net.service.AuthResultInfo;
+import com.actiontech.dble.net.service.NormalServiceTask;
+import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.net.service.ServiceTaskType;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.RwSplitServerParseSelect;
@@ -34,10 +37,12 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
@@ -58,6 +63,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
     private volatile String expectedDest;
 
     private final RWSplitQueryHandler queryHandler;
+    private volatile RWSplitMultiHandler multiQueryHandler;
     private final RWSplitNonBlockingSession session;
 
     private volatile boolean initDb;
@@ -80,28 +86,20 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         if (var.getType() == VariableType.AUTOCOMMIT) {
             if (Boolean.parseBoolean(var.getValue())) {
                 if (!autocommit) {
-                    StatisticListener.getInstance().record(this, r -> r.onTxEnd());
-                    session.execute(true, (isSuccess, resp, rwSplitService) -> {
-                        session.getConn().getBackendService().setAutocommit(true);
-                        controlTx(TransactionOperate.AUTOCOMMIT);
-                    });
+                    session.execute(true, CallbackFactory.TX_AUTOCOMMIT);
                     return;
                 }
             } else {
                 if (autocommit) {
-                    StatisticListener.getInstance().record(this, r -> r.onTxStartBySet(this));
-                    controlTx(TransactionOperate.UNAUTOCOMMIT);
-                    StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
+                    CallbackFactory.TX_UN_AUTOCOMMIT.callback(true, null, this);
                     writeOkPacket();
                     return;
                 }
             }
             controlTx(TransactionOperate.QUERY);
-            StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
             writeOkPacket();
         }
     }
-
 
     @Override
     protected boolean beforeHandlingTask(@NotNull ServiceTask task) {
@@ -216,12 +214,6 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         }
     }
 
-    @Override
-    public void beforeWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags, ResultFlag resultFlag) {
-        redressControlTx();
-        super.beforeWriteFinish(writeFlags, resultFlag);
-    }
-
     private void handleComInitDb(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
         mm.position(5);
@@ -237,7 +229,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         }
     }
 
-    private void handleComQuery(byte[] data) {
+    public void handleComQuery(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
         mm.position(5);
         try {
@@ -249,6 +241,11 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                 } else {
                     expectedDest = null;
                 }
+            }
+            sql = sql.trim();
+            // remove last ';'
+            if (sql.endsWith(";")) {
+                sql = sql.substring(0, sql.length() - 1);
             }
             executeSql = sql;
             executeSqlBytes = data;
@@ -283,6 +280,11 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         try {
             RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
             String sql = mm.readString(getCharset().getClient());
+            if (sql.endsWith(";")) {
+                sql = sql.substring(0, sql.length() - 1).trim();
+            }
+            sql = sql.trim();
+            final String finalSql = sql;
             int rs = serverParse.parse(sql);
             int sqlType = rs & 0xff;
             if (sqlType == ServerParse.SELECT) {
@@ -292,24 +294,24 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                         if (isSuccess) {
                             long statementId = ByteUtil.readUB4(resp, 5);
                             int paramCount = ByteUtil.readUB2(resp, 11);
-                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true));
+                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql));
                         }
-                    }, false);
+                    });
                 } else {
                     session.execute(null, data, (isSuccess, resp, rwSplitService) -> {
                         if (isSuccess) {
                             long statementId = ByteUtil.readUB4(resp, 5);
                             int paramCount = ByteUtil.readUB2(resp, 11);
-                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false));
+                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false, finalSql));
                         }
-                    }, false);
+                    });
                 }
             } else {
                 session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
                     if (isSuccess) {
                         long statementId = ByteUtil.readUB4(resp, 5);
                         int paramCount = ByteUtil.readUB2(resp, 11);
-                        psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true));
+                        psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql));
                     }
                 });
             }
@@ -336,12 +338,11 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
     }
 
     public void implicitlyDeal() {
-        if (!this.isAutocommit()) {
+        if (isInTransaction()) {
             StatisticListener.getInstance().record(session, r -> r.onTxEnd());
-            StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly(this));
-        }
-        if (this.isTxStart()) {
-            StatisticListener.getInstance().record(session, r -> r.onTxEnd());
+            if (!isAutocommit()) {
+                StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly());
+            }
         }
         controlTx(TransactionOperate.IMPLICITLY_COMMIT);
     }
@@ -416,6 +417,10 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         this.tableRows = tableRows;
     }
 
+    public void setMultiQueryHandler(RWSplitMultiHandler multiQueryHandler) {
+        this.multiQueryHandler = multiQueryHandler;
+    }
+
     @Override
     public void killAndClose(String reason) {
         session.close(reason);
@@ -444,5 +449,15 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
             TsQueriesCounter.getInstance().addToHistory(this);
             session.close("clean up");
         }
+    }
+
+    public String toString() {
+        String tmpSql = null;
+        if (executeSql != null) {
+            tmpSql = executeSql.length() > 1024 ? executeSql.substring(0, 1024) + "..." : executeSql;
+        }
+
+        return "RWSplitService[ user = " + user + " schema = " + schema + " executeSql = " + tmpSql +
+                " sessionReadOnly = " + sessionReadOnly + "] with connection " + connection.toString() + " with session " + session.toString();
     }
 }

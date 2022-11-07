@@ -61,7 +61,13 @@ public interface ServerParse {
     int XA_COMMIT = 163;
     int XA_ROLLBACK = 164;
 
+    int GRANT = 201;
+    int REVOKE = 202;
     int MIGRATE = 203;
+    int INSTALL = 205;
+    int RENAME = 206;
+    int UNINSTALL = 207;
+    int START_TRANSACTION = 208;
     /* don't set the constant to 255 */
     int UNSUPPORT = 254;
 

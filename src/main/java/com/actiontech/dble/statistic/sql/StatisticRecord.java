@@ -33,43 +33,47 @@ public class StatisticRecord {
 
     // tx
     protected volatile StatisticTxEntry txEntry;
+    protected volatile StatisticTxEntry pushTxEntry;
 
-    public void setTxEntry(StatisticTxEntry txEntry) {
-        this.txEntry = txEntry;
+    public void onTxStartByImplicitly() {
+        onTxStart(true);
     }
 
-    public void onTxPreStart() {
+    public void onTxStart() {
+        onTxStart(false);
     }
 
-    public void onTxStartBySet(BusinessService businessService) {
-    }
-
-    public void onTxStartByImplicitly(BusinessService businessService) {
-        onTxStart(businessService, true, false);
-    }
-
-    public void onTxStart(BusinessService businessService) {
-        onTxStart(businessService, false, false);
-    }
-
-    public void onTxStart(BusinessService businessService, boolean isImplicitly, boolean isSet) {
+    public void onTxStart(boolean isImplicitly) {
+        if (isImplicitly) {
+            txid = STATISTIC.getIncrementVirtualTxID();
+        }
+        txEntry = new StatisticTxEntry(frontendInfo, xaId, txid, System.nanoTime());
     }
 
     public void onTxEnd() {
+        if (txEntry != null) {
+            txEntry.setAllEndTime(System.nanoTime());
+            txEntry.setCanPush(true);
+            pushTxEntry = txEntry;
+            txEntry = null;
+        }
     }
 
     public void onExit(String reason) {
         long txEndTime = System.nanoTime();
         if (txEntry != null) {
+            txEntry.setCanPush(true);
+            pushTxEntry = txEntry;
+            txEntry = null;
             if (reason.contains("quit cmd")) {
                 StatisticFrontendSqlEntry f = new StatisticFrontendSqlEntry(frontendInfo, txEndTime);
                 f.setSql("exit");
                 f.setAllEndTime(txEndTime);
                 f.setXaId(xaId);
                 f.setTxId(txid);
-                txEntry.add(f);
+                pushTxEntry.add(f);
             }
-            txEntry.setAllEndTime(txEndTime);
+            pushTxEntry.setAllEndTime(txEndTime);
             pushTx();
         } else {
             if (!reason.contains("quit cmd")) return;
@@ -83,21 +87,32 @@ public class StatisticRecord {
         }
     }
 
-    protected void onTxData(StatisticFrontendSqlEntry frontendSqlentry) {
-        if (txEntry != null && txEntry.getTxId() > 0 && frontendSqlentry.getSql() != null) {
-            frontendSqlentry.setNeedToTx(false);
-            if (frontendSqlentry.getTxId() == txEntry.getTxId()) {
-                txEntry.add(frontendSqlentry);
+    protected boolean onTxData(StatisticFrontendSqlEntry frontendSqlentry) {
+        boolean isPushTx = false;
+        if (pushTxEntry != null && pushTxEntry.isCanPush()) {
+            if (frontendSqlentry.getSql() != null) {
+                frontendSqlentry.setNeedToTx(false);
+                if (frontendSqlentry.getTxId() == pushTxEntry.getTxId()) {
+                    pushTxEntry.add(frontendSqlentry);
+                }
+            } else {
+                onFrontendSqlClose();
+            }
+            isPushTx = true;
+        } else if (txEntry != null && txEntry.getTxId() > 0) {
+            if (frontendSqlentry.getSql() != null) {
+                frontendSqlentry.setNeedToTx(false);
+                if (frontendSqlentry.getTxId() == txEntry.getTxId()) {
+                    txEntry.add(frontendSqlentry);
+                }
             }
         }
+        return isPushTx;
     }
 
     // frontend sql
     protected volatile StatisticFrontendSqlEntry frontendSqlEntry;
     protected volatile long txid;
-
-    public void onFrontendMultiSqlStart() {
-    }
 
     public void onFrontendSqlStart() {
         if (frontendSqlEntry == null) {
@@ -129,11 +144,6 @@ public class StatisticRecord {
 
     public void onFrontendSqlClose() {
         frontendSqlEntry = null;
-        //if (frontendSqlEntry != null) {
-        //if (frontendSqlEntry.getBackendSqlEntrys().size() <= 0) {
-        //frontendSqlEntry = null;
-        //}
-        //}
     }
 
     public void onFrontendSetRows(long rows) {
@@ -153,13 +163,11 @@ public class StatisticRecord {
     public void onFrontendSqlEnd() {
         StatisticFrontendSqlEntry f = this.frontendSqlEntry;
         if (f != null) {
-            if (f.getSql() == null) {
-                onFrontendSqlClose();
-            } else {
-                f.setAllEndTime(System.nanoTime());
-                onTxData(f);
-                pushFrontendSql();
-            }
+            f.setAllEndTime(System.nanoTime());
+            boolean isPushTx = onTxData(f);
+            pushFrontendSql();
+            if (isPushTx)
+                pushTx();
         }
     }
 
@@ -253,11 +261,9 @@ public class StatisticRecord {
     }
 
     protected void pushTx() {
-        if (txEntry != null) {
-            //if (txEntry.getEntryList().size() != 0) {
-            StatisticManager.getInstance().push(txEntry);
-            //}
-            txEntry = null;
+        if (pushTxEntry != null) {
+            StatisticManager.getInstance().push(pushTxEntry);
+            pushTxEntry = null;
         }
     }
 

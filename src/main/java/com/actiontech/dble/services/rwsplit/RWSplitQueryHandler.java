@@ -19,18 +19,19 @@ import com.actiontech.dble.services.TransactionOperate;
 import com.actiontech.dble.services.rwsplit.handle.RwSplitSelectHandler;
 import com.actiontech.dble.services.rwsplit.handle.ScriptPrepareHandler;
 import com.actiontech.dble.services.rwsplit.handle.TempTableHandler;
-import com.actiontech.dble.services.rwsplit.handle.XaHandler;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
+import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RWSplitQueryHandler implements FrontendQueryHandler {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(ServerQueryHandler.class);
+    protected final RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
+    protected final RWSplitNonBlockingSession session;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ServerQueryHandler.class);
-
-    private final RWSplitNonBlockingSession session;
+    protected RWSplitMultiQueryHandler multiQueryHandler;
 
     public RWSplitQueryHandler(RWSplitNonBlockingSession session) {
         this.session = session;
@@ -40,21 +41,16 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
     public void query(String sql) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getService(), "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
-        StatisticListener.getInstance().record(session, r -> r.onFrontendSetSql(session.getService().getSchema(), sql));
         try {
-            RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
-            session.getService().queryCount();
             if (serverParse.isMultiStatement(sql)) {
-                session.getService().controlTx(TransactionOperate.IMPLICITLY_COMMIT);
-                if (!session.getService().isMultiStatementAllow()) {
-                    LOGGER.warn("use multi-query without set CLIENT_MULTI_STATEMENTS flag");
-                    session.getService().writeErrMessage(ErrorCode.ERR_WRONG_USED, "Your client must enable multi-query param .For example in jdbc,you should set allowMultiQueries=true in URL.");
-                    return;
-                }
-                StatisticListener.getInstance().record(session.getService(), r -> r.onFrontendMultiSqlStart());
-                session.execute(true, null);
+                if (multiQueryHandler == null)
+                    multiQueryHandler = new RWSplitMultiQueryHandler(session);
+                multiQueryHandler.query(sql);
                 return;
             }
+            session.getService().queryCount();
+            session.getService().setExecuteSql(sql);
+            StatisticListener.getInstance().record(session, r -> r.onFrontendSetSql(session.getService().getSchema(), sql));
             DbleHintParser.HintInfo hintInfo = DbleHintParser.parseRW(sql);
             int rs = serverParse.parse(sql);
             int sqlType = rs & 0xff;
@@ -82,7 +78,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         break;
                     case RwSplitServerParse.LOCK:
                         session.execute(true, (isSuccess, resp, rwSplitService) -> {
-                            rwSplitService.implicitlyDeal();
+                            CallbackFactory.TX_IMPLICITLYCOMMIT.callback(isSuccess, resp, rwSplitService);
                             rwSplitService.setLockTable(true);
                         });
                         break;
@@ -91,26 +87,11 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         break;
                     case RwSplitServerParse.START_TRANSACTION:
                     case RwSplitServerParse.BEGIN:
-                        StatisticListener.getInstance().record(session, r -> r.onTxPreStart());
-                        session.execute(!session.getService().isReadOnly(), (isSuccess, resp, rwSplitService) -> {
-                            if (rwSplitService.isInTransaction()) {
-                                StatisticListener.getInstance().record(session, r -> r.onTxEnd());
-                                StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly(rwSplitService));
-                            } else {
-                                StatisticListener.getInstance().record(session, r -> r.onTxStart(rwSplitService));
-                            }
-                            rwSplitService.controlTx(TransactionOperate.BEGIN);
-                        });
+                        session.execute(!session.getService().isReadOnly(), CallbackFactory.TX_START);
                         break;
                     case RwSplitServerParse.COMMIT:
                     case RwSplitServerParse.ROLLBACK:
-                        session.execute(true, (isSuccess, resp, rwSplitService) -> {
-                            session.getService().controlTx(TransactionOperate.END);
-                            StatisticListener.getInstance().record(session, r -> r.onTxEnd());
-                            if (!rwSplitService.isAutocommit()) {
-                                StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly(rwSplitService));
-                            }
-                        });
+                        session.execute(true, CallbackFactory.TX_END);
                         break;
                     case RwSplitServerParse.LOAD_DATA_INFILE_SQL:
                         FrontendConnection connection = (FrontendConnection) session.getService().getConnection();
@@ -131,11 +112,16 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         TempTableHandler.handleDrop(sql, session.getService(), rs >>> 8);
                         break;
                     case RwSplitServerParse.XA_START:
-                        XaHandler.xaStart(sql, session.getService(), rs >>> 8);
+                        session.execute(true, (isSuccess, resp, rwSplitService) -> {
+                            if (isSuccess) {
+                                String xaId = StringUtil.removeAllApostrophe(rwSplitService.getExecuteSql().substring(rs >>> 8).trim());
+                                StatisticListener.getInstance().record(rwSplitService, r -> r.onXaStart(xaId));
+                            }
+                        });
                         break;
                     case RwSplitServerParse.XA_COMMIT:
                     case RwSplitServerParse.XA_ROLLBACK:
-                        XaHandler.xaFinish(session.getService());
+                        session.execute(true, CallbackFactory.XA_END);
                         break;
                     default:
                         // 1. DDL
@@ -156,11 +142,8 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
 
     private Callback handleCallback(int sqlType) {
         if (RwSplitServerParse.isImplicitlyCommitSql(sqlType)) {
-            return (isSuccess, resp, rwSplitService) -> {
-                rwSplitService.implicitlyDeal();
-            };
+            return CallbackFactory.TX_IMPLICITLYCOMMIT;
         }
         return null;
     }
-
 }

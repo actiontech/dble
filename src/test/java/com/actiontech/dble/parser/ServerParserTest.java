@@ -5,9 +5,11 @@
  */
 package com.actiontech.dble.parser;
 
-import com.actiontech.dble.server.parser.*;
+import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
+import com.actiontech.dble.server.parser.ServerParseSelect;
+import com.actiontech.dble.server.parser.ServerParseShow;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -122,9 +124,9 @@ public class ServerParserTest {
 
     @Test
     public void testIsStart() {
-        Assert.assertEquals(ServerParse.START, 0xff & serverParse.parse("start ..."));
-        Assert.assertEquals(ServerParse.START, 0xff & serverParse.parse("START ..."));
-        Assert.assertEquals(ServerParse.START, 0xff & serverParse.parse("stART ..."));
+        Assert.assertEquals(ServerParse.OTHER, serverParse.parse("start ..."));
+        Assert.assertEquals(ServerParse.OTHER, serverParse.parse("START ..."));
+        Assert.assertEquals(ServerParse.OTHER, serverParse.parse("stART ..."));
     }
 
     @Test
@@ -183,13 +185,17 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParse.USE, 0xff & serverParse.parse(" Use   a"));
     }
 
-    @Ignore
     @Test
     public void testIsStartTransaction() {
-        Assert.assertEquals(ServerParseStart.TRANSACTION, ServerParseStart.parse(" start transaction  ...", 6));
-        Assert.assertEquals(ServerParseStart.TRANSACTION, ServerParseStart.parse("START TRANSACTION", 5));
-        Assert.assertEquals(ServerParseStart.TRANSACTION, ServerParseStart.parse(" staRT   TRANSaction  ", 6));
-        Assert.assertEquals(ServerParseStart.TRANSACTION, ServerParseStart.parse(" start transaction /*!adfadfasdf*/  ", 6));
+        Assert.assertEquals(ServerParse.OTHER, serverParse.parse(" start transeeee "));
+        Assert.assertEquals(ServerParse.OTHER, serverParse.parse(" start transaction  ..."));
+        Assert.assertEquals(ServerParse.START_TRANSACTION, serverParse.parse("START TRANSACTION   "));
+        Assert.assertEquals(ServerParse.START_TRANSACTION, serverParse.parse(" staRT   TRANSaction  "));
+        Assert.assertEquals(ServerParse.START_TRANSACTION, serverParse.parse(" start transaction    /*!adfadfasdf*/  "));
+        Assert.assertEquals(ServerParse.UNSUPPORT, serverParse.parse(" start transaction read   "));
+        Assert.assertEquals(ServerParse.UNSUPPORT, serverParse.parse(" start transaction read  asdads  "));
+        Assert.assertEquals(true, serverParse.parse(" start transaction readxasdads  ") != ServerParse.START_TRANSACTION);
+        Assert.assertEquals(true, serverParse.parse(" start transactionread ") != ServerParse.START_TRANSACTION);
     }
 
     @Test

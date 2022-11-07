@@ -10,6 +10,8 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlag;
+import com.actiontech.dble.services.TransactionService;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
@@ -33,6 +35,7 @@ public interface WriteAbleService {
      * @param writeFlags
      */
     default void writeDirectly(ByteBuffer buffer, @Nonnull EnumSet<WriteFlag> writeFlags, ResultFlag resultFlag) {
+        beforeWriteFinishPure(writeFlags);
         final boolean end = writeFlags.contains(WriteFlag.END_OF_QUERY) || writeFlags.contains(WriteFlag.END_OF_SESSION);
         if (end) {
             beforeWriteFinish(writeFlags, resultFlag);
@@ -41,6 +44,17 @@ public interface WriteAbleService {
         getConnection().innerWrite(buffer, writeFlags);
         if (end) {
             afterWriteFinish(writeFlags);
+        }
+    }
+
+    default void beforeWriteFinishPure(@Nonnull EnumSet<WriteFlag> writeFlags) {
+        if ((writeFlags.contains(WriteFlag.END_OF_QUERY) ||
+                writeFlags.contains(WriteFlag.END_OF_SESSION) ||
+                writeFlags.contains(WriteFlag.PARK_OF_MULTI_QUERY)) &&
+                this instanceof TransactionService) {
+            TransactionService service = ((TransactionService) this);
+            service.redressControlTx();
+            StatisticListener.getInstance().record(service, r -> r.onFrontendSqlEnd());
         }
     }
 

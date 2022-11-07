@@ -23,8 +23,8 @@ public class DistinctResultDiskBuffer extends SortedResultDiskBuffer {
      * @param columnCount
      * @param cmp
      */
-    public DistinctResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp, BufferPoolRecord.Builder recordBuilder) {
-        super(pool, columnCount, cmp, recordBuilder);
+    public DistinctResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(pool, columnCount, cmp, bufferRecordBuilder);
     }
 
     @Override

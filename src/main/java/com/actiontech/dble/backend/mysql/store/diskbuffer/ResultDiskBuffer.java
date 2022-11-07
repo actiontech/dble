@@ -31,13 +31,13 @@ public abstract class ResultDiskBuffer implements ResultExternal {
     protected ByteBuffer writeBuffer;
     protected FileStore file;
     protected int rowCount = 0;
-    protected BufferPoolRecord.Builder recordBuilder;
+    protected BufferPoolRecord.Builder bufferRecordBuilder;
 
-    public ResultDiskBuffer(BufferPool pool, int columnCount, BufferPoolRecord.Builder recordBuilder) {
+    public ResultDiskBuffer(BufferPool pool, int columnCount, BufferPoolRecord.Builder bufferRecordBuilder) {
         this.pool = pool;
         this.columnCount = columnCount;
-        this.recordBuilder = recordBuilder;
-        this.writeBuffer = pool.allocate(recordBuilder);
+        this.bufferRecordBuilder = bufferRecordBuilder;
+        this.writeBuffer = pool.allocate(bufferRecordBuilder);
         this.file = new FileStore("nioMapped:Memory", "rw");
     }
 
@@ -123,18 +123,18 @@ public abstract class ResultDiskBuffer implements ResultExternal {
         int readBufferOffset;
         ByteBuffer readBuffer;
 
-        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount, BufferPoolRecord.Builder recordBuilder) {
+        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount, BufferPoolRecord.Builder bufferRecordBuilder) {
             this.pool = pool;
             this.file = file;
             this.fieldCount = fieldCount;
-            this.readBuffer = pool.allocate(recordBuilder);
+            this.readBuffer = pool.allocate(bufferRecordBuilder);
         }
 
-        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int maxReadMemorySize, BufferPoolRecord.Builder recordBuilder) {
+        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int maxReadMemorySize, BufferPoolRecord.Builder bufferRecordBuilder) {
             this.pool = pool;
             this.file = file;
             this.fieldCount = fieldCount;
-            this.readBuffer = pool.allocate(maxReadMemorySize, recordBuilder);
+            this.readBuffer = pool.allocate(maxReadMemorySize, bufferRecordBuilder);
         }
 
         public boolean isEnd() {

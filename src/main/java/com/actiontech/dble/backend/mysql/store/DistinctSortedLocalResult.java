@@ -12,8 +12,8 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.RBTreeList;
 
 public class DistinctSortedLocalResult extends DistinctLocalResult {
-    public DistinctSortedLocalResult(BufferPool pool, int fieldsCount, RowDataComparator distinctCmp, String charset, BufferPoolRecord.Builder recordBuilder) {
-        super(pool, fieldsCount, distinctCmp, charset, recordBuilder);
+    public DistinctSortedLocalResult(BufferPool pool, int fieldsCount, RowDataComparator distinctCmp, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(pool, fieldsCount, distinctCmp, charset, bufferRecordBuilder);
     }
 
     /**

@@ -521,7 +521,7 @@ public class MySQLResponseService extends BackendService {
     }
 
     @Override
-    public BufferPoolRecord.Builder generateRecordBuilder() {
+    public BufferPoolRecord.Builder generateBufferRecordBuilder() {
         final BufferPoolRecord.Builder builder = BufferPoolRecord.builder();
         if (responseHandler instanceof HeartbeatSQLJob || responseHandler instanceof DelayDetectionSqlJob) {
             builder.withType(BufferType.HEARTBEAT);

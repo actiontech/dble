@@ -114,7 +114,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         );
         String charSet = !service.isFakeClosed() ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
         groupLocalResult = new GroupByLocalResult(pool, localResultFps.size(), comparator, localResultFps,
-                localResultReferredSums, this.isAllPushDown(), charSet, generateRecordBuilder()).
+                localResultReferredSums, this.isAllPushDown(), charSet, generateBufferRecordBuilder()).
                 setMemSizeController(session.getOtherBufferMC());
         for (int i = 0; i < bucketSize; i++) {
             if (terminate.get())
@@ -122,7 +122,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             RowDataComparator tmpComparator = new RowDataComparator(this.localResultFps, this.groupBys,
                     this.isAllPushDown(), this.type());
             GroupByBucket bucket = new GroupByBucket(queue, outQueue, pool, localResultFps.size(), tmpComparator,
-                    localResultFps, localResultReferredSums, this.isAllPushDown(), charSet, generateRecordBuilder());
+                    localResultFps, localResultReferredSums, this.isAllPushDown(), charSet, generateBufferRecordBuilder());
             bucket.setMemSizeController(session.getOtherBufferMC());
             buckets.add(bucket);
             bucket.start();

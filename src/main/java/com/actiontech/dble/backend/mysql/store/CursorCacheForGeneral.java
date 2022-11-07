@@ -24,8 +24,8 @@ public class CursorCacheForGeneral implements CursorCache {
     private volatile boolean complete = false;
 
 
-    public CursorCacheForGeneral(int fieldCount, BufferPoolRecord.Builder recordBuilder) {
-        final UnSortedLocalResult unSortedLocalResult = new UnSortedLocalResult(fieldCount, BufferPoolManager.getBufferPool(), CHARSET, recordBuilder);
+    public CursorCacheForGeneral(int fieldCount, BufferPoolRecord.Builder bufferRecordBuilder) {
+        final UnSortedLocalResult unSortedLocalResult = new UnSortedLocalResult(fieldCount, BufferPoolManager.getBufferPool(), CHARSET, bufferRecordBuilder);
         /*
             max-memory before persist.
          */

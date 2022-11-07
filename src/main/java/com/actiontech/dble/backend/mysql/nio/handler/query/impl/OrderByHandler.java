@@ -63,7 +63,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
         RowDataComparator cmp = new RowDataComparator(this.fieldPackets, orders, isAllPushDown(), type());
         String charSet = !service.isFakeClosed() ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) :
                 CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
-        localResult = new SortedLocalResult(pool, fieldPackets.size(), cmp, charSet, generateRecordBuilder()).
+        localResult = new SortedLocalResult(pool, fieldPackets.size(), cmp, charSet, generateBufferRecordBuilder()).
                 setMemSizeController(session.getOrderBufferMC());
         nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, service);
         startOwnThread(service);

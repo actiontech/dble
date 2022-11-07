@@ -246,6 +246,10 @@ public final class ShowHelp {
         HELPS.put("start @@statistic_queue_monitor [observeTime = ? [and intervalTime = ?]]", "Start monitoring queue usage, Unit: (s,m/min,h)");
         HELPS.put("stop @@statistic_queue_monitor", "Stop monitoring queue usage");
 
+
+        HELPS.put("enable @@memory_buffer_monitor", "Turn on memory buffer monitor");
+        HELPS.put("disable @@memory_buffer_monitor", "Turn off memory buffer monitor");
+
         // list sort
         KEYS.addAll(HELPS.keySet());
     }

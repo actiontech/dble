@@ -67,7 +67,7 @@ public abstract class AbstractService extends VariablesService implements Servic
     }
 
 
-    public abstract BufferPoolRecord.Builder generateRecordBuilder();
+    public abstract BufferPoolRecord.Builder generateBufferRecordBuilder();
 
     private ByteBuffer writeBigPackageToBuffer(byte[] data, ByteBuffer buffer) {
         int srcPos;

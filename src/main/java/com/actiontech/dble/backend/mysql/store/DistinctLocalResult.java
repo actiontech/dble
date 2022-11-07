@@ -30,19 +30,19 @@ public class DistinctLocalResult extends LocalResult {
      * @param charset         distinct selectable compator
      */
     public DistinctLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, RowDataComparator distinctCmp,
-                               String charset, BufferPoolRecord.Builder recordBuilder) {
-        super(initialCapacity, fieldsCount, pool, charset, recordBuilder);
+                               String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(initialCapacity, fieldsCount, pool, charset, bufferRecordBuilder);
         this.distinctCmp = distinctCmp;
         this.rows = new RBTreeList<>(initialCapacity, distinctCmp);
     }
 
-    public DistinctLocalResult(BufferPool pool, int fieldsCount, RowDataComparator distinctCmp, String charset, BufferPoolRecord.Builder recordBuilder) {
-        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, distinctCmp, charset, recordBuilder);
+    public DistinctLocalResult(BufferPool pool, int fieldsCount, RowDataComparator distinctCmp, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, distinctCmp, charset, bufferRecordBuilder);
     }
 
     @Override
     protected ResultExternal makeExternal() {
-        return new DistinctResultDiskBuffer(pool, fieldsCount, distinctCmp, recordBuilder);
+        return new DistinctResultDiskBuffer(pool, fieldsCount, distinctCmp, bufferRecordBuilder);
     }
 
     /**

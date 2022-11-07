@@ -36,13 +36,13 @@ public abstract class LocalResult implements ResultStore {
     protected String charset = "UTF-8";
     protected MemSizeController bufferMC;
     protected volatile int maxReadMemorySize = -1;
-    protected BufferPoolRecord.Builder recordBuilder;
+    protected BufferPoolRecord.Builder bufferRecordBuilder;
 
-    public LocalResult(int initialCapacity, int fieldsCount, BufferPool pool, String charset, BufferPoolRecord.Builder recordBuilder) {
+    public LocalResult(int initialCapacity, int fieldsCount, BufferPool pool, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
         this.rows = new ArrayList<>(initialCapacity);
         this.fieldsCount = fieldsCount;
         this.pool = pool;
-        this.recordBuilder = recordBuilder;
+        this.bufferRecordBuilder = bufferRecordBuilder;
         init();
         this.isClosed = false;
         this.lock = new ReentrantLock();

@@ -189,7 +189,7 @@ public class FrontendConnection extends AbstractConnection {
                 LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + localReadBuffer.capacity());
             }
             recycle(localReadBuffer);
-            netReadBuffer = allocate(readBufferChunk, generateRecordBuilder().withType(BufferType.POOL));
+            netReadBuffer = allocate(readBufferChunk, generateBufferRecordBuilder().withType(BufferType.POOL));
         } else {
             if (localReadBuffer != null) {
                 IODelayProvider.inReadReachEnd();
@@ -217,7 +217,7 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     public void processSSLPacketNotBigEnough(ByteBuffer buffer, int offset, final int pkgLength) {
-        ByteBuffer newBuffer = allocate(pkgLength, generateRecordBuilder().withType(BufferType.POOL));
+        ByteBuffer newBuffer = allocate(pkgLength, generateBufferRecordBuilder().withType(BufferType.POOL));
         buffer.position(offset);
         newBuffer.put(buffer);
         this.netReadBuffer = newBuffer;
@@ -323,7 +323,7 @@ public class FrontendConnection extends AbstractConnection {
     public ByteBuffer findReadBuffer() {
         ByteBuffer tmpReadBuffer = getReadBuffer();
         if (tmpReadBuffer == null) {
-            tmpReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateRecordBuilder().withType(BufferType.POOL));
+            tmpReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateBufferRecordBuilder().withType(BufferType.POOL));
             setReadBuffer(tmpReadBuffer);
         }
         return tmpReadBuffer;
@@ -331,7 +331,7 @@ public class FrontendConnection extends AbstractConnection {
 
 
     public ByteBuffer ensureReadBufferFree(ByteBuffer oldBuffer, int expectSize) {
-        ByteBuffer newBuffer = allocate(expectSize < 0 ? processor.getBufferPool().getChunkSize() : expectSize, generateRecordBuilder().withType(BufferType.POOL));
+        ByteBuffer newBuffer = allocate(expectSize < 0 ? processor.getBufferPool().getChunkSize() : expectSize, generateBufferRecordBuilder().withType(BufferType.POOL));
         oldBuffer.flip();
         newBuffer.put(oldBuffer);
         setReadBuffer(newBuffer);
@@ -359,7 +359,7 @@ public class FrontendConnection extends AbstractConnection {
     public ByteBuffer findNetReadBuffer() {
         if (isSupportSSL) {
             if (this.netReadBuffer == null) {
-                netReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateRecordBuilder().withType(BufferType.POOL));
+                netReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateBufferRecordBuilder().withType(BufferType.POOL));
             }
             return netReadBuffer;
         } else {

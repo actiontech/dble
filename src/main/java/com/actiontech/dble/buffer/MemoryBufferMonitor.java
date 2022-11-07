@@ -60,15 +60,15 @@ public class MemoryBufferMonitor {
         monitorMap.remove(allocateAddress);
     }
 
-    public void addRecord(BufferPoolRecord.Builder recordBuilder, Integer allocateAddress, int allocateLength) {
+    public void addRecord(BufferPoolRecord.Builder bufferRecordBuilder, Integer allocateAddress, int allocateLength) {
         if (!enable) {
             return;
         }
         try {
-            if (recordBuilder == null) {
-                recordBuilder = BufferPoolRecord.builder();
+            if (bufferRecordBuilder == null) {
+                bufferRecordBuilder = BufferPoolRecord.builder();
             }
-            if (SystemConfig.getInstance().getEnableMemoryBufferMonitorRecordPool() == 0 && recordBuilder.getType() == BufferType.POOL) {
+            if (SystemConfig.getInstance().getEnableMemoryBufferMonitorRecordPool() == 0 && bufferRecordBuilder.getType() == BufferType.POOL) {
                 return;
             }
 
@@ -83,10 +83,10 @@ public class MemoryBufferMonitor {
                 for (int i = 0; i < len; i++) {
                     stackTrace[i] = fromStackTrace[i].toString();
                 }
-                recordBuilder.withStacktrace(stackTrace);
+                bufferRecordBuilder.withStacktrace(stackTrace);
 
             }
-            final BufferPoolRecord record = recordBuilder.withAllocatedTime(System.currentTimeMillis()).withAllocateLength(allocateLength).build();
+            final BufferPoolRecord record = bufferRecordBuilder.withAllocatedTime(System.currentTimeMillis()).withAllocateLength(allocateLength).build();
             monitorMap.put(allocateAddress, record);
         } catch (Exception e) {
             LOGGER.warn("record buffer monitor error", e);

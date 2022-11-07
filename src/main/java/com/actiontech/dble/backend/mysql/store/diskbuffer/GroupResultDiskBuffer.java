@@ -42,8 +42,8 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
      * @param sumFunctions
      */
     public GroupResultDiskBuffer(BufferPool pool, int fieldsCount, RowDataComparator cmp, List<FieldPacket> packets,
-                                 List<ItemSum> sumFunctions, boolean isAllPushDown, String charset, BufferPoolRecord.Builder recordBuilder) {
-        super(pool, fieldsCount, cmp, recordBuilder);
+                                 List<ItemSum> sumFunctions, boolean isAllPushDown, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(pool, fieldsCount, cmp, bufferRecordBuilder);
         /*
       store the origin row fields,(already contains the item_sum fields in
       rowpackets we should calculate the item_sums again when next() is
@@ -63,7 +63,7 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
 
     @Override
     protected ResultDiskTape makeResultDiskTape() {
-        return new GroupResultDiskTape(pool, file, columnCount, sums.size(), recordBuilder);
+        return new GroupResultDiskTape(pool, file, columnCount, sums.size(), bufferRecordBuilder);
     }
 
     @Override
@@ -118,8 +118,8 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
         private final int orgFieldCount;
         private final int sumSize;
 
-        GroupResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int sumSize, BufferPoolRecord.Builder recordBuilder) {
-            super(pool, file, sumSize + fieldCount, recordBuilder);
+        GroupResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int sumSize, BufferPoolRecord.Builder bufferRecordBuilder) {
+            super(pool, file, sumSize + fieldCount, bufferRecordBuilder);
             this.orgFieldCount = fieldCount;
             this.sumSize = sumSize;
         }

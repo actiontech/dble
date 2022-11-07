@@ -48,13 +48,13 @@ public class GroupByLocalResult extends LocalResult {
      * @param isAllPushDown
      */
     public GroupByLocalResult(BufferPool pool, int fieldsCount, RowDataComparator groupCmp,
-                              List<FieldPacket> fieldPackets, List<ItemSum> sumFunctions, boolean isAllPushDown, String charset, BufferPoolRecord.Builder recordBuilder) {
-        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, groupCmp, fieldPackets, sumFunctions, isAllPushDown, charset, recordBuilder);
+                              List<FieldPacket> fieldPackets, List<ItemSum> sumFunctions, boolean isAllPushDown, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, groupCmp, fieldPackets, sumFunctions, isAllPushDown, charset, bufferRecordBuilder);
     }
 
     public GroupByLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, RowDataComparator groupCmp,
-                              List<FieldPacket> fieldPackets, List<ItemSum> sumFunctions, boolean isAllPushDown, String charset, BufferPoolRecord.Builder recordBuilder) {
-        super(initialCapacity, fieldsCount, pool, charset, recordBuilder);
+                              List<FieldPacket> fieldPackets, List<ItemSum> sumFunctions, boolean isAllPushDown, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(initialCapacity, fieldsCount, pool, charset, bufferRecordBuilder);
         this.groupCmp = groupCmp;
         this.fieldPackets = fieldPackets;
         this.sumFunctions = sumFunctions;
@@ -119,7 +119,7 @@ public class GroupByLocalResult extends LocalResult {
     @Override
     protected ResultExternal makeExternal() {
         return new GroupResultDiskBuffer(pool, fieldsCount, groupCmp, fieldPackets, sumFunctions, isAllPushDown,
-                charset, recordBuilder);
+                charset, bufferRecordBuilder);
     }
 
     @Override

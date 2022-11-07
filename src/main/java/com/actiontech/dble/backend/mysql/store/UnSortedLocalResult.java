@@ -12,20 +12,20 @@ import com.actiontech.dble.buffer.BufferPoolRecord;
 
 public class UnSortedLocalResult extends LocalResult {
 
-    public UnSortedLocalResult(int fieldsCount, BufferPool pool, String charset, BufferPoolRecord.Builder recordBuilder) {
-        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, charset, recordBuilder);
+    public UnSortedLocalResult(int fieldsCount, BufferPool pool, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, charset, bufferRecordBuilder);
     }
 
-    public UnSortedLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, String charset, BufferPoolRecord.Builder recordBuilder) {
-        super(initialCapacity, fieldsCount, pool, charset, recordBuilder);
+    public UnSortedLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(initialCapacity, fieldsCount, pool, charset, bufferRecordBuilder);
     }
 
     @Override
     protected ResultExternal makeExternal() {
         if (maxReadMemorySize != -1) {
-            return new UnSortedResultDiskBuffer(pool, fieldsCount, maxReadMemorySize, recordBuilder);
+            return new UnSortedResultDiskBuffer(pool, fieldsCount, maxReadMemorySize, bufferRecordBuilder);
         } else {
-            return new UnSortedResultDiskBuffer(pool, fieldsCount, recordBuilder);
+            return new UnSortedResultDiskBuffer(pool, fieldsCount, bufferRecordBuilder);
         }
     }
 

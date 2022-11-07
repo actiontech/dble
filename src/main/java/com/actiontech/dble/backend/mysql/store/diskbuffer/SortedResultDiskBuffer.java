@@ -43,8 +43,8 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
     protected MinHeap<TapeItem> heap;
     protected Comparator<TapeItem> heapCmp;
 
-    public SortedResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp, BufferPoolRecord.Builder recordBuilder) {
-        super(pool, columnCount, recordBuilder);
+    public SortedResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(pool, columnCount, bufferRecordBuilder);
         tapes = new ArrayList<>();
         this.comparator = cmp;
         this.heapCmp = new Comparator<TapeItem>() {
@@ -108,7 +108,7 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
      * @return
      */
     protected ResultDiskTape makeResultDiskTape() {
-        return new ResultDiskTape(pool, file, columnCount, recordBuilder);
+        return new ResultDiskTape(pool, file, columnCount, bufferRecordBuilder);
     }
 
     @Override

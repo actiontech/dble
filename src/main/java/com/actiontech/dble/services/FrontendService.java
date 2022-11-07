@@ -380,7 +380,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
 
     @Override
-    public BufferPoolRecord.Builder generateRecordBuilder() {
+    public BufferPoolRecord.Builder generateBufferRecordBuilder() {
         return BufferPoolRecord.builder().withSql(executeSql);
     }
 

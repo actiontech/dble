@@ -27,9 +27,9 @@ public class GroupByBucket extends GroupByLocalResult {
     public GroupByBucket(BlockingQueue<RowDataPacket> sourceData, BlockingQueue<RowDataPacket> outData,
                          BufferPool pool, int fieldsCount, RowDataComparator groupCmp,
                          List<FieldPacket> fieldPackets, List<ItemSum> sumFunctions,
-                         boolean isAllPushDown, String charset, BufferPoolRecord.Builder recordBuilder) {
+                         boolean isAllPushDown, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
         super(pool, fieldsCount, groupCmp, fieldPackets, sumFunctions,
-                isAllPushDown, charset, recordBuilder);
+                isAllPushDown, charset, bufferRecordBuilder);
         this.inData = sourceData;
         this.outData = outData;
     }

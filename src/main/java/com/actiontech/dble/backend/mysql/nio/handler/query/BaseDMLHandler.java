@@ -121,7 +121,7 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
 
     }
 
-    protected BufferPoolRecord.Builder generateRecordBuilder() {
-        return (session != null && session.getSource() != null) ? session.getSource().generateRecordBuilder() : BufferPoolRecord.builder();
+    protected BufferPoolRecord.Builder generateBufferRecordBuilder() {
+        return (session != null && session.getSource() != null) ? session.getSource().generateBufferRecordBuilder() : BufferPoolRecord.builder();
     }
 }

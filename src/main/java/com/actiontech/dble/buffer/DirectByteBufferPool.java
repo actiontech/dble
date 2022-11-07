@@ -43,11 +43,11 @@ public class DirectByteBufferPool implements BufferPool {
     }
 
 
-    public ByteBuffer allocate(BufferPoolRecord.Builder recordBuilder) {
-        return allocate(chunkSize, recordBuilder);
+    public ByteBuffer allocate(BufferPoolRecord.Builder bufferRecordBuilder) {
+        return allocate(chunkSize, bufferRecordBuilder);
     }
 
-    public ByteBuffer allocate(int size, BufferPoolRecord.Builder recordBuilder) {
+    public ByteBuffer allocate(int size, BufferPoolRecord.Builder bufferRecordBuilder) {
         final int theChunkCount = size / chunkSize + (size % chunkSize == 0 ? 0 : 1);
         int selectedPage = (int) (prevAllocatedPage.incrementAndGet() % allPages.length);
         ByteBuffer byteBuf = allocateBuffer(theChunkCount, selectedPage, allPages.length);
@@ -64,7 +64,7 @@ public class DirectByteBufferPool implements BufferPool {
             }
             return ByteBuffer.allocate(allocatedSize);
         }
-        bufferPoolMonitor.addRecord(recordBuilder, byteBuf.hashCode(), size);
+        bufferPoolMonitor.addRecord(bufferRecordBuilder, byteBuf.hashCode(), size);
         return byteBuf;
     }
 

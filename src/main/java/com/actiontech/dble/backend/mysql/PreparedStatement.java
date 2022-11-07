@@ -94,9 +94,9 @@ public class PreparedStatement implements Closeable {
             /*
             todo:could use optimized implementation here
              */
-            cursorCache = new CursorCacheForGeneral(fieldCount, session.getSource().generateRecordBuilder());
+            cursorCache = new CursorCacheForGeneral(fieldCount, session.getSource().generateBufferRecordBuilder());
         } else {
-            cursorCache = new CursorCacheForGeneral(fieldCount, session.getSource().generateRecordBuilder());
+            cursorCache = new CursorCacheForGeneral(fieldCount, session.getSource().generateBufferRecordBuilder());
         }
 
         this.fieldPackets = new ArrayList<>(tmpFieldPackets);

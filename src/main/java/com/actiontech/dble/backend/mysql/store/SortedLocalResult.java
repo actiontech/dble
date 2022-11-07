@@ -17,19 +17,19 @@ public class SortedLocalResult extends LocalResult {
 
     protected RowDataComparator rowCmp;
 
-    public SortedLocalResult(BufferPool pool, int fieldsCount, RowDataComparator rowCmp, String charset, BufferPoolRecord.Builder recordBuilder) {
-        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, rowCmp, charset, recordBuilder);
+    public SortedLocalResult(BufferPool pool, int fieldsCount, RowDataComparator rowCmp, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, rowCmp, charset, bufferRecordBuilder);
     }
 
     public SortedLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, RowDataComparator rowCmp,
-                             String charset, BufferPoolRecord.Builder recordBuilder) {
-        super(initialCapacity, fieldsCount, pool, charset, recordBuilder);
+                             String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(initialCapacity, fieldsCount, pool, charset, bufferRecordBuilder);
         this.rowCmp = rowCmp;
     }
 
     @Override
     protected ResultExternal makeExternal() {
-        return new SortedResultDiskBuffer(pool, fieldsCount, rowCmp, recordBuilder);
+        return new SortedResultDiskBuffer(pool, fieldsCount, rowCmp, bufferRecordBuilder);
     }
 
     @Override

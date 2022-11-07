@@ -26,14 +26,14 @@ public class UnSortedResultDiskBuffer extends ResultDiskBuffer {
      */
     private final ResultDiskTape mainTape;
 
-    public UnSortedResultDiskBuffer(BufferPool pool, int columnCount, BufferPoolRecord.Builder recordBuilder) {
-        super(pool, columnCount, recordBuilder);
-        mainTape = new ResultDiskTape(pool, file, columnCount, recordBuilder);
+    public UnSortedResultDiskBuffer(BufferPool pool, int columnCount, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(pool, columnCount, bufferRecordBuilder);
+        mainTape = new ResultDiskTape(pool, file, columnCount, bufferRecordBuilder);
     }
 
-    public UnSortedResultDiskBuffer(BufferPool pool, int columnCount, int maxReadMemorySize, BufferPoolRecord.Builder recordBuilder) {
-        super(pool, columnCount, recordBuilder);
-        mainTape = new ResultDiskTape(pool, file, columnCount, maxReadMemorySize, recordBuilder);
+    public UnSortedResultDiskBuffer(BufferPool pool, int columnCount, int maxReadMemorySize, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(pool, columnCount, bufferRecordBuilder);
+        mainTape = new ResultDiskTape(pool, file, columnCount, maxReadMemorySize, bufferRecordBuilder);
     }
 
     @Override

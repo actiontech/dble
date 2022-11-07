@@ -77,7 +77,7 @@ public class TempTableHandler extends BaseDMLHandler {
                 String charSet = !service.isFakeClosed() ? service.getCharset().getResults() : session.getSource().getService().getCharset().getResults();
                 tempTable.setCharset(charSet);
                 tempTable.setRowsStore(new UnSortedLocalResult(fieldPackets.size(), BufferPoolManager.getBufferPool(),
-                        CharsetUtil.getJavaCharset(charSet), generateRecordBuilder()).setMemSizeController(session.getOtherBufferMC()));
+                        CharsetUtil.getJavaCharset(charSet), generateBufferRecordBuilder()).setMemSizeController(session.getOtherBufferMC()));
                 List<Field> fields = HandlerTool.createFields(this.fieldPackets);
                 sourceSelIndex = HandlerTool.findField(sourceSel, fields, 0);
                 if (sourceSelIndex < 0)

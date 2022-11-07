@@ -15,9 +15,9 @@ import java.nio.ByteBuffer;
  * @time 12:19 2016/5/23
  */
 public interface BufferPool {
-    ByteBuffer allocate();
+    ByteBuffer allocate(BufferPoolRecord.Builder bufferRecordBuilder);
 
-    ByteBuffer allocate(int size);
+    ByteBuffer allocate(int size, BufferPoolRecord.Builder bufferRecordBuilder);
 
     void recycle(ByteBuffer theBuf);
 

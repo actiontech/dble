@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.backend.mysql.store.diskbuffer.GroupResultDiskBuffer;
 import com.actiontech.dble.backend.mysql.store.result.ResultExternal;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
@@ -47,13 +48,13 @@ public class GroupByLocalResult extends LocalResult {
      * @param isAllPushDown
      */
     public GroupByLocalResult(BufferPool pool, int fieldsCount, RowDataComparator groupCmp,
-                              List<FieldPacket> fieldPackets, List<ItemSum> sumFunctions, boolean isAllPushDown, String charset) {
-        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, groupCmp, fieldPackets, sumFunctions, isAllPushDown, charset);
+                              List<FieldPacket> fieldPackets, List<ItemSum> sumFunctions, boolean isAllPushDown, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, groupCmp, fieldPackets, sumFunctions, isAllPushDown, charset, bufferRecordBuilder);
     }
 
     public GroupByLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, RowDataComparator groupCmp,
-                              List<FieldPacket> fieldPackets, List<ItemSum> sumFunctions, boolean isAllPushDown, String charset) {
-        super(initialCapacity, fieldsCount, pool, charset);
+                              List<FieldPacket> fieldPackets, List<ItemSum> sumFunctions, boolean isAllPushDown, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(initialCapacity, fieldsCount, pool, charset, bufferRecordBuilder);
         this.groupCmp = groupCmp;
         this.fieldPackets = fieldPackets;
         this.sumFunctions = sumFunctions;
@@ -118,7 +119,7 @@ public class GroupByLocalResult extends LocalResult {
     @Override
     protected ResultExternal makeExternal() {
         return new GroupResultDiskBuffer(pool, fieldsCount, groupCmp, fieldPackets, sumFunctions, isAllPushDown,
-                charset);
+                charset, bufferRecordBuilder);
     }
 
     @Override

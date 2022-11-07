@@ -255,6 +255,10 @@ public final class SystemConfig {
     //unit: ms
     private long releaseTimeout = 10 * 60 * 1000L;
 
+    private int disableRecycleBuffer = 0; //temp
+    private int enableMemoryBufferMonitor = 0;
+    private int enableMemoryBufferMonitorRecordPool = 0;
+
     public int getEnableAsyncRelease() {
         return enableAsyncRelease;
     }
@@ -1826,6 +1830,43 @@ public final class SystemConfig {
         this.supportSSL = supportSSL;
     }
 
+    public int getDisableRecycleBuffer() {
+        return disableRecycleBuffer;
+    }
+
+    public void setDisableRecycleBuffer(int disableRecycleBufferTmp) {
+        if (disableRecycleBufferTmp >= 0 && disableRecycleBufferTmp <= 1) {
+            this.disableRecycleBuffer = disableRecycleBufferTmp;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "disableRecycleBuffer", disableRecycleBufferTmp, this.disableRecycleBuffer));
+        }
+    }
+
+    public int getEnableMemoryBufferMonitor() {
+        return enableMemoryBufferMonitor;
+    }
+
+    public void setEnableMemoryBufferMonitor(int enableBufferMonitorTmp) {
+        if (enableBufferMonitorTmp >= 0 && enableBufferMonitorTmp <= 1) {
+            this.enableMemoryBufferMonitor = enableBufferMonitorTmp;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableBufferMonitor", enableBufferMonitorTmp, this.enableMemoryBufferMonitor));
+        }
+    }
+
+    public int getEnableMemoryBufferMonitorRecordPool() {
+        return enableMemoryBufferMonitorRecordPool;
+    }
+
+    public void setEnableMemoryBufferMonitorRecordPool(int enableBufferMonitorRecordPoolTmp) {
+        if (enableBufferMonitorRecordPoolTmp >= 0 && enableBufferMonitorRecordPoolTmp <= 1) {
+            this.enableMemoryBufferMonitorRecordPool = enableBufferMonitorRecordPoolTmp;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableBufferMonitorRecordPool", enableBufferMonitorRecordPoolTmp, this.enableMemoryBufferMonitorRecordPool));
+        }
+    }
+
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1945,6 +1986,9 @@ public final class SystemConfig {
                 ", releaseTimeout=" + releaseTimeout +
                 ", enableAsyncRelease=" + enableAsyncRelease +
                 ", xaIdCheckPeriod=" + xaIdCheckPeriod +
+                ", enableBufferMonitor=" + enableMemoryBufferMonitor +
+                ", enableBufferMonitorRecordPool=" + enableMemoryBufferMonitorRecordPool +
+                ", disableRecycleBuffer=" + disableRecycleBuffer +
                 ", enableSqlDumpLog=" + enableSqlDumpLog +
                 ", sqlDumpLogBasePath='" + sqlDumpLogBasePath + '\'' +
                 ", sqlDumpLogFileName='" + sqlDumpLogFileName + '\'' +

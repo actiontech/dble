@@ -1001,6 +1001,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     private void initName(SQLExpr expr) {
         StringBuilder sb = new StringBuilder();
         MySqlOutputVisitor ov = new MySqlOutputVisitor(sb);
+        ov.setPrettyFormat(false);
         ov.setShardingSupport(false);
         expr.accept(ov);
         item.setItemName(sb.toString());

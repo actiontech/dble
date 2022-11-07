@@ -8,12 +8,13 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.mysql.xa.XaCheckHandler;
+import com.actiontech.dble.buffer.MemoryBufferMonitor;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.ParamInfo;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.net.ssl.OpenSSLWrapper;
 import com.actiontech.dble.net.ssl.GMSslWrapper;
+import com.actiontech.dble.net.ssl.OpenSSLWrapper;
 import com.actiontech.dble.net.ssl.SSLWrapperRegistry;
 import com.actiontech.dble.server.status.GeneralLog;
 import com.actiontech.dble.server.status.LoadDataBatch;
@@ -172,6 +173,8 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("sqlDumpLogTimeBasedRotate", SqlDumpLog.getInstance().getSqlDumpLogTimeBasedRotate() + "", "The timeBased of rotate policy, the default value is 1"));
         readOnlyParams.add(new ParamInfo("sqlDumpLogDeleteFileAge", SqlDumpLog.getInstance().getSqlDumpLogDeleteFileAge() + "", "The expiration time deletion strategy, the default value is '90d'"));
         readOnlyParams.add(new ParamInfo("sqlDumpLogCompressFilePath", SqlDumpLog.getInstance().getSqlDumpLogCompressFilePath() + "", "The compression of sqldump log file path, the default value is '*/sqldump-*.log.gz'"));
+
+        readOnlyParams.add(new ParamInfo("enableMemoryBufferMonitorRecordPool", sysConfig.getEnableMemoryBufferMonitorRecordPool() + "", "Whether the memory buffer monitor need record connection pool memory. the default value is 0(OFF)."));
     }
 
     public List<ParamInfo> getVolatileParams() {
@@ -197,6 +200,9 @@ public final class SystemParams {
         params.add(new ParamInfo("samplingRate", StatisticManager.getInstance().getSamplingRate() + "", "Sampling rate, the default is 0, it is a percentage"));
         params.add(new ParamInfo("xaIdCheckPeriod", XaCheckHandler.getXaIdCheckPeriod() + "s", "The period for check xaId, the default is 300 second"));
         params.add(new ParamInfo("enableSqlDumpLog", SqlDumpLog.getInstance().getEnableSqlDumpLog() + "", "Whether enable sqlDumpLog, the default value is 0(off)"));
+
+        params.add(new ParamInfo("enableMemoryBufferMonitor", MemoryBufferMonitor.getInstance().isEnable() + "", "Whether enable memory buffer monitor, enable this option will cost a lot of  resources. the default value is 0(off)"));
+
         return params;
     }
 }

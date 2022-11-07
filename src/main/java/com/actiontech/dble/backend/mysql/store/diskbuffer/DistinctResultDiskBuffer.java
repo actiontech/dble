@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.store.diskbuffer;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RBTMinHeap;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 
 /**
@@ -22,8 +23,8 @@ public class DistinctResultDiskBuffer extends SortedResultDiskBuffer {
      * @param columnCount
      * @param cmp
      */
-    public DistinctResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp) {
-        super(pool, columnCount, cmp);
+    public DistinctResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(pool, columnCount, cmp, bufferRecordBuilder);
     }
 
     @Override

@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.store.FileStore;
 import com.actiontech.dble.backend.mysql.store.result.ResultExternal;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.exception.NotSupportException;
@@ -30,11 +31,13 @@ public abstract class ResultDiskBuffer implements ResultExternal {
     protected ByteBuffer writeBuffer;
     protected FileStore file;
     protected int rowCount = 0;
+    protected BufferPoolRecord.Builder bufferRecordBuilder;
 
-    public ResultDiskBuffer(BufferPool pool, int columnCount) {
+    public ResultDiskBuffer(BufferPool pool, int columnCount, BufferPoolRecord.Builder bufferRecordBuilder) {
         this.pool = pool;
         this.columnCount = columnCount;
-        this.writeBuffer = pool.allocate();
+        this.bufferRecordBuilder = bufferRecordBuilder;
+        this.writeBuffer = pool.allocate(bufferRecordBuilder);
         this.file = new FileStore("nioMapped:Memory", "rw");
     }
 
@@ -120,18 +123,18 @@ public abstract class ResultDiskBuffer implements ResultExternal {
         int readBufferOffset;
         ByteBuffer readBuffer;
 
-        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount) {
+        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount, BufferPoolRecord.Builder bufferRecordBuilder) {
             this.pool = pool;
             this.file = file;
             this.fieldCount = fieldCount;
-            this.readBuffer = pool.allocate();
+            this.readBuffer = pool.allocate(bufferRecordBuilder);
         }
 
-        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int maxReadMemorySize) {
+        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int maxReadMemorySize, BufferPoolRecord.Builder bufferRecordBuilder) {
             this.pool = pool;
             this.file = file;
             this.fieldCount = fieldCount;
-            this.readBuffer = pool.allocate(maxReadMemorySize);
+            this.readBuffer = pool.allocate(maxReadMemorySize, bufferRecordBuilder);
         }
 
         public boolean isEnd() {

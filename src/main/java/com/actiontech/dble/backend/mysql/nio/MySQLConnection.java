@@ -707,7 +707,7 @@ public class MySQLConnection extends AbstractConnection implements
      */
     @Override
     public synchronized void closeWithoutRsp(String reason) {
-        this.respHandler = null;
+        setResponseHandler(null);
         this.close(reason);
     }
 

@@ -72,7 +72,7 @@ public final class PauseShardingNodeManager {
     }
 
     /**
-     * in this implementation, when call this method 'fetchClusterStatus()',the port is already be listened ，but the server has not ready for accept connection yet. So,no FrontConnection will be created, we don't need to call 'waitForSelfPause()' to wait for connection paused;
+     * in this implementation, when call this method 'fetchClusterStatus()',the port is already be listened ,but the server has not ready for accept connection yet. So,no FrontConnection will be created, we don't need to call 'waitForSelfPause()' to wait for connection paused;
      *
      * @throws Exception
      */

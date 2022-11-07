@@ -67,7 +67,7 @@ public abstract class Table implements Named {
                 shardingNode +
                 ", sqlMaxLimit=" +
                 sqlMaxLimit +
-                "， specifyCharset=" +
+                ", specifyCharset=" +
                 specifyCharset;
     }
 }

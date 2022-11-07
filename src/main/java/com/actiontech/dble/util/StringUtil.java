@@ -620,7 +620,7 @@ public final class StringUtil {
 
 
     /**
-     * Refer to String source code handling code，Whether the encoding can parse String properly
+     * Refer to String source code handling code,Whether the encoding can parse String properly
      *
      * @param charsetEncode
      * @param values

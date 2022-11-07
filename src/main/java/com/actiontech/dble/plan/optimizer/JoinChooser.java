@@ -45,11 +45,11 @@ public class JoinChooser {
     private final HintPlanInfo hintPlanInfo;
     private final Comparator<JoinRelationDag> defaultCmp = (o1, o2) -> {
         if (o1.relations.erRelationLst.size() > 0 && o2.relations.erRelationLst.size() > 0) {
-            if (o1.relations.isInner == o2.relations.isInner) { // both er，both inner or not inner
+            if (o1.relations.isInner == o2.relations.isInner) { // both er,both inner or not inner
                 return 0;
-            } else if (o1.relations.isInner) { // both er，o1 inner,o2  notinner
+            } else if (o1.relations.isInner) { // both er,o1 inner,o2  notinner
                 return -1;
-            } else { //if (o2.relations.isInner) { both er，o1 not inner,o2 inner
+            } else { //if (o2.relations.isInner) { both er,o1 not inner,o2 inner
                 return 1;
             }
         } else if (o1.relations.erRelationLst.size() > 0) { // if o2 is not ER join, o1 is ER join, o1<o2
@@ -61,11 +61,11 @@ public class JoinChooser {
             boolean o1Global = o1.node.getUnGlobalTableCount() == 0;
             boolean o2Global = o2.node.getUnGlobalTableCount() == 0;
             if (o1Global == o2Global) {
-                if (o1.relations.isInner == o2.relations.isInner) { // both er，both inner or not inner
+                if (o1.relations.isInner == o2.relations.isInner) { // both er,both inner or not inner
                     return 0;
-                } else if (o1.relations.isInner) { // both er，o1 inner,o2  notinner
+                } else if (o1.relations.isInner) { // both er,o1 inner,o2  notinner
                     return -1;
-                } else { //if (o2.relations.isInner) { both er，o1 not inner,o2 inner
+                } else { //if (o2.relations.isInner) { both er,o1 not inner,o2 inner
                     return 1;
                 }
             } else if (o1Global) {
@@ -310,7 +310,7 @@ public class JoinChooser {
                     select * from a inner join b on a.id=b.id inner join c on b.id=c.id inner join d on c.id=d.id where b.id=1
                     the join order is a->b->c->d and the hint is c->d->b->a.
                     we choose 'c' as root, then dag like this (c->d) & (c->b<-a)
-                    when visited c. b is one of rightNodes of c， and the degree of b is 2.
+                    when visited c. b is one of rightNodes of c, and the degree of b is 2.
                      */
                     //                    if (rightNode.degree == 0) {
                     nextAccessDagNodes.put(rightNode, new DagLine(currentNode, rightNode));

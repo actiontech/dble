@@ -65,6 +65,8 @@ public final class RouteService {
                     rrs = HintPlanHandler.route(hintInfo.getHintValue(), sqlType, hintInfo.getRealSql());
                 } else if (type == DbleHintParser.DB_TYPE) {
                     rrs = HintMasterDBHandler.route(schema, hintInfo.getHintValue(), sqlType, hintInfo.getRealSql(), service);
+                } else {
+                    throw new SQLException("current hint type is not supported");
                 }
             }
 

@@ -8,6 +8,7 @@ package com.actiontech.dble.net.service;
 
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.btrace.provider.IODelayProvider;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.WriteAbleService;
 import com.actiontech.dble.net.mysql.MySQLPacket;
@@ -65,6 +66,8 @@ public abstract class AbstractService extends VariablesService implements Servic
 
     }
 
+
+    public abstract BufferPoolRecord.Builder generateBufferRecordBuilder();
 
     private ByteBuffer writeBigPackageToBuffer(byte[] data, ByteBuffer buffer) {
         int srcPos;

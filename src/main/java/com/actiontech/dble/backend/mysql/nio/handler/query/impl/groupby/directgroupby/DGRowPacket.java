@@ -95,7 +95,7 @@ public class DGRowPacket extends RowDataPacket {
     @Override
     public byte[] toBytes() {
         int size = getRealSize();
-        ByteBuffer buffer = BufferPoolManager.getBufferPool().allocate(size + PACKET_HEADER_SIZE);
+        ByteBuffer buffer = BufferPoolManager.getBufferPool().allocate(size + PACKET_HEADER_SIZE, null);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         for (int i = 0; i < this.sumSize; i++) {

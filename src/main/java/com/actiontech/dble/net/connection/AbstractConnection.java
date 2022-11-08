@@ -9,6 +9,8 @@ import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImp
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
 import com.actiontech.dble.btrace.provider.IODelayProvider;
+import com.actiontech.dble.buffer.BufferPoolRecord;
+import com.actiontech.dble.buffer.BufferType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
@@ -324,10 +326,14 @@ public abstract class AbstractConnection implements Connection {
         this.setReadBuffer(buffer.compact());
     }
 
+    public BufferPoolRecord.Builder generateBufferRecordBuilder() {
+        return service != null ? service.generateBufferRecordBuilder() : BufferPoolRecord.builder();
+    }
+
     public void ensureFreeSpaceOfReadBuffer(ByteBuffer buffer,
                                             int offset, final int pkgLength) throws IOException {
         if (buffer.capacity() < pkgLength) {
-            ByteBuffer newBuffer = processor.getBufferPool().allocate(pkgLength);
+            ByteBuffer newBuffer = allocate(pkgLength, generateBufferRecordBuilder().withType(BufferType.POOL));
             lastLargeMessageTime = TimeUtil.currentTimeMillis();
             buffer.position(offset);
             newBuffer.put(buffer);
@@ -354,7 +360,7 @@ public abstract class AbstractConnection implements Connection {
                 LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + localReadBuffer.capacity());
             }
             recycle(localReadBuffer);
-            this.setReadBuffer(processor.getBufferPool().allocate(readBufferChunk));
+            this.setReadBuffer(allocate(readBufferChunk, generateBufferRecordBuilder().withType(BufferType.POOL)));
         } else {
             if (localReadBuffer != null) {
                 IODelayProvider.inReadReachEnd();
@@ -408,21 +414,25 @@ public abstract class AbstractConnection implements Connection {
 
     public ByteBuffer allocate() {
         int size = this.processor.getBufferPool().getChunkSize();
-        return this.processor.getBufferPool().allocate(size);
+        return this.processor.getBufferPool().allocate(size, generateBufferRecordBuilder());
     }
 
     public ByteBuffer allocate(int size) {
-        return this.processor.getBufferPool().allocate(size);
+        return this.processor.getBufferPool().allocate(size, generateBufferRecordBuilder());
+    }
+
+    public ByteBuffer allocate(int size, BufferPoolRecord.Builder builder) {
+        return this.processor.getBufferPool().allocate(size, builder);
     }
 
     public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity, boolean writeSocketIfFull) {
         if (capacity > buffer.remaining()) {
             if (writeSocketIfFull) {
                 service.writeDirectly(buffer, WriteFlags.PART);
-                return processor.getBufferPool().allocate(capacity);
+                return allocate(capacity);
             } else { // Relocate a larger buffer
                 buffer.flip();
-                ByteBuffer newBuf = processor.getBufferPool().allocate(capacity + buffer.limit() + 1);
+                ByteBuffer newBuf = allocate(capacity + buffer.limit() + 1);
                 newBuf.put(buffer);
                 this.recycle(buffer);
                 return newBuf;
@@ -510,7 +520,7 @@ public abstract class AbstractConnection implements Connection {
     public ByteBuffer findNetReadBuffer() {
         ByteBuffer tmpReadBuffer = getReadBuffer();
         if (tmpReadBuffer == null) {
-            tmpReadBuffer = processor.getBufferPool().allocate(processor.getBufferPool().getChunkSize());
+            tmpReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateBufferRecordBuilder().withType(BufferType.POOL));
             setReadBuffer(tmpReadBuffer);
         }
         return tmpReadBuffer;

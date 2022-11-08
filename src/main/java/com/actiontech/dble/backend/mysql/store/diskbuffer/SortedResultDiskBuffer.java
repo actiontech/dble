@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.store.diskbuffer;
 import com.actiontech.dble.backend.mysql.nio.handler.util.ArrayMinHeap;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.MinHeap;
 import com.actiontech.dble.util.TimeUtil;
@@ -42,8 +43,8 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
     protected MinHeap<TapeItem> heap;
     protected Comparator<TapeItem> heapCmp;
 
-    public SortedResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp) {
-        super(pool, columnCount);
+    public SortedResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(pool, columnCount, bufferRecordBuilder);
         tapes = new ArrayList<>();
         this.comparator = cmp;
         this.heapCmp = new Comparator<TapeItem>() {
@@ -107,7 +108,7 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
      * @return
      */
     protected ResultDiskTape makeResultDiskTape() {
-        return new ResultDiskTape(pool, file, columnCount);
+        return new ResultDiskTape(pool, file, columnCount, bufferRecordBuilder);
     }
 
     @Override

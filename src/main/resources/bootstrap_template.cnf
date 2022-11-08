@@ -233,3 +233,7 @@
 -DsqlDumpLogTimeBasedRotate=1
 -DsqlDumpLogDeleteFileAge=90d
 -DsqlDumpLogCompressFilePath=*/sqldump-*.log.gz
+
+
+-DenableMemoryBufferMonitor=0
+-D

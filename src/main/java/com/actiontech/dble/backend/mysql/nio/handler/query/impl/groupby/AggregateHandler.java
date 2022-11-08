@@ -203,7 +203,7 @@ public class AggregateHandler extends BaseDMLHandler {
                 ItemSum selFunc = sumFunctions.get(i);
                 List<Order> orders = HandlerTool.makeOrder(selFunc.arguments());
                 RowDataComparator distinctCmp = new RowDataComparator(packets, orders, isAllPushDown, this.type());
-                store = new DistinctLocalResult(pool, packets.size(), distinctCmp, this.charset).
+                store = new DistinctLocalResult(pool, packets.size(), distinctCmp, this.charset, generateBufferRecordBuilder()).
                         setMemSizeController(session.getOtherBufferMC());
                 distinctStores.add(store);
             }

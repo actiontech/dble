@@ -218,7 +218,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
                 localResult.done();
             }
         }
-        LocalResult newLocalResult = new UnSortedLocalResult(columnCount, pool, this.charset).
+        LocalResult newLocalResult = new UnSortedLocalResult(columnCount, pool, this.charset, generateBufferRecordBuilder()).
                 setMemSizeController(session.getJoinBufferMC());
         newLocalResult.add(row);
         if (row.getFieldCount() == 0)
@@ -235,7 +235,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
      */
     private void addEndRowToDeque(int columnCount, FairLinkedBlockingDeque<LocalResult> deque)
             throws InterruptedException {
-        LocalResult newLocalResult = new UnSortedLocalResult(columnCount, pool, this.charset).
+        LocalResult newLocalResult = new UnSortedLocalResult(columnCount, pool, this.charset, generateBufferRecordBuilder()).
                 setMemSizeController(session.getJoinBufferMC());
         newLocalResult.add(TERMINATED_ROW);
         newLocalResult.done();

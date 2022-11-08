@@ -25,12 +25,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractXAHandler extends MultiNodeHandler {
 
     private static Logger logger = LoggerFactory.getLogger(AbstractXAHandler.class);
     protected volatile XAStage currentStage;
-    protected volatile boolean interruptTx = true;
+    protected volatile boolean interruptTx = true; // default open explicit transaction
     protected volatile MySQLPacket packetIfSuccess;
     protected volatile TransactionCallback transactionCallback;
 
@@ -56,31 +57,49 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
 
     @Override
     public void okResponse(byte[] ok, @NotNull AbstractService service) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("receive ok from " + service);
-        }
-        ((MySQLResponseService) service).syncAndExecute();
-        this.currentStage.onConnectionOk((MySQLResponseService) service);
-        if (decrementToZero((MySQLResponseService) service)) {
-            changeStageTo(next());
+        final ReentrantLock currentStageLock = this.currentStage.getResponseLockLock();
+        currentStageLock.lock();
+        try {
+            if (logger.isDebugEnabled()) {
+                logger.debug("receive ok from " + service);
+            }
+            ((MySQLResponseService) service).syncAndExecute();
+            this.currentStage.onConnectionOk((MySQLResponseService) service);
+            if (decrementToZero((MySQLResponseService) service)) {
+                changeStageTo(next());
+            }
+        } finally {
+            currentStageLock.unlock();
         }
     }
 
-    public void fakedResponse(MySQLResponseService service, String reason) {
-        if (reason != null) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("receive faked response from " + service + ",because " + reason);
+    public void fakedResponse(MySQLResponseService service, String failReason) {
+        final ReentrantLock currentStageLock = this.currentStage.getResponseLockLock();
+        currentStageLock.lock();
+        try {
+            if (failReason != null) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("receive faked response from " + service + ",because " + failReason);
+                }
+                this.setFail(failReason);
             }
-            this.setFail(reason);
-        }
-        if (decrementToZero(service)) {
-            changeStageTo(next());
+            if (decrementToZero(service)) {
+                changeStageTo(next());
+            }
+        } finally {
+            currentStageLock.unlock();
         }
     }
 
     public void fakedResponse(RouteResultsetNode rrsn) {
-        if (decrementToZero(rrsn)) {
-            changeStageTo(next());
+        final ReentrantLock currentStageLock = this.currentStage.getResponseLockLock();
+        currentStageLock.lock();
+        try {
+            if (decrementToZero(rrsn)) {
+                changeStageTo(next());
+            }
+        } finally {
+            currentStageLock.unlock();
         }
     }
 
@@ -99,57 +118,77 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
 
     @Override
     public void errorResponse(byte[] err, @NotNull AbstractService service) {
-        ((MySQLResponseService) service).syncAndExecute();
-        ErrorPacket errPacket = new ErrorPacket();
-        errPacket.read(err);
-        String errMsg = new String(errPacket.getMessage());
-        this.setFail(errMsg);
+        final ReentrantLock currentStageLock = this.currentStage.getResponseLockLock();
+        currentStageLock.lock();
+        try {
+            ((MySQLResponseService) service).syncAndExecute();
+            ErrorPacket errPacket = new ErrorPacket();
+            errPacket.read(err);
+            String errMsg = new String(errPacket.getMessage());
+            this.setFail(errMsg);
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("receive error [" + errMsg + "] from " + service);
-        }
-        currentStage.onConnectionError((MySQLResponseService) service, errPacket.getErrNo());
-        if (decrementToZero((MySQLResponseService) service)) {
-            changeStageTo(next());
+            if (logger.isDebugEnabled()) {
+                logger.debug("receive error [" + errMsg + "] from " + service);
+            }
+            currentStage.onErrorResponse((MySQLResponseService) service, errPacket.getErrNo());
+            if (decrementToZero((MySQLResponseService) service)) {
+                changeStageTo(next());
+            }
+        } finally {
+            currentStageLock.unlock();
         }
     }
 
     @Override
     public void connectionClose(@NotNull final AbstractService service, final String reason) {
-        boolean[] result = decrementToZeroAndCheckNode((MySQLResponseService) service);
-        boolean finished = result[0];
-        boolean justRemoved = result[1];
-        if (justRemoved) {
-            String closeReason = "Connection {dbInstance[" + service.getConnection().getHost() + ":" + service.getConnection().getPort() + "],Schema[" + ((MySQLResponseService) service).getConnection().getSchema() + "],threadID[" +
-                    ((MySQLResponseService) service).getConnection().getThreadId() + "]} was closed ,reason is [" + reason + "]";
-            if (logger.isDebugEnabled()) {
-                logger.debug(closeReason);
+        final ReentrantLock currentStageLock = this.currentStage.getResponseLockLock();
+        currentStageLock.lock();
+        try {
+            boolean[] result = decrementToZeroAndCheckNode((MySQLResponseService) service);
+            boolean finished = result[0];
+            boolean justRemoved = result[1];
+            if (justRemoved) {
+                String closeReason = "Connection {dbInstance[" + service.getConnection().getHost() + ":" + service.getConnection().getPort() + "],Schema[" + ((MySQLResponseService) service).getConnection().getSchema() + "],threadID[" +
+                        ((MySQLResponseService) service).getConnection().getThreadId() + "]} was closed ,reason is [" + reason + "]";
+                if (logger.isDebugEnabled()) {
+                    logger.debug(closeReason);
+                }
+                this.setFail(closeReason);
+                currentStage.onConnectionCloseOrError((MySQLResponseService) service);
+                if (finished) {
+                    changeStageTo(next());
+                }
+            } else {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("conn[backendId=" + service.getConnection().getId() + "] was closed in gap of two stage");
+                }
             }
-            this.setFail(closeReason);
-            currentStage.onConnectionClose((MySQLResponseService) service);
-            if (finished) {
-                changeStageTo(next());
-            }
-        } else {
-            if (logger.isDebugEnabled()) {
-                logger.debug("conn[backendId=" + service.getConnection().getId() + "] was closed in gap of two stage");
-            }
+        } finally {
+            currentStageLock.unlock();
         }
     }
 
     @Override
     public void connectionError(Throwable e, Object attachment) {
-        logger.warn("connection Error in xa transaction, err:", e);
-        boolean finished;
-        lock.lock();
+        final ReentrantLock currentStageLock = this.currentStage.getResponseLockLock();
+        currentStageLock.lock();
         try {
-            errorConnsCnt++;
-            finished = canResponse();
+            logger.warn("connection Error in xa transaction, err:", e);
+            boolean finished;
+            lock.lock();
+            try {
+                errorConnsCnt++;
+                finished = canResponse();
+            } finally {
+                lock.unlock();
+            }
+            if (finished) {
+                changeStageTo(next());
+            }
+            if (attachment instanceof MySQLResponseService)
+                currentStage.onConnectionCloseOrError((MySQLResponseService) attachment);
         } finally {
-            lock.unlock();
-        }
-        if (finished) {
-            changeStageTo(next());
+            currentStageLock.unlock();
         }
     }
 

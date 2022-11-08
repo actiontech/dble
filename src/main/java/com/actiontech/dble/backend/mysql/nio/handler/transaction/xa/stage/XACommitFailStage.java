@@ -123,7 +123,7 @@ public class XACommitFailStage extends XACommitStage {
     }
 
     @Override
-    public void onConnectionError(MySQLResponseService service, int errNo) {
+    public void onErrorResponse(MySQLResponseService service, int errNo) {
         if (errNo == ErrorCode.ER_XAER_NOTA) {
             RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
             String xid = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());

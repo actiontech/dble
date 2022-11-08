@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class XAStage implements TransactionStage {
     protected static final Logger LOGGER = LoggerFactory.getLogger(XAStage.class);
@@ -26,8 +27,10 @@ public abstract class XAStage implements TransactionStage {
     public static final String ROLLBACK_STAGE = "XA ROLLBACK STAGE";
     public static final String ROLLBACK_FAIL_STAGE = "XA ROLLBACK FAIL STAGE";
 
+    protected final ReentrantLock responseLock = new ReentrantLock();
     protected final NonBlockingSession session;
     protected AbstractXAHandler xaHandler;
+
 
     XAStage(NonBlockingSession session, AbstractXAHandler handler) {
         this.session = session;
@@ -77,14 +80,15 @@ public abstract class XAStage implements TransactionStage {
     // return ok
     public abstract void onConnectionOk(MySQLResponseService service);
 
-    // connect error
-    public abstract void onConnectionError(MySQLResponseService service, int errNo);
+    // return error
+    public abstract void onErrorResponse(MySQLResponseService service, int errNo);
 
-    // connect close
-    public abstract void onConnectionClose(MySQLResponseService service);
-
-    // connect error
-    public abstract void onConnectError(MySQLResponseService service);
+    // connect close or error
+    public abstract void onConnectionCloseOrError(MySQLResponseService service);
 
     public abstract String getStage();
+
+    public ReentrantLock getResponseLockLock() {
+        return responseLock;
+    }
 }

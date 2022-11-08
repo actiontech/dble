@@ -40,7 +40,7 @@ public class XAPrepareStage extends XAStage {
                 errPacket.write(session.getSource());
                 return null;
             }
-            // Not in transaction, automatic rollback directly
+            // Not in transaction or prepareUnconnect==true, automatic rollback directly
             return new XARollbackStage(session, xaHandler, false);
         }
         return new XACommitStage(session, xaHandler);
@@ -63,8 +63,7 @@ public class XAPrepareStage extends XAStage {
     @Override
     public void onEnterStage(MySQLResponseService service) {
         if (service.getConnection().isClosed()) {
-            service.setXaStatus(TxState.TX_CONN_QUIT);
-            xaHandler.fakedResponse(service, "the conn has been closed before executing XA PREPARE");
+            xaHandler.connectionClose(service, "the conn has been closed before executing XA PREPARE");
         } else {
             try {
                 RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
@@ -75,7 +74,8 @@ public class XAPrepareStage extends XAStage {
                 XaDelayProvider.delayBeforeXaPrepare(rrn.getName(), xaTxId);
                 service.execCmd("XA PREPARE " + xaTxId);
             } catch (Exception e) {
-                logger.info("xa prepare error", e);
+                logger.info("xa prepare exception", e);
+                this.onException(service);
                 if (!xaHandler.isFail()) {
                     xaHandler.fakedResponse(service, "cause error when executing XA PREPARE. reason [" + e.getMessage() + "]");
                 } else {
@@ -92,21 +92,18 @@ public class XAPrepareStage extends XAStage {
     }
 
     @Override
-    public void onConnectionError(MySQLResponseService service, int errNo) {
-        service.getConnection().close("prepare error");
+    public void onErrorResponse(MySQLResponseService service, int errNo) {
+        service.getConnection().close("xa prepare error");
         service.setXaStatus(TxState.TX_CONN_QUIT);
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
     }
 
     @Override
-    public void onConnectionClose(MySQLResponseService service) {
-        prepareUnconnect = true;
-        service.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
-        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
+    public void onConnectionCloseOrError(MySQLResponseService service) {
+        this.onException(service);
     }
 
-    @Override
-    public void onConnectError(MySQLResponseService service) {
+    public void onException(MySQLResponseService service) {
         prepareUnconnect = true;
         service.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);

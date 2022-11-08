@@ -47,8 +47,7 @@ public class XACommitStage extends XAStage {
     @Override
     public void onEnterStage(MySQLResponseService service) {
         if (service.getConnection().isClosed()) {
-            service.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
-            xaHandler.fakedResponse(service, "the conn has been closed before executing XA COMMIT");
+            xaHandler.connectionClose(service, "the conn has been closed before executing XA COMMIT");
         } else {
             try {
                 RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
@@ -59,7 +58,7 @@ public class XACommitStage extends XAStage {
                 XaDelayProvider.delayBeforeXaCommit(rrn.getName(), xaTxId);
                 service.execCmd("XA COMMIT " + xaTxId);
             } catch (Exception e) {
-                logger.info("xa commit error", e);
+                logger.info("xa commit exception", e);
                 if (!xaHandler.isFail()) {
                     xaHandler.fakedResponse(service, "cause error when executing XA COMMIT. reason [" + e.getMessage() + "]");
                 } else {
@@ -77,19 +76,13 @@ public class XACommitStage extends XAStage {
     }
 
     @Override
-    public void onConnectionError(MySQLResponseService service, int errNo) {
+    public void onErrorResponse(MySQLResponseService service, int errNo) {
         service.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
     }
 
     @Override
-    public void onConnectionClose(MySQLResponseService service) {
-        service.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
-        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
-    }
-
-    @Override
-    public void onConnectError(MySQLResponseService service) {
+    public void onConnectionCloseOrError(MySQLResponseService service) {
         service.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
     }

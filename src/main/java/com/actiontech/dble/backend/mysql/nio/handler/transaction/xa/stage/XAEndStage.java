@@ -56,8 +56,7 @@ public class XAEndStage extends XAStage {
     @Override
     public void onEnterStage(MySQLResponseService service) {
         if (service.getConnection().isClosed()) {
-            service.setXaStatus(TxState.TX_CONN_QUIT);
-            xaHandler.fakedResponse(service, "the conn has been closed before executing XA END");
+            xaHandler.connectionClose(service, "the conn has been closed before executing XA END");
         } else {
             try {
                 RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
@@ -68,7 +67,7 @@ public class XAEndStage extends XAStage {
                 XaDelayProvider.delayBeforeXaEnd(rrn.getName(), xaTxId);
                 service.execCmd("XA END " + xaTxId);
             } catch (Exception e) {
-                logger.info("xa end error", e);
+                logger.info("xa end exception", e);
                 if (!xaHandler.isFail()) {
                     xaHandler.fakedResponse(service, "cause error when executing XA END. reason [" + e.getMessage() + "]");
                 } else {
@@ -87,22 +86,15 @@ public class XAEndStage extends XAStage {
     }
 
     @Override
-    public void onConnectionError(MySQLResponseService service, int errNo) {
-        service.getConnection().businessClose("conn error");
+    public void onErrorResponse(MySQLResponseService service, int errNo) {
+        service.getConnection().businessClose("xa end error");
         service.setXaStatus(TxState.TX_CONN_QUIT);
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
     }
 
     @Override
-    public void onConnectionClose(MySQLResponseService service) {
-        service.getConnection().businessClose("conn has been closed");
-        service.setXaStatus(TxState.TX_CONN_QUIT);
-        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
-    }
-
-    @Override
-    public void onConnectError(MySQLResponseService service) {
-        service.getConnection().businessClose("conn connect error");
+    public void onConnectionCloseOrError(MySQLResponseService service) {
+        service.getConnection().businessClose("xa connection closed or error");
         service.setXaStatus(TxState.TX_CONN_QUIT);
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
     }

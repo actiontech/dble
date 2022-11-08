@@ -105,7 +105,7 @@ public class XARollbackStage extends XAStage {
     }
 
     @Override
-    public void onConnectionError(MySQLResponseService service, int errNo) {
+    public void onErrorResponse(MySQLResponseService service, int errNo) {
         if (errNo == ErrorCode.ER_XAER_NOTA) {
             RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
             String xid = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
@@ -133,20 +133,9 @@ public class XARollbackStage extends XAStage {
     }
 
     @Override
-    public void onConnectionClose(MySQLResponseService service) {
+    public void onConnectionCloseOrError(MySQLResponseService service) {
         if (lastStageIsXAEnd) {
             service.getConnection().businessClose("conn has been closed");
-            service.setXaStatus(TxState.TX_ROLLBACKED_STATE);
-        } else {
-            service.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);
-        }
-        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
-    }
-
-    @Override
-    public void onConnectError(MySQLResponseService service) {
-        if (lastStageIsXAEnd) {
-            service.getConnection().businessClose("conn connect error");
             service.setXaStatus(TxState.TX_ROLLBACKED_STATE);
         } else {
             service.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);

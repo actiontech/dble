@@ -20,13 +20,13 @@ public class DbleMemoryResident extends ManagerBaseTable {
 
     private static final String COLUMN_ID = "id";
 
-    private static final String COLUMN_LIVE_SECOND = "live_second";
+    private static final String COLUMN_ALIVE_SECOND = "alive_second";
 
     private static final String COLUMN_STACKTRACE = "stacktrace";
 
-    private static final String COLUMN_ALLOCATE_TYPE = "allocate_type";
+    private static final String COLUMN_BUFFER_TYPE = "buffer_type";
 
-    private static final String COLUMN_ALLOCATE_LENGTH = "allocate_length";
+    private static final String COLUMN_ALLOCATE_SIZE = "allocate_size";
 
     private static final String COLUMN_SQL = "sql";
 
@@ -39,21 +39,21 @@ public class DbleMemoryResident extends ManagerBaseTable {
 
     @Override
     protected void initColumnAndType() {
-        columns.put(COLUMN_ID, new ColumnMeta(COLUMN_ID, "varchar(20)", false, true));
-        columnsType.put(COLUMN_ID, Fields.FIELD_TYPE_VAR_STRING);
+        columns.put(COLUMN_ID, new ColumnMeta(COLUMN_ID, "bigint", false, true));
+        columnsType.put(COLUMN_ID, Fields.FIELD_TYPE_LONGLONG);
 
-        columns.put(COLUMN_LIVE_SECOND, new ColumnMeta(COLUMN_LIVE_SECOND, "double", false));
-        columnsType.put(COLUMN_LIVE_SECOND, Fields.FIELD_TYPE_DOUBLE);
+        columns.put(COLUMN_ALIVE_SECOND, new ColumnMeta(COLUMN_ALIVE_SECOND, "double", false));
+        columnsType.put(COLUMN_ALIVE_SECOND, Fields.FIELD_TYPE_DOUBLE);
 
         columns.put(COLUMN_STACKTRACE, new ColumnMeta(COLUMN_STACKTRACE, "text", false));
         columnsType.put(COLUMN_STACKTRACE, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_ALLOCATE_TYPE, new ColumnMeta(COLUMN_ALLOCATE_TYPE, "varchar(64)", false));
-        columnsType.put(COLUMN_ALLOCATE_TYPE, Fields.FIELD_TYPE_VAR_STRING);
+        columns.put(COLUMN_BUFFER_TYPE, new ColumnMeta(COLUMN_BUFFER_TYPE, "varchar(64)", false));
+        columnsType.put(COLUMN_BUFFER_TYPE, Fields.FIELD_TYPE_VAR_STRING);
 
 
-        columns.put(COLUMN_ALLOCATE_LENGTH, new ColumnMeta(COLUMN_ALLOCATE_LENGTH, "int(11)", false, false));
-        columnsType.put(COLUMN_ALLOCATE_LENGTH, Fields.FIELD_TYPE_LONG);
+        columns.put(COLUMN_ALLOCATE_SIZE, new ColumnMeta(COLUMN_ALLOCATE_SIZE, "int(11)", false, false));
+        columnsType.put(COLUMN_ALLOCATE_SIZE, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_SQL, new ColumnMeta(COLUMN_SQL, "text", false));
         columnsType.put(COLUMN_SQL, Fields.FIELD_TYPE_VAR_STRING);
@@ -67,8 +67,8 @@ public class DbleMemoryResident extends ManagerBaseTable {
         final long currentTime = System.currentTimeMillis();
         MemoryBufferMonitor.getInstance().recordForEach((key, bqr) -> {
             LinkedHashMap<String, String> row = new LinkedHashMap<>();
-            row.put(COLUMN_ID, Integer.toHexString(key));
-            final double costTime = currentTime - bqr.getAllocatedTime();
+            row.put(COLUMN_ID, String.valueOf(key));
+            final double costTime = ((double) (currentTime - bqr.getAllocatedTime())) / 1000;
             //only cost time>1s will print
             if (costTime < 1) {
                 return;
@@ -79,10 +79,10 @@ public class DbleMemoryResident extends ManagerBaseTable {
                 str.append(stacktrace);
             }
             str.append("\n");
-            row.put(COLUMN_LIVE_SECOND, String.valueOf(costTime / 1000));
+            row.put(COLUMN_ALIVE_SECOND, String.valueOf(costTime));
             row.put(COLUMN_STACKTRACE, str.toString());
-            row.put(COLUMN_ALLOCATE_TYPE, bqr.getType().toString());
-            row.put(COLUMN_ALLOCATE_LENGTH, String.valueOf(bqr.getAllocateLength()));
+            row.put(COLUMN_BUFFER_TYPE, bqr.getType().toString());
+            row.put(COLUMN_ALLOCATE_SIZE, String.valueOf(bqr.getAllocateSize()));
             row.put(COLUMN_SQL, bqr.getSql());
             rowList.add(row);
         });

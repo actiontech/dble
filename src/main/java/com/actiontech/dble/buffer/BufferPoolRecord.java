@@ -15,14 +15,17 @@ public class BufferPoolRecord {
     private String[] stacktrace;
     private String sql;
     private BufferType type;
-    private int allocateLength;
+    private int allocateSize;
     private long allocatedTime;
 
-    public BufferPoolRecord(String[] stacktrace, String sql, BufferType type, int allocateLength, long allocatedTime) {
+    public BufferPoolRecord(String[] stacktrace, String sql, BufferType type, int allocateSize, long allocatedTime) {
         this.stacktrace = stacktrace;
+        if (sql != null) {
+            sql = sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql;
+        }
         this.sql = sql;
         this.type = type;
-        this.allocateLength = allocateLength;
+        this.allocateSize = allocateSize;
         this.allocatedTime = allocatedTime;
     }
 
@@ -43,19 +46,29 @@ public class BufferPoolRecord {
         return type;
     }
 
-    public int getAllocateLength() {
-        return allocateLength;
+    public int getAllocateSize() {
+        return allocateSize;
     }
 
     public long getAllocatedTime() {
         return allocatedTime;
     }
 
+    @Override
+    public String toString() {
+        return "BufferPoolRecord{" +
+                ", sql='" + sql + '\'' +
+                ", type=" + type +
+                ", allocateSize=" + allocateSize +
+                ", allocatedTime=" + allocatedTime +
+                '}';
+    }
+
     public static final class Builder {
         private String[] stacktrace;
         private String sql;
         private BufferType type = BufferType.NORMAL;
-        private int allocateLength;
+        private int allocateSize;
         private long allocatedTime;
 
         private Builder() {
@@ -80,8 +93,8 @@ public class BufferPoolRecord {
             return this;
         }
 
-        public Builder withAllocateLength(int allocateLengthTmp) {
-            this.allocateLength = allocateLengthTmp;
+        public Builder withAllocateSize(int allocateLengthTmp) {
+            this.allocateSize = allocateLengthTmp;
             return this;
         }
 
@@ -91,7 +104,7 @@ public class BufferPoolRecord {
         }
 
         public BufferPoolRecord build() {
-            return new BufferPoolRecord(stacktrace, sql, type, allocateLength, allocatedTime);
+            return new BufferPoolRecord(stacktrace, sql, type, allocateSize, allocatedTime);
         }
     }
 }

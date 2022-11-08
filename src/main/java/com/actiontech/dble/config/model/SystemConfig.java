@@ -258,7 +258,7 @@ public final class SystemConfig {
 
     private int disableRecycleBuffer = 0; //temp
     private int enableMemoryBufferMonitor = 0;
-    private int enableMemoryBufferMonitorRecordPool = 0;
+    private int enableMemoryBufferMonitorRecordPool = 1;
 
     public int getEnableAsyncRelease() {
         return enableAsyncRelease;

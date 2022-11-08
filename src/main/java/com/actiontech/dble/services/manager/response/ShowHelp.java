@@ -191,6 +191,7 @@ public final class ShowHelp {
         HELPS.put("reload @@slow_query.flushperiod", "Reset the flush period");
         HELPS.put("show @@slow_query.flushsize", "Show the min flush size for writing to disk");
         HELPS.put("reload @@slow_query.flushsize", "Reset the flush size");
+        HELPS.put("reload @@slow_query.queue_policy", "Reset the queue policy");
 
         //create database
         HELPS.put("create database @@shardingNode ='dn......'", "create database for shardingNode in config");

@@ -44,6 +44,9 @@ public final class ReloadHandler {
             case ManagerParseReload.SLOW_QUERY_FLUSH_SIZE:
                 ReloadSlowQueryFlushSize.execute(service, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
                 break;
+            case ManagerParseReload.SLOW_QUERY_QUEUE_POLICY:
+                ReloadSlowQueuePolicy.execute(service, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
+                break;
             case ManagerParseReload.QUERY_CF:
                 String filter = ParseUtil.parseString(stmt);
                 ReloadQueryCf.execute(service, filter);

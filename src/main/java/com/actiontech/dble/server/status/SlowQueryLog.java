@@ -22,6 +22,7 @@ public final class SlowQueryLog {
     private volatile int slowTime; //ms
     private volatile int flushPeriod;
     private volatile int flushSize;
+    private volatile int queueOverflowPolicy;
     private static final SlowQueryLog INSTANCE = new SlowQueryLog();
     private volatile SlowQueryLogProcessor processor = new SlowQueryLogProcessor();
 
@@ -29,6 +30,7 @@ public final class SlowQueryLog {
         this.slowTime = SystemConfig.getInstance().getSqlSlowTime();
         this.flushPeriod = SystemConfig.getInstance().getFlushSlowLogPeriod();
         this.flushSize = SystemConfig.getInstance().getFlushSlowLogSize();
+        this.queueOverflowPolicy = SystemConfig.getInstance().getSlowQueueOverflowPolicy();
     }
 
     public static SlowQueryLog getInstance() {
@@ -55,6 +57,14 @@ public final class SlowQueryLog {
         } else {
             this.enableSlowLog = false;
         }
+    }
+
+    public int getQueueOverflowPolicy() {
+        return queueOverflowPolicy;
+    }
+
+    public void setQueueOverflowPolicy(int queueOverflowPolicy) {
+        this.queueOverflowPolicy = queueOverflowPolicy;
     }
 
     public int getSlowTime() {

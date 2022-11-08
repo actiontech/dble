@@ -173,6 +173,7 @@ public final class SystemConfig {
     private int flushSlowLogPeriod = 1; //second
     private int flushSlowLogSize = 1000; //row
     private int sqlSlowTime = 100; //ms
+    private int slowQueueOverflowPolicy = 2;
 
     //general log
     private int enableGeneralLog = 0;
@@ -1867,6 +1868,19 @@ public final class SystemConfig {
     }
 
 
+    public int getSlowQueueOverflowPolicy() {
+        return slowQueueOverflowPolicy;
+    }
+
+    @SuppressWarnings("unused")
+    public void setSlowQueueOverflowPolicy(int slowQueueOverflowPolicy) {
+        if (slowQueueOverflowPolicy == 1 || slowQueueOverflowPolicy == 2) {
+            this.slowQueueOverflowPolicy = slowQueueOverflowPolicy;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "slowQueueOverflowPolicy", slowQueueOverflowPolicy, this.slowQueueOverflowPolicy));
+        }
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1940,6 +1954,7 @@ public final class SystemConfig {
                 ", flushSlowLogPeriod=" + flushSlowLogPeriod +
                 ", flushSlowLogSize=" + flushSlowLogSize +
                 ", sqlSlowTime=" + sqlSlowTime +
+                ", slowQueueOverflowPolicy=" + slowQueueOverflowPolicy +
                 ", enableAlert=" + enableAlert +
                 ", maxCharsPerColumn=" + maxCharsPerColumn +
                 ", maxRowSizeToFile=" + maxRowSizeToFile +

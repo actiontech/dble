@@ -763,6 +763,7 @@ public class TraceResult implements Cloneable {
         TraceResult tr;
         try {
             tr = (TraceResult) super.clone();
+            tr.previous = null;
             tr.simpleHandler = this.simpleHandler;
             tr.builder = this.builder;
             tr.connFlagMap = new ConcurrentHashMap<>();

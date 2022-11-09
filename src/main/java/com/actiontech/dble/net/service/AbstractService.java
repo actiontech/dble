@@ -170,7 +170,7 @@ public abstract class AbstractService extends VariablesService implements Servic
                         connection.getSocketWR().disableReadForever();
                     }
                     if (closeTask.isFirst() && !connection.isOnlyFrontTcpConnected()) {
-                        LOGGER.info("prepare close for conn.conn id {},reason [{}]", connection.getId(), closeTask.getReasonsStr());
+                        LOGGER.info("prepare close for conn {},reason [{}]", connection, closeTask.getReasonsStr());
                     }
 
                     break;

@@ -96,6 +96,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                     return;
                 }
             }
+            controlTx(TransactionOperate.QUERY);
             StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
             writeOkPacket();
         }

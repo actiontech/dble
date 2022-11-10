@@ -44,7 +44,7 @@ public class XARollbackFailStage extends XARollbackStage {
             XASessionCheck.getInstance().getRollbackingSession().remove(session.getSource().getId());
             // resolve alert
             AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", xaId));
-            feedback(false);
+            feedback(lastStageIsXAEnd);
             return null;
         }
 
@@ -63,6 +63,9 @@ public class XARollbackFailStage extends XARollbackStage {
                 closeReason.append(errMsg);
             }
             session.getSource().close(closeReason.toString());
+            if (xaHandler.getTransactionCallback() != null) {
+                xaHandler.getTransactionCallback().callback();
+            }
         }
 
         // kill xa or retry to commit xa in background

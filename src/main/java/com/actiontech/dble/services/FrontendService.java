@@ -8,6 +8,7 @@ package com.actiontech.dble.services;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.VariationSQLException;
 import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
@@ -52,9 +53,9 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     // will non null if is dong task
     private volatile Long doingTaskThread = null;
     private AtomicLong taskId = new AtomicLong(1);
-    // current task index，Will increased when every new task is processed。
+    // current task index,Will increased when every new task is processed。
     private long currentTaskIndex = 0;
-    // consumed task  id，Used to indicate next task id.(this=nextTaskId-1)
+    // consumed task  id,Used to indicate next task id.(this=nextTaskId-1)
     private volatile long consumedTaskId = 0;
     // client capabilities
     private final long clientCapabilities;
@@ -375,6 +376,12 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     public void afterWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags) {
         clusterDelayService.markDone();
         connectionSerializableLock.unLock();
+    }
+
+
+    @Override
+    public BufferPoolRecord.Builder generateBufferRecordBuilder() {
+        return BufferPoolRecord.builder().withSql(executeSql);
     }
 
 

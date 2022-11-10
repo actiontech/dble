@@ -28,7 +28,7 @@ import java.util.*;
  * Create Date: 2022-01-24
  */
 public class ItemFuncJsonExtract extends ItemStrFunc {
-    public static final String ER_INVALID_JSON_PATH = "illegal pattern";
+    public static final String ER_INVALID_JSON_PATH = "illegal json path leg";
     public static final char SCOPE = '$';
     public static final char BEGIN_MEMBER = '.';
     public static final char BEGIN_ARRAY = '[';
@@ -215,6 +215,9 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
                                     nextResults.add(jsonArray.get(leg.getArrayCell()));
                                 }
 
+                            } else if (leg.getArrayCell() == 0) {
+                                //inner-1937
+                                nextResults.add(result);
                             }
 
                             if (findRecursive) {
@@ -247,7 +250,7 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
                     break;
 
                     case JPL_ELLIPSIS:
-                        //process **， recursive lookup
+                        //process **, recursive lookup
                         nextResults = processEllipsis(pathLegIt);
                         break;
                     default:

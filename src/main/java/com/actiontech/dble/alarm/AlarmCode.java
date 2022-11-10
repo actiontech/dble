@@ -23,6 +23,7 @@ public final class AlarmCode {
     public static final String XA_WRITE_IO_FAIL = "DBLE_XA_WRITE_IO_FAIL";
     public static final String XA_WRITE_CHECK_POINT_FAIL = "DBLE_XA_WRITE_CHECK_POINT_FAIL"; //Resolve by trigger
     public static final String XA_BACKGROUND_RETRY_FAIL = "DBLE_XA_BACKGROUND_RETRY_FAIL"; //Resolve by trigger
+    public static final String XA_BACKGROUND_RETRY_STOP = "DBLE_XA_BACKGROUND_RETRY_STOP";
     public static final String REACH_MAX_CON = "DBLE_REACH_MAX_CON"; //Resolve by trigger
     public static final String TABLE_NOT_CONSISTENT_IN_SHARDINGS = "DBLE_TABLE_NOT_CONSISTENT_IN_SHARDINGS"; //Resolve by trigger
     public static final String TABLE_NOT_CONSISTENT_IN_MEMORY = "DBLE_TABLE_NOT_CONSISTENT_IN_MEMORY"; //Resolve by trigger
@@ -41,4 +42,6 @@ public final class AlarmCode {
     public static final String DB_INSTANCE_LOWER_CASE_ERROR = "DBLE_DB_INSTANCE_LOWER_CASE_ERROR"; //Resolve by trigger
     public static final String DB_SLAVE_INSTANCE_DELAY = "DBLE_DB_SLAVE_INSTANCE_DELAY"; //Resolve by trigger
     public static final String DB_MASTER_INSTANCE_DELAY_FAIL = "DB_MASTER_INSTANCE_DELAY_FAIL";
+    public static final String SLOW_QUERY_QUEUE_POLICY_ABORT = "SLOW_QUERY_QUEUE_POLICY_ABORT";
+    public static final String SLOW_QUERY_QUEUE_POLICY_WAIT = "SLOW_QUERY_QUEUE_POLICY_WAIT";
 }

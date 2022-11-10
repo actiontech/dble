@@ -29,13 +29,13 @@ public class DelayDetectionSqlJob implements ResponseHandler {
     private long versionVal;
     private AtomicBoolean finished = new AtomicBoolean(false);
     private LocalDateTime responseTime;
-    private long keepAlive;
+    private long keepAlive = 60000;
 
     public DelayDetectionSqlJob(DelayDetection delayDetection, OneRawSQLQueryResultHandler jobHandler) {
         this.delayDetection = delayDetection;
         this.jobHandler = jobHandler;
         int delayPeriodMillis = delayDetection.getSource().getDbGroupConfig().getDelayPeriodMillis();
-        this.keepAlive = delayDetection.getSource().getDbGroupConfig().getKeepAlive() + delayPeriodMillis;
+        this.keepAlive += delayPeriodMillis;
         sql = delayDetection.getSelectSQL();
         updateResponseTime();
     }
@@ -43,10 +43,10 @@ public class DelayDetectionSqlJob implements ResponseHandler {
     public void execute() {
         updateResponseTime();
         finished.set(false);
-        if (!delayDetection.isTableExists()) {
-            sql = delayDetection.getCreateTableSQL();
-        } else if (delayDetection.getSource().isReadInstance()) {
+        if (delayDetection.getSource().isReadInstance()) {
             sql = delayDetection.getSelectSQL();
+        } else if (!delayDetection.isTableExists()) {
+            sql = delayDetection.getCreateTableSQL();
         } else {
             sql = delayDetection.getUpdateSQL();
         }
@@ -65,7 +65,7 @@ public class DelayDetectionSqlJob implements ResponseHandler {
             Duration duration = Duration.between(responseTime, now);
             if (duration.toMillis() > keepAlive) {
                 LOGGER.warn("[delayDetection]connection execution timeout {},please pay attention to network latency or packet loss.", duration.toMillis());
-                delayDetection.cancel("connection execution timeout，");
+                delayDetection.cancel("connection execution timeout");
                 doFinished(true);
             }
             conn.getBackendService().query(sql);

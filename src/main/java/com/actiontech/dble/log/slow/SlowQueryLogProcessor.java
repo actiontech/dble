@@ -5,6 +5,9 @@
 
 package com.actiontech.dble.log.slow;
 
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.DailyRotateLogStore;
 import com.actiontech.dble.server.status.SlowQueryLog;
@@ -119,10 +122,28 @@ public class SlowQueryLogProcessor extends Thread {
 
     public void putSlowQueryLog(ShardingService service, TraceResult log) {
         SlowQueryLogEntry logEntry = new SlowQueryLogEntry(service.getExecuteSql(), log, service.getUser(), service.getConnection().getHost(), service.getConnection().getId());
+
         try {
-            final boolean enQueue = queue.offer(logEntry, 3, TimeUnit.SECONDS);
-            if (!enQueue) {
-                LOGGER.warn("slow log queue has so many item. Discard log entry: {}  ", logEntry.toString());
+            boolean enQueue = queue.offer(logEntry);
+            if (!enQueue && SlowQueryLog.getInstance().getQueueOverflowPolicy() == 1) {
+                //abort
+                String errorMsg = "since there are too many slow query logs to be written, some slow query logs will be discarded so as not to affect business requirements. Discard log entry: {" + logEntry.toString() + "}";
+                LOGGER.warn(errorMsg);
+                // alert
+                AlertUtil.alertSelf(AlarmCode.SLOW_QUERY_QUEUE_POLICY_ABORT, Alert.AlertLevel.WARN, errorMsg, null);
+            } else if (!enQueue && SlowQueryLog.getInstance().getQueueOverflowPolicy() == 2) {
+                //wait 3s
+                long start = System.nanoTime();
+                boolean offerFlag = queue.offer(logEntry, 3, TimeUnit.SECONDS);
+                String costTime = String.valueOf((System.nanoTime() - start) / 1000000);
+                if (offerFlag) {
+                    String errorMsg = "since there are too many slow query logs to be written, the write channel is blocked, and the returned slow SQL execution time will include the write channel blocking time:" + costTime + "(ms).";
+                    LOGGER.warn(errorMsg);
+                    // alert
+                    AlertUtil.alertSelf(AlarmCode.SLOW_QUERY_QUEUE_POLICY_WAIT, Alert.AlertLevel.WARN, errorMsg, null);
+                } else {
+                    LOGGER.warn("slow log queue has so many item and waiting time:3s exceeded. Discard log entry: {} ", logEntry.toString());
+                }
             }
         } catch (InterruptedException e) {
             LOGGER.info(" ", e);

@@ -222,7 +222,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
     public void bufferWrite(AbstractConnection conn) {
         int size = calcPacketSize();
         int totalSize = size + PACKET_HEADER_SIZE;
-        ByteBuffer bb = conn.getProcessor().getBufferPool().allocate(totalSize);
+        ByteBuffer bb = conn.getProcessor().getBufferPool().allocate(totalSize, conn.generateBufferRecordBuilder());
         BufferUtil.writeUB3(bb, size);
         bb.put(packetId);
         writeBody(bb);

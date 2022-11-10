@@ -66,7 +66,7 @@ public final class DDLProxyMetaManager {
                     ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.DDL);
                     DistributeLock lock = clusterHelper.createDistributeLock(ddlLockPathMeta, ddlInfo);
                     if (!lock.acquire()) {
-                        DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.notice_cluster_ddl_prepare, "Failed to acquire table[" + tableFullName + "]'s ddlLock，the ddlLock's path is " + ddlLockPathMeta));
+                        DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.notice_cluster_ddl_prepare, "Failed to acquire table[" + tableFullName + "]'s ddlLock,the ddlLock's path is " + ddlLockPathMeta));
                         String msg = "Found another instance doing ddl, duo to table[" + tableFullName + "]'s ddlLock is exists";
                         throw new Exception(msg);
                     }

@@ -5,6 +5,10 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction;
 
-public interface ImplicitCommitHandler {
-    void next();
+/**
+ * acting on the explicit transaction callback
+ * main content: transaction status updates and statistic
+ */
+public interface TransactionCallback {
+    void callback();
 }

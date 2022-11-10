@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.backend.mysql.store.GroupByLocalResult;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
@@ -26,9 +27,9 @@ public class GroupByBucket extends GroupByLocalResult {
     public GroupByBucket(BlockingQueue<RowDataPacket> sourceData, BlockingQueue<RowDataPacket> outData,
                          BufferPool pool, int fieldsCount, RowDataComparator groupCmp,
                          List<FieldPacket> fieldPackets, List<ItemSum> sumFunctions,
-                         boolean isAllPushDown, String charset) {
+                         boolean isAllPushDown, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
         super(pool, fieldsCount, groupCmp, fieldPackets, sumFunctions,
-                isAllPushDown, charset);
+                isAllPushDown, charset, bufferRecordBuilder);
         this.inData = sourceData;
         this.outData = outData;
     }

@@ -39,6 +39,7 @@ public class ManagerQueryHandler {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "manager-query-handle");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
+            this.service.setExecuteSql(sql);
             int rs = ManagerParse.parse(sql);
             int sqlType = rs & 0xff;
             if (sqlType > ManagerParse.MAX_READ_SEQUENCE) {

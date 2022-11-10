@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.proto.handler.Impl.SSLProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResultCode;
 import com.actiontech.dble.btrace.provider.IODelayProvider;
+import com.actiontech.dble.buffer.BufferType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
@@ -188,7 +189,7 @@ public class FrontendConnection extends AbstractConnection {
                 LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + localReadBuffer.capacity());
             }
             recycle(localReadBuffer);
-            netReadBuffer = processor.getBufferPool().allocate(readBufferChunk);
+            netReadBuffer = allocate(readBufferChunk, generateBufferRecordBuilder().withType(BufferType.POOL));
         } else {
             if (localReadBuffer != null) {
                 IODelayProvider.inReadReachEnd();
@@ -216,7 +217,7 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     public void processSSLPacketNotBigEnough(ByteBuffer buffer, int offset, final int pkgLength) {
-        ByteBuffer newBuffer = allocate(pkgLength);
+        ByteBuffer newBuffer = allocate(pkgLength, generateBufferRecordBuilder().withType(BufferType.POOL));
         buffer.position(offset);
         newBuffer.put(buffer);
         this.netReadBuffer = newBuffer;
@@ -322,7 +323,7 @@ public class FrontendConnection extends AbstractConnection {
     public ByteBuffer findReadBuffer() {
         ByteBuffer tmpReadBuffer = getReadBuffer();
         if (tmpReadBuffer == null) {
-            tmpReadBuffer = processor.getBufferPool().allocate(processor.getBufferPool().getChunkSize());
+            tmpReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateBufferRecordBuilder().withType(BufferType.POOL));
             setReadBuffer(tmpReadBuffer);
         }
         return tmpReadBuffer;
@@ -330,7 +331,7 @@ public class FrontendConnection extends AbstractConnection {
 
 
     public ByteBuffer ensureReadBufferFree(ByteBuffer oldBuffer, int expectSize) {
-        ByteBuffer newBuffer = processor.getBufferPool().allocate(expectSize < 0 ? processor.getBufferPool().getChunkSize() : expectSize);
+        ByteBuffer newBuffer = allocate(expectSize < 0 ? processor.getBufferPool().getChunkSize() : expectSize, generateBufferRecordBuilder().withType(BufferType.POOL));
         oldBuffer.flip();
         newBuffer.put(oldBuffer);
         setReadBuffer(newBuffer);
@@ -358,7 +359,7 @@ public class FrontendConnection extends AbstractConnection {
     public ByteBuffer findNetReadBuffer() {
         if (isSupportSSL) {
             if (this.netReadBuffer == null) {
-                netReadBuffer = processor.getBufferPool().allocate(processor.getBufferPool().getChunkSize());
+                netReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateBufferRecordBuilder().withType(BufferType.POOL));
             }
             return netReadBuffer;
         } else {

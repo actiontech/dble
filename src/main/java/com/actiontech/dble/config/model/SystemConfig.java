@@ -214,26 +214,6 @@ public final class SystemConfig {
     private String gmsslOcaPem = null;
     private boolean supportSSL = false;
 
-    private int enableAsyncRelease = 0;
-    //unit: ms
-    private long releaseTimeout = 10 * 60 * 1000L;
-
-    public int getEnableAsyncRelease() {
-        return enableAsyncRelease;
-    }
-
-    public void setEnableAsyncRelease(int enableAsyncRelease) {
-        this.enableAsyncRelease = enableAsyncRelease;
-    }
-
-    public long getReleaseTimeout() {
-        return releaseTimeout;
-    }
-
-    public void setReleaseTimeout(long releaseTimeout) {
-        this.releaseTimeout = releaseTimeout;
-    }
-
     public String getServerCertificateKeyStoreUrl() {
         return serverCertificateKeyStoreUrl;
     }
@@ -1696,8 +1676,6 @@ public final class SystemConfig {
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
                 ", groupConcatMaxLen='" + groupConcatMaxLen +
-                ", releaseTimeout=" + releaseTimeout +
-                ", enableAsyncRelease=" + enableAsyncRelease +
                 "]";
     }
 

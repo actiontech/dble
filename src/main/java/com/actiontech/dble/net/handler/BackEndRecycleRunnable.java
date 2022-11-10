@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.net.handler;
 
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
@@ -27,32 +26,6 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
         service.setRecycler(this);
     }
 
-    public void runSync() {
-        BackendConnection conn = service.getConnection();
-        if (conn.isClosed()) {
-            return;
-        }
-
-        try {
-            lock.lock();
-            try {
-                if (service.isRowDataFlowing()) {
-                    if (!condRelease.await(SystemConfig.getInstance().getReleaseTimeout(), TimeUnit.MILLISECONDS)) {
-                        if (!conn.isClosed()) {
-                            conn.businessClose("recycle time out");
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                service.getConnection().businessClose("recycle exception");
-            } finally {
-                lock.unlock();
-            }
-        } catch (Throwable e) {
-            service.getConnection().businessClose("recycle exception");
-        }
-    }
-
 
     @Override
     public void run() {
@@ -65,7 +38,7 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
             lock.lock();
             try {
                 if (service.isRowDataFlowing()) {
-                    if (!condRelease.await(SystemConfig.getInstance().getReleaseTimeout(), TimeUnit.MILLISECONDS)) {
+                    if (!condRelease.await(10, TimeUnit.MILLISECONDS)) {
                         if (!conn.isClosed()) {
                             conn.businessClose("recycle time out");
                         }

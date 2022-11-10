@@ -9,9 +9,9 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAnalysisHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler.AbstractXAHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAnalysisHandler;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.ErrorCode;
@@ -26,7 +26,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 public class XACommitFailStage extends XACommitStage {
 
@@ -118,6 +120,8 @@ public class XACommitFailStage extends XACommitStage {
     @Override
     public void onConnectionError(MySQLResponseService service, int errNo) {
         if (errNo == ErrorCode.ER_XAER_NOTA) {
+            // inner 1497
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
             RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
             String xid = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             XAAnalysisHandler xaAnalysisHandler = new XAAnalysisHandler(

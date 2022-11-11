@@ -109,14 +109,14 @@ public class FrontendConnection extends AbstractConnection {
             handleSSLData(dataBuffer);
         } else {
             transferToReadBuffer(dataBuffer);
-            parentHandle(getReadBuffer());
+            parentHandle(getBottomReadBuffer());
         }
     }
 
     private void transferToReadBuffer(ByteBuffer dataBuffer) {
         if (!isSupportSSL) return;
         dataBuffer.flip();
-        ByteBuffer readBuffer = findReadBuffer();
+        ByteBuffer readBuffer = findBottomReadBuffer();
         int len = readBuffer.position() + dataBuffer.limit();
         if (readBuffer.capacity() < len) {
             readBuffer = ensureReadBufferFree(readBuffer, len);
@@ -143,7 +143,7 @@ public class FrontendConnection extends AbstractConnection {
                 case SSL_CLOSE_PACKET:
                     if (!result.isHasMorePacket()) {
                         netReadReachEnd();
-                        final ByteBuffer tmpReadBuffer = getReadBuffer();
+                        final ByteBuffer tmpReadBuffer = getBottomReadBuffer();
                         if (tmpReadBuffer != null) {
                             tmpReadBuffer.clear();
                         }
@@ -213,7 +213,7 @@ public class FrontendConnection extends AbstractConnection {
         if (packetData == null)
             return;
         sslHandler.unwrapAppData(packetData);
-        parentHandle(getReadBuffer());
+        parentHandle(getBottomReadBuffer());
     }
 
     public void processSSLPacketNotBigEnough(ByteBuffer buffer, int offset, final int pkgLength) {
@@ -316,17 +316,8 @@ public class FrontendConnection extends AbstractConnection {
         } else {
             dataBuffer.limit(dataBuffer.position());
             dataBuffer.position(offset);
-            setReadBuffer(dataBuffer.compact());
+            setBottomReadBuffer(dataBuffer.compact());
         }
-    }
-
-    public ByteBuffer findReadBuffer() {
-        ByteBuffer tmpReadBuffer = getReadBuffer();
-        if (tmpReadBuffer == null) {
-            tmpReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateBufferRecordBuilder().withType(BufferType.POOL));
-            setReadBuffer(tmpReadBuffer);
-        }
-        return tmpReadBuffer;
     }
 
 
@@ -334,7 +325,7 @@ public class FrontendConnection extends AbstractConnection {
         ByteBuffer newBuffer = allocate(expectSize < 0 ? processor.getBufferPool().getChunkSize() : expectSize, generateBufferRecordBuilder().withType(BufferType.POOL));
         oldBuffer.flip();
         newBuffer.put(oldBuffer);
-        setReadBuffer(newBuffer);
+        setBottomReadBuffer(newBuffer);
 
         oldBuffer.clear();
         recycle(oldBuffer);
@@ -356,16 +347,27 @@ public class FrontendConnection extends AbstractConnection {
         }
     }
 
-    public ByteBuffer findNetReadBuffer() {
+    @Override
+    public ByteBuffer findReadBuffer() {
         if (isSupportSSL) {
             if (this.netReadBuffer == null) {
                 netReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateBufferRecordBuilder().withType(BufferType.POOL));
             }
             return netReadBuffer;
         } else {
-            return super.findNetReadBuffer();
+            return super.findReadBuffer();
         }
     }
+
+    @Override
+    ByteBuffer getReadBuffer() {
+        if (isSupportSSL) {
+            return netReadBuffer;
+        } else {
+            return super.getReadBuffer();
+        }
+    }
+
 
     public boolean isManager() {
         return isManager;

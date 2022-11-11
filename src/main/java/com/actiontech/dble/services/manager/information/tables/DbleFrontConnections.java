@@ -157,7 +157,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         row.put("conn_net_in", c.getNetInBytes() + "");
         row.put("conn_net_out", c.getNetOutBytes() + "");
         row.put("conn_estab_time", ((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000) + "");
-        ByteBuffer bb = c.getReadBuffer();
+        ByteBuffer bb = c.getBottomReadBuffer();
         row.put("conn_recv_buffer", (bb == null ? 0 : bb.capacity()) + "");
         row.put("conn_send_task_queue", c.getWriteQueue().size() + "");
         row.put("conn_recv_task_queue", c.getFrontEndService().getRecvTaskQueueSize() + "");

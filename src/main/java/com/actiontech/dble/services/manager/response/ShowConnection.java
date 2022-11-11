@@ -236,7 +236,7 @@ public final class ShowConnection {
         row.add(LongUtil.toBytes(c.getNetInBytes()));
         row.add(LongUtil.toBytes(c.getNetOutBytes()));
         row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000L));
-        ByteBuffer bb = c.getReadBuffer();
+        ByteBuffer bb = c.getBottomReadBuffer();
         row.add(IntegerUtil.toBytes(bb == null ? 0 : bb.capacity()));
         row.add(IntegerUtil.toBytes(c.getWriteQueue().size()));
         row.add(IntegerUtil.toBytes(service.getRecvTaskQueueSize()));

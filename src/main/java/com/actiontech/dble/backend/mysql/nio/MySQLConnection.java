@@ -737,12 +737,12 @@ public class MySQLConnection extends AbstractConnection implements
             // close
             // it
             LOGGER.info("can't sure connection syn result,so close it " + this);
-            this.respHandler = null;
+            setResponseHandler(null);
             this.close("syn status unknown ");
             return;
         }
         if (this.usrVariables.size() > 0) {
-            this.respHandler = null;
+            setResponseHandler(null);
             this.close("close for clear usrVariables");
             return;
         }

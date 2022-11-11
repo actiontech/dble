@@ -12,8 +12,13 @@ import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.util.CheckConfigurationUtil;
+import com.alibaba.druid.sql.SQLUtils;
 
 public final class DbleStartup {
+    static {
+        SQLUtils.DEFAULT_FORMAT_OPTION.setPrettyFormat(false);
+    }
+
     private DbleStartup() {
     }
 

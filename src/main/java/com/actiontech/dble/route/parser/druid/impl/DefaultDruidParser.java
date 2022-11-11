@@ -20,7 +20,6 @@ import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.ConditionUtil;
 import com.actiontech.dble.route.util.RouterUtil;
-
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
@@ -203,6 +202,7 @@ public class DefaultDruidParser implements DruidParser {
     String statementToString(SQLStatement statement) {
         StringBuffer buf = new StringBuffer();
         MySqlOutputVisitor visitor = new MySqlOutputVisitor(buf);
+        visitor.setPrettyFormat(false);
         visitor.setShardingSupport(false);
         statement.accept(visitor);
         return buf.toString();

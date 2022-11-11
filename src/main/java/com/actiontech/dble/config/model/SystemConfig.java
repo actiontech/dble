@@ -173,6 +173,7 @@ public final class SystemConfig {
     private int flushSlowLogPeriod = 1; //second
     private int flushSlowLogSize = 1000; //row
     private int sqlSlowTime = 100; //ms
+    private int slowQueueOverflowPolicy = 2;
 
     //general log
     private int enableGeneralLog = 0;
@@ -254,6 +255,10 @@ public final class SystemConfig {
     private int enableAsyncRelease = 0;
     //unit: ms
     private long releaseTimeout = 10 * 60 * 1000L;
+
+    private int disableRecycleBuffer = 0; //temp
+    private int enableMemoryBufferMonitor = 0;
+    private int enableMemoryBufferMonitorRecordPool = 0;
 
     public int getEnableAsyncRelease() {
         return enableAsyncRelease;
@@ -1826,6 +1831,56 @@ public final class SystemConfig {
         this.supportSSL = supportSSL;
     }
 
+    public int getDisableRecycleBuffer() {
+        return disableRecycleBuffer;
+    }
+
+    public void setDisableRecycleBuffer(int disableRecycleBufferTmp) {
+        if (disableRecycleBufferTmp >= 0 && disableRecycleBufferTmp <= 1) {
+            this.disableRecycleBuffer = disableRecycleBufferTmp;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "disableRecycleBuffer", disableRecycleBufferTmp, this.disableRecycleBuffer));
+        }
+    }
+
+    public int getEnableMemoryBufferMonitor() {
+        return enableMemoryBufferMonitor;
+    }
+
+    public void setEnableMemoryBufferMonitor(int enableBufferMonitorTmp) {
+        if (enableBufferMonitorTmp >= 0 && enableBufferMonitorTmp <= 1) {
+            this.enableMemoryBufferMonitor = enableBufferMonitorTmp;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableBufferMonitor", enableBufferMonitorTmp, this.enableMemoryBufferMonitor));
+        }
+    }
+
+    public int getEnableMemoryBufferMonitorRecordPool() {
+        return enableMemoryBufferMonitorRecordPool;
+    }
+
+    public void setEnableMemoryBufferMonitorRecordPool(int enableBufferMonitorRecordPoolTmp) {
+        if (enableBufferMonitorRecordPoolTmp >= 0 && enableBufferMonitorRecordPoolTmp <= 1) {
+            this.enableMemoryBufferMonitorRecordPool = enableBufferMonitorRecordPoolTmp;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableBufferMonitorRecordPool", enableBufferMonitorRecordPoolTmp, this.enableMemoryBufferMonitorRecordPool));
+        }
+    }
+
+
+    public int getSlowQueueOverflowPolicy() {
+        return slowQueueOverflowPolicy;
+    }
+
+    @SuppressWarnings("unused")
+    public void setSlowQueueOverflowPolicy(int slowQueueOverflowPolicy) {
+        if (slowQueueOverflowPolicy == 1 || slowQueueOverflowPolicy == 2) {
+            this.slowQueueOverflowPolicy = slowQueueOverflowPolicy;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "slowQueueOverflowPolicy", slowQueueOverflowPolicy, this.slowQueueOverflowPolicy));
+        }
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1899,6 +1954,7 @@ public final class SystemConfig {
                 ", flushSlowLogPeriod=" + flushSlowLogPeriod +
                 ", flushSlowLogSize=" + flushSlowLogSize +
                 ", sqlSlowTime=" + sqlSlowTime +
+                ", slowQueueOverflowPolicy=" + slowQueueOverflowPolicy +
                 ", enableAlert=" + enableAlert +
                 ", maxCharsPerColumn=" + maxCharsPerColumn +
                 ", maxRowSizeToFile=" + maxRowSizeToFile +
@@ -1945,6 +2001,9 @@ public final class SystemConfig {
                 ", releaseTimeout=" + releaseTimeout +
                 ", enableAsyncRelease=" + enableAsyncRelease +
                 ", xaIdCheckPeriod=" + xaIdCheckPeriod +
+                ", enableBufferMonitor=" + enableMemoryBufferMonitor +
+                ", enableBufferMonitorRecordPool=" + enableMemoryBufferMonitorRecordPool +
+                ", disableRecycleBuffer=" + disableRecycleBuffer +
                 ", enableSqlDumpLog=" + enableSqlDumpLog +
                 ", sqlDumpLogBasePath='" + sqlDumpLogBasePath + '\'' +
                 ", sqlDumpLogFileName='" + sqlDumpLogFileName + '\'' +

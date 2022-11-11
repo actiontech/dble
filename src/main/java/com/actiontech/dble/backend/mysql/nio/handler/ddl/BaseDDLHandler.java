@@ -57,7 +57,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
     protected static final int STATUS_OK = 9;
 
     protected final NonBlockingSession session;
-    protected RouteResultset preRrs;
+    protected RouteResultset preRrs; // in ddl prepare, 'select 1'
     protected RouteResultset rrs;
     protected RouteResultset oriRrs;
     protected final boolean sessionAutocommit;
@@ -424,5 +424,9 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
 
     public Object getAttachment() {
         return attachment;
+    }
+
+    public void setPreRrs(RouteResultset preRrs) {
+        this.preRrs = preRrs;
     }
 }

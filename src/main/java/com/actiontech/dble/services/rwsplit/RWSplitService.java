@@ -63,7 +63,8 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
     private volatile String expectedDest;
 
     private final RWSplitQueryHandler queryHandler;
-    private volatile RWSplitMultiHandler multiQueryHandler;
+    private final RWSplitMultiQueryHandler multiQueryHandler;
+    private volatile RWSplitMultiHandler multiHandler;
     private final RWSplitNonBlockingSession session;
 
     private volatile boolean initDb;
@@ -78,6 +79,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         this.session = new RWSplitNonBlockingSession(this);
         this.session.setRwGroup(DbleServer.getInstance().getConfig().getDbGroups().get(userConfig.getDbGroup()));
         this.queryHandler = new RWSplitQueryHandler(session);
+        this.multiQueryHandler = new RWSplitMultiQueryHandler(session);
         StatisticListener.getInstance().register(session);
     }
 
@@ -250,7 +252,11 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
             executeSql = sql;
             executeSqlBytes = data;
             if (blacklistCheck(sql, userConfig.getBlacklist())) return;
-            queryHandler.query(sql);
+            if (ServerParseFactory.getRwSplitParser().isMultiStatement(sql)) {
+                multiQueryHandler.query(sql);
+            } else {
+                queryHandler.query(sql);
+            }
         } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
         }
@@ -417,8 +423,8 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         this.tableRows = tableRows;
     }
 
-    public void setMultiQueryHandler(RWSplitMultiHandler multiQueryHandler) {
-        this.multiQueryHandler = multiQueryHandler;
+    public void setMultiHandler(RWSplitMultiHandler multiHandler) {
+        this.multiHandler = multiHandler;
     }
 
     @Override

@@ -31,8 +31,6 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
     protected final RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
     protected final RWSplitNonBlockingSession session;
 
-    protected RWSplitMultiQueryHandler multiQueryHandler;
-
     public RWSplitQueryHandler(RWSplitNonBlockingSession session) {
         this.session = session;
     }
@@ -42,12 +40,6 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getService(), "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
-            if (serverParse.isMultiStatement(sql)) {
-                if (multiQueryHandler == null)
-                    multiQueryHandler = new RWSplitMultiQueryHandler(session);
-                multiQueryHandler.query(sql);
-                return;
-            }
             session.getService().queryCount();
             session.getService().setExecuteSql(sql);
             StatisticListener.getInstance().record(session, r -> r.onFrontendSetSql(session.getService().getSchema(), sql));

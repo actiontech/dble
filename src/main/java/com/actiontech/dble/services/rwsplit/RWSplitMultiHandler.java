@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class RWSplitMultiHandler extends RWSplitHandler {
 
-    private final AtomicBoolean nextTaking = new AtomicBoolean(false);
+    private final AtomicBoolean pauseFlag = new AtomicBoolean(false);
     private final Lock lock;
     private final Condition done;
     private BackendConnection backendConnection;
@@ -33,7 +33,7 @@ public class RWSplitMultiHandler extends RWSplitHandler {
 
     @Override
     public void execute(BackendConnection conn) {
-        rwSplitService.setMultiQueryHandler(this);
+        rwSplitService.setMultiHandler(this);
         this.backendConnection = conn;
         super.execute(conn);
     }
@@ -130,14 +130,14 @@ public class RWSplitMultiHandler extends RWSplitHandler {
     }
 
     private void extractNextSql() {
-        nextTaking.set(true);
-        DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
-            StatisticListener.getInstance().record(rwSplitService, r -> r.onFrontendSqlStart());
-            rwSplitService.handleComQuery(rwSplitService.getExecuteSqlBytes());
-        });
         lock.lock();
         try {
-            while (nextTaking.get()) {
+            pauseFlag.set(true);
+            DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+                StatisticListener.getInstance().record(rwSplitService, r -> r.onFrontendSqlStart());
+                rwSplitService.handleComQuery(rwSplitService.getExecuteSqlBytes());
+            });
+            while (pauseFlag.get()) {
                 done.await();
             }
         } catch (InterruptedException e) {
@@ -151,7 +151,7 @@ public class RWSplitMultiHandler extends RWSplitHandler {
     private void extractNextSqlResult() {
         lock.lock();
         try {
-            nextTaking.set(false);
+            pauseFlag.set(false);
             done.signal();
         } finally {
             lock.unlock();
@@ -160,10 +160,10 @@ public class RWSplitMultiHandler extends RWSplitHandler {
 
     private void resetMultiStatus() {
         RWSplitNonBlockingSession session = rwSplitService.getSession2();
-        if (session.getIsMultiStatement().compareAndSet(false, true)) {
+        if (session.getIsMultiStatement().compareAndSet(true, false)) {
             session.setRemainingSql(null);
-            rwSplitService.setMultiQueryHandler(null);
-            nextTaking.set(false);
+            rwSplitService.setMultiHandler(null);
+            pauseFlag.set(false);
         }
     }
 }

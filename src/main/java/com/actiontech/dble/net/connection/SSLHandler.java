@@ -129,7 +129,7 @@ public class SSLHandler {
 
     private SSLEngineResult unwrap(SSLEngine engine0, ByteBuffer in) throws SSLException {
         int overflows = 0;
-        ByteBuffer outBuffer = con.findReadBuffer();
+        ByteBuffer outBuffer = con.findBottomReadBuffer();
         for (; ; ) {
             SSLEngineResult result = engine0.unwrap(in, outBuffer);
             switch (result.getStatus()) {

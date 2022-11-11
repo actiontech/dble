@@ -145,7 +145,7 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         }
         Optional.ofNullable(service.getSession()).ifPresent(session -> row.put("session_conn_id", session.getSource().getId() + ""));
         row.put("conn_estab_time", ((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000) + "");
-        ByteBuffer bb = c.getReadBuffer();
+        ByteBuffer bb = c.getBottomReadBuffer();
         row.put("conn_recv_buffer", (bb == null ? 0 : bb.capacity()) + "");
         row.put("conn_send_task_queue", c.getWriteQueue().size() + "");
 

@@ -81,7 +81,7 @@ public abstract class TransactionService<T extends UserConfig> extends FrontendS
 
     public void restTxStatus() {
         setTxStart(false);
-        setAutocommit(SystemConfig.getInstance().getAutocommit() == 0);
+        setAutocommit(SystemConfig.getInstance().getAutocommit() == 1);
     }
 
     public long txIdCount() {

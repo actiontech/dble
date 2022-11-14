@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.net.handler;
 
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
@@ -26,32 +27,33 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
         service.setRecycler(this);
     }
 
-
     @Override
     public void run() {
         BackendConnection conn = service.getConnection();
         if (conn.isClosed()) {
             return;
         }
-
+        boolean awaitTimeout = false;
         try {
             lock.lock();
             try {
                 if (service.isRowDataFlowing()) {
-                    if (!condRelease.await(10, TimeUnit.MILLISECONDS)) {
-                        if (!conn.isClosed()) {
-                            conn.businessClose("recycle time out");
-                        }
-                    } else {
-                        service.release();
+                    if (!condRelease.await(SystemConfig.getInstance().getReleaseTimeout(), TimeUnit.MILLISECONDS)) {
+                        awaitTimeout = true;
                     }
-                } else {
-                    service.release();
                 }
             } catch (Exception e) {
                 service.getConnection().businessClose("recycle exception");
             } finally {
                 lock.unlock();
+            }
+            if (conn.isClosed()) {
+                return;
+            }
+            if (awaitTimeout) {
+                conn.businessClose("recycle time out");
+            } else {
+                service.release();
             }
         } catch (Throwable e) {
             service.getConnection().businessClose("recycle exception");
@@ -60,13 +62,14 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
 
 
     public void signal() {
-        if (lock.tryLock()) {
-            try {
-                condRelease.signal();
-            } finally {
-                lock.unlock();
-            }
+        lock.lock();
+        try {
+            service.setRowDataFlowing(false);
+            condRelease.signal();
+        } finally {
+            lock.unlock();
         }
+
     }
 
 }

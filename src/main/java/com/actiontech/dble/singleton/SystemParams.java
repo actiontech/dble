@@ -138,6 +138,9 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("enableRoutePenetration", sysConfig.isEnableRoutePenetration() + "", "Whether enable route penetration"));
         readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration"));
         readOnlyParams.add(new ParamInfo("groupConcatMaxLen", sysConfig.getGroupConcatMaxLen() + "", "The maximum permitted result length in bytes for the GROUP_CONCAT() function. The default is 1024."));
+        readOnlyParams.add(new ParamInfo("enableAsyncRelease", sysConfig.getEnableAsyncRelease() + "", "Whether enable async release . default value is 1(off)."));
+        readOnlyParams.add(new ParamInfo("releaseTimeout", sysConfig.getReleaseTimeout() + "", "time wait for release ,unit is ms,  default value is 10 ms"));
+
 
     }
 

@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.heartbeat.HeartbeatSQLJob;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.PooledConnectionListener;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.ConnectionException;
@@ -296,6 +297,11 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         if (handler != null) {
             this.handler.connectionClose(this, "abnormal connection");
         }
+    }
+
+    @Override
+    public BufferPoolRecord.Builder generateBufferRecordBuilder() {
+        return BufferPoolRecord.builder().withSql("<<BACK>>");
     }
 
     @Override

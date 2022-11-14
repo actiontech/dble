@@ -37,8 +37,7 @@ public final class TxnLogHelper {
 
     // single-node
     public static void putTxnLog(ShardingService service, final RouteResultsetNode node) {
-        if (SystemConfig.getInstance().getRecordTxn() == 1 &&
-                service.isInTransaction() && node.isModifySQL()) {
+        if (SystemConfig.getInstance().getRecordTxn() == 1 && node.isModifySQL()) {
             DbleServer.getInstance().getTxnLogProcessor().putTxnLog(service, "[" + node.getName() + "]" + node.getStatement());
         }
     }

@@ -6,9 +6,9 @@
 package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.route.parser.ManagerParseOnOff;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.response.*;
-import com.actiontech.dble.route.parser.ManagerParseOnOff;
 
 public final class EnableHandler {
     private EnableHandler() {
@@ -37,6 +37,9 @@ public final class EnableHandler {
                 break;
             case ManagerParseOnOff.LOAD_DATA_BATCH:
                 OnOffLoadDataBatch.execute(service, true);
+                break;
+            case ManagerParseOnOff.MEMORY_BUFFER_MONITOR:
+                OnOffMemoryBufferMonitor.execute(service, true);
                 break;
             case ManagerParseOnOff.SQLDUMP_SQL:
                 SqlDumpLog.OnOff.execute(service, true);

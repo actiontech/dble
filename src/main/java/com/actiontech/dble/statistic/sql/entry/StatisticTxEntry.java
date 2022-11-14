@@ -10,12 +10,11 @@ import java.util.List;
 
 public class StatisticTxEntry extends StatisticEntry {
     private List<StatisticFrontendSqlEntry> frontendSqlEntry = new ArrayList<>();
-    private boolean isImplicitly;
+    private boolean isCanPush = false;
 
-    public StatisticTxEntry(FrontendInfo frontendInfo, String xaId, long txId, long startTime, boolean isImplicitly) {
+    public StatisticTxEntry(FrontendInfo frontendInfo, String xaId, long txId, long startTime) {
         super(frontendInfo, txId, startTime);
         setXaId(xaId);
-        this.isImplicitly = isImplicitly;
     }
 
     public void add(final StatisticFrontendSqlEntry entry) {
@@ -30,8 +29,12 @@ public class StatisticTxEntry extends StatisticEntry {
         return frontendSqlEntry;
     }
 
-    public boolean isImplicitly() {
-        return isImplicitly;
+    public boolean isCanPush() {
+        return isCanPush;
+    }
+
+    public void setCanPush(boolean canPush) {
+        isCanPush = canPush;
     }
 
     @Override

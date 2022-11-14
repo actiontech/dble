@@ -46,7 +46,6 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
         unResponseRrns.addAll(Arrays.asList(rrs.getNodes()));
         this.autocommit = session.getShardingService().isAutocommit();
         this.implicitlyCommitCallback = implicitlyCommitCallback;
-        TxnLogHelper.putTxnLog(session.getShardingService(), rrs);
     }
 
     public void execute() throws Exception {
@@ -180,6 +179,7 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
     private void handleEndPacket(MySQLPacket packet, boolean isSuccess) {
         if (implicitlyCommitCallback != null)
             implicitlyCommitCallback.callback();
+        TxnLogHelper.putTxnLog(session.getShardingService(), this.rrs);
         session.clearResources(false);
         packet.write(session.getSource());
     }

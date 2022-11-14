@@ -88,6 +88,7 @@ public abstract class MysqlVisitor {
                 else
                     sb.append(" ");
                 MySqlOutputVisitor ov = new MySqlOutputVisitor(sb);
+                ov.setPrettyFormat(false);
                 ov.setShardingSupport(false);
                 hint.accept(ov);
             }

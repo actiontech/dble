@@ -111,6 +111,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
                     if (!autocommit) {
+                        TxnLogHelper.putTxnLog(this, executeSql);
                         if (session.getTransactionManager().isXaEnabled()) {
                             getClusterDelayService().markDoingOrDelay(true);
                         }
@@ -124,7 +125,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 } else {
                     if (autocommit) {
                         if (!isTxStart()) {
-                            StatisticListener.getInstance().record(this, r -> r.onTxStart(this));
+                            StatisticListener.getInstance().record(this, r -> r.onTxStart());
                         }
                         controlTx(TransactionOperate.UNAUTOCOMMIT);
                         TxnLogHelper.putTxnLog(this, executeSql);
@@ -456,13 +457,13 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                     StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                     controlTx(TransactionOperate.BEGIN);
                     TxnLogHelper.putTxnLog(this, stmt);
-                    StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(this));
+                    StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly());
                 });
             }
         } else {
             controlTx(TransactionOperate.BEGIN);
             TxnLogHelper.putTxnLog(this, stmt);
-            StatisticListener.getInstance().record(this, r -> r.onTxStart(this));
+            StatisticListener.getInstance().record(this, r -> r.onTxStart());
             this.writeOkPacket();
         }
     }
@@ -479,7 +480,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                     StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                     TxnLogHelper.putTxnLog(session.getShardingService(), logReason);
                     if (!isAutocommit()) {
-                        StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(this));
+                        StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly());
                     }
                 }
                 controlTx(TransactionOperate.END);
@@ -499,7 +500,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                 TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
                 if (!isAutocommit()) {
-                    StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(this));
+                    StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly());
                 }
             }
             controlTx(TransactionOperate.END);
@@ -537,11 +538,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     @Override
     public void beforeWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags, ResultFlag resultFlag) {
-        redressControlTx();
         for (BackendConnection backendConnection : session.getTargetMap().values()) {
             TraceManager.sessionFinish(backendConnection.getBackendService());
         }
-
 
         if (writeFlags.contains(WriteFlag.END_OF_QUERY)) {
             if (session.getIsMultiStatement().get()) {
@@ -557,7 +556,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             session.setKilled(false);
             session.setDiscard(false);
         }
-        StatisticListener.getInstance().record(session, r -> r.onFrontendSqlEnd());
     }
 
     @Override

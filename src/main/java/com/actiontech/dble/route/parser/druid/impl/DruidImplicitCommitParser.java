@@ -96,7 +96,7 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
         if (service.isInTransaction()) {
             StatisticListener.getInstance().record(service, r -> r.onTxEnd());
             if (!service.isAutocommit()) {
-                StatisticListener.getInstance().record(service, r -> r.onTxStartByImplicitly(service));
+                StatisticListener.getInstance().record(service, r -> r.onTxStartByImplicitly());
             }
         }
         service.controlTx(TransactionOperate.IMPLICITLY_COMMIT);

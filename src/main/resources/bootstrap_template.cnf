@@ -172,6 +172,8 @@
 -DflushSlowLogSize=1000
 #  the threshold for judging if the query is slow , unit is millisecond
 -DsqlSlowTime=100
+# slow log queue overflow policy
+-DslowQueueOverflowPolicy=2
 
 #  used for load data,maxCharsPerColumn means max chars length for per column when load data
 -DmaxCharsPerColumn=65535
@@ -233,3 +235,7 @@
 -DsqlDumpLogTimeBasedRotate=1
 -DsqlDumpLogDeleteFileAge=90d
 -DsqlDumpLogCompressFilePath=*/sqldump-*.log.gz
+
+
+-DenableMemoryBufferMonitor=0
+-D

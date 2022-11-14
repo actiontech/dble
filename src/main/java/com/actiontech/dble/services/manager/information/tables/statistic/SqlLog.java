@@ -7,11 +7,11 @@ package com.actiontech.dble.services.manager.information.tables.statistic;
 
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.ColumnMeta;
-import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.sql.handler.SqlStatisticHandler;
 import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
+import com.actiontech.dble.util.SqlStringUtil;
 import com.google.common.collect.Maps;
 
 import java.time.Instant;
@@ -108,7 +108,7 @@ public class SqlLog extends ManagerBaseTable {
             } else {
                 map.put(COLUMN_SQL_DIGEST, sqlRecord.getSqlDigest());
             }
-            map.put(COLUMN_SQL_TYPE, getSqlType(sqlRecord.getSqlType()));
+            map.put(COLUMN_SQL_TYPE, SqlStringUtil.getSqlType(sqlRecord.getSqlType()));
             map.put(COLUMN_TX_ID, sqlRecord.getTxId() + "");
             map.put(COLUMN_ENTRY, sqlRecord.getEntry() + "");
             map.put(COLUMN_USER, sqlRecord.getUser());
@@ -122,48 +122,4 @@ public class SqlLog extends ManagerBaseTable {
         }));
         return list;
     }
-
-    public String getSqlType(int sqlType) {
-        String type;
-        switch (sqlType) {
-            case ServerParse.DDL:
-                type = "DDL";
-                break;
-            case ServerParse.INSERT:
-                type = "Insert";
-                break;
-            case ServerParse.SELECT:
-                type = "Select";
-                break;
-            case ServerParse.UPDATE:
-                type = "Update";
-                break;
-            case ServerParse.DELETE:
-                type = "Delete";
-                break;
-            case ServerParse.LOAD_DATA_INFILE_SQL:
-                type = "Loaddata";
-                break;
-            case ServerParse.BEGIN:
-                type = "Begin";
-                break;
-            case ServerParse.COMMIT:
-                type = "Commit";
-                break;
-            case ServerParse.ROLLBACK:
-                type = "Rollback";
-                break;
-            case ServerParse.SET:
-                type = "Set";
-                break;
-            case ServerParse.SHOW:
-                type = "Show";
-                break;
-            default:
-                type = "Other";
-
-        }
-        return type;
-    }
-
 }

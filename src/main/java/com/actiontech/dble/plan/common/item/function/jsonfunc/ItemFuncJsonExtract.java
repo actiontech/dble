@@ -250,7 +250,7 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
                     break;
 
                     case JPL_ELLIPSIS:
-                        //process **， recursive lookup
+                        //process **, recursive lookup
                         nextResults = processEllipsis(pathLegIt);
                         break;
                     default:

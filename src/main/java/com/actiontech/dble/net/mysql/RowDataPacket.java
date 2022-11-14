@@ -129,7 +129,6 @@ public class RowDataPacket extends MySQLPacket {
     }
 
 
-
     private void writeBody(ByteBuffer buffer) {
         for (int i = 0; i < fieldCount; i++) {
             byte[] fv = fieldValues.get(i);
@@ -163,7 +162,7 @@ public class RowDataPacket extends MySQLPacket {
         int packageNum = size / MAX_PACKET_SIZE + 1;
         if (packageNum > 1) {
             BufferPool bufferPool = BufferPoolManager.getBufferPool();
-            ByteBuffer tmpBuffer = bufferPool.allocate(size);
+            ByteBuffer tmpBuffer = bufferPool.allocate(size, null);
             writeBody(tmpBuffer);
             byte[] tmpArray = tmpBuffer.array();
             bufferPool.recycle(tmpBuffer);
@@ -182,7 +181,7 @@ public class RowDataPacket extends MySQLPacket {
             }
             return packets;
         } else {
-            ByteBuffer buffer = BufferPoolManager.getBufferPool().allocate(size + PACKET_HEADER_SIZE);
+            ByteBuffer buffer = BufferPoolManager.getBufferPool().allocate(size + PACKET_HEADER_SIZE, null);
             BufferUtil.writeUB3(buffer, calcPacketSize());
             buffer.put(packetId);
             writeBody(buffer);

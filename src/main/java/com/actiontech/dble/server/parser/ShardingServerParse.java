@@ -1178,7 +1178,7 @@ public class ShardingServerParse extends AbstractServerParse {
             if ((c1 == 'A' || c1 == 'a') && (c2 == 'R' || c2 == 'r') &&
                     (c3 == 'T' || c3 == 't') &&
                     (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
-                return (offset << 8) | START;
+                return (new ServerParseStart()).parse(stmt, offset);
             }
         }
         return OTHER;

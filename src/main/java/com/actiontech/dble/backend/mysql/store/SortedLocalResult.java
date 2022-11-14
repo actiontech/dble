@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.backend.mysql.store.diskbuffer.SortedResultDiskBuffer;
 import com.actiontech.dble.backend.mysql.store.result.ResultExternal;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 
 import java.util.Collections;
 
@@ -16,19 +17,19 @@ public class SortedLocalResult extends LocalResult {
 
     protected RowDataComparator rowCmp;
 
-    public SortedLocalResult(BufferPool pool, int fieldsCount, RowDataComparator rowCmp, String charset) {
-        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, rowCmp, charset);
+    public SortedLocalResult(BufferPool pool, int fieldsCount, RowDataComparator rowCmp, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, rowCmp, charset, bufferRecordBuilder);
     }
 
     public SortedLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, RowDataComparator rowCmp,
-                             String charset) {
-        super(initialCapacity, fieldsCount, pool, charset);
+                             String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(initialCapacity, fieldsCount, pool, charset, bufferRecordBuilder);
         this.rowCmp = rowCmp;
     }
 
     @Override
     protected ResultExternal makeExternal() {
-        return new SortedResultDiskBuffer(pool, fieldsCount, rowCmp);
+        return new SortedResultDiskBuffer(pool, fieldsCount, rowCmp, bufferRecordBuilder);
     }
 
     @Override

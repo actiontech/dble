@@ -19,9 +19,11 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.route.handler.HintDbInstanceHandler;
 import com.actiontech.dble.route.handler.HintMasterDBHandler;
 import com.actiontech.dble.route.parser.DbleHintParser;
+import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.rwsplit.Callback;
 import com.actiontech.dble.services.rwsplit.RWSplitHandler;
+import com.actiontech.dble.services.rwsplit.RWSplitMultiHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.services.rwsplit.handle.PSHandler;
 import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
@@ -44,15 +46,8 @@ public class RWSplitNonBlockingSession extends Session {
     private volatile boolean preSendIsWrite = false; // Has the previous SQL been delivered to the write node?
     private volatile long preWriteResponseTime = 0; // Response time of the previous write node
     private int reSelectNum;
-    private volatile String remingSql = null;
 
-    public String getRemingSql() {
-        return remingSql;
-    }
-
-    public void setRemingSql(String remingSql) {
-        this.remingSql = remingSql;
-    }
+    private volatile RWSplitMultiHandler multiQueryHandler = null;
 
     public RWSplitNonBlockingSession(RWSplitService service) {
         this.rwSplitService = service;
@@ -65,7 +60,6 @@ public class RWSplitNonBlockingSession extends Session {
 
     @Override
     public void stopFlowControl(int currentWritingSize) {
-
         synchronized (this) {
             if (rwSplitService.isFlowControlled()) {
                 LOGGER.info("Session stop flow control " + this.getSource());
@@ -112,35 +106,36 @@ public class RWSplitNonBlockingSession extends Session {
         }
     }
 
+    // exec COM_QUERY
     public void execute(Boolean master, Callback callback) {
         execute(master, null, callback);
     }
 
-    public void execute(Boolean master, Callback callback, boolean writeStatistical) {
-        execute(master, null, callback, writeStatistical, false);
-    }
-
-    /**
-     * @param master
-     * @param callback
-     * @param writeStatistical
-     * @param localRead        only the SELECT and show statements attempt to localRead
-     */
+    // only the SELECT and show statements attempt to localRead
     public void execute(Boolean master, Callback callback, boolean writeStatistical, boolean localRead) {
-        execute(master, null, callback, writeStatistical, localRead && !rwGroup.isRwSplitUseless());
+        execute0(master, null, callback, writeStatistical, localRead && !rwGroup.isRwSplitUseless());
     }
 
     public void execute(Boolean master, byte[] originPacket, Callback callback) {
-        execute(master, originPacket, callback, false, false);
+        execute0(master, originPacket, callback, false, false);
     }
 
-    public void execute(Boolean master, byte[] originPacket, Callback callback, boolean writeStatistical) {
-        execute(master, originPacket, callback, writeStatistical, false);
+    public void executeMultiSql(Boolean master, Callback callback) {
+        if (isMultiStatement.compareAndSet(false, true)) {
+            execute(master, callback);
+        } else {
+            if (isMultiStatement.get() && multiQueryHandler != null) {
+                multiQueryHandler.executeNext(callback);
+            } else {
+                // not happen
+                LOGGER.warn("multi-query scenarios may have logic problems. multiStatus:[{}], executeNext:[{}]", isMultiStatement.get(), multiQueryHandler);
+            }
+        }
     }
 
-    public void execute(Boolean master, byte[] originPacket, Callback callback, boolean writeStatistical, boolean localRead) {
+    private void execute0(Boolean master, byte[] originPacket, Callback callback, boolean writeStatistical, boolean localRead) {
         try {
-            RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
+            RWSplitHandler handler = getRwSplitHandler(originPacket != null ? originPacket : getService().getExecuteSqlBytes(), callback);
             if (handler == null) return;
             getConnection(handler, master, isWriteStatistical(writeStatistical), localRead);
         } catch (SQLSyntaxErrorException | IOException se) {
@@ -161,7 +156,7 @@ public class RWSplitNonBlockingSession extends Session {
                 if (this.getPreWriteResponseTime() > 0 && System.currentTimeMillis() - this.getPreWriteResponseTime() <= rwStickyTime) {
                     isMaster = true;
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("because in the sticky time range，so select write instance");
+                        LOGGER.debug("because in the sticky time range,so select write instance");
                     }
                 } else {
                     resetLastSqlResponseTime();
@@ -187,7 +182,13 @@ public class RWSplitNonBlockingSession extends Session {
 
     @Nullable
     private RWSplitHandler getRwSplitHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException, IOException {
-        RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback, false);
+        RWSplitHandler handler;
+        if (isMultiStatement.get()) {
+            multiQueryHandler = new RWSplitMultiHandler(rwSplitService, true, originPacket, callback);
+            handler = multiQueryHandler;
+        } else {
+            handler = new RWSplitHandler(rwSplitService, true, originPacket, callback);
+        }
         if (conn != null && !conn.isClosed()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select bind conn[id={}]", conn.getId());
@@ -267,7 +268,6 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     public void executeHint(DbleHintParser.HintInfo hintInfo, int sqlType, String sql, Callback callback) throws SQLException, IOException {
-        RWSplitHandler handler = new RWSplitHandler(rwSplitService, null, callback, true);
         try {
             PhysicalDbInstance dbInstance = routeRwSplit(hintInfo, sqlType, rwSplitService);
             if (dbInstance == null) {
@@ -276,6 +276,7 @@ public class RWSplitNonBlockingSession extends Session {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("route sql {} to {}", sql, dbInstance);
             }
+            RWSplitHandler handler = new RWSplitHandler(rwSplitService, false, null, callback);
             dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (Exception e) {
             rwSplitService.executeException(e, sql);
@@ -363,5 +364,20 @@ public class RWSplitNonBlockingSession extends Session {
 
     public RWSplitService getService() {
         return rwSplitService;
+    }
+
+    public void resetMultiStatementStatus() {
+        // not deal
+    }
+
+    public boolean generalNextStatement(String sql) {
+        int index = ParseUtil.findNextBreak(sql);
+        if (index + 1 < sql.length() && !ParseUtil.isEOF(sql, index)) {
+            this.remainingSql = sql.substring(index + 1);
+            return true;
+        } else {
+            this.remainingSql = null;
+            return false;
+        }
     }
 }

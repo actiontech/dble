@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.backend.mysql.store.diskbuffer.DistinctResultDiskBuffer;
 import com.actiontech.dble.backend.mysql.store.result.ResultExternal;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.RBTreeList;
 
@@ -29,19 +30,19 @@ public class DistinctLocalResult extends LocalResult {
      * @param charset         distinct selectable compator
      */
     public DistinctLocalResult(int initialCapacity, int fieldsCount, BufferPool pool, RowDataComparator distinctCmp,
-                               String charset) {
-        super(initialCapacity, fieldsCount, pool, charset);
+                               String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(initialCapacity, fieldsCount, pool, charset, bufferRecordBuilder);
         this.distinctCmp = distinctCmp;
         this.rows = new RBTreeList<>(initialCapacity, distinctCmp);
     }
 
-    public DistinctLocalResult(BufferPool pool, int fieldsCount, RowDataComparator distinctCmp, String charset) {
-        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, distinctCmp, charset);
+    public DistinctLocalResult(BufferPool pool, int fieldsCount, RowDataComparator distinctCmp, String charset, BufferPoolRecord.Builder bufferRecordBuilder) {
+        this(DEFAULT_INITIAL_CAPACITY, fieldsCount, pool, distinctCmp, charset, bufferRecordBuilder);
     }
 
     @Override
     protected ResultExternal makeExternal() {
-        return new DistinctResultDiskBuffer(pool, fieldsCount, distinctCmp);
+        return new DistinctResultDiskBuffer(pool, fieldsCount, distinctCmp, bufferRecordBuilder);
     }
 
     /**

@@ -126,6 +126,9 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("enableRoutePenetration", sysConfig.isEnableRoutePenetration() + "", "Whether enable route penetration"));
         readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration"));
         readOnlyParams.add(new ParamInfo("closeHeartBeatRecord", sysConfig.isCloseHeartBeatRecord() + "", "close heartbeat record. if closed, `show @@dbinstance.synstatus`,`show @@dbinstance.syndetail`,`show @@heartbeat.detail` will be empty and `show @@heartbeat`'s EXECUTE_TIME will be '-' .The default value is false"));
+        readOnlyParams.add(new ParamInfo("enableAsyncRelease", sysConfig.getEnableAsyncRelease() + "", "Whether enable async release . default value is 1(off)."));
+        readOnlyParams.add(new ParamInfo("releaseTimeout", sysConfig.getReleaseTimeout() + "", "time wait for release ,unit is ms,  default value is 10 ms"));
+
 
     }
 

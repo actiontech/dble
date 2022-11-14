@@ -158,3 +158,6 @@
 #enableFlowControl=false
 #flowControlStartThreshold=4096
 #flowControlStopThreshold=256
+
+#-DenableAsyncRelease=1
+#-DreleaseTimeout=10

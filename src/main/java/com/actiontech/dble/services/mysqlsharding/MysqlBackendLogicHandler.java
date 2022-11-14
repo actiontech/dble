@@ -106,7 +106,6 @@ public class MysqlBackendLogicHandler {
     private void handleErrorPacket(byte[] data) {
         final ResponseHandler respHand = service.getResponseHandler();
         service.setExecuting(false);
-        service.setRowDataFlowing(false);
         service.signal();
         if (respHand != null) {
             respHand.errorResponse(data, service);

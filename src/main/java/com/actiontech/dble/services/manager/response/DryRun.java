@@ -182,6 +182,8 @@ public final class DryRun {
                 }
             }
         }
+    }
+
     private static void delayDetection(ServerConfig serverConfig, List<ErrorInfo> list) {
         Map<String, PhysicalDbGroup> dbGroups = serverConfig.getDbGroups();
         dbGroups.forEach((k, v) -> {

@@ -154,7 +154,7 @@ public final class DryRun {
         }
 
         delayDetection(serverConfig, list);
-
+        backLog(list);
 
         printResult(service, list);
     }

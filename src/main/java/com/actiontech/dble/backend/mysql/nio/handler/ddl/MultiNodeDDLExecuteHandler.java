@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.ddl;
 
-import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -15,9 +14,9 @@ import org.jetbrains.annotations.Nullable;
 
 public class MultiNodeDDLExecuteHandler extends BaseDDLHandler {
 
-    public MultiNodeDDLExecuteHandler(NonBlockingSession session, RouteResultset rrs, @Nullable Object attachment, ImplicitlyCommitCallback implicitlyCommitCallback) {
+    public MultiNodeDDLExecuteHandler(NonBlockingSession session, RouteResultset rrs, @Nullable Object attachment, RouteResultset preRrs, ImplicitlyCommitCallback implicitlyCommitCallback) {
         super(session, rrs, attachment, implicitlyCommitCallback);
-        TxnLogHelper.putTxnLog(session.getShardingService(), this.rrs);
+        this.preRrs = preRrs;
     }
 
     @Override

@@ -69,13 +69,16 @@ public class SqlDumpLog {
                 problemReporter.warn(String.format(WARNING_FORMAT, "sqlDumpLogOnStartupRotate", sqlDumpLogOnStartupRotate0, this.sqlDumpLogOnStartupRotate + ""));
             }
         } else {
-            this.sqlDumpLogOnStartupRotate = -1;
+            if (!StringUtil.isBlank(sqlDumpLogOnStartupRotate0)) { // -1、null
+                this.sqlDumpLogOnStartupRotate = -1;
+            } // else, use default
         }
 
         String sqlDumpLogSizeBasedRotate0 = SystemConfig.getInstance().getSqlDumpLogSizeBasedRotate();
-        if (isConfig(sqlDumpLogSizeBasedRotate0)) {
-            this.sqlDumpLogSizeBasedRotate = FileSize.parse(sqlDumpLogSizeBasedRotate0, 52428800L) + ""; // default: 50 MB
+        if (!isConfig(sqlDumpLogSizeBasedRotate0)) {
+            sqlDumpLogSizeBasedRotate0 = sqlDumpLogSizeBasedRotate;
         } // else, use default
+        this.sqlDumpLogSizeBasedRotate = FileSize.parse(sqlDumpLogSizeBasedRotate0, 52428800L) + ""; // default: 50 MB
 
         String sqlDumpLogTimeBasedRotate0 = SystemConfig.getInstance().getSqlDumpLogTimeBasedRotate();
         if (isConfig(sqlDumpLogTimeBasedRotate0)) {
@@ -88,7 +91,9 @@ public class SqlDumpLog {
                 problemReporter.warn(String.format(WARNING_FORMAT, "sqlDumpLogTimeBasedRotate", sqlDumpLogTimeBasedRotate0, this.sqlDumpLogTimeBasedRotate + ""));
             }
         } else {
-            this.sqlDumpLogTimeBasedRotate = -1;
+            if (!StringUtil.isBlank(sqlDumpLogTimeBasedRotate0)) {  // -1、null
+                this.sqlDumpLogTimeBasedRotate = -1;
+            } // else, use default
         }
 
         String sqlDumpLogDeleteFileAge0 = SystemConfig.getInstance().getSqlDumpLogDeleteFileAge();

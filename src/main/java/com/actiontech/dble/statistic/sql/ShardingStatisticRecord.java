@@ -12,29 +12,8 @@ import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.statistic.sql.entry.StatisticBackendSqlEntry;
-import com.actiontech.dble.statistic.sql.entry.StatisticTxEntry;
 
 public class ShardingStatisticRecord extends StatisticRecord {
-
-    public void onTxStart(BusinessService businessService, boolean isImplicitly, boolean isSet) {
-        if (isImplicitly) {
-            txid = STATISTIC.getIncrementVirtualTxID();
-        }
-        txEntry = new StatisticTxEntry(frontendInfo, xaId, txid, System.nanoTime(), isImplicitly);
-    }
-
-    public void onTxEnd() {
-        if (txEntry != null) {
-            long txEndTime = System.nanoTime();
-            if (frontendSqlEntry != null) {
-                frontendSqlEntry.setAllEndTime(txEndTime);
-                txEntry.add(frontendSqlEntry);
-            }
-            frontendSqlEntry = null;
-            txEntry.setAllEndTime(txEndTime);
-            pushTx();
-        }
-    }
 
     public void onBackendSqlStart(MySQLResponseService service) {
         if (frontendSqlEntry != null && isPassSql(service)) {

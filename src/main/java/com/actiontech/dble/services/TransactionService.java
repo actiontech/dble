@@ -59,6 +59,9 @@ public abstract class TransactionService<T extends UserConfig> extends FrontendS
 
                 setAutocommit(false);
                 break;
+            case QUIT:
+                // not deal
+                break;
             default: // normal sql
                 if (!isInTransaction())
                     txIdCount();

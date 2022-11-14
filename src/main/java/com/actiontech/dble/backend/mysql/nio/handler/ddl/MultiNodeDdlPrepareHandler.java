@@ -6,7 +6,6 @@
 package com.actiontech.dble.backend.mysql.nio.handler.ddl;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
@@ -30,8 +29,7 @@ public class MultiNodeDdlPrepareHandler extends BaseDDLHandler {
     public MultiNodeDdlPrepareHandler(NonBlockingSession session, RouteResultset rrs, @Nullable Object attachment, ImplicitlyCommitCallback implicitlyCommitCallback) {
         super(session, rrs, attachment, implicitlyCommitCallback);
         this.rrs = RouteResultCopy.rrCopy(rrs, ServerParse.DDL, STMT);
-        TxnLogHelper.putTxnLog(session.getShardingService(), this.rrs);
-        this.nextHandler = new MultiNodeDDLExecuteHandler(session, this.oriRrs, attachment, implicitlyCommitCallback);
+        this.nextHandler = new MultiNodeDDLExecuteHandler(session, this.oriRrs, attachment, this.rrs, implicitlyCommitCallback);
         this.stage = DDLTraceHelper.Stage.test_ddl_conn;
         this.traceMessage = "execute-for-ddl-prepare";
     }

@@ -13,6 +13,8 @@ package com.actiontech.dble.net.service;
 public enum WriteFlag {
     END_OF_QUERY,
     END_OF_SESSION,
+    PARK_OF_MULTI_QUERY,
+
     //useless
     FLUSH;
 

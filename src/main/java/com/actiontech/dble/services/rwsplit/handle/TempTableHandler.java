@@ -7,6 +7,7 @@
 package com.actiontech.dble.services.rwsplit.handle;
 
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
+import com.actiontech.dble.services.rwsplit.CallbackFactory;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
@@ -74,7 +75,7 @@ public final class TempTableHandler {
                     tempTableSet.remove(key);
                 }
             }
-            rwSplitService.implicitlyDeal();
+            CallbackFactory.TX_IMPLICITLYCOMMIT.callback(isSuccess, null, rwSplitService);
         });
     }
 }

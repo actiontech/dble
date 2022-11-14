@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2022 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2022 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
@@ -11,14 +11,10 @@ import com.actiontech.dble.route.parser.util.ParseUtil;
  * @author mycat
  */
 public class ServerParseStart {
-    protected ServerParseStart() {
+    public ServerParseStart() {
     }
 
-    public static final int OTHER = -1;
-    public static final int TRANSACTION = 1;
-    public static final int READCHARCS = 2;
-
-    public static int parse(String stmt, int offset) {
+    public int parse(String stmt, int offset) {
         int i = offset;
         for (; i < stmt.length(); i++) {
             switch (stmt.charAt(i)) {
@@ -32,29 +28,14 @@ public class ServerParseStart {
                 case 't':
                     return transactionCheck(stmt, i);
                 default:
-                    return OTHER;
+                    return ServerParse.OTHER;
             }
         }
-        return OTHER;
+        return ServerParse.OTHER;
     }
 
-    // transaction characteristic check
-    private static int transactionCheck(String stmt, int offset) {
-        int tmpOff;
-        tmpOff = skipTrans(stmt, offset);
-        if (tmpOff < 0) {
-            return OTHER;
-        }
-
-        if (stmt.length() == ++tmpOff) {
-            return TRANSACTION;
-        } else {
-            return readCharcsCheck(stmt, tmpOff);
-        }
-    }
-
-    protected static int skipTrans(String stmt, int offset) {
-        if (stmt.length() > offset + "ransaction".length()) {
+    protected int transactionCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 10) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
@@ -69,36 +50,36 @@ public class ServerParseStart {
                     (c4 == 'S' || c4 == 's') && (c5 == 'A' || c5 == 'a') && (c6 == 'C' || c6 == 'c') &&
                     (c7 == 'T' || c7 == 't') && (c8 == 'I' || c8 == 'i') && (c9 == 'O' || c9 == 'o') &&
                     (c10 == 'N' || c10 == 'n')) {
-                return offset;
+                if (stmt.length() == ++offset)
+                    return ServerParse.START_TRANSACTION;
+                int currentOffset = ParseUtil.skipSpace(stmt, offset);
+                if (stmt.length() == currentOffset) {
+                    return ServerParse.START_TRANSACTION;
+                } else {
+                    int currentOffset2 = ParseUtil.commentHint(stmt, currentOffset);
+                    if (stmt.length() == ++currentOffset2 || stmt.length() == ParseUtil.skipSpace(stmt, currentOffset2)) {
+                        return ServerParse.START_TRANSACTION;
+                    } else {
+                        return transactionReadCheck0(stmt, currentOffset);
+                    }
+                }
             }
         }
-
-        return -1;
+        return ServerParse.OTHER;
     }
 
-    static int readCharcsCheck(String stmt, int offset) {
-        int currentOffset = ParseUtil.skipSpace(stmt, offset);
-        if (stmt.length() == currentOffset) {
-            return TRANSACTION;
-        }
-
-        currentOffset = ParseUtil.commentHint(stmt, currentOffset);
-        if (stmt.length() == ++currentOffset || ParseUtil.skipSpace(stmt, currentOffset) == stmt.length()) {
-            return TRANSACTION;
-        }
-
-        if (stmt.length() > offset + "ead ".length()) {
+    protected int transactionReadCheck0(String stmt, int offset) {
+        if (stmt.length() >= offset + "read ".length()) {
             char c0 = stmt.charAt(offset);
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             if ((c0 == 'R' || c0 == 'r') && (c1 == 'E' || c1 == 'e') && (c2 == 'A' || c2 == 'a') &&
-                    (c3 == 'D' || c3 == 'd') && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
-                return READCHARCS;
+                    (c3 == 'D' || c3 == 'd') && ParseUtil.isSpace(c4)) {
+                return ServerParse.UNSUPPORT;
             }
         }
-
-        return OTHER;
+        return ServerParse.OTHER;
     }
 }

@@ -6,6 +6,7 @@ public enum TransactionOperate {
     BEGIN,
     END, // commit、rollback
     IMPLICITLY_COMMIT, // == END
-    QUERY
+    QUERY,
+    QUIT
 
 }

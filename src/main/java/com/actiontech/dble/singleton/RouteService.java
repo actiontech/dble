@@ -69,7 +69,7 @@ public final class RouteService {
             }
 
             if (rrs != null && sqlType == ServerParse.SELECT && rrs.isSqlRouteCacheAble() && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null &&
-                    service.getSession2().getRemingSql() == null) {
+                    service.getSession2().getRemainingSql() == null) {
                 CacheService.getSqlRouteCache().putIfAbsent(cacheKey, rrs);
             }
             return rrs;

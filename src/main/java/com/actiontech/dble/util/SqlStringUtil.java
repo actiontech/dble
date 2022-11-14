@@ -6,6 +6,7 @@
 package com.actiontech.dble.util;
 
 import com.actiontech.dble.server.parser.DbleOutputVisitor;
+import com.actiontech.dble.server.parser.ServerParse;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
@@ -29,5 +30,48 @@ public final class SqlStringUtil {
         sqlObject.accept(visitor);
         String sql = out.toString();
         return sql;
+    }
+
+    public static String getSqlType(int sqlType) {
+        String type;
+        switch (sqlType) {
+            case ServerParse.DDL:
+                type = "DDL";
+                break;
+            case ServerParse.INSERT:
+                type = "Insert";
+                break;
+            case ServerParse.SELECT:
+                type = "Select";
+                break;
+            case ServerParse.UPDATE:
+                type = "Update";
+                break;
+            case ServerParse.DELETE:
+                type = "Delete";
+                break;
+            case ServerParse.LOAD_DATA_INFILE_SQL:
+                type = "Loaddata";
+                break;
+            case ServerParse.BEGIN:
+                type = "Begin";
+                break;
+            case ServerParse.COMMIT:
+                type = "Commit";
+                break;
+            case ServerParse.ROLLBACK:
+                type = "Rollback";
+                break;
+            case ServerParse.SET:
+                type = "Set";
+                break;
+            case ServerParse.SHOW:
+                type = "Show";
+                break;
+            default:
+                type = "Other";
+
+        }
+        return type;
     }
 }

@@ -170,7 +170,7 @@ public final class DryRun {
             Collection<PhysicalDbInstance> values = allDbInstanceMap.values();
 
             for (PhysicalDbInstance instance : values) {
-                // The back_log value indicates how many requests can be stacked during this short time before MySQL momentarily stops answering new requests,tge suggestions here give at least a third of the size of the mincon
+                // The back_log value indicates how many requests can be stacked during this short time before MySQL momentarily stops answering new requests,the suggestions here give at least a third of the size of the mincon
                 int minCon = instance.getConfig().getMinCon() / 3;
                 int backLog = minCon;
                 keyVariables = new GetAndSyncDbInstanceKeyVariables(instance, false);

@@ -300,17 +300,14 @@ public abstract class BackendService extends AbstractService {
 
     public void backendSpecialCleanUp() {
         isExecuting = false;
-        isRowDataFlowing = false;
-        this.signal();
+        this.releaseSignal();
     }
 
-    public void signal() {
-        if (connection.isClosed()) {
-            return;
-        }
-
+    public void releaseSignal() {
+        isRowDataFlowing = false;
         if (recycler != null) {
             recycler.signal();
+            recycler = null;
         }
     }
 

@@ -201,3 +201,5 @@
 #-DstatisticQueueSize=4096
 #-DinSubQueryTransformToJoin=false
 #-DgroupConcatMaxLen = 1024
+-DenableAsyncRelease=1
+-DreleaseTimeout=10

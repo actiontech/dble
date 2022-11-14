@@ -44,8 +44,7 @@ public class LoadDataResponseHandler extends CustomDataResponseHandler {
 
     @Override
     protected void beforeError() {
-        service.setRowDataFlowing(false);
-        service.signal();
+        service.releaseSignal();
         status = INITIAL;
     }
 

@@ -257,7 +257,9 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             }
             QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
             assert service != null;
-            nextHandler.rowEofResponse(null, false, service);
+            if (!isFail()) {
+                nextHandler.rowEofResponse(null, false, service);
+            }
         } catch (MySQLOutPutException e) {
             String msg = e.getLocalizedMessage();
             LOGGER.info(msg, e);

@@ -181,6 +181,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setSession(session);
+        conn.getBackendService().setComplexQuery(complexQuery);
         conn.getBackendService().executeMultiNode(node, session.getShardingService(), sessionAutocommit && !session.getShardingService().isTxStart() && !node.isModifySQL());
     }
 

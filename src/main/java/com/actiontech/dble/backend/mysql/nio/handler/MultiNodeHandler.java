@@ -33,6 +33,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     protected Set<RouteResultsetNode> unResponseRrns = Sets.newConcurrentHashSet();
     protected int errorConnsCnt = 0;
     protected boolean firstResponsed = false;
+    protected boolean complexQuery = false;
 
     public MultiNodeHandler(NonBlockingSession session) {
         if (session == null) {

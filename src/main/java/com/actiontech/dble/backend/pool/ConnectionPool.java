@@ -80,10 +80,12 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         }
         try {
             ConnectionPoolProvider.getConnGetFrenshLocekAfter();
+            ConnectionPoolProvider.borrowDirectlyConnectionBefore();
             int waiting = waiters.get();
             for (PooledConnection conn : allConnections) {
                 if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
                     if (waiting > 0 && conn.getCreateByWaiter().compareAndSet(true, false)) {
+                        ConnectionPoolProvider.newConnectionBorrowDirectly();
                         newPooledEntry(schema, waiting, true);
                     }
                     return conn;
@@ -108,6 +110,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
                 if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
                     // If we may have stolen another waiter's connection, request another bag add.
                     if (waiting > 0 && conn.getCreateByWaiter().compareAndSet(true, false)) {
+                        ConnectionPoolProvider.newConnectionBorrow0();
                         newPooledEntry(schema, waiting, true);
                     }
                     return conn;
@@ -116,6 +119,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
 
             waiterNum = waiters.incrementAndGet();
             try {
+                ConnectionPoolProvider.newConnectionBorrow1();
                 newPooledEntry(schema, waiterNum, true);
 
                 ConnectionPoolProvider.newConnectionAfter();
@@ -200,6 +204,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         if (LOGGER.isDebugEnabled() && connectionsToAdd > 0) {
             LOGGER.debug("need add {}", connectionsToAdd);
         }
+        ConnectionPoolProvider.fillPool();
         for (int i = 0; i < connectionsToAdd; i++) {
             // newPooledEntry(schemas[i % schemas.length]);
             newPooledEntry(null, 1, false);

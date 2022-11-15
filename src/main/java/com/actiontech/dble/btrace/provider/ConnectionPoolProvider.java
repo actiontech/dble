@@ -26,7 +26,28 @@ public final class ConnectionPoolProvider {
 
     }
 
+
+    public static void newConnectionBorrowDirectly() {
+
+    }
+
+    public static void newConnectionBorrow0() {
+
+    }
+
+    public static void newConnectionBorrow1() {
+
+    }
+
     public static void borrowConnectionBefore() {
+
+    }
+
+    public static void borrowDirectlyConnectionBefore() {
+
+    }
+
+    public static void fillPool() {
 
     }
 

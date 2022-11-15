@@ -47,6 +47,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
 
     public MultiNodeSelectHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session, false);
+        this.complexQuery = true;
         this.queueSize = SystemConfig.getInstance().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
         if (CollectionUtil.isEmpty(rrs.getSelectCols())) {
@@ -209,7 +210,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             }
             while (!heap.isEmpty()) {
                 if (isFail())
-                    return;
+                    break;
                 HeapItem top = heap.peak();
                 if (top.isNullItem()) {
                     heap.poll();
@@ -249,7 +250,9 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                 iterator.remove();
             }
             doSqlStat();
-            nextHandler.rowEofResponse(null, false, null);
+            if (!isFail()) {
+                nextHandler.rowEofResponse(null, false, null);
+            }
         } catch (Exception e) {
             String msg = "Merge thread error, " + e.getLocalizedMessage();
             LOGGER.info(msg, e);

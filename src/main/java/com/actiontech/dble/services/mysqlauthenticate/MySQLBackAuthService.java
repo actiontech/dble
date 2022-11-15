@@ -1,6 +1,7 @@
 package com.actiontech.dble.services.mysqlauthenticate;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.heartbeat.HeartbeatSQLJob;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.PooledConnectionListener;
@@ -42,9 +43,13 @@ public class MySQLBackAuthService extends AuthService {
     private volatile ResponseHandler handler;
 
     private volatile long serverCapabilities;
+    private volatile boolean highPriority = false;
 
     public MySQLBackAuthService(AbstractConnection connection, String user, String schema, String passwd, PooledConnectionListener listener, ResponseHandler handler) {
         super(connection);
+        if (handler instanceof HeartbeatSQLJob) {
+            highPriority = true;
+        }
         this.user = user;
         this.schema = schema;
         this.passwd = passwd;
@@ -55,6 +60,9 @@ public class MySQLBackAuthService extends AuthService {
     // only for com_change_user
     public MySQLBackAuthService(AbstractConnection connection, String user, String passwd, ResponseHandler handler) {
         super(connection);
+        if (handler instanceof HeartbeatSQLJob) {
+            highPriority = true;
+        }
         this.user = user;
         this.passwd = passwd;
         this.handler = handler;
@@ -243,7 +251,7 @@ public class MySQLBackAuthService extends AuthService {
                 DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
             }
         } else {
-            Executor executor = DbleServer.getInstance().getBackendBusinessExecutor();
+            Executor executor = getExecutor();
             if (isHandling.compareAndSet(false, true)) {
                 executor.execute(() -> consumerInternalData(task));
             }
@@ -334,5 +342,14 @@ public class MySQLBackAuthService extends AuthService {
     @Override
     public boolean haveNotReceivedMessage() {
         throw new UnsupportedOperationException();
+    }
+
+
+    protected Executor getExecutor() {
+        if (highPriority) {
+            return DbleServer.getInstance().getComplexQueryExecutor();
+        } else {
+            return DbleServer.getInstance().getBackendBusinessExecutor();
+        }
     }
 }

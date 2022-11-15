@@ -96,7 +96,7 @@ public final class DryRun {
             }
             loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
         } catch (Exception e) {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage() == null ? e.toString() : e.getMessage());
             return;
         }
 

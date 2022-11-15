@@ -175,6 +175,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("sqlDumpLogCompressFilePath", SqlDumpLog.getInstance().getSqlDumpLogCompressFilePath() + "", "The compression of sqldump log file path, the default value is '*/sqldump-*.log.gz'"));
 
         readOnlyParams.add(new ParamInfo("enableMemoryBufferMonitorRecordPool", sysConfig.getEnableMemoryBufferMonitorRecordPool() + "", "Whether record the connection pool memory if the memory buffer monitor is ON. the default value is 1(ON)."));
+        readOnlyParams.add(new ParamInfo("queryForUpdateMaxRowsSize", sysConfig.getQueryForUpdateMaxRowsSize() + "", "The maximum number of rows in the select result set when update multi-table splitting is delivered. The default value is 20000"));
     }
 
     public List<ParamInfo> getVolatileParams() {

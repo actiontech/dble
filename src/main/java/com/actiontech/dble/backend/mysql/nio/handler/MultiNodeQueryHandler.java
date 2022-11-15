@@ -151,6 +151,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         MySQLConnection mysqlCon = (MySQLConnection) conn;
         mysqlCon.setResponseHandler(this);
         mysqlCon.setSession(session);
+        mysqlCon.setComplexQuery(complexQuery);
         mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
     }
 

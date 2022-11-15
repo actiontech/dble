@@ -125,12 +125,15 @@ public class MySQLResponseService extends BackendService {
 
         write(originPacket, WriteFlags.QUERY_END);
     }
-
     public void execute(BusinessService service, String sql) {
+        execute(service, sql, false);
+    }
+
+    public void execute(BusinessService service, String sql, boolean forceUseAutoCommit) {
         boolean changeUser = isChangeUser(service);
         if (changeUser) return;
 
-        StringBuilder synSQL = getSynSql(null, null, service.isAutocommit(), service);
+        StringBuilder synSQL = getSynSql(null, null, forceUseAutoCommit || service.isAutocommit(), service);
         if (protocolResponseHandler != defaultResponseHandler) {
             protocolResponseHandler = defaultResponseHandler;
         }

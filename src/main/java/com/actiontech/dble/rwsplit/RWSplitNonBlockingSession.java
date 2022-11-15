@@ -314,6 +314,9 @@ public class RWSplitNonBlockingSession extends Session {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("route sql {} to {}", sql, dbInstance);
             }
+            if (rwSplitService.isInTransaction()) {
+                rwSplitService.setForceUseAutoCommit(true);
+            }
             RWSplitHandler handler = new RWSplitHandler(rwSplitService, false, null, callback);
             dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (Exception e) {
@@ -350,7 +353,7 @@ public class RWSplitNonBlockingSession extends Session {
 
     public void unbindIfSafe() {
         final BackendConnection tmp = conn;
-        if (tmp != null && rwSplitService.isKeepBackendConn()) {
+        if (tmp != null && !rwSplitService.isKeepBackendConn()) {
             this.conn = null;
             if (rwSplitService.isFlowControlled()) {
                 releaseConnectionFromFlowControlled(tmp);

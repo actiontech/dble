@@ -29,10 +29,19 @@ public class ReferenceHandlerInfo {
     private Set<String> children = new LinkedHashSet<>();
     private Set<String> stepChildren = new LinkedHashSet<>();
     private final DMLResponseHandler handler;
+    private boolean isIndentation;
 
     ReferenceHandlerInfo(String name, String type, String baseSQL, DMLResponseHandler handler) {
         this(name, type, handler);
         this.baseSQL = baseSQL;
+    }
+
+    public ReferenceHandlerInfo(String name, String type, String baseSQL, DMLResponseHandler handler, boolean isIndentation) {
+        this.name = name;
+        this.type = type;
+        this.baseSQL = baseSQL;
+        this.handler = handler;
+        this.isIndentation = isIndentation;
     }
 
     ReferenceHandlerInfo(String name, String type, DMLResponseHandler handler) {
@@ -41,13 +50,22 @@ public class ReferenceHandlerInfo {
         this.handler = handler;
     }
 
+    public ReferenceHandlerInfo(String name, String type, DMLResponseHandler handler, boolean isIndentation) {
+        this.name = name;
+        this.type = type;
+        this.handler = handler;
+        this.isIndentation = isIndentation;
+    }
+
     public String getRefOrSQL() {
         StringBuilder names = new StringBuilder("");
         for (String child : stepChildren) {
-            if (names.length() > 0) {
-                names.append("; ");
+            if (!child.contains(ComplexQueryPlanUtil.TYPE_UPDATE_SUB_QUERY.toLowerCase())) {
+                if (names.length() > 0) {
+                    names.append("; ");
+                }
+                names.append(child);
             }
-            names.append(child);
         }
         for (String child : children) {
             if (names.length() > 0) {
@@ -71,6 +89,10 @@ public class ReferenceHandlerInfo {
 
     public boolean isNestLoopQuery() {
         return this.stepChildren.size() != 0;
+    }
+
+    public boolean isIndentation() {
+        return isIndentation;
     }
 
     void addAllStepChildren(Set<String> dependencies) {

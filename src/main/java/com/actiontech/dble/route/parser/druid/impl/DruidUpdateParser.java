@@ -5,10 +5,12 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.*;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.parser.druid.ERRelation;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
@@ -23,14 +25,13 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import com.alibaba.druid.stat.TableStat;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * see http://dev.mysql.com/doc/refman/5.7/en/update.html
@@ -39,7 +40,7 @@ import java.util.Set;
  */
 public class DruidUpdateParser extends DruidModifyParser {
 
-    private static final String MODIFY_SQL_NOT_SUPPORT_MESSAGE = "This `Complex Update Syntax` is not supported!";
+    public static final String MODIFY_SQL_NOT_SUPPORT_MESSAGE = "This `Complex Update Syntax` is not supported!";
 
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
@@ -73,14 +74,18 @@ public class DruidUpdateParser extends DruidModifyParser {
                 //try to route to single Node for each table
                 routeShardingNodes = checkForSingleNodeTable(rrs, service.getCharset().getClient());
             }
-
-            if (ctx.getTables().isEmpty()) {
-                RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tableSet);
+            if (routeShardingNodes != null && !routeShardingNodes.isEmpty()) {
+                if (ctx.getTables().isEmpty()) {
+                    RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tableSet);
+                } else {
+                    RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, ctx.getTables());
+                }
+                rrs.setFinishedRoute(true);
+                return schema;
             } else {
-                RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, ctx.getTables());
+                tryRouteAsMerge(tableSource, visitor, schemaInfos, rrs, tableSet, stmt);
+                return schema;
             }
-            rrs.setFinishedRoute(true);
-            return schema;
         } else {
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, (SQLExprTableSource) tableSource);
             if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), ShardingPrivileges.CheckType.UPDATE)) {
@@ -95,7 +100,7 @@ public class DruidUpdateParser extends DruidModifyParser {
             BaseTableConfig tc = schema.getTables().get(tableName);
             String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
 
-            if (visitor.getFirstClassSubQueryList().size() > 0) {
+            if (visitor.getSubQueryList().size() > 0) {
                 routeForModifySubQueryList(rrs, tc, visitor, schema, service);
                 return schema;
             } else if (noShardingNode != null) {
@@ -132,6 +137,117 @@ public class DruidUpdateParser extends DruidModifyParser {
             }
         }
         return schema;
+    }
+
+    private void tryRouteAsMerge(SQLTableSource tableSource, ServerSchemaStatVisitor visitor, List<SchemaInfo> schemaInfos, RouteResultset rrs, Set<String> tableSet, SQLStatement stmt) throws SQLNonTransientException {
+        //UPDATE A,B WHERE A.shardingColumn = B.shardingColumn
+        //A,B not subQuery
+        boolean isContainsSubQuery = containsSubQuery(tableSource);
+        if (isContainsSubQuery) {
+            rrs.setSqlStatement(stmt);
+            rrs.setNeedOptimizer(true);
+            rrs.setFinishedRoute(true);
+            return;
+        }
+        //A,B the association condition has an ER relationship
+        boolean canMerge = canDoAsMerge(visitor, schemaInfos);
+        if (!canMerge) {
+            rrs.setSqlStatement(stmt);
+            rrs.setNeedOptimizer(true);
+            rrs.setFinishedRoute(true);
+            return;
+        }
+        Map<Pair<String, String>, Set<String>> tablesRouteMap = new HashMap<>();
+        for (Pair<String, String> table : ctx.getTables()) {
+            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(table.getKey());
+            String tableName = table.getValue();
+            BaseTableConfig tableConfig = schemaConfig.getTables().get(tableName);
+            if (tableConfig != null && !(tableConfig instanceof GlobalTableConfig) && tablesRouteMap.get(table) == null) {
+                tablesRouteMap.put(table, new HashSet<>());
+                tablesRouteMap.get(table).addAll(tableConfig.getShardingNodes());
+            }
+        }
+        Set<String> retNodesSet = RouterUtil.retainRouteMap(tablesRouteMap);
+        RouterUtil.routeToMultiNode(false, rrs, retNodesSet, false, tableSet);
+        rrs.setFinishedRoute(true);
+    }
+
+    private boolean containsSubQuery(SQLTableSource tableSource) {
+        if (tableSource instanceof SQLJoinTableSource) {
+            SQLJoinTableSource joinTableSource = (SQLJoinTableSource) tableSource;
+            return containsSubQuery(joinTableSource.getLeft()) || containsSubQuery(joinTableSource.getRight());
+        } else if (tableSource instanceof SQLSubqueryTableSource) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean canDoAsMerge(ServerSchemaStatVisitor visitor, List<SchemaInfo> schemaInfos) {
+        List<ERRelation> erRelationList = filterERRelation(visitor.getRelationships(), schemaInfos);
+        /*
+          before sorting:
+          a-b
+          c-d
+          b-c
+          after sorting:
+          a-b
+          b-c
+          c-d
+         */
+        Collections.sort(erRelationList);
+        Set<ERTable> erTableSet = Sets.newHashSet();
+        for (ERRelation erRelation : erRelationList) {
+            if (erTableSet.isEmpty() || erTableSet.contains(erRelation.getLeft()) || erTableSet.contains(erRelation.getRight())) {
+                erTableSet.add(erRelation.getLeft());
+                erTableSet.add(erRelation.getRight());
+            }
+        }
+        schemaInfos.removeIf(schemaInfo -> erTableSet
+                .stream()
+                .anyMatch(erTable -> StringUtil.equalsIgnoreCase(erTable.getSchema(), schemaInfo.getSchema()) && StringUtil.equalsIgnoreCase(erTable.getTable(), schemaInfo.getTable())));
+        return schemaInfos.isEmpty();
+    }
+
+    /**
+     * Filter out table associations with er relationships
+     *
+     * @param relationships
+     * @param schemaInfos
+     * @return result format:
+     * a-b
+     * c-d
+     * b-c
+     */
+    private List<ERRelation> filterERRelation(Set<TableStat.Relationship> relationships, List<SchemaInfo> schemaInfos) {
+        List<ERRelation> erRelationList = Lists.newArrayList();
+        for (TableStat.Relationship relationship : relationships) {
+            TableStat.Column left = relationship.getLeft();
+            TableStat.Column right = relationship.getRight();
+            String leftTable = left.getTable();
+            String rightTable = right.getTable();
+            String leftSchema = null;
+            String rightSchema = null;
+            for (SchemaInfo schemaInfo : schemaInfos) {
+                if (schemaInfo.getTableAlias().equalsIgnoreCase(leftTable)) {
+                    leftSchema = schemaInfo.getSchema();
+                    leftTable = schemaInfo.getTable();
+                } else if (schemaInfo.getTableAlias().equalsIgnoreCase(rightTable)) {
+                    rightSchema = schemaInfo.getSchema();
+                    rightTable = schemaInfo.getTable();
+                }
+            }
+            ERTable leftERTable = new ERTable(leftSchema, leftTable, left.getName());
+            ERTable rightERTable = new ERTable(rightSchema, rightTable, right.getName());
+            Set<ERTable> erList = DbleServer.getInstance().getConfig().getErRelations().get(leftERTable);
+            if (erList != null && !erList.isEmpty()) {
+                boolean contains = erList.contains(rightERTable);
+                if (contains) {
+                    int compare = leftERTable.compareTo(rightERTable);
+                    erRelationList.add(new ERRelation(compare < 0 ? leftERTable : rightERTable, compare < 0 ? rightERTable : leftERTable));
+                }
+            }
+        }
+        return erRelationList;
     }
 
 

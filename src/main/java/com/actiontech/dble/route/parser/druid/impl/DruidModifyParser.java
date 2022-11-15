@@ -409,7 +409,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
 
 
         if (involvedNodeSet.size() > 1 || currentNode == null) {
-            throw new SQLNonTransientException(getErrorMsg());
+            return null;
         }
 
         //check for table remain

@@ -260,6 +260,9 @@ public final class SystemConfig {
     private int enableMemoryBufferMonitor = 0;
     private int enableMemoryBufferMonitorRecordPool = 0;
 
+    //maximum number of rows in select result set in multi-table update
+    private long queryForUpdateMaxRowsSize = 20000;
+
     public int getEnableAsyncRelease() {
         return enableAsyncRelease;
     }
@@ -1868,6 +1871,14 @@ public final class SystemConfig {
     }
 
 
+    public long getQueryForUpdateMaxRowsSize() {
+        return queryForUpdateMaxRowsSize;
+    }
+
+    public void setQueryForUpdateMaxRowsSize(long queryForUpdateMaxRowsSize) {
+        this.queryForUpdateMaxRowsSize = queryForUpdateMaxRowsSize;
+    }
+
     public int getSlowQueueOverflowPolicy() {
         return slowQueueOverflowPolicy;
     }
@@ -2013,6 +2024,7 @@ public final class SystemConfig {
                 ", sqlDumpLogSizeBasedRotate='" + sqlDumpLogSizeBasedRotate + '\'' +
                 ", sqlDumpLogTimeBasedRotate=" + sqlDumpLogTimeBasedRotate +
                 ", sqlDumpLogDeleteFileAge='" + sqlDumpLogDeleteFileAge + '\'' +
+                ", queryForUpdateMaxRowsSize=" + queryForUpdateMaxRowsSize +
                 "]";
     }
 

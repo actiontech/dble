@@ -236,6 +236,8 @@
 -DsqlDumpLogDeleteFileAge=90d
 -DsqlDumpLogCompressFilePath=*/sqldump-*.log.gz
 
+-DqueryForUpdateMaxRowsSize=20000
+
 
 -DenableMemoryBufferMonitor=0
 -D

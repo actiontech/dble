@@ -151,4 +151,13 @@ public class SendMakeHandler extends BaseDMLHandler {
         }
     }
 
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.SHUFFLE_FIELD;
+    }
+
+    @Override
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
+        nextHandler.okResponse(ok, service);
+    }
 }

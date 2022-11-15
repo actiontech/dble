@@ -192,4 +192,9 @@ public class DelayTableHandler extends BaseDMLHandler {
     public void setTableAlias(String tableAlias) {
         this.tableAlias = tableAlias;
     }
+
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.HINT_NEST_LOOP;
+    }
 }

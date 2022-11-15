@@ -79,5 +79,9 @@ public class WhereHandler extends BaseDMLHandler {
     public void onTerminate() {
     }
 
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.WHERE_FILTER;
+    }
 
 }

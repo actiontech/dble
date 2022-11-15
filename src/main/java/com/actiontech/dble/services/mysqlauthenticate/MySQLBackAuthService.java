@@ -1,6 +1,7 @@
 package com.actiontech.dble.services.mysqlauthenticate;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.heartbeat.HeartbeatSQLJob;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.PooledConnectionListener;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.Executor;
 
 import static com.actiontech.dble.config.ErrorCode.ER_ACCESS_DENIED_ERROR;
 
@@ -41,9 +43,13 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
     private volatile boolean authSwitchMore;
     private volatile PluginName pluginName;
     private volatile long serverCapabilities;
+    private volatile boolean highPriority = false;
 
     public MySQLBackAuthService(BackendConnection connection, String user, String schema, String passwd, PooledConnectionListener listener, ResponseHandler handler) {
         super(connection);
+        if (handler instanceof HeartbeatSQLJob) {
+            highPriority = true;
+        }
         this.user = user;
         this.schema = schema;
         this.passwd = passwd;
@@ -54,6 +60,9 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
     // only for com_change_user
     public MySQLBackAuthService(BackendConnection connection, String user, String passwd, ResponseHandler handler) {
         super(connection);
+        if (handler instanceof HeartbeatSQLJob) {
+            highPriority = true;
+        }
         this.user = user;
         this.passwd = passwd;
         this.handler = handler;
@@ -289,8 +298,16 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
     }
 
 
-
     protected boolean isSupportFlowControl() {
         return false;
+    }
+
+    @Override
+    protected Executor getExecutor() {
+        if (highPriority) {
+            return DbleServer.getInstance().getComplexQueryExecutor();
+        } else {
+            return DbleServer.getInstance().getBackendExecutor();
+        }
     }
 }

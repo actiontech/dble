@@ -180,3 +180,5 @@
 #-DtableByUserByEntryTableSize=1024
 #  processing queue size must not be less than 1 and must be a power of 2
 #-DstatisticQueueSize=4096
+-DenableAsyncRelease=1
+-DreleaseTimeout=10

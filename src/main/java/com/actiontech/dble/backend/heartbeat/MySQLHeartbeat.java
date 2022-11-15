@@ -200,6 +200,7 @@ public class MySQLHeartbeat {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("heartbeat to [" + source.getConfig().getUrl() + "] setOK");
         }
+        MySQLHeartbeatStatus previousStatus = status;
         switch (status) {
             case TIMEOUT:
                 this.status = MySQLHeartbeatStatus.INIT;
@@ -224,8 +225,8 @@ public class MySQLHeartbeat {
                 AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
         }
         //after the heartbeat changes from failure to success, it needs to be expanded immediately
-        if (source.getTotalConnections() == 0 && !status.equals(MySQLHeartbeatStatus.INIT) && !status.equals(MySQLHeartbeatStatus.OK)) {
-            LOGGER.debug("[updatePoolCapacity] heartbeat to [{}] setOk, previous status is {}", source, status);
+        if (source.getTotalConnections() == 0 && !previousStatus.equals(MySQLHeartbeatStatus.INIT) && !previousStatus.equals(MySQLHeartbeatStatus.OK)) {
+            LOGGER.debug("[updatePoolCapacity] heartbeat to [{}] setOk, previous status is {}", source, previousStatus);
             source.updatePoolCapacity();
         }
         if (isStop) {

@@ -519,8 +519,13 @@ public class MySQLResponseService extends VariablesService {
             if (logResponse.compareAndSet(false, true)) {
                 session.setBackendResponseEndTime(this);
             }
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
-            return;
+            if (SystemConfig.getInstance().getEnableAsyncRelease() == 1) {
+                DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
+                return;
+            } else {
+                new BackEndRecycleRunnable(this).run();
+                return;
+            }
         }
 
         complexQuery = false;
@@ -562,7 +567,6 @@ public class MySQLResponseService extends VariablesService {
 
     public void backendSpecialCleanUp() {
         this.setExecuting(false);
-        this.setRowDataFlowing(false);
         this.signal();
     }
 
@@ -708,12 +712,10 @@ public class MySQLResponseService extends VariablesService {
     }
 
     public void signal() {
-        if (connection.isClosed()) {
-            return;
-        }
-
+        this.setRowDataFlowing(false);
         if (recycler != null) {
             recycler.signal();
+            recycler = null;
         }
     }
 

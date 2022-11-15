@@ -8,7 +8,6 @@ package com.actiontech.dble.statistic.sql;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.BackendConnection;
-import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.statistic.sql.entry.StatisticBackendSqlEntry;
 
@@ -36,10 +35,8 @@ public class RwSplitStatisticRecord extends StatisticRecord {
         }
     }
 
-    public void onBackendSqlError(byte[] data) {
-        ErrorPacket errPg = new ErrorPacket();
-        errPg.read(data);
-        if (errPg.getErrNo() == ErrorCode.ER_PARSE_ERROR) {
+    public void onBackendSqlError(int errNo) {
+        if (errNo == ErrorCode.ER_PARSE_ERROR) {
             onFrontendSqlClose();
             return;
         }

@@ -97,11 +97,13 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void errorResponse(byte[] data, @NotNull AbstractService service) {
         MySQLResponseService mysqlService = (MySQLResponseService) service;
-        StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlError(data));
+        ErrorPacket errPg = new ErrorPacket();
+        errPg.read(data);
+        StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlError(errPg.getErrNo()));
         final boolean syncFinished = mysqlService.syncAndExecute();
         loadDataClean();
         initDbClean();
-        if (callback != null) {
+        if (callback != null && errPg.getErrNo() != ErrorCode.ER_PARSE_ERROR) { // 1064, ignore
             callback.callback(false, null, rwSplitService);
         }
         rwSplitService.getSession2().recordLastSqlResponseTime();

@@ -123,8 +123,6 @@ public class RWSplitMultiHandler extends RWSplitHandler {
 
     @Override
     protected void writeErrorMsg(int pId, String reason) {
-        if (callback != null)
-            callback.callback(false, null, rwSplitService);
         resetMultiStatus();
         super.writeErrorMsg(pId, reason);
     }

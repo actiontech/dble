@@ -18,6 +18,7 @@ import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.response.*;
 import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.net.service.ServiceTaskType;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
@@ -516,6 +517,9 @@ public class MySQLResponseService extends BackendService {
     @Override
     protected void beforeInsertServiceTask(@NotNull ServiceTask task) {
         super.beforeInsertServiceTask(task);
+        if (task.getType() == ServiceTaskType.CLOSE) {
+            return;
+        }
         if (session != null) {
             session.setBackendResponseTime(this);
         }

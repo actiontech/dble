@@ -27,7 +27,7 @@ public class TraceResult implements Cloneable {
 
 
     public enum SqlTraceType {
-        SINGLE_NODE_QUERY, MULTI_NODE_QUERY, MULTI_NODE_GROUP, COMPLEX_QUERY, SIMPLE_QUERY
+        SINGLE_NODE_QUERY, MULTI_NODE_QUERY, MULTI_NODE_GROUP, COMPLEX_QUERY, SIMPLE_QUERY, COMPLEX_MODIFY
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TraceResult.class);

@@ -282,4 +282,9 @@ public class OutputHandler extends BaseDMLHandler {
         }
     }
 
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.WRITE_TO_CLIENT;
+    }
+
 }

@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -30,7 +31,7 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
     private Set<String> globalBackNodes;
 
     public MultiNodeEasyMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session, Set<String> globalBackNodes) {
-        super(id, route, autocommit, session);
+        super(id, route, autocommit, session, true);
         this.merges.add(this);
         this.globalBackNodes = globalBackNodes;
     }
@@ -55,15 +56,18 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
     }
 
     private void doExecute() {
-        for (BaseSelectHandler exeHandler : exeHandlers) {
-            session.setHandlerStart(exeHandler); //base start execute
-            try {
-                BackendConnection exeConn = exeHandler.initConnection();
-                exeConn.getBackendService().setComplexQuery(true);
-                exeHandler.execute(exeConn.getBackendService());
-            } catch (Exception e) {
-                exeHandler.connectionError(e, exeHandler.getRrss());
-                return;
+        for (BaseDMLHandler exeHandler : exeHandlers) {
+            if (exeHandler instanceof BaseSelectHandler) {
+                BaseSelectHandler baseSelectHandler = (BaseSelectHandler) exeHandler;
+                session.setHandlerStart(baseSelectHandler); //base start execute
+                try {
+                    BackendConnection exeConn = baseSelectHandler.initConnection();
+                    exeConn.getBackendService().setComplexQuery(true);
+                    baseSelectHandler.execute(exeConn.getBackendService());
+                } catch (Exception e) {
+                    baseSelectHandler.connectionError(e, baseSelectHandler.getRrss());
+                    return;
+                }
             }
         }
     }

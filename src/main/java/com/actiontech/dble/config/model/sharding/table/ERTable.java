@@ -5,7 +5,11 @@
 
 package com.actiontech.dble.config.model.sharding.table;
 
-public class ERTable {
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Comparator;
+
+public class ERTable implements Comparable<ERTable> {
     private final String table;
     private final String column;
     private final String schema;
@@ -64,5 +68,12 @@ public class ERTable {
                     this.column.equalsIgnoreCase(erTable.getColumn());
         }
         return false;
+    }
+
+    @Override
+    public int compareTo(@NotNull ERTable o) {
+        return Comparator.comparing(ERTable::getSchema)
+                .thenComparing(ERTable::getTable)
+                .compare(this, o);
     }
 }

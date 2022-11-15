@@ -10,6 +10,7 @@ import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.route.RouteResultsetNode;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,11 +37,24 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     protected Session session;
     protected AtomicBoolean terminate = new AtomicBoolean(false);
     protected List<DMLResponseHandler> merges;
+    protected RouteResultsetNode rrss;
+
 
     public BaseDMLHandler(long id, Session session) {
         this.id = id;
         this.session = session;
         this.merges = new ArrayList<>();
+    }
+
+    public BaseDMLHandler(long id, Session session, RouteResultsetNode rrss) {
+        this.id = id;
+        this.rrss = rrss;
+        this.session = session;
+        this.merges = new ArrayList<>();
+    }
+
+    public RouteResultsetNode getRrss() {
+        return rrss;
     }
 
     @Override

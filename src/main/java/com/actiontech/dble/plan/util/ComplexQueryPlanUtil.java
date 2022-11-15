@@ -9,14 +9,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinInnerHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.util.CollectionUtil;
@@ -24,6 +16,9 @@ import com.actiontech.dble.util.CollectionUtil;
 import java.util.*;
 
 public final class ComplexQueryPlanUtil {
+
+    public static final String TYPE_UPDATE_SUB_QUERY = "for CHILD in UPDATE_SUB_QUERY.RESULTS";
+
     private ComplexQueryPlanUtil() {
     }
 
@@ -83,17 +78,22 @@ public final class ComplexQueryPlanUtil {
             } else if (!CollectionUtil.isEmpty(dependencies)) {
                 dependencies.removeIf(dependency -> dependency.startsWith(JoinNode.Strategy.HINT_NEST_LOOP.name()));
             }
+            boolean isSubUpdate = false;
+            if (dependencies != null && dependencies.size() > 0) {
+                isSubUpdate = dependencies.stream()
+                        .allMatch(entity -> entity.contains(ComplexQueryPlanUtil.TYPE_UPDATE_SUB_QUERY.toLowerCase())) && mergeHandler instanceof MultiNodeUpdateHandler;
+            }
             String mergeName = getMergeType(mergeHandler);
-            List<BaseSelectHandler> mergeList = new ArrayList<>();
+            List<BaseDMLHandler> mergeList = new ArrayList<>();
             mergeList.addAll(mergeHandler.getExeHandlers());
             String mergeNode = genHandlerName(mergeName, nameMap);
-            ReferenceHandlerInfo refInfo = new ReferenceHandlerInfo(mergeNode, mergeName, mergeHandler);
+            ReferenceHandlerInfo refInfo = new ReferenceHandlerInfo(mergeNode, mergeName, mergeHandler, isSubUpdate);
             if (mergeHandler instanceof MultiNodeFakeHandler) {
                 refInfo.setBaseSQL(((MultiNodeFakeHandler) mergeHandler).toSQLString());
             }
             handlerMap.put(mergeHandler, refInfo);
             refMap.put(mergeNode, refInfo);
-            for (BaseSelectHandler exeHandler : mergeList) {
+            for (BaseDMLHandler exeHandler : mergeList) {
                 RouteResultsetNode rrss = exeHandler.getRrss();
                 String dateNode = rrss.getName() + "_" + rrss.getMultiplexNum();
                 refInfo.addChild(dateNode);
@@ -101,7 +101,7 @@ public final class ComplexQueryPlanUtil {
                 if (dependencies != null && dependencies.size() > 0) {
                     type += "(May No Need)";
                 }
-                ReferenceHandlerInfo baseSQLInfo = new ReferenceHandlerInfo(dateNode, type, rrss.getStatement(), exeHandler);
+                ReferenceHandlerInfo baseSQLInfo = new ReferenceHandlerInfo(dateNode, type, rrss.getStatement(), exeHandler, isSubUpdate);
                 refMap.put(dateNode, baseSQLInfo);
                 if (dependencies != null && dependencies.size() > 0) {
                     baseSQLInfo.addAllStepChildren(dependencies);
@@ -155,7 +155,7 @@ public final class ComplexQueryPlanUtil {
         while (nextHandler != null) {
             ReferenceHandlerInfo child = handlerMap.get(handler);
             String childName = child.getName();
-            String handlerType = getTypeName(nextHandler);
+            String handlerType = nextHandler.explainType().getContent();
             if (!handlerMap.containsKey(nextHandler)) {
                 String handlerName = genHandlerName(handlerType, nameMap);
                 ReferenceHandlerInfo handlerInfo = new ReferenceHandlerInfo(handlerName, handlerType, nextHandler);
@@ -178,7 +178,7 @@ public final class ComplexQueryPlanUtil {
                 Set<BaseDMLHandler> tableHandlers = ((SendMakeHandler) handler).getTableHandlers();
                 for (BaseDMLHandler tableHandler : tableHandlers) {
                     if (tableHandler instanceof DelayTableHandler) {
-                        StringBuilder sb = new StringBuilder(getTypeName(tableHandler));
+                        StringBuilder sb = new StringBuilder(nextHandler.explainType().getContent());
                         sb.append(" - ").append(childName).append("'s RESULTS");
                         MultiNodeMergeHandler dmlResponseHandler = (MultiNodeMergeHandler) ((DelayTableHandler) tableHandler).getCreatedHandler().getMerges().get(0);
                         dmlResponseHandler.getDependencies().add(sb.toString());
@@ -198,52 +198,11 @@ public final class ComplexQueryPlanUtil {
             return "INNER_FUNC_MERGE";
         } else if (handler instanceof MultiNodeEasyMergeHandler) {
             return "MERGE";
+        } else if (handler instanceof MultiNodeUpdateHandler) {
+            return "MERGE";
         } else {
             return "MERGE_AND_ORDER";
         }
-    }
-
-    private static String getTypeName(DMLResponseHandler handler) {
-        if (handler instanceof AggregateHandler) {
-            return "AGGREGATE";
-        } else if (handler instanceof DistinctHandler) {
-            return "DISTINCT";
-        } else if (handler instanceof LimitHandler) {
-            return "LIMIT";
-        } else if (handler instanceof WhereHandler) {
-            return "WHERE_FILTER";
-        } else if (handler instanceof HavingHandler) {
-            return "HAVING_FILTER";
-        } else if (handler instanceof SendMakeHandler) {
-            return "SHUFFLE_FIELD";
-        } else if (handler instanceof UnionHandler) {
-            return "UNION_ALL";
-        } else if (handler instanceof OrderByHandler) {
-            return "ORDER";
-        } else if (handler instanceof NotInHandler) {
-            return "NOT_IN";
-        } else if (handler instanceof JoinInnerHandler) {
-            return "INNER_FUNC_ADD";
-        } else if (handler instanceof JoinHandler) {
-            return "JOIN";
-        } else if (handler instanceof DirectGroupByHandler) {
-            return "DIRECT_GROUP";
-        } else if (handler instanceof TempTableHandler) {
-            return "NEST_LOOP";
-        } else if (handler instanceof InSubQueryHandler) {
-            return "IN_SUB_QUERY";
-        } else if (handler instanceof AllAnySubQueryHandler) {
-            return "ALL_ANY_SUB_QUERY";
-        } else if (handler instanceof SingleRowSubQueryHandler) {
-            return "SCALAR_SUB_QUERY";
-        } else if (handler instanceof RenameFieldHandler) {
-            return "RENAME_DERIVED_SUB_QUERY";
-        } else if (handler instanceof OutputHandler) {
-            return "WRITE_TO_CLIENT";
-        } else if (handler instanceof DelayTableHandler) {
-            return "HINT_NEST_LOOP";
-        }
-        return "OTHER";
     }
 
 }

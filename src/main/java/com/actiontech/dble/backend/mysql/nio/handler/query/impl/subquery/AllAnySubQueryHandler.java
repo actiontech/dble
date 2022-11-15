@@ -194,4 +194,8 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
         itemSubQuery.getValue().clear();
     }
 
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.ALL_ANY_SUB_QUERY;
+    }
 }

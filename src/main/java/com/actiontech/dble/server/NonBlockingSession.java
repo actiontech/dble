@@ -32,10 +32,13 @@ import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
+import com.actiontech.dble.plan.optimizer.SelectedProcessor;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
+import com.actiontech.dble.plan.visitor.UpdatePlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.parser.druid.impl.DruidUpdateParser;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
@@ -51,6 +54,8 @@ import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
 import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -418,8 +423,13 @@ public class NonBlockingSession extends Session {
             if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
                 if (rrs.isNeedOptimizer()) {
                     try {
-                        this.complexRrs = rrs;
-                        executeMultiSelect(rrs);
+                        if (rrs.getSqlStatement() instanceof SQLSelectStatement) {
+                            this.complexRrs = rrs;
+                            executeMultiSelect(rrs);
+                        } else if (rrs.getSqlStatement() instanceof SQLUpdateStatement) {
+                            this.complexRrs = rrs;
+                            executeMultiUpdate(rrs);
+                        }
                     } catch (MySQLOutPutException e) {
                         LOGGER.warn("execute complex sql cause error", e);
                         shardingService.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
@@ -606,6 +616,45 @@ public class NonBlockingSession extends Session {
                     node.setAst(ast);
                 }
                 executeMultiResultSet(rrs, node);
+            }
+        } finally {
+            TraceManager.finishSpan(shardingService, traceObject);
+        }
+    }
+
+    public void executeMultiUpdate(RouteResultset rrs) {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(shardingService, "try-complex-update");
+        try {
+            MySqlUpdateStatement ast = (MySqlUpdateStatement) rrs.getSqlStatement();
+            UpdatePlanNodeVisitor visitor = new UpdatePlanNodeVisitor(shardingService.getSchema(), shardingService.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, shardingService.getUsrVariables(), rrs.getHintPlanInfo());
+            visitor.visit(ast);
+            PlanNode node = visitor.getTableNode();
+            if (node.isCorrelatedSubQuery()) {
+                throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "Correlated Sub Queries is not supported ");
+            }
+            node.setSql(rrs.getStatement());
+            node.setUpFields();
+            PlanUtil.checkTablesPrivilege(shardingService, node, ast);
+            //sub query
+            node = SelectedProcessor.optimize(node);
+
+            if (PauseShardingNodeManager.getInstance().getIsPausing().get() &&
+                    !PauseShardingNodeManager.getInstance().checkTarget(target) &&
+                    PauseShardingNodeManager.getInstance().checkReferredTableNodes(node.getReferedTableNodes())) {
+                if (PauseShardingNodeManager.getInstance().waitForResume(rrs, this.shardingService, CONTINUE_TYPE_MULTIPLE)) {
+                    return;
+                }
+            }
+            setPreExecuteEnd(TraceResult.SqlTraceType.COMPLEX_MODIFY);
+            if (PlanUtil.containsSubQuery(node)) {
+                setSubQuery();
+                final PlanNode finalNode = node;
+                //sub Query build will be blocked, so use ComplexQueryExecutor
+                DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+                    executeMultiResultSet(rrs, finalNode);
+                });
+            } else {
+                throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", DruidUpdateParser.MODIFY_SQL_NOT_SUPPORT_MESSAGE);
             }
         } finally {
             TraceManager.finishSpan(shardingService, traceObject);

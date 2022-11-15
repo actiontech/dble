@@ -14,9 +14,11 @@ import com.actiontech.dble.plan.common.item.*;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.ItemFunc.Functype;
+import com.actiontech.dble.plan.common.item.function.operator.ItemBoolFunc2;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemFuncNot;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum.SumFuncType;
 import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
@@ -27,9 +29,9 @@ import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.route.parser.util.Pair;
-
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 
 import java.util.*;
 
@@ -527,7 +529,7 @@ public final class PlanUtil {
         }
     }
 
-    private static Item rebuildBoolSubQuery(Item item, int index, BoolPtr reBuild, BoolPtr needExecuteNull, BoolPtr isAll) {
+    public static Item rebuildBoolSubQuery(Item item, int index, BoolPtr reBuild, BoolPtr needExecuteNull, BoolPtr isAll) {
         Item arg = item.arguments().get(index);
         if (arg.type().equals(ItemType.SUBSELECT_ITEM)) {
             if (arg instanceof ItemScalarSubQuery) {
@@ -589,4 +591,82 @@ public final class PlanUtil {
         }
     }
 
+
+    public static void checkTablesPrivilege(ShardingService service, PlanNode node, SQLUpdateStatement stmt) {
+        for (TableNode tn : node.getReferedTableNodes()) {
+            if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), tn.getSchema(), tn.getTableName(), ShardingPrivileges.CheckType.UPDATE)) {
+                String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
+                throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "", msg);
+            }
+        }
+    }
+
+
+
+    // try to trim sharding from field_item
+    protected String getItemName(Item item) {
+        if (item instanceof ItemCondOr) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(" ( ");
+            for (int index = 0; index < item.getArgCount(); index++) {
+                if (index > 0) {
+                    sb.append(" OR ");
+                }
+                sb.append(getItemName(item.arguments().get(index)));
+            }
+            sb.append(")");
+            return sb.toString();
+        } else if (item instanceof ItemCondAnd) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(" ( ");
+            for (int index = 0; index < item.getArgCount(); index++) {
+                if (index > 0) {
+                    sb.append(" AND ");
+                }
+                sb.append(getItemName(item.arguments().get(index)));
+            }
+            sb.append(")");
+            return sb.toString();
+        } else if (item instanceof ItemFuncNot) {
+            return " ( NOT " + getItemName(item.arguments().get(0)) + ")";
+        } else if (item instanceof ItemBoolFunc2) {
+            Item a = item.arguments().get(0);
+            Item b = item.arguments().get(1);
+            return getItemName(a) + " " + ((ItemBoolFunc2) item).funcName() + " " + getItemName(b);
+        } else if (item.type().equals(ItemType.FIELD_ITEM)) {
+            String tableName = "`" + item.getTableName() + "`.`" + item.getItemName() + "`";
+            if (item.getDbName() == null) {
+                return tableName;
+            }
+            if (item.getReferTables().size() == 0) {
+                return tableName;
+            }
+            PlanNode tbNode = item.getReferTables().iterator().next();
+            if (!(tbNode instanceof TableNode)) {
+                return tableName;
+            }
+            if (!((TableNode) tbNode).getTableName().equals(item.getTableName())) {
+                return tableName;
+            }
+            return "`" + item.getDbName() + "`." + tableName;
+        } else if (item instanceof ItemFuncIn) {
+            Item a = item.arguments().get(0);
+            StringBuilder sb = new StringBuilder();
+            sb.append(getItemName(a));
+            if (((ItemFuncIn) item).isNegate()) {
+                sb.append(" not ");
+            }
+            sb.append(" in (");
+            for (int index = 1; index < item.arguments().size(); index++) {
+                if (index > 1) {
+                    sb.append(",");
+                }
+                sb.append(getItemName(item.arguments().get(index)));
+            }
+            sb.append(")");
+            return sb.toString();
+        } else {
+            return item.getItemName();
+        }
+    }
 }

@@ -75,4 +75,9 @@ public class LimitHandler extends BaseDMLHandler {
     @Override
     protected void onTerminate() {
     }
+
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.LIMIT;
+    }
 }

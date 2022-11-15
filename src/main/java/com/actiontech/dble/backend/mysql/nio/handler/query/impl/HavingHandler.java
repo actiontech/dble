@@ -91,4 +91,9 @@ public class HavingHandler extends BaseDMLHandler {
     @Override
     public void onTerminate() {
     }
+
+    @Override
+    public ExplainType explainType() {
+        return ExplainType.HAVING_FILTER;
+    }
 }

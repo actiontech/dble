@@ -162,6 +162,16 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     @Override
+    public void endVisit(SQLUpdateSetItem x) {
+        Item itemLeft = getItem(x.getColumn());
+        Item itemRight = getItem();
+        item = new ItemFuncEqual(itemLeft, itemRight, this.charsetIndex);
+        item.setWithSubQuery(itemLeft.isWithSubQuery() || itemRight.isWithSubQuery());
+        item.setCorrelatedSubQuery(itemLeft.isCorrelatedSubQuery() || itemRight.isCorrelatedSubQuery());
+        item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
+    }
+
+    @Override
     public void endVisit(SQLBinaryOpExpr x) {
         Item itemLeft = getItem(x.getLeft());
         SQLExpr rightExpr = x.getRight();

@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +51,8 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     public BackendConnection initConnection() throws Exception {
         if (serverSession.closed()) {
-            return null;
+            LOGGER.warn(" FrontendConnection is closed without sending a statement, conn is " + serverSession.getShardingService().getConnection());
+            throw new IOException("FrontendConnection is closed");
         }
 
         BackendConnection exeConn = serverSession.getTarget(rrss);

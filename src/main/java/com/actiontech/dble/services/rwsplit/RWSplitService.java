@@ -77,6 +77,8 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
 
     // prepare statement
     private ConcurrentHashMap<Long, PreparedStatementHolder> psHolder = new ConcurrentHashMap<>();
+    private boolean forceUseAutoCommit = false;
+
 
     public RWSplitService(AbstractConnection connection, AuthResultInfo info) {
         super(connection, info);
@@ -114,6 +116,13 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         }
         TraceManager.sessionStart(this, "rwSplit-server-start");
         session.trace(t -> t.setRequestTime());
+    }
+
+    @Override
+    protected boolean beforeHandlingTask(@NotNull ServiceTask task) {
+        //initialize value for the REQUEST
+        setForceUseAutoCommit(false);
+        return super.beforeHandlingTask(task);
     }
 
     @Override
@@ -400,7 +409,8 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
     }
 
     public boolean isKeepBackendConn() {
-        return !isInTransaction() && !isInLoadData() && psHolder.isEmpty() && !isLockTable() && !isUsingTmpTable() && nameSet.isEmpty();
+        boolean releaseConn = (!isInTransaction() || isForceUseAutoCommit()) && !isInLoadData() && psHolder.isEmpty() && !isLockTable() && !isUsingTmpTable() && nameSet.isEmpty();
+        return !releaseConn;
     }
 
     public boolean isInitDb() {
@@ -421,6 +431,14 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
 
     public void setMultiHandler(RWSplitMultiHandler multiHandler) {
         this.multiHandler = multiHandler;
+    }
+
+    public boolean isForceUseAutoCommit() {
+        return forceUseAutoCommit;
+    }
+
+    public void setForceUseAutoCommit(boolean forceUseAutoCommit) {
+        this.forceUseAutoCommit = forceUseAutoCommit;
     }
 
     @Override

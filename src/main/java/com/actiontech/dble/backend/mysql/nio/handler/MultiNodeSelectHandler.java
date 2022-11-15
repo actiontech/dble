@@ -51,6 +51,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
 
     public MultiNodeSelectHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session, false);
+        this.complexQuery = true;
         this.queueSize = SystemConfig.getInstance().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
         if (CollectionUtil.isEmpty(rrs.getSelectCols())) {
@@ -213,7 +214,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             }
             while (!heap.isEmpty()) {
                 if (isFail())
-                    return;
+                    break;
                 HeapItem top = heap.peak();
                 if (top.isNullItem()) {
                     heap.poll();
@@ -256,7 +257,9 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             }
             QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
             assert service != null;
-            nextHandler.rowEofResponse(null, false, service);
+            if (!isFail()) {
+                nextHandler.rowEofResponse(null, false, service);
+            }
         } catch (MySQLOutPutException e) {
             String msg = e.getLocalizedMessage();
             LOGGER.info(msg, e);

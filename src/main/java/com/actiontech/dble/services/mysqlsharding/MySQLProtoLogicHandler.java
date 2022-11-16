@@ -19,6 +19,7 @@ import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.response.FieldList;
+import com.actiontech.dble.util.CharsetContext;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.google.common.collect.Sets;
@@ -90,6 +91,7 @@ public class MySQLProtoLogicHandler {
                 mm.position(position);
                 sql = mm.readString(StringUtil.ISO_8859_1);
                 ((NonBlockingSession) service.getSession()).setIsoCharset(true);
+                CharsetContext.put(StringUtil.ISO_8859_1);
                 LOGGER.warn("Enforces {} to String, clientCharset sql is {}", StringUtil.ISO_8859_1, sql);
             } else {
                 ((NonBlockingSession) service.getSession()).setIsoCharset(false);

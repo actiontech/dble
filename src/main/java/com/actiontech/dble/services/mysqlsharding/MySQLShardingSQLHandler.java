@@ -48,7 +48,6 @@ public class MySQLShardingSQLHandler {
             try {
                 rrs = RouteService.getInstance().route(schemaConfig, type, sql, service);
                 if (rrs == null) {
-                    service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "The sql cannot be parsed to the specified node");
                     return;
                 }
                 if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {

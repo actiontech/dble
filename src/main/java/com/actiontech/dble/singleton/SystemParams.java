@@ -174,7 +174,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("sqlDumpLogDeleteFileAge", SqlDumpLog.getInstance().getSqlDumpLogDeleteFileAge() + "", "The expiration time deletion strategy, the default value is '90d'"));
         readOnlyParams.add(new ParamInfo("sqlDumpLogCompressFilePath", SqlDumpLog.getInstance().getSqlDumpLogCompressFilePath() + "", "The compression of sqldump log file path, the default value is '*/sqldump-*.log.gz'"));
 
-        readOnlyParams.add(new ParamInfo("enableMemoryBufferMonitorRecordPool", sysConfig.getEnableMemoryBufferMonitorRecordPool() + "", "Whether the memory buffer monitor need record connection pool memory. the default value is 0(OFF)."));
+        readOnlyParams.add(new ParamInfo("enableMemoryBufferMonitorRecordPool", sysConfig.getEnableMemoryBufferMonitorRecordPool() + "", "Whether record the connection pool memory if the memory buffer monitor is ON. the default value is 1(ON)."));
     }
 
     public List<ParamInfo> getVolatileParams() {

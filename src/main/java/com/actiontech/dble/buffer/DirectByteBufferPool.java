@@ -54,6 +54,9 @@ public class DirectByteBufferPool implements BufferPool {
         if (byteBuf == null) {
             byteBuf = allocateBuffer(theChunkCount, 0, selectedPage);
         }
+        if (byteBuf != null) {
+            bufferPoolMonitor.addRecord(bufferRecordBuilder, ((DirectBuffer) byteBuf).address(), size);
+        }
 
         if (byteBuf == null) {
             int allocatedSize = theChunkCount * chunkSize;
@@ -64,7 +67,6 @@ public class DirectByteBufferPool implements BufferPool {
             }
             return ByteBuffer.allocate(allocatedSize);
         }
-        bufferPoolMonitor.addRecord(bufferRecordBuilder, byteBuf.hashCode(), size);
         return byteBuf;
     }
 
@@ -78,7 +80,7 @@ public class DirectByteBufferPool implements BufferPool {
         if (SystemConfig.getInstance().getDisableRecycleBuffer() == 1) {
             return;
         }
-        bufferPoolMonitor.remove(theBuf.hashCode());
+        bufferPoolMonitor.remove(((DirectBuffer) theBuf).address());
 
 
         boolean recycled = false;

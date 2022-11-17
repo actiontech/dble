@@ -258,7 +258,7 @@ public final class SystemConfig {
 
     private int disableRecycleBuffer = 0; //temp
     private int enableMemoryBufferMonitor = 0;
-    private int enableMemoryBufferMonitorRecordPool = 0;
+    private int enableMemoryBufferMonitorRecordPool = 1;
 
     //maximum number of rows in select result set in multi-table update
     private long queryForUpdateMaxRowsSize = 20000;

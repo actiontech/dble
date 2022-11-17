@@ -21,7 +21,7 @@ import java.util.function.BiConsumer;
 public class MemoryBufferMonitor {
     private static final Logger LOGGER = LogManager.getLogger(MemoryBufferMonitor.class);
     static final MemoryBufferMonitor INSTANCE = new MemoryBufferMonitor();
-    final Map<Integer/*address*/, BufferPoolRecord> monitorMap = new ConcurrentHashMap<>();
+    final Map<Long/*address*/, BufferPoolRecord> monitorMap = new ConcurrentHashMap<>();
 
     private volatile boolean enable = false;
     static final int TRACE_LINE_NUM = 8;
@@ -49,18 +49,21 @@ public class MemoryBufferMonitor {
         return INSTANCE;
     }
 
-    public void recordForEach(BiConsumer<? super Integer, ? super BufferPoolRecord> action) {
+    public void recordForEach(BiConsumer<? super Long, ? super BufferPoolRecord> action) {
         monitorMap.forEach(action);
     }
 
-    public void remove(Integer allocateAddress) {
+    public void remove(Long allocateAddress) {
         if (!enable) {
             return;
         }
-        monitorMap.remove(allocateAddress);
+        final BufferPoolRecord record = monitorMap.remove(allocateAddress);
+        if (record != null) {
+            LOGGER.debug("removed  buffer record ,address: {}, content:{}", allocateAddress, record);
+        }
     }
 
-    public void addRecord(BufferPoolRecord.Builder bufferRecordBuilder, Integer allocateAddress, int allocateLength) {
+    public void addRecord(BufferPoolRecord.Builder bufferRecordBuilder, long allocateAddress, int allocateSize) {
         if (!enable) {
             return;
         }
@@ -86,10 +89,18 @@ public class MemoryBufferMonitor {
                 bufferRecordBuilder.withStacktrace(stackTrace);
 
             }
-            final BufferPoolRecord record = bufferRecordBuilder.withAllocatedTime(System.currentTimeMillis()).withAllocateLength(allocateLength).build();
+            final BufferPoolRecord record = bufferRecordBuilder.withAllocatedTime(System.currentTimeMillis()).withAllocateSize(allocateSize).build();
+            LOGGER.debug("new  buffer record ,address: {}, content:{}", allocateAddress, record);
             monitorMap.put(allocateAddress, record);
+
         } catch (Exception e) {
             LOGGER.warn("record buffer monitor error", e);
+        } finally {
+            if (!enable) {
+                clean();
+            }
         }
     }
+
+
 }

@@ -71,8 +71,8 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
                 errPkg.read(data);
                 String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
                 LOGGER.warn("no handler process the execute sql err,just close it, sql error:{},back con:{}", errMsg, service);
-                if (service.getOriginSession() != null) {
-                    LOGGER.warn("no handler process the execute sql err,front conn {}", service.getOriginSession().getSource());
+                if (service.getSession() != null) {
+                    LOGGER.warn("no handler process the execute sql err,front conn {}", service.getSession().getSource());
                 }
 
             } catch (RuntimeException e) {

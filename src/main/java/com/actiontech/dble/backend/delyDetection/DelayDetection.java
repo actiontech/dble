@@ -16,12 +16,14 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class DelayDetection {
@@ -43,6 +45,8 @@ public class DelayDetection {
     private volatile LocalDateTime lastReceivedQryTime = LocalDateTime.now();
     private volatile long delayVal = 0;
     private volatile int logicUpdate = 0;
+    private AtomicInteger errorCount = new AtomicInteger();
+    private int errorRetryCount = 3;
 
     //table source field
     private String sourceName;
@@ -91,8 +95,12 @@ public class DelayDetection {
             stop("the legacy thread is not closed");
         }
         stop = false;
+        if (initialDelay > 0) {
+            //avoid concurrency with the master
+            initialDelay = initialDelay >> 1;
+        }
         this.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> execute(),
-                initialDelay, delayPeriodMillis, TimeUnit.MILLISECONDS);
+                initialDelay, this.delayPeriodMillis, TimeUnit.MILLISECONDS);
     }
 
     public void execute() {
@@ -107,6 +115,10 @@ public class DelayDetection {
             }
             delayDetectionTask.execute();
         } else {
+            if (errorCount.get() > 0) {
+                LOGGER.warn("may retry, no need for this scheduled check");
+                return;
+            }
             LocalDateTime result = lastReceivedQryTime;
             if (lastSendQryTime.getNano() > lastReceivedQryTime.getNano()) {
                 result = lastSendQryTime;
@@ -139,6 +151,7 @@ public class DelayDetection {
         switch (result) {
             case OK:
                 setOk();
+                errorMessage = null;
                 break;
             case TIMEOUT:
                 setTimeout();
@@ -149,7 +162,7 @@ public class DelayDetection {
             default:
                 break;
         }
-        errorMessage = null;
+
     }
 
     public void cancel(String reason) {
@@ -186,12 +199,15 @@ public class DelayDetection {
         }
     }
 
-    public LocalDateTime getLastReceivedQryTime() {
-        return lastReceivedQryTime;
+    public String getLastReceivedQryTime() {
+        DateTimeFormatter pattern = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return pattern.format(lastReceivedQryTime);
     }
 
     public void delayDetectionRetry() {
-        execute();
+        if (errorCount.incrementAndGet() <= errorRetryCount) {
+            execute();
+        }
     }
 
     public void updateLastSendQryTime() {
@@ -206,7 +222,7 @@ public class DelayDetection {
         LOGGER.warn("delayDetection to [" + source.getConfig().getUrl() + "] setTimeout");
         delayDetectionStatus = DelayDetectionStatus.TIMEOUT;
         source.setDelayDetectionStatus(delayDetectionStatus);
-        alert(AlarmCode.DB_SLAVE_INSTANCE_DELAY, errorMessage, dbGroupConfig.instanceDatabaseType().name());
+        alert(AlarmCode.DB_SLAVE_INSTANCE_DELAY, errorMessage, dbGroupConfig.instanceDatabaseType().name().toLowerCase());
     }
 
     private void setError() {
@@ -214,12 +230,15 @@ public class DelayDetection {
         delayDetectionStatus = DelayDetectionStatus.ERROR;
         source.setDelayDetectionStatus(delayDetectionStatus);
         if (!source.isReadInstance()) {
-            alert(AlarmCode.DB_MASTER_INSTANCE_DELAY_FAIL, "reason is " + errorMessage + "delayDetection status:" + delayDetectionStatus, dbGroupConfig.instanceDatabaseType().name());
+            alert(AlarmCode.DB_MASTER_INSTANCE_DELAY_FAIL, "reason is " + errorMessage + "delayDetection status:" + delayDetectionStatus, dbGroupConfig.instanceDatabaseType().name().toLowerCase());
         }
     }
 
     private void setOk() {
         LOGGER.debug("delayDetection to [" + source.getConfig().getUrl() + "] setOK");
+        if (errorCount.get() > 0) {
+            errorCount.set(0);
+        }
         delayDetectionStatus = DelayDetectionStatus.OK;
         source.setDelayDetectionStatus(delayDetectionStatus);
     }

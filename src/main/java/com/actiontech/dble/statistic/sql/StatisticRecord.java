@@ -229,7 +229,7 @@ public class StatisticRecord {
     public void onBackendSqlSetRowsAndEnd(long rows) {
     }
 
-    public void onBackendSqlError(byte[] data) {
+    public void onBackendSqlError(int errNo) {
     }
 
     // push data

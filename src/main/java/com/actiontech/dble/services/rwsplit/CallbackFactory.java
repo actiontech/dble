@@ -13,38 +13,32 @@ public final class CallbackFactory {
     };
 
     public static final Callback TX_START = (isSuccess, resp, rwSplitService) -> {
-        if (isSuccess) {
-            if (rwSplitService.isInTransaction()) {
-                StatisticListener.getInstance().record(rwSplitService, r -> r.onTxEnd());
-                rwSplitService.controlTx(TransactionOperate.BEGIN);
-                StatisticListener.getInstance().record(rwSplitService, r -> r.onTxStartByImplicitly());
-            } else {
-                rwSplitService.controlTx(TransactionOperate.BEGIN);
-                StatisticListener.getInstance().record(rwSplitService, r -> r.onTxStart());
-            }
+        if (rwSplitService.isInTransaction()) {
+            StatisticListener.getInstance().record(rwSplitService, r -> r.onTxEnd());
+            rwSplitService.controlTx(TransactionOperate.BEGIN);
+            StatisticListener.getInstance().record(rwSplitService, r -> r.onTxStartByImplicitly());
+        } else {
+            rwSplitService.controlTx(TransactionOperate.BEGIN);
+            StatisticListener.getInstance().record(rwSplitService, r -> r.onTxStart());
         }
     };
 
     public static final Callback TX_END = (isSuccess, resp, rwSplitService) -> {
-        if (isSuccess) {
-            if (rwSplitService.isInTransaction()) {
-                StatisticListener.getInstance().record(rwSplitService, r -> r.onTxEnd());
-                if (!rwSplitService.isAutocommit()) {
-                    StatisticListener.getInstance().record(rwSplitService, r -> r.onTxStartByImplicitly());
-                }
+        if (rwSplitService.isInTransaction()) {
+            StatisticListener.getInstance().record(rwSplitService, r -> r.onTxEnd());
+            if (!rwSplitService.isAutocommit()) {
+                StatisticListener.getInstance().record(rwSplitService, r -> r.onTxStartByImplicitly());
             }
-            rwSplitService.controlTx(TransactionOperate.END);
         }
+        rwSplitService.controlTx(TransactionOperate.END);
     };
 
     public static final Callback TX_IMPLICITLYCOMMIT = (isSuccess, resp, rwSplitService) -> {
-        if (isSuccess) {
-            rwSplitService.implicitlyDeal();
-        }
+        rwSplitService.implicitlyDeal();
     };
 
     public static final Callback TX_AUTOCOMMIT = (isSuccess, resp, rwSplitService) -> {
-        if (isSuccess && !rwSplitService.isAutocommit()) {
+        if (!rwSplitService.isAutocommit()) {
             StatisticListener.getInstance().record(rwSplitService, r -> r.onTxEnd());
             rwSplitService.getSession2().getConn().getBackendService().setAutocommit(true);
             rwSplitService.controlTx(TransactionOperate.AUTOCOMMIT);
@@ -52,7 +46,7 @@ public final class CallbackFactory {
     };
 
     public static final Callback TX_UN_AUTOCOMMIT = (isSuccess, resp, rwSplitService) -> {
-        if (isSuccess && rwSplitService.isAutocommit()) {
+        if (rwSplitService.isAutocommit()) {
             if (!rwSplitService.isTxStart()) {
                 StatisticListener.getInstance().record(rwSplitService, r -> r.onTxStart());
             }

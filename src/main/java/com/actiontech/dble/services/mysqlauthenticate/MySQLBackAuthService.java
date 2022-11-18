@@ -307,7 +307,7 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         if (highPriority) {
             return DbleServer.getInstance().getComplexQueryExecutor();
         } else {
-            return DbleServer.getInstance().getBackendExecutor();
+            return DbleServer.getInstance().getBackendBusinessExecutor();
         }
     }
 }

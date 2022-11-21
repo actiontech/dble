@@ -81,7 +81,8 @@ public class NIOSocketWR extends SocketWR {
             //when write errored,the flow control doesn't work
             clearWriteQueue();
             con.getWritingSize().set(0);
-            if (Objects.equals(e.getMessage(), "Broken pipe") || Objects.equals(e.getMessage(), "Connection reset by peer") || e instanceof ClosedChannelException) {
+            if (Objects.equals(e.getMessage(), "Broken pipe") || Objects.equals(e.getMessage(), "Connection reset by peer") ||
+                     e instanceof ClosedChannelException) {
                 // target problem,
                 //ignore this exception,will close by read side.
                 LOGGER.warn("Connection was closed while write. Detail reason:{}. {}.", e.toString(), con.getService());
@@ -93,7 +94,12 @@ public class NIOSocketWR extends SocketWR {
 
         } catch (Exception e) {
             writeDataErr = true;
-            LOGGER.info("con {} write err:", con.getService(), e);
+            //connection was closed,nio channel may be closed
+            if (con.isClosed()) {
+                LOGGER.info("connection was closed while write, con is {}, reason is {}", con.getService(), e);
+            } else {
+                LOGGER.warn("con {} write err:", con.getService(), e);
+            }
             clearWriteQueue();
             con.getWritingSize().set(0);
             con.pushServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage(), CloseType.WRITE));

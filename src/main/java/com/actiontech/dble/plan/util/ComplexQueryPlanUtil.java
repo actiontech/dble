@@ -178,7 +178,7 @@ public final class ComplexQueryPlanUtil {
                 Set<BaseDMLHandler> tableHandlers = ((SendMakeHandler) handler).getTableHandlers();
                 for (BaseDMLHandler tableHandler : tableHandlers) {
                     if (tableHandler instanceof DelayTableHandler) {
-                        StringBuilder sb = new StringBuilder(nextHandler.explainType().getContent());
+                        StringBuilder sb = new StringBuilder(tableHandler.explainType().getContent());
                         sb.append(" - ").append(childName).append("'s RESULTS");
                         MultiNodeMergeHandler dmlResponseHandler = (MultiNodeMergeHandler) ((DelayTableHandler) tableHandler).getCreatedHandler().getMerges().get(0);
                         dmlResponseHandler.getDependencies().add(sb.toString());

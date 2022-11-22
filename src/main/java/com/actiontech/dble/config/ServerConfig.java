@@ -359,20 +359,23 @@ public class ServerConfig {
         List<String> reloadSchema = new ArrayList<>();
         if (isFullyConfigured) {
             calcDiffForMetaData(newSchemas, newShardingNodes, loadAllMode, delTables, reloadTables, delSchema, reloadSchema);
+            ReloadLogHelper.info2("calcDiffForMetaData end");
         }
         final ReentrantLock metaLock = ProxyMeta.getInstance().getTmManager().getMetaLock();
         metaLock.lock();
         this.changing = true;
         try {
+            ReloadLogHelper.info2("added metaLock");
             // user in use cannot be deleted
             checkUser(changeItemList);
+            ReloadLogHelper.info2("checkUser end");
             String checkResult = ProxyMeta.getInstance().getTmManager().metaCountCheck();
             if (checkResult != null) {
                 LOGGER.warn(checkResult);
                 throw new SQLNonTransientException(checkResult, "HY000", ErrorCode.ER_DOING_DDL);
             }
 
-            ReloadLogHelper.info("reload config: init new dbGroup start", LOGGER);
+            ReloadLogHelper.info2("init new dbGroup start");
             if ((loadAllMode & ManagerParseConfig.OPTR_MODE) != 0) {
                 //all dbGroup reload & recycle
                 initDbGroupByMap(oldDbGroups, newDbGroups, newShardingNodes, isFullyConfigured, loadAllMode);
@@ -390,8 +393,7 @@ public class ServerConfig {
                 initDbGroupByMap(changeItemList, oldDbGroups, newShardingNodes, isFullyConfigured, loadAllMode);
                 newDbGroups = oldDbGroups;
             }
-            ReloadLogHelper.info("reload config: init new dbGroup end", LOGGER);
-
+            ReloadLogHelper.info2("init new dbGroup end");
 
             this.shardingNodes = newShardingNodes;
             this.dbGroups = newDbGroups;
@@ -409,19 +411,26 @@ public class ServerConfig {
             this.shardingConfig = shardingJsonConfig;
             this.sequenceConfig = sequenceJsonConfig;
             this.lowerCase = DbleTempConfig.getInstance().isLowerCase();
+            ReloadLogHelper.info2("config the transformation end");
+
             try {
                 HaConfigManager.getInstance().init(true);
+                ReloadLogHelper.info2("ha config init end");
             } catch (Exception e) {
                 throw new SQLNonTransientException("HaConfigManager init failed", "HY000", ErrorCode.ER_YES);
             }
             CacheService.getInstance().clearCache();
             this.changing = false;
             if (isFullyConfigured) {
-                return reloadMetaData(delTables, reloadTables, delSchema, reloadSchema);
+                ReloadLogHelper.info2("reloadMetaData start");
+                boolean result = reloadMetaData(delTables, reloadTables, delSchema, reloadSchema);
+                ReloadLogHelper.info2("reloadMetaData end");
+                return result;
             }
         } finally {
             this.changing = false;
             metaLock.unlock();
+            ReloadLogHelper.info2("released metaLock");
         }
         return true;
     }
@@ -462,7 +471,7 @@ public class ServerConfig {
                 recycleGroup = entry.getValue();
                 // avoid recycleGroup == newGroup, can't stop recycleGroup
                 if (newDbGroups.get(recycleGroupName) != recycleGroup) {
-                    ReloadLogHelper.info("reload config, recycle old group. old active backend conn will be close", LOGGER);
+                    ReloadLogHelper.info2("recycle old group. old active backend conn will be close");
                     recycleGroup.stop("reload config, recycle old group", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
                 }
             }
@@ -481,7 +490,7 @@ public class ServerConfig {
             if (fullyConfigured) {
                 dbGroup.init("reload config");
             } else {
-                LOGGER.info("dbGroup[" + hostName + "] is not fullyConfigured, so doing nothing");
+                ReloadLogHelper.info2("dbGroup[" + hostName + "] is not fullyConfigured, so doing nothing");
             }
         }
     }
@@ -675,17 +684,17 @@ public class ServerConfig {
         boolean reloadResult = true;
         if (delSchema.size() > 0) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("metadata will delete schema:" + StringUtil.join(delSchema, ","));
+                ReloadLogHelper.debug("metadata will delete schema:" + StringUtil.join(delSchema, ","));
             }
             for (String schema : delSchema) {
                 ProxyMeta.getInstance().getTmManager().getCatalogs().remove(schema);
             }
-            LOGGER.info("metadata finished for deleted schemas");
+            ReloadLogHelper.info2("metadata finished for deleted schemas");
         }
         if (delTables.size() > 0) {
             if (LOGGER.isDebugEnabled()) {
                 String tables = changeTablesToString(delTables);
-                LOGGER.debug("metadata will delete Tables:" + tables);
+                ReloadLogHelper.debug("metadata will delete Tables:" + tables);
             }
             for (Pair<String, String> table : delTables) {
                 SchemaMeta oldSchemaMeta = ProxyMeta.getInstance().getTmManager().getCatalogs().get(table.getKey());
@@ -693,13 +702,13 @@ public class ServerConfig {
                     oldSchemaMeta.dropTable(table.getValue());
                 }
             }
-            LOGGER.info("metadata finished for deleted tables");
+            ReloadLogHelper.info2("metadata finished for deleted tables");
         }
         if (reloadSchema.size() != 0 || reloadTables.size() != 0) {
             Map<String, Set<String>> specifiedSchemas = new HashMap<>();
             if (reloadSchema.size() > 0) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("metadata will reload schema:" + StringUtil.join(reloadSchema, ","));
+                    ReloadLogHelper.debug("metadata will reload schema:" + StringUtil.join(reloadSchema, ","));
                 }
                 for (String schema : reloadSchema) {
                     specifiedSchemas.put(schema, null);
@@ -708,7 +717,7 @@ public class ServerConfig {
             if (reloadTables.size() > 0) {
                 if (LOGGER.isDebugEnabled()) {
                     String tables = changeTablesToString(reloadTables);
-                    LOGGER.debug("metadata will reload Tables:" + tables);
+                    ReloadLogHelper.debug("metadata will reload Tables:" + tables);
                 }
                 for (Pair<String, String> table : reloadTables) {
                     Set<String> tables = specifiedSchemas.computeIfAbsent(table.getKey(), k -> new HashSet<>());
@@ -716,7 +725,7 @@ public class ServerConfig {
                 }
             }
             reloadResult = ProxyMeta.getInstance().reloadMetaData(this, specifiedSchemas);
-            LOGGER.info("metadata finished for changes of schemas and tables");
+            ReloadLogHelper.info2("metadata finished for changes of schemas and tables");
         }
         return reloadResult;
     }
@@ -735,7 +744,7 @@ public class ServerConfig {
         return sb.toString();
     }
 
-    public void reviseLowerCase(RawJson sequenceJson) {
+    public void reviseLowerCase() {
 
         //user sharding
         for (UserConfig uc : users.values()) {
@@ -777,9 +786,6 @@ public class ServerConfig {
 
             erRelations = newErMap;
         }
-        loadSequence(sequenceJson);
-        selfChecking0();
-
     }
 
     private void loadSequence() {

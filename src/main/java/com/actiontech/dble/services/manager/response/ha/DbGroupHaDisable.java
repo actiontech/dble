@@ -42,6 +42,7 @@ public final class DbGroupHaDisable {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
+            HaConfigManager.getInstance().info("added configLock");
             PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(dhName);
             if (dh == null) {
                 packetResult.setSuccess(false);
@@ -89,6 +90,7 @@ public final class DbGroupHaDisable {
             }
         } finally {
             lock.readLock().unlock();
+            HaConfigManager.getInstance().info("released configLock");
         }
     }
 
@@ -102,6 +104,7 @@ public final class DbGroupHaDisable {
                         HaInfo.HaStatus.INIT
                 )
         );
+        HaConfigManager.getInstance().info("added distributeLock, path: " + ClusterMetaUtil.getHaLockPath(dh.getGroupName()));
         if (!distributeLock.acquire()) {
             packetResult.setSuccess(false);
             packetResult.setErrorMsg("Other instance is changing the dbGroup, please try again later.");
@@ -141,6 +144,7 @@ public final class DbGroupHaDisable {
         } finally {
             ClusterHelper.cleanPath(ClusterPathUtil.getHaResponsePath(dh.getGroupName()));
             distributeLock.release();
+            HaConfigManager.getInstance().info("released distributeLock");
         }
         return true;
     }

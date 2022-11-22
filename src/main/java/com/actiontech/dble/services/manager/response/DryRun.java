@@ -81,82 +81,97 @@ public final class DryRun {
     }
 
     public static void execute(ManagerService service) {
-        LOGGER.info("reload config(dry-run): load all xml info start");
-        ConfigInitializer loader;
         try {
-            //sync json
-            RawJson userConfig = new UserConverter().userXmlToJson();
-            RawJson dbConfig = DBConverter.dbXmlToJson();
-            RawJson shardingConfig = new ShardingConverter().shardingXmlToJson();
-            RawJson sequenceConfig = null;
-            if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
-                sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_FILE_NAME);
-            } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
-                sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_DB_FILE_NAME);
-            }
-            loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
-        } catch (Exception e) {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage() == null ? e.toString() : e.getMessage());
-            return;
-        }
-
-        //check all the config is legal
-        List<ErrorInfo> list = new CopyOnWriteArrayList<>();
-        try {
-            loader.testConnection();
-        } catch (Exception e) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("just test ,not stop reload, catch exception", e);
-            }
-        }
-        try {
-            String msg = ConfigUtil.getAndSyncKeyVariables(loader.getDbGroups(), false);
-            if (msg != null) {
-                list.add(new ErrorInfo("Backend", "WARNING", msg));
-            }
-        } catch (Exception e) {
-            list.add(new ErrorInfo("Backend", "ERROR", e.getMessage()));
-        }
-
-        list.addAll(loader.getErrorInfos());
-
-        ServerConfig serverConfig = new ServerConfig(loader);
-        VarsExtractorHandler handler = new VarsExtractorHandler(loader.getDbGroups());
-        SystemVariables newSystemVariables = handler.execute();
-        if (newSystemVariables == null) {
-            if (loader.isFullyConfigured()) {
-                list.add(new ErrorInfo("Backend", "ERROR", "Get Vars from backend failed,Maybe all backend MySQL can't connected"));
-            } else {
-                list.add(new ErrorInfo("Backend", "WARNING", "No dbGroup available"));
-            }
-        } else {
+            LOGGER.info("[dry-run] start ...");
+            ConfigInitializer loader;
             try {
-                if (newSystemVariables.isLowerCaseTableNames()) {
-                    serverConfig.reviseLowerCase(loader.getSequenceConfig());
+                LOGGER.info("[dry-run] load all xml info start");
+                //sync json
+                RawJson userConfig = new UserConverter().userXmlToJson();
+                RawJson dbConfig = DBConverter.dbXmlToJson();
+                RawJson shardingConfig = new ShardingConverter().shardingXmlToJson();
+                RawJson sequenceConfig = null;
+                if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
+                    sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_FILE_NAME);
+                } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
+                    sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_DB_FILE_NAME);
+                }
+                loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
+            } catch (Exception e) {
+                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage() == null ? e.toString() : e.getMessage());
+                return;
+            }
+
+            //check all the config is legal
+            List<ErrorInfo> list = new CopyOnWriteArrayList<>();
+            try {
+                LOGGER.info("[dry-run] test connection from backend start");
+                loader.testConnection();
+            } catch (Exception e) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("[dry-run] test connection, catch exception", e);
+                }
+            }
+            try {
+                LOGGER.info("[dry-run] check and get system variables from backend start");
+                String msg = ConfigUtil.getAndSyncKeyVariables(loader.getDbGroups(), false);
+                if (msg != null) {
+                    list.add(new ErrorInfo("Backend", "WARNING", msg));
+                }
+            } catch (Exception e) {
+                LOGGER.debug("[dry-run] check and get system variables, catch exception:", e);
+                list.add(new ErrorInfo("Backend", "ERROR", "get system variables exception: " + e.getMessage()));
+            }
+
+            list.addAll(loader.getErrorInfos());
+
+            ServerConfig serverConfig = new ServerConfig(loader);
+
+            LOGGER.info("[dry-run] get variables from backend start");
+            VarsExtractorHandler handler = new VarsExtractorHandler(loader.getDbGroups());
+            SystemVariables newSystemVariables = handler.execute();
+            if (newSystemVariables == null) {
+                if (loader.isFullyConfigured()) {
+                    list.add(new ErrorInfo("Backend", "ERROR", "Get Vars from backend failed, Maybe all backend MySQL can't connected"));
                 } else {
+                    list.add(new ErrorInfo("Backend", "WARNING", "No dbGroup available"));
+                }
+            } else {
+                try {
+                    if (newSystemVariables.isLowerCaseTableNames()) {
+                        serverConfig.reviseLowerCase();
+                    }
                     serverConfig.loadSequence(loader.getSequenceConfig());
                     serverConfig.selfChecking0();
+
+                    Map<String, Set<String>> schemaMap = getExistSchemas(serverConfig);
+                    //table exists check ,if the vars can not be touch ,the table check has no meaning
+                    tableExistsCheck(list, serverConfig, newSystemVariables.isLowerCaseTableNames(), schemaMap);
+                } catch (Exception e) {
+                    LOGGER.debug("[dry-run] get variables exception: ", e);
+                    list.add(new ErrorInfo("Xml", "ERROR", "get variables exception: " + e.getMessage()));
                 }
-                Map<String, Set<String>> schemaMap = getExistSchemas(serverConfig);
-                //table exists check ,if the vars can not be touch ,the table check has no meaning
-                tableExistsCheck(list, serverConfig, newSystemVariables.isLowerCaseTableNames(), schemaMap);
-            } catch (Exception e) {
-                list.add(new ErrorInfo("Xml", "ERROR", e.getMessage()));
             }
+
+            LOGGER.info("[dry-run] check user start");
+            userCheck(list, serverConfig);
+
+            if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
+                ucoreConnectionTest(list);
+            } else {
+                list.add(new ErrorInfo("Cluster", "NOTICE", "Dble is in single mod"));
+            }
+
+            LOGGER.info("[dry-run] check delay detection start");
+            delayDetection(serverConfig, list);
+
+            LOGGER.info("[dry-run] check back_log from backend start");
+            backLog(list);
+
+            printResult(service, list);
+        } finally {
+            LOGGER.info("[dry-run] end ...");
         }
-
-        userCheck(list, serverConfig);
-
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
-            ucoreConnectionTest(list);
-        } else {
-            list.add(new ErrorInfo("Cluster", "NOTICE", "Dble is in single mod"));
-        }
-
-        delayDetection(serverConfig, list);
-        backLog(list);
-
-        printResult(service, list);
     }
 
     private static void backLog(List<ErrorInfo> list) {

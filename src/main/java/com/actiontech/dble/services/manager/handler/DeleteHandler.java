@@ -14,6 +14,7 @@ import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.util.ConfigException;
+import com.actiontech.dble.meta.ReloadException;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
@@ -135,9 +136,12 @@ public final class DeleteHandler {
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);
             rowSize = managerTable.deleteRows(affectPks);
             if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()), packetResult);
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()));
             }
         } catch (SQLException e) {
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg(e.getMessage());
+        } catch (ReloadException e) {
             packetResult.setSuccess(false);
             packetResult.setErrorMsg(e.getMessage());
         } catch (ConfigException e) {
@@ -145,13 +149,14 @@ public final class DeleteHandler {
             packetResult.setErrorMsg("Delete failure.The reason is " + e.getMessage());
         } catch (Exception e) {
             packetResult.setSuccess(false);
-            if (e.getCause() instanceof ConfigException) {
+            if (e.getCause() instanceof ReloadException) {
                 packetResult.setErrorMsg("Delete failure.The reason is " + e.getMessage());
-                //reload fail
-                LOGGER.warn("Delete failure.The reason is " + e);
+                packetResult.setErrorCode(((ReloadException) e).getErrorCode());
+            } else if (e.getCause() instanceof ConfigException) {
+                packetResult.setErrorMsg("Delete failure.The reason is " + e.getMessage());
             } else {
                 packetResult.setErrorMsg("unknown error:" + e.getMessage());
-                LOGGER.warn("unknown error:", e);
+                LOGGER.warn("unknown error: {}", e.getMessage());
             }
         } finally {
             managerTable.updateTempConfig();

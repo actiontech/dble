@@ -14,6 +14,7 @@ import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.util.ConfigException;
+import com.actiontech.dble.meta.ReloadException;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
@@ -105,9 +106,12 @@ public final class UpdateHandler {
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, update.getWhere());
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, values);
-            rowSize = updateRows(service, managerTable, affectPks, values, packetResult);
+            rowSize = updateRows(service, managerTable, affectPks, values);
             packetResult.setRowSize(rowSize);
         } catch (SQLException e) {
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg(e.getMessage());
+        } catch (ReloadException e) {
             packetResult.setSuccess(false);
             packetResult.setErrorMsg(e.getMessage());
         } catch (ConfigException e) {
@@ -115,13 +119,14 @@ public final class UpdateHandler {
             packetResult.setErrorMsg("Update failure.The reason is " + e.getMessage());
         } catch (Exception e) {
             packetResult.setSuccess(false);
-            if (e.getCause() instanceof ConfigException) {
+            if (e.getCause() instanceof ReloadException) {
                 packetResult.setErrorMsg("Update failure.The reason is " + e.getMessage());
-                //reload fail
-                LOGGER.warn("Update failure.The reason is ", e);
+                packetResult.setErrorCode(((ReloadException) e).getErrorCode());
+            } else if (e.getCause() instanceof ConfigException) {
+                packetResult.setErrorMsg("Update failure.The reason is " + e.getMessage());
             } else {
                 packetResult.setErrorMsg("unknown error:" + e.getMessage());
-                LOGGER.warn("unknown error:", e);
+                LOGGER.warn("unknown error: {}", e.getMessage());
             }
         } finally {
             managerTable.updateTempConfig();
@@ -189,12 +194,12 @@ public final class UpdateHandler {
         return (ManagerWritableTable) managerBaseTable;
     }
 
-    private int updateRows(ManagerService service, ManagerWritableTable managerTable, Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values, PacketResult packetResult) throws Exception {
+    private int updateRows(ManagerService service, ManagerWritableTable managerTable, Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws Exception {
         int rowSize = 0;
         if (!affectPks.isEmpty()) {
             rowSize = managerTable.updateRows(affectPks, values);
             if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_UPDATE, managerTable.getTableName()), packetResult);
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_UPDATE, managerTable.getTableName()));
             }
         }
         return rowSize;

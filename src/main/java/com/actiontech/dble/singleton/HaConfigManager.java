@@ -41,7 +41,7 @@ import static com.actiontech.dble.backend.datasource.PhysicalDbGroup.JSON_NAME;
  * Created by szf on 2019/10/23.
  */
 public final class HaConfigManager {
-    private static final String HA_LOG = "ha_log";
+    public static final String HA_LOG = "ha_log";
     private static final Logger HA_LOGGER = LoggerFactory.getLogger(HA_LOG);
     private static final HaConfigManager INSTANCE = new HaConfigManager();
     private XmlProcessBase xmlProcess = new XmlProcessBase();
@@ -84,7 +84,7 @@ public final class HaConfigManager {
     }
 
     public void write(DbGroups dbs, int reloadId) throws IOException {
-        HA_LOGGER.info("try to writeDirectly DbGroups into local file " + reloadId);
+        HA_LOGGER.info("[HA] try to writeDirectly DbGroups into local file " + reloadId);
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
@@ -93,7 +93,7 @@ public final class HaConfigManager {
                 path = new File(path).getPath() + File.separator + ConfigFileName.DB_XML;
                 this.xmlProcess.safeParseWriteToXml(dbs, path, "db");
             } else {
-                HA_LOGGER.info("reloadId changes when try to writeDirectly the local file,just skip " + reloadIndex.get());
+                HA_LOGGER.info("[HA] reloadId changes when try to writeDirectly the local file,just skip " + reloadIndex.get());
             }
         } finally {
             lock.readLock().unlock();
@@ -107,12 +107,12 @@ public final class HaConfigManager {
 
     public void updateDbGroupConf(PhysicalDbGroup dbGroup, boolean syncWriteConf) {
         DbXmlWriteJob thisTimeJob;
-        HA_LOGGER.info("start to update the local file with sync flag " + syncWriteConf);
+        HA_LOGGER.info("[HA] start to update the local file with sync flag " + syncWriteConf);
         //check if there is one thread is writing
         if (isWriting.compareAndSet(false, true)) {
             adjustLock.writeLock().lock();
             try {
-                HA_LOGGER.info("get into writeDirectly process");
+                HA_LOGGER.info("[HA] get into writeDirectly process");
                 waitingSet.add(dbGroup);
                 dbXmlWriteJob = new DbXmlWriteJob(waitingSet, dbGroups, reloadIndex.get());
                 thisTimeJob = dbXmlWriteJob;
@@ -124,7 +124,7 @@ public final class HaConfigManager {
         } else {
             adjustLock.readLock().lock();
             try {
-                HA_LOGGER.info("get into merge process");
+                HA_LOGGER.info("[HA] get into merge process");
                 thisTimeJob = dbXmlWriteJob;
                 waitingSet.add(dbGroup);
             } finally {
@@ -196,9 +196,9 @@ public final class HaConfigManager {
             resultString.append("\n result status of dbGroup :").append(result);
         }
         if (errorMsg == null) {
-            HA_LOGGER.info(resultString.toString());
+            info(resultString.toString());
         } else {
-            HA_LOGGER.warn(resultString.toString());
+            warn(resultString.toString());
         }
     }
 
@@ -211,8 +211,20 @@ public final class HaConfigManager {
                 " stage = " + status.getStage().toString());
     }
 
-    public void log(String log, Exception e) {
+    public void info(String log, Exception e) {
         HA_LOGGER.info("[HA] " + log, e);
+    }
+
+    public static void info(String log) {
+        HA_LOGGER.info("[HA] " + log);
+    }
+
+    public static void warn(String log, Exception e) {
+        HA_LOGGER.warn("[HA] " + log, e);
+    }
+
+    public static void warn(String log) {
+        HA_LOGGER.warn("[HA] " + log);
     }
 
     public Map<Integer, HaChangeStatus> getUnfinised() {

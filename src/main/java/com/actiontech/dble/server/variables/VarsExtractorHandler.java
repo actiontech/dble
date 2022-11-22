@@ -66,7 +66,7 @@ public class VarsExtractorHandler {
             }
             return systemVariables;
         } finally {
-            ReloadLogHelper.debug("get system variables :{},dbInstance:{},result:{}", LOGGER, MYSQL_SHOW_VARIABLES, physicalDbInstance, systemVariables);
+            ReloadLogHelper.debug("get system variables :{},dbInstance:{},result:{}", MYSQL_SHOW_VARIABLES, physicalDbInstance, systemVariables);
             this.physicalDbInstance = null;
             TraceManager.finishSpan(traceObject);
         }

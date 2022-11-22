@@ -43,6 +43,7 @@ public final class DbGroupHaEnable {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
+            HaConfigManager.getInstance().info("added configLock");
             PhysicalDbGroup dbGroup = DbleServer.getInstance().getConfig().getDbGroups().get(dbGroupName);
             if (dbGroup == null) {
                 packetResult.setSuccess(false);
@@ -93,6 +94,7 @@ public final class DbGroupHaEnable {
             }
         } finally {
             lock.readLock().unlock();
+            HaConfigManager.getInstance().info("released configLock");
         }
     }
 
@@ -112,6 +114,7 @@ public final class DbGroupHaEnable {
             packetResult.setErrorMsg("Other instance is changing the dbGroup, please try again later.");
             return false;
         }
+        HaConfigManager.getInstance().info("added distributeLock, path: " + ClusterMetaUtil.getHaLockPath(dh.getGroupName()));
         try {
             RawJson result = dh.enableHosts(subHostName, false);
             //only update for the status
@@ -125,6 +128,7 @@ public final class DbGroupHaEnable {
             return false;
         } finally {
             distributeLock.release();
+            HaConfigManager.getInstance().info("released distributeLock");
         }
         return true;
     }

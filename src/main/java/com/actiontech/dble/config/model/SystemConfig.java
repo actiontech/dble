@@ -1876,7 +1876,9 @@ public final class SystemConfig {
     }
 
     public void setQueryForUpdateMaxRowsSize(long queryForUpdateMaxRowsSize) {
-        this.queryForUpdateMaxRowsSize = queryForUpdateMaxRowsSize;
+        if (queryForUpdateMaxRowsSize >= 0) {
+            this.queryForUpdateMaxRowsSize = queryForUpdateMaxRowsSize;
+        }
     }
 
     public int getSlowQueueOverflowPolicy() {

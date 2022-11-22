@@ -85,7 +85,6 @@ public class UpdateSubQueryHandler extends SubQueryHandler {
                 String errMessage = "update involves too many rows in query,the maximum number of rows allowed is " + maxRowsSize;
                 LOGGER.info(errMessage);
                 genErrorPackage(ErrorCode.ER_UNKNOWN_ERROR, errMessage);
-                service.getConnection().close(errMessage);
                 try {
                     tempDoneCallBack.call();
                 } catch (Exception callback) {

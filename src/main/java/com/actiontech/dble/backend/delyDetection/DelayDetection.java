@@ -230,7 +230,7 @@ public class DelayDetection {
         delayDetectionStatus = DelayDetectionStatus.ERROR;
         source.setDelayDetectionStatus(delayDetectionStatus);
         if (!source.isReadInstance()) {
-            alert(AlarmCode.DB_MASTER_INSTANCE_DELAY_FAIL, "reason is " + errorMessage + "delayDetection status:" + delayDetectionStatus, dbGroupConfig.instanceDatabaseType().name().toLowerCase());
+            alert(AlarmCode.DB_MASTER_INSTANCE_DELAY_FAIL, "reason is " + errorMessage + " delayDetection status: " + delayDetectionStatus, dbGroupConfig.instanceDatabaseType().name().toLowerCase());
         }
     }
 

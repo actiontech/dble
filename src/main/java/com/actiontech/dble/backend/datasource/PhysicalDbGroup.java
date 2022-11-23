@@ -475,7 +475,7 @@ public class PhysicalDbGroup {
                 continue;
             }
 
-            if (ds.isAlive() && (!checkSlaveSynStatus(ds) || ds.canSelectAsReadNode(ds))) {
+            if (ds.isAlive() && (!checkSlaveSynStatus(ds) || ds.canSelectAsReadNode())) {
                 if (ds.getLogCount() != 0) {
                     ds.setLogCount(0);
                 }

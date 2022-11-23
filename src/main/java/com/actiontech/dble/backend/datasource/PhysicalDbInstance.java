@@ -376,9 +376,9 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         return config;
     }
 
-    boolean canSelectAsReadNode(PhysicalDbInstance ds) {
+    boolean canSelectAsReadNode() {
         if (dbGroup.isDelayDetectionStart()) {
-            DelayDetectionStatus status = ds.getDelayDetectionStatus();
+            DelayDetectionStatus status = getDelayDetectionStatus();
             if (status == DelayDetectionStatus.ERROR || status == DelayDetectionStatus.TIMEOUT) {
                 return false;
             }

@@ -189,7 +189,7 @@ public class DbGroupConfig {
                 keepAlive == that.keepAlive &&
                 disableHA == that.disableHA &&
                 delayPeriodMillis == that.delayPeriodMillis &&
-                delayDatabase == that.delayDatabase &&
+                StringUtil.equals(delayDatabase, that.delayDatabase) &&
                 Objects.equals(name, that.name) &&
                 Objects.equals(heartbeatSQL, that.heartbeatSQL);
     }

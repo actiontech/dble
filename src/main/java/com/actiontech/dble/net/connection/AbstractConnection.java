@@ -167,7 +167,7 @@ public abstract class AbstractConnection implements Connection {
             FrontActiveRatioStat.getInstance().remove(this);
             closeSocket();
             if (isOnlyFrontTcpConnected() && (reason.contains("Connection reset by peer") || reason.contains("stream closed") || reason.contains("Broken pipe"))) {
-                LOGGER.debug("connection id close for reason [{}] with connection {}", reason, this);
+                LOGGER.debug("connection id close for reason [{}] with {}", reason, this);
             } else {
                 LOGGER.info("connection id close for reason [{}] with connection {}", reason, this);
             }

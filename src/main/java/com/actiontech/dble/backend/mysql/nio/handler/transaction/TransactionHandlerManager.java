@@ -25,10 +25,12 @@ public class TransactionHandlerManager {
     private volatile String xaTxId;
     private TransactionHandler normalHandler;
     private TransactionHandler xaHandler;
+    private NonBlockingSession session;
 
     public TransactionHandlerManager(NonBlockingSession session) {
         this.normalHandler = new NormalTransactionHandler(session);
         this.xaHandler = new XAHandler(session);
+        this.session = session;
     }
 
     public String getSessionXaID() {
@@ -75,6 +77,9 @@ public class TransactionHandlerManager {
     }
 
     public void commit(TransactionCallback callback) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("{} execute commit(), current {}", session.getShardingService().toString2(), session);
+        }
         if (xaTxId != null) {
             xaHandler.commit(callback);
         } else {
@@ -83,6 +88,9 @@ public class TransactionHandlerManager {
     }
 
     public void syncImplicitCommit() throws SQLException {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("{} execute syncImplicitCommit(), current {}", session.getShardingService().toString2(), session);
+        }
         if (xaTxId != null) {
             // implicit commit is not supported in XA transactions
             // xaHandler.syncImplicitCommit();
@@ -92,6 +100,9 @@ public class TransactionHandlerManager {
     }
 
     public void rollback(TransactionCallback callback) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("{} execute rollback(), current {}", session.getShardingService().toString2(), session);
+        }
         if (xaTxId != null) {
             xaHandler.rollback(callback);
         } else {

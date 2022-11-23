@@ -371,7 +371,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
     protected boolean clearIfSessionClosed() {
         if (session.closed()) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("session closed without execution,clear resources " + session);
+                LOGGER.debug("session closed without execution, clear resources " + session);
             }
             String msg = "Current session closed";
             specialHandling(false, msg);

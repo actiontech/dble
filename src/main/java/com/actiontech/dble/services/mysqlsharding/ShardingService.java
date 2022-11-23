@@ -648,8 +648,19 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (executeSql != null) {
             tmpSql = executeSql.length() > 1024 ? executeSql.substring(0, 1024) + "..." : executeSql;
         }
+        return "ShardingService[" + user + " schema = " + schema + " executeSql = " + tmpSql +
+                " isInTransaction = " + isInTransaction() + " txId=" + getTxId() + " txInterruptMsg = " + txInterruptMsg +
+                ", sessionReadOnly = " + sessionReadOnly + "] with " + connection.toString() + " with " + session;
+    }
 
-        return "ShardingService[ user = " + user + " schema = " + schema + " executeSql = " + tmpSql + " txInterruptMsg = " + txInterruptMsg +
-                " sessionReadOnly = " + sessionReadOnly + "] with connection " + connection.toString() + " with session " + session.toString();
+    public String toString2() {
+        return "ShardingService[" + user + ", schema = " + schema +
+                " isInTransaction = " + isInTransaction() + " txId=" + getTxId() + " txInterruptMsg = " + txInterruptMsg +
+                " sessionReadOnly = " + sessionReadOnly + "] with " + connection.toString();
+    }
+
+    public String toString3() { // simple
+        return "ShardingService[" + user + " schema = " + schema + " txInterruptMsg = " + txInterruptMsg +
+                " sessionReadOnly = " + sessionReadOnly + "] with " + connection.toString();
     }
 }

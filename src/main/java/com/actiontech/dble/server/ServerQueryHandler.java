@@ -34,14 +34,11 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 
     @Override
     public void query(String sql) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(service + (sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql));
-        }
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
             if (service.getSession2().isKilled()) {
-                LOGGER.info("sql[" + sql + "] is killed.");
+                LOGGER.info("{} sql[{}] is killed.", service.toString(), sql);
                 service.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
                 return;
             }
@@ -58,11 +55,15 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             String finalSql = sql;
             StatisticListener.getInstance().record(service.getSession2(), r -> r.onFrontendSetSql(service.getSchema(), finalSql));
             this.service.setExecuteSql(sql);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("{} query sql: {}", service.toString3(), (sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql));
+            }
             ShardingServerParse serverParse = ServerParseFactory.getShardingParser();
             int rs = serverParse.parse(sql);
             boolean isWithHint = serverParse.startWithHint(sql);
             int sqlType = rs & 0xff;
             if (isWithHint) {
+                service.controlTx(TransactionOperate.QUERY);
                 if (sqlType == ServerParse.INSERT || sqlType == ServerParse.DELETE || sqlType == ServerParse.UPDATE ||
                         sqlType == ServerParse.DDL) {
                     if (readOnly) {

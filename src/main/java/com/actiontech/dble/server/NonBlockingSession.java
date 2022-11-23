@@ -401,13 +401,13 @@ public class NonBlockingSession extends Session {
         TraceManager.log(ImmutableMap.of("route-result-set", rrs), traceObject);
         try {
             if (killed) {
+                LOGGER.info("{} sql[{}] is killed.", getShardingService().toString2(), getShardingService().getExecuteSql());
                 shardingService.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
                 return;
             }
 
             if (LOGGER.isDebugEnabled()) {
-                StringBuilder s = new StringBuilder();
-                LOGGER.debug(s.append(shardingService).append(rrs).toString() + " rrs ");
+                LOGGER.debug("{} print current {}", shardingService.toString2(), rrs);
             }
 
             if (PauseShardingNodeManager.getInstance().getIsPausing().get() &&
@@ -746,7 +746,6 @@ public class NonBlockingSession extends Session {
     }
 
 
-
     public void unLockTable(String sql) {
         UnLockTablesHandler handler = new UnLockTablesHandler(this, this.shardingService.isAutocommit(), sql);
         handler.execute();
@@ -761,6 +760,9 @@ public class NonBlockingSession extends Session {
         if ((shardingService.isInTransaction() && transactionManager.getXAStage() != null) ||
                 needWaitFinished) {
             return;
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("terminate {}", this);
         }
         for (BackendConnection node : target.values()) {
             node.close("client closed or timeout killed");
@@ -842,6 +844,7 @@ public class NonBlockingSession extends Session {
     }
 
     public void bindConnection(RouteResultsetNode key, BackendConnection conn) {
+        conn.setBindFront(this.getSource().getSimple());
         target.put(key, conn);
     }
 
@@ -959,7 +962,6 @@ public class NonBlockingSession extends Session {
         }
         return errConn.getBackendService();
     }
-
 
 
     public void rowCountRolling() {
@@ -1103,9 +1105,10 @@ public class NonBlockingSession extends Session {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("NonBlockSession with target ");
+        sb.append("NonBlockSession with target = [");
         for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet())
-            sb.append(" rrs = [").append(entry.getKey()).append("] with connection [").append(entry.getValue()).append("]");
+            sb.append(entry.getKey()).append(" with ").append(entry.getValue().toString2()).append(";");
+        sb.append("]");
         return sb.toString();
     }
 

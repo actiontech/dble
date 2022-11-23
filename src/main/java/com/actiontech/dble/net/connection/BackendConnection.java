@@ -36,6 +36,8 @@ public class BackendConnection extends PooledConnection {
     private final int flowLowLevel;
     private volatile boolean backendWriteFlowControlled;
 
+    private volatile String bindFront;
+
     public BackendConnection(NetworkChannel channel, SocketWR socketWR, ReadTimeStatusInstance instance, ResponseHandler handler, String schema) {
         super(channel, socketWR);
         this.instance = instance;
@@ -118,6 +120,7 @@ public class BackendConnection extends PooledConnection {
         } else {
             service.release();
         }
+        setBindFront(null);
     }
 
     @Override
@@ -218,6 +221,10 @@ public class BackendConnection extends PooledConnection {
         this.threadId = threadId;
     }
 
+    public void setBindFront(String bindFront) {
+        this.bindFront = bindFront;
+    }
+
     public MySQLResponseService getBackendService() {
         final AbstractService service = getService();
         return service instanceof MySQLResponseService ? (MySQLResponseService) service : null;
@@ -229,6 +236,10 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public String toString() {
-        return "BackendConnection[id = " + id + " host = " + host + " port = " + port + " localPort = " + localPort + " mysqlId = " + threadId + " db config = " + instance;
+        return "BackendConnection[id = " + id + " host = " + host + " port = " + port + " localPort = " + localPort + " mysqlId = " + threadId + " db config = " + instance + (bindFront != null ? ", currentBindFrontend = " + bindFront : "") + "]";
+    }
+
+    public String toString2() {
+        return "BackendConnection[id = " + id + " host = " + host + " port = " + port + " localPort = " + localPort + " mysqlId = " + threadId + " db config = " + instance + "]";
     }
 }

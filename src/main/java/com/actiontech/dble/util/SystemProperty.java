@@ -7,6 +7,8 @@ package com.actiontech.dble.util;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class SystemProperty {
     private SystemProperty() {
@@ -18,6 +20,7 @@ public final class SystemProperty {
     }
 
     private static Set<String> innerProperties = new HashSet<>();
+    private static final Pattern JAVA_INNER_PROPERTIES_PATTERN = Pattern.compile("^java.[a-zA-Z_0-9]+(.)*$");
 
     static {
         innerProperties.add("awt.toolkit");
@@ -38,6 +41,7 @@ public final class SystemProperty {
         innerProperties.add("java.specification.name");
         innerProperties.add("java.specification.vendor");
         innerProperties.add("java.specification.version");
+        innerProperties.add("java.specification.maintenance.version"); // see https://github.com/actiontech/dble/issues/3450
         innerProperties.add("java.vendor");
         innerProperties.add("java.vendor.url");
         innerProperties.add("java.vendor.url.bug");
@@ -82,5 +86,12 @@ public final class SystemProperty {
         innerProperties.add("user.language.format");
         innerProperties.add("user.country.format");
         innerProperties.add("javax.net.debug");
+    }
+
+    public static boolean isJavaInnerProperties(String key) {
+        Matcher m = JAVA_INNER_PROPERTIES_PATTERN.matcher(key);
+        if (m.matches())
+            return true;
+        return false;
     }
 }

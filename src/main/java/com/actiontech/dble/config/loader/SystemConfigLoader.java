@@ -136,7 +136,8 @@ public final class SystemConfigLoader {
             Set<String> propItem = new HashSet<>();
             for (Object key : system.keySet()) {
                 String strKey = (String) key;
-                if (!SystemProperty.getInnerProperties().contains(strKey)) {
+                if (!SystemProperty.getInnerProperties().contains(strKey) &&
+                        !SystemProperty.isJavaInnerProperties(strKey)) {
                     propItem.add(strKey);
                 }
             }

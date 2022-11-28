@@ -23,6 +23,7 @@ import com.actiontech.dble.server.handler.ExplainHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.util.CharsetContext;
 import com.actiontech.dble.util.HexFormatUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -134,7 +135,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         if (shardingValue == null && !(valueExpr instanceof SQLNullExpr)) {
             throw new SQLNonTransientException("Not Supported of Sharding Value EXPR :" + valueExpr.toString());
         }
-        shardingValue = StringUtil.isoCharsetReplace(clientCharset, shardingValue);
+        shardingValue = StringUtil.charsetReplace(clientCharset, CharsetContext.remove(), shardingValue);
         return shardingValue;
     }
 

@@ -30,6 +30,7 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
+import com.actiontech.dble.util.CharsetContext;
 import com.actiontech.dble.util.HexFormatUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -587,7 +588,8 @@ public final class RouterUtil {
                 value = HexFormatUtil.fromHex(((SQLHexExpr) originValue).getHex(), CharsetUtil.getJavaCharset(clientCharset));
             }
         } else {
-            value = StringUtil.isoCharsetReplace(clientCharset, originValue.toString());
+            String actualCharset = CharsetContext.remove();
+            value = StringUtil.charsetReplace(clientCharset, actualCharset, originValue.toString());
         }
         Integer nodeIndex = tc.getFunction().calculate(value);
         if (nodeIndex == null) {

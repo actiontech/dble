@@ -98,6 +98,7 @@ public class KillConnectionHandler implements ResponseHandler {
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed: connectionClosed", null);
+        toKilled.setResponseHandler(null);
         toKilled.close("exception:" + reason);
     }
 }

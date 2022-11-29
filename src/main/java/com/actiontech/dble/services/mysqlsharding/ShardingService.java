@@ -643,7 +643,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         return txInterruptMsg;
     }
 
-    public String toString() {
+    public String toString() { // show all
         String tmpSql = null;
         if (executeSql != null) {
             tmpSql = executeSql.length() > 1024 ? executeSql.substring(0, 1024) + "..." : executeSql;
@@ -653,13 +653,15 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 ", sessionReadOnly = " + sessionReadOnly + "] with " + connection.toString() + " with " + session;
     }
 
+    // not show 'with session'
     public String toString2() {
         return "ShardingService[" + user + ", schema = " + schema +
                 " isInTransaction = " + isInTransaction() + " txId=" + getTxId() + " txInterruptMsg = " + txInterruptMsg +
                 " sessionReadOnly = " + sessionReadOnly + "] with " + connection.toString();
     }
 
-    public String toString3() { // simple
+    // not show 'isInTransaction =  txId= '、'with session'
+    public String toString3() {
         return "ShardingService[" + user + " schema = " + schema + " txInterruptMsg = " + txInterruptMsg +
                 " sessionReadOnly = " + sessionReadOnly + "] with " + connection.toString();
     }

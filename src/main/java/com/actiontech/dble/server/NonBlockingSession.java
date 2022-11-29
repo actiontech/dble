@@ -1062,22 +1062,24 @@ public class NonBlockingSession extends Session {
                         con.enableRead();
                         iterator.remove();
                     } else {
-                        LOGGER.debug("This front connection want to remove flow control, but mysql conn [{}]'s size [{}] is not lower the FlowLowLevel", con.getThreadId(), size);
+                        if (LOGGER.isDebugEnabled())
+                            LOGGER.debug("This front connection want to remove flow control, but mysql conn [{}]'s size [{}] is not lower the FlowLowLevel", con.getThreadId(), size);
                     }
                 } else {
                     con.enableRead();
                     iterator.remove();
                 }
             }
-
-            LOGGER.debug("This front connection remove flow control, currentWritingSize= {} and now still have {} backend connections in flow control state, the front conn info :{} ", currentWritingSize, flowControlledTarget.size(), this.getSource());
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("This front connection remove flow control, currentWritingSize= {} and now still have {} backend connections in flow control state, the front conn info :{} ", currentWritingSize, flowControlledTarget.size(), this.getSource());
         }
     }
 
     @Override
     public void startFlowControl(int currentWritingSize) {
         synchronized (flowControlledTarget) {
-            LOGGER.debug("This front connection begins flow control, currentWritingSize= {},conn info:{}", currentWritingSize, this.getSource());
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("This front connection begins flow control, currentWritingSize= {},conn info:{}", currentWritingSize, this.getSource());
             shardingService.getConnection().setFrontWriteFlowControlled(true);
             for (BackendConnection con : target.values()) {
                 con.disableRead();
@@ -1096,7 +1098,8 @@ public class NonBlockingSession extends Session {
                 con.getSocketWR().enableRead();
             }
             if (flowControlledTarget.size() == 0) {
-                LOGGER.debug("This frontend connection remove flow control because of release:{} ", this.getSource());
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("This frontend connection remove flow control because of release:{} ", this.getSource());
                 shardingService.getConnection().setFrontWriteFlowControlled(false);
             }
         }

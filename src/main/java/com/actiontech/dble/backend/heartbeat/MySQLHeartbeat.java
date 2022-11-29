@@ -232,7 +232,8 @@ public class MySQLHeartbeat {
         }
         //after the heartbeat changes from failure to success, it needs to be expanded immediately
         if (source.getTotalConnections() == 0 && !previousStatus.equals(MySQLHeartbeatStatus.INIT) && !previousStatus.equals(MySQLHeartbeatStatus.OK)) {
-            LOGGER.debug("[updatePoolCapacity] heartbeat to [{}] setOk, previous status is {}", source, previousStatus);
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("[updatePoolCapacity] heartbeat to [{}] setOk, previous status is {}", source, previousStatus);
             source.updatePoolCapacity();
         }
         if (isStop) {

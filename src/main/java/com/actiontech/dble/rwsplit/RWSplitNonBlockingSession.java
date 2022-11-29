@@ -75,7 +75,8 @@ public class RWSplitNonBlockingSession extends Session {
                 if (size <= con.getFlowLowLevel()) {
                     con.enableRead();
                 } else {
-                    LOGGER.debug("This front connection want to remove flow control, but mysql conn [{}]'s size [{}] is not lower the FlowLowLevel", con.getThreadId(), size);
+                    if (LOGGER.isDebugEnabled())
+                        LOGGER.debug("This front connection want to remove flow control, but mysql conn [{}]'s size [{}] is not lower the FlowLowLevel", con.getThreadId(), size);
                 }
             } else {
                 con.enableRead();
@@ -305,7 +306,8 @@ public class RWSplitNonBlockingSession extends Session {
             LOGGER.warn("last conn is remaining, the session is {}, the backend conn is {}", rwSplitService.getConnection(), tmp);
             tmp.release();
         }
-        LOGGER.debug("bind conn is {}", bindConn);
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("bind conn is {}", bindConn);
         this.conn = bindConn;
     }
 
@@ -316,7 +318,8 @@ public class RWSplitNonBlockingSession extends Session {
             if (rwSplitService.isFlowControlled()) {
                 releaseConnectionFromFlowControlled(tmp);
             }
-            LOGGER.debug("safe unbind conn is {}", tmp);
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("safe unbind conn is {}", tmp);
             tmp.release();
         }
     }

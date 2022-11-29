@@ -187,7 +187,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         // create new connection
         node.setRunOnSlave(rrs.getRunOnSlave());
         ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
-        LOGGER.debug("[doConnection] node + " + node.toString());
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("[doConnection] node + " + node.toString());
         dn.syncGetConnection(dn.getDatabase(), session.getShardingService().isTxStart(), sessionAutocommit, node, this, node);
     }
 

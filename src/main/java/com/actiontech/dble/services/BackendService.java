@@ -257,7 +257,8 @@ public abstract class BackendService extends AbstractService {
         if (needCalcReadingData(task) != null) {
             int currentReadSize = readSize.addAndGet(((NormalServiceTask) task).getOrgData().length);
             if (currentReadSize > connection.getFlowHighLevel()) {
-                LOGGER.debug("This backend connection begins flow control, currentReadingSize= {},conn info:{}", currentReadSize, connection);
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("This backend connection begins flow control, currentReadingSize= {},conn info:{}", currentReadSize, connection);
                 connection.disableRead();
             }
         }
@@ -269,7 +270,8 @@ public abstract class BackendService extends AbstractService {
             int currentReadSize = readSize.addAndGet(-((NormalServiceTask) task).getOrgData().length);
             if (currentReadSize <= connection.getFlowLowLevel() &&
                     !businessService.isFlowControlled()) {
-                LOGGER.debug("This backend connection stop flow control, currentReadingSize= {},conn info:{}", currentReadSize, connection);
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("This backend connection stop flow control, currentReadingSize= {},conn info:{}", currentReadSize, connection);
                 connection.enableRead();
             }
         }

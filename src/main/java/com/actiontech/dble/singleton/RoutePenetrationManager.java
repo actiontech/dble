@@ -53,7 +53,8 @@ public final class RoutePenetrationManager {
                 rules.forEach(PenetrationRule::init);
             }
             LOGGER.info("init {}  route-penetration rules success", rules.size());
-            LOGGER.debug("route-penetration rules :{}", rules);
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("route-penetration rules :{}", rules);
         } catch (Exception e) {
             final String msg = "can't parse the route-penetration rule, please check the 'routePenetrationRules', detail exception is :" + e;
             LOGGER.error(msg);

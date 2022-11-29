@@ -190,8 +190,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         lock.lock();
         try {
             if (byteBuffer != null) {
-                session.getSource().recycle(byteBuffer);
-                byteBuffer = null;
+                //temp disable for inner-1492
+                //                session.getSource().recycle(byteBuffer);
+                //                byteBuffer = null;
             }
         } finally {
             lock.unlock();

@@ -481,10 +481,11 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private boolean hasShardingColumnWithAlia(BaseTableConfig tc, String columnName, Map<String, String> aliaColumns) {
-        String shardingColumn = ((ShardingTableConfig) tc).getShardingColumn();
-        boolean isShardingColumn = tc instanceof ShardingTableConfig && columnName.equalsIgnoreCase(shardingColumn);
+        String shardingColumn = "";
+        boolean isShardingColumn = tc instanceof ShardingTableConfig && columnName.equalsIgnoreCase(shardingColumn = ((ShardingTableConfig) tc).getShardingColumn());
         if (!isShardingColumn) {
-            Optional<Map.Entry<String, String>> alias = aliaColumns.entrySet().stream().filter(c -> c.getKey().toUpperCase().equals(shardingColumn)).findFirst();
+            String finalShardingColumn = shardingColumn;
+            Optional<Map.Entry<String, String>> alias = aliaColumns.entrySet().stream().filter(c -> c.getKey().toUpperCase().equals(finalShardingColumn)).findFirst();
             if (alias.isPresent()) {
                 isShardingColumn = tc instanceof ShardingTableConfig && alias.get().getValue().equalsIgnoreCase(columnName);
             }

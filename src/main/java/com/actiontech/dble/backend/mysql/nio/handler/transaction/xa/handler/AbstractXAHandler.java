@@ -171,8 +171,13 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
 
     public Set<RouteResultsetNode> setUnResponseRrns() {
         Set<RouteResultsetNode> targetKeys = session.getTargetKeys();
-        this.unResponseRrns.addAll(targetKeys);
-        return targetKeys;
+        lock.lock();
+        try {
+            this.unResponseRrns.addAll(targetKeys);
+            return targetKeys;
+        } finally {
+            lock.unlock();
+        }
     }
 
     public String getXAStage() {

@@ -109,8 +109,13 @@ public abstract class AbstractConnection implements Connection {
         } else {
             netInBytes += got;
         }
+
         final ByteBuffer tmpReadBuffer = getReadBuffer();
         if (tmpReadBuffer != null) {
+            if (got == 0 && tmpReadBuffer.position() != 0 && tmpReadBuffer.position() == tmpReadBuffer.limit()) {
+                //The buffer is full, but has not been read
+                throw new IllegalStateException("there is a problem with buffer reading");
+            }
             handle(tmpReadBuffer);
         } else if (!isClosed()) {
             //generally,it's won't happen

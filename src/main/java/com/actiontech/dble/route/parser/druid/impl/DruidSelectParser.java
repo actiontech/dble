@@ -352,7 +352,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         parseAggGroupCommon(service, schema, stmt, rrs, mysqlSelectQuery, tc);
     }
 
-    private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, List<Pair<String, String>> selectColumns, Map<String, String> aliaColumns, BaseTableConfig tc, boolean isDistinct) throws SQLException {
+    private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, List<SQLSelectItem> selectColumns, Map<String, String> aliaColumns, BaseTableConfig tc, boolean isDistinct) throws SQLException {
         List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
         boolean hasPartitionColumn = false;
         for (SQLSelectItem selectItem : selectList) {
@@ -379,7 +379,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 } else {
                     addToAliaColumn(selectColumns, aliaColumns, selectItem);
                 }
-            } else if (itemExpr instanceof SQLAllColumnExpr) {
+            } else if (itemExpr instanceof SQLAllColumnExpr || (itemExpr instanceof SQLPropertyExpr && ((SQLPropertyExpr) itemExpr).getName().equals("*"))) {
                 TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tc.getName());
                 if (tbMeta == null) {
                     String msg = "Meta data of table '" + schema.getName() + "." + tc.getName() + "' doesn't exist";
@@ -389,8 +389,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 for (ColumnMeta column : tbMeta.getColumns()) {
                     aliaColumns.put(column.getName(), column.getName());
 
-                    Pair<String, String> selectCol = new Pair<>(column.getName(), column.getName());
-                    selectColumns.add(selectCol);
+                    selectColumns.add(new SQLSelectItem(new SQLIdentifierExpr(column.getName())));
                 }
             } else {
                 if (isDistinct && !isNeedOptimizer(itemExpr)) {
@@ -453,7 +452,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
     }
 
-    private Set<SQLSelectItem> groupColumnPushSelectList(List<SQLExpr> groupByItemList, List<Pair<String, String>> selectColumns) {
+    private Set<SQLSelectItem> groupColumnPushSelectList(List<SQLExpr> groupByItemList, List<SQLSelectItem> selectColumns) {
         Set<SQLSelectItem> pushItem = new HashSet<>();
 
         for (SQLExpr groupByItem : groupByItemList) {
@@ -472,8 +471,8 @@ public class DruidSelectParser extends DefaultDruidParser {
         return pushItem;
     }
 
-    private boolean hasColumnOrAlia(String columnName, List<Pair<String, String>> selectColumns) {
-        return selectColumns.stream().anyMatch(s -> s.getKey().equalsIgnoreCase(columnName) || s.getValue().equalsIgnoreCase(columnName));
+    private boolean hasColumnOrAlia(String columnName, List<SQLSelectItem> selectColumns) {
+        return selectColumns.stream().anyMatch(s -> (s.getAlias() != null && StringUtil.removeBackQuote(s.getAlias()).equalsIgnoreCase(columnName)) || StringUtil.removeBackQuote(s.getExpr().toString()).equalsIgnoreCase(columnName));
     }
 
     private boolean hasShardingColumn(BaseTableConfig tc, String columnName) {
@@ -524,16 +523,14 @@ public class DruidSelectParser extends DefaultDruidParser {
         return !(expr instanceof SQLPropertyExpr) && !(expr instanceof SQLIdentifierExpr);
     }
 
-    private void addToAliaColumn(List<Pair<String, String>> selectColumns, Map<String, String> aliaColumns, SQLSelectItem item) {
+    private void addToAliaColumn(List<SQLSelectItem> selectColumns, Map<String, String> aliaColumns, SQLSelectItem item) {
         String alia = item.getAlias();
         String field = getFieldName(item);
         if (alia == null) {
             alia = field;
         }
         aliaColumns.put(field, alia);
-
-        Pair<String, String> selectCol = new Pair<String, String>(alia, field);
-        selectColumns.add(selectCol);
+        selectColumns.add(item);
     }
 
     private String getFieldName(SQLSelectItem item) {
@@ -548,7 +545,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     private void parseAggGroupCommon(ShardingService service, SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
                                      MySqlSelectQueryBlock mysqlSelectQuery, BaseTableConfig tc) throws SQLException {
         Map<String, String> aliaColumns = new HashMap<>();
-        List<Pair<String, String>> selectColumns = new LinkedList<>();
+        List<SQLSelectItem> selectColumns = new LinkedList<>();
         boolean isDistinct = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT) || (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
         parseAggExprCommon(schema, rrs, mysqlSelectQuery, selectColumns, aliaColumns, tc, isDistinct);
         if (rrs.isNeedOptimizer()) {
@@ -580,7 +577,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     /**
      * when fakeMysqlVersion is 8.0, in 'group by' no longer has the semantics of 'order by'
      */
-    private boolean tryGroupColumnPushSelectList(Map<String, String> aliaColumns, List<Pair<String, String>> selectColumns,
+    private boolean tryGroupColumnPushSelectList(Map<String, String> aliaColumns, List<SQLSelectItem> selectColumns,
                                                  MySqlSelectQueryBlock mysqlSelectQuery, RouteResultset rrs, int charsetIndex) {
         boolean isGroupByColPushSelectList = false;
         if (!VersionUtil.isMysql8(SystemConfig.getInstance().getFakeMySQLVersion()) &&
@@ -607,11 +604,27 @@ public class DruidSelectParser extends DefaultDruidParser {
         return isGroupByColPushSelectList;
     }
 
-    private LinkedList<Item> handleSelectItems(List<Pair<String, String>> selectList, RouteResultset rrs, int charsetIndex) {
+    private LinkedList<Item> handleSelectItems(List<SQLSelectItem> selectList, RouteResultset rrs, int charsetIndex) {
         LinkedList<Item> selectItems = new LinkedList<>();
-        for (Pair<String, String> sel : selectList) {
-            ItemField selItem = new ItemField(rrs.getSchema(), rrs.getTable(), StringUtil.removeBackQuote(sel.getValue()), charsetIndex);
-            selItem.setAlias(StringUtil.removeBackQuote(sel.getKey()));
+        String tableName = rrs.getTableAlias() != null ? rrs.getTableAlias() : rrs.getTable();
+        for (SQLSelectItem sel : selectList) {
+            String tName;
+            String cName;
+            if (sel.getExpr() instanceof SQLPropertyExpr) {
+                SQLPropertyExpr seli = (SQLPropertyExpr) sel.getExpr();
+                if (sel.getAlias() != null) {
+                    tName = tableName;
+                    cName = sel.getAlias();
+                } else {
+                    tName = seli.getOwner().toString();
+                    cName = seli.getName();
+                }
+            } else {
+                tName = tableName;
+                cName = sel.getAlias() != null ? sel.getAlias() : sel.getExpr().toString();
+            }
+            ItemField selItem = new ItemField(rrs.getSchema(), StringUtil.removeBackQuote(tName), StringUtil.removeBackQuote(cName), charsetIndex);
+            selItem.setAlias(sel.getAlias() == null ? null : StringUtil.removeBackQuote(sel.getAlias()));
             selItem.setCharsetIndex(charsetIndex);
             selectItems.add(selItem);
         }

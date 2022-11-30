@@ -472,7 +472,9 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private boolean hasColumnOrAlia(String columnName, List<SQLSelectItem> selectColumns) {
-        return selectColumns.stream().anyMatch(s -> (s.getAlias() != null && StringUtil.removeBackQuote(s.getAlias()).equalsIgnoreCase(columnName)) || StringUtil.removeBackQuote(s.getExpr().toString()).equalsIgnoreCase(columnName));
+        return selectColumns.stream().anyMatch(s -> (s.getAlias() != null && StringUtil.removeBackQuote(s.getAlias()).equalsIgnoreCase(columnName)) ||
+                ((s.getExpr() instanceof SQLPropertyExpr) && StringUtil.removeBackQuote(((SQLPropertyExpr) s.getExpr()).getSimpleName()).equalsIgnoreCase(columnName)) ||
+                StringUtil.removeBackQuote(s.getExpr().toString()).equalsIgnoreCase(columnName));
     }
 
     private boolean hasShardingColumn(BaseTableConfig tc, String columnName) {
@@ -568,9 +570,11 @@ public class DruidSelectParser extends DefaultDruidParser {
                 mysqlSelectQuery, rrs, service.getCharset().getResultsIndex());
 
         if (isDistinct) {
-            rrs.changeNodeSqlAfterAddLimit(statementToString(stmt), 0, -1);
+            String sql = RouterUtil.removeSchema(statementToString(stmt), schema.getName());
+            rrs.changeNodeSqlAfterAddLimit(sql, 0, -1);
         } else if (isGroupByColPushSelectList) {
-            rrs.changeNodeSqlAfterAddLimit(statementToString(stmt), rrs.getLimitStart(), rrs.getLimitSize());
+            String sql = RouterUtil.removeSchema(statementToString(stmt), schema.getName());
+            rrs.changeNodeSqlAfterAddLimit(sql, rrs.getLimitStart(), rrs.getLimitSize());
         }
     }
 
@@ -611,13 +615,17 @@ public class DruidSelectParser extends DefaultDruidParser {
             String tName;
             String cName;
             if (sel.getExpr() instanceof SQLPropertyExpr) {
-                SQLPropertyExpr seli = (SQLPropertyExpr) sel.getExpr();
                 if (sel.getAlias() != null) {
                     tName = tableName;
                     cName = sel.getAlias();
                 } else {
-                    tName = seli.getOwner().toString();
-                    cName = seli.getName();
+                    SQLPropertyExpr seli = (SQLPropertyExpr) sel.getExpr();
+                    if (seli.getOwner() instanceof SQLPropertyExpr) {
+                        tName = ((SQLPropertyExpr) seli.getOwner()).getSimpleName();
+                    } else {
+                        tName = seli.getOwner().toString();
+                    }
+                    cName = seli.getSimpleName();
                 }
             } else {
                 tName = tableName;
@@ -677,7 +685,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                  * eg:select id from (select h.id from hotnews h union
                  * select h.title from hotnews h ) as t1 group by t1.id;
                  */
-                column = sqlExpr.toString();
+                column = ((SQLPropertyExpr) sqlExpr).getSimpleName();
             }
             if (column == null) {
                 column = sqlExpr.toString();

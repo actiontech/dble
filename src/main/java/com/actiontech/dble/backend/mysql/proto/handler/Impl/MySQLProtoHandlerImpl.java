@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.proto.handler.Impl;
 
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +85,7 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
             // not read whole message package ,so check if buffer enough and
             // compact dataBuffer
             if (!dataBuffer.hasRemaining()) {
-                if (SSLProtoHandler.isSSLPackage(dataBuffer, offset)) {
+                if (SystemConfig.getInstance().isSupportSSL() && SSLProtoHandler.isSSLPackage(dataBuffer, offset)) {
                     return builder.setCode(SSL_PROTO_PACKET).setHasMorePacket(false).setOffset(offset);
                 }
                 return builder.setCode(BUFFER_NOT_BIG_ENOUGH).setHasMorePacket(false).setOffset(offset).setPacketLength(length);

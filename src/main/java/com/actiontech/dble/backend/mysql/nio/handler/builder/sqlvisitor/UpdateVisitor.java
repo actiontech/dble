@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor;
 
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemBasicConstant;
 import com.actiontech.dble.plan.common.item.ItemNull;
 import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
@@ -65,7 +66,7 @@ public class UpdateVisitor extends MysqlVisitor {
     }
 
     protected void visit(ModifyNode update) {
-        sqlBuilder.append("update ");
+        sqlBuilder.append("update");
 
         //from
         update.getReferedTableNodes().stream()
@@ -107,7 +108,9 @@ public class UpdateVisitor extends MysqlVisitor {
     }
 
     private String buildSQLStr(Item valueItem, String tableName) {
-        if (!StringUtil.equalsIgnoreCase(tableName, valueItem.getTableName()) && isExplain) {
+        if (valueItem instanceof ItemBasicConstant) {
+            return valueItem.toString();
+        } else if (!StringUtil.equalsIgnoreCase(tableName, valueItem.getTableName()) && isExplain) {
             return new ItemString(NEED_REPLACE, valueItem.getCharsetIndex()).toString();
         }
         if (valueItemList.size() == 1) {
@@ -132,7 +135,7 @@ public class UpdateVisitor extends MysqlVisitor {
     protected String getUpdateItemName(Item item) {
         if (item instanceof ItemCondOr) {
             StringBuilder sb = new StringBuilder();
-            sb.append(" ( ");
+            sb.append("(");
             for (int index = 0; index < item.getArgCount(); index++) {
                 if (index > 0) {
                     sb.append(" OR ");
@@ -143,7 +146,7 @@ public class UpdateVisitor extends MysqlVisitor {
             return sb.toString();
         } else if (item instanceof ItemCondAnd) {
             StringBuilder sb = new StringBuilder();
-            sb.append(" ( ");
+            sb.append("(");
             for (int index = 0; index < item.getArgCount(); index++) {
                 if (index > 0) {
                     sb.append(" AND ");
@@ -153,7 +156,7 @@ public class UpdateVisitor extends MysqlVisitor {
             sb.append(")");
             return sb.toString();
         } else if (item instanceof ItemFuncNot) {
-            return " ( NOT " + getUpdateItemName(item.arguments().get(0)) + ")";
+            return "(NOT " + getUpdateItemName(item.arguments().get(0)) + ")";
         } else if (item instanceof ItemBoolFunc2) {
             return getBoolFuncItemName(item);
         } else if (item.type().equals(Item.ItemType.FIELD_ITEM)) {
@@ -233,9 +236,11 @@ public class UpdateVisitor extends MysqlVisitor {
             Item itemTmp = item.cloneStruct();
             for (int index = 0; index < func.getArgCount(); index++) {
                 Item arg = item.arguments().get(index);
-                if (isExplain && !StringUtil.equalsIgnoreCase(tableName, arg.getTableName())) {
+                if (isExplain && !(arg instanceof ItemBasicConstant) && !StringUtil.equalsIgnoreCase(tableName, arg.getTableName())) {
                     itemTmp.arguments().set(index, new ItemString(NEED_REPLACE, itemTmp.getCharsetIndex()));
                     itemTmp.setItemName(null);
+                } else if (arg instanceof ItemBasicConstant) {
+                    continue;
                 } else {
                     int fieldIndex = getItemIndex(arg);
                     if (fieldIndex >= 0) {
@@ -259,6 +264,9 @@ public class UpdateVisitor extends MysqlVisitor {
     }
 
     private int getItemIndex(Item valueItem) {
+        if (fieldList.size() == 1 && valueItemList.size() == 1 && valueItem.getTableName().equals(fieldList.get(0).getTableName())) {
+            return 0;
+        }
         for (int i = 0; i < fieldList.size(); i++) {
             if (fieldList.get(i).equals(valueItem)) {
                 return i;

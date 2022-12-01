@@ -77,7 +77,7 @@ public class GlobalVisitor extends MysqlVisitor {
 
             if (query.getTableName() == null)
                 return;
-            sqlBuilder.append(" from");
+            sqlBuilder.append(" from ");
         }
         buildTableName(query, sqlBuilder);
         if (query.isWithSubQuery() || isTopQuery) {

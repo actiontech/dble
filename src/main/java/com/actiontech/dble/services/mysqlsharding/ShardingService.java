@@ -643,13 +643,26 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         return txInterruptMsg;
     }
 
-    public String toString() {
+    public String toString() { // show all
         String tmpSql = null;
         if (executeSql != null) {
             tmpSql = executeSql.length() > 1024 ? executeSql.substring(0, 1024) + "..." : executeSql;
         }
+        return "ShardingService[" + user + " schema = " + schema + " executeSql = " + tmpSql +
+                " isInTransaction = " + isInTransaction() + " txId=" + getTxId() + " txInterruptMsg = " + txInterruptMsg +
+                ", sessionReadOnly = " + sessionReadOnly + "] with " + connection.toString() + " with " + session;
+    }
 
-        return "ShardingService[ user = " + user + " schema = " + schema + " executeSql = " + tmpSql + " txInterruptMsg = " + txInterruptMsg +
-                " sessionReadOnly = " + sessionReadOnly + "] with connection " + connection.toString() + " with session " + session.toString();
+    // not show 'with session'
+    public String toString2() {
+        return "ShardingService[" + user + ", schema = " + schema +
+                " isInTransaction = " + isInTransaction() + " txId=" + getTxId() + " txInterruptMsg = " + txInterruptMsg +
+                " sessionReadOnly = " + sessionReadOnly + "] with " + connection.toString();
+    }
+
+    // not show 'isInTransaction =  txId= '、'with session'
+    public String toString3() {
+        return "ShardingService[" + user + " schema = " + schema + " txInterruptMsg = " + txInterruptMsg +
+                " sessionReadOnly = " + sessionReadOnly + "] with " + connection.toString();
     }
 }

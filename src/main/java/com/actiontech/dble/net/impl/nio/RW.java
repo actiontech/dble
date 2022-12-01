@@ -241,7 +241,8 @@ public final class RW implements Runnable {
         } catch (Exception e) {
             //todo 确认调用register的时候会发生什么
             if ((c.isOnlyFrontTcpConnected() && e instanceof IOException)) {
-                LOGGER.debug("{} register err", c, e);
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("{} register err", c, e);
             } else {
                 LOGGER.warn("{} register err", c, e);
             }

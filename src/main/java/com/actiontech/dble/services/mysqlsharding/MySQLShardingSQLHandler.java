@@ -40,6 +40,7 @@ public class MySQLShardingSQLHandler {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "route&execute");
         try {
             if (service.getSession2().isKilled()) {
+                LOGGER.info("{} sql[{}] is killed.", service.toString2(), service.getExecuteSql());
                 service.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
                 return;
             }

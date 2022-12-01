@@ -400,4 +400,17 @@ public class FrontendConnection extends AbstractConnection {
                 isSkipCheck() + " isFlowControl = " + isFrontWriteFlowControlled() + " onlyTcpConnect = " +
                 isOnlyFrontTcpConnected() + " ssl = " + (isUseSSL() ? sslName : "no") + "]";
     }
+
+    public String getSimple() {
+        StringBuilder s = new StringBuilder();
+        s.append("id:");
+        s.append(id);
+        s.append("/");
+        s.append(((FrontendService) getService()).getUser().getFullName());
+        s.append("@");
+        s.append(host);
+        s.append(":");
+        s.append(localPort);
+        return s.toString();
+    }
 }

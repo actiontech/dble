@@ -463,7 +463,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
             tmpSql = executeSql.length() > 1024 ? executeSql.substring(0, 1024) + "..." : executeSql;
         }
 
-        return "RWSplitService[ user = " + user + " schema = " + schema + " executeSql = " + tmpSql +
-                " sessionReadOnly = " + sessionReadOnly + "] with connection " + connection.toString() + " with session " + session.toString();
+        return "RWSplitService[" + user + " schema = " + schema + " executeSql = " + tmpSql +
+                " sessionReadOnly = " + sessionReadOnly + "], with " + connection.toString() + ", with" + session.toString();
     }
 }

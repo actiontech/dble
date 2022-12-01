@@ -5,8 +5,10 @@ import com.actiontech.dble.route.parser.DbleHintParser;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
+import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.ImmutableMap;
 
 public final class RWSplitMultiQueryHandler extends RWSplitQueryHandler {
 
@@ -16,6 +18,8 @@ public final class RWSplitMultiQueryHandler extends RWSplitQueryHandler {
 
     @Override
     public void query(String sql) {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getService(), "handle-multi-query-sql");
+        TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
             session.getService().queryCount();
             if (!session.getService().isMultiStatementAllow()) {
@@ -85,6 +89,8 @@ public final class RWSplitMultiQueryHandler extends RWSplitQueryHandler {
         } catch (Exception e) {
             LOGGER.warn("execute error", e);
             session.getService().writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
+        } finally {
+            TraceManager.finishSpan(traceObject);
         }
     }
 }

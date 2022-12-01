@@ -163,10 +163,7 @@ public class FieldListHandler implements ResponseHandler {
         ShardingService shardingService = session.getShardingService();
         String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
         if (responseService != null && !responseService.isFakeClosed()) {
-            LOGGER.info("execute sql err:{}, con:{}, frontend host:{}/{}/{}", errMsg, responseService,
-                    shardingService.getConnection().getHost(),
-                    shardingService.getConnection().getLocalPort(),
-                    shardingService.getUser());
+            LOGGER.info("execute sql err:{}, con:{}", errMsg, responseService);
 
             if (responseService.getConnection().isClosed()) {
                 if (responseService.getAttachment() != null) {

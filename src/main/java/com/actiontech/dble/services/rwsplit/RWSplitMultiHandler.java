@@ -104,7 +104,8 @@ public class RWSplitMultiHandler extends RWSplitHandler {
                     We must prevent  same buffer called connection.write() twice.
                     According to the above, you need write buffer immediately and set buffer to null.
                      */
-                    LOGGER.debug("Because of multi query had send.It would receive more than one ResultSet. recycle resource should be delayed. client:{}", rwSplitService);
+                    if (LOGGER.isDebugEnabled())
+                        LOGGER.debug("Because of multi query had send.It would receive more than one ResultSet. recycle resource should be delayed. client:{}", rwSplitService);
                     buffer = frontedConnection.getService().writeToBuffer(eof, buffer);
                     frontedConnection.getService().writeDirectly(buffer, WriteFlags.MULTI_QUERY_PART);
                     buffer = null;

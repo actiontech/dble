@@ -110,7 +110,7 @@ public final class ShowSession {
             return null;
         }
         for (BackendConnection backCon : backConnections) {
-            sb.append(backCon).append("\r\n");
+            sb.append(backCon.toString2()).append("\r\n");
         }
         return createRowDataPacket(FIELD_COUNT, sc.getConnection().getId(), cnCount, sb.toString(), charset);
     }

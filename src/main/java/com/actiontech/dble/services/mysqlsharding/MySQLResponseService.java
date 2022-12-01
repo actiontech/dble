@@ -642,8 +642,8 @@ public class MySQLResponseService extends BackendService {
     @Override
     public String toString() {
         return "MySQLResponseService[isExecuting = " + isExecuting + " attachment = " + attachment + " autocommitSynced = " + autocommitSynced + " isolationSynced = " + isolationSynced +
-                " xaStatus = " + xaStatus + " isDDL = " + isDDL + " complexQuery = " + complexQuery + "] with response handler [" + responseHandler + "] with rrs = [" +
-                attachment + "]  with connection " + connection.toString();
+                " xaStatus = " + xaStatus + " isDDL = " + isDDL + " complexQuery = " + complexQuery + "] with response handler [" + responseHandler +
+                "] with " + connection.toString();
     }
 
 }

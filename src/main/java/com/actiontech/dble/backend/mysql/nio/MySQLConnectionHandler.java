@@ -166,6 +166,18 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         if (respHand != null) {
             respHand.errorResponse(data, source);
         } else {
+            try {
+                ErrorPacket errPkg = new ErrorPacket();
+                errPkg.read(data);
+                String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+                LOGGER.warn("no handler process the execute sql err,just close it, sql error:{},back con:{}", errMsg, source);
+                if (session != null) {
+                    LOGGER.warn("no handler process the execute sql err,front conn {}", session.getSource());
+                }
+
+            } catch (RuntimeException e) {
+                LOGGER.info("error handle error-packet", e);
+            }
             closeNoHandler();
         }
     }

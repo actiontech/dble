@@ -9,6 +9,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemBasicConstant;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
@@ -21,6 +22,7 @@ import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.optimizer.HintPlanInfo;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.route.parser.druid.impl.DruidUpdateParser;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -31,12 +33,14 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class UpdatePlanNodeVisitor extends MySQLPlanNodeVisitor {
@@ -78,8 +82,16 @@ public class UpdatePlanNodeVisitor extends MySQLPlanNodeVisitor {
 
             SQLExpr whereExpr = node.getWhere();
             if (whereExpr != null) {
-                handleWhereCondition(whereExpr);
+                handleCondition(whereExpr);
             }
+            if (node.getTableSource() instanceof SQLJoinTableSource) {
+                SQLJoinTableSource joinTableSource = (SQLJoinTableSource) node.getTableSource();
+                SQLExpr condition = joinTableSource.getCondition();
+                if (condition != null) {
+                    handleCondition(condition);
+                }
+            }
+
 
             //https://dev.mysql.com/doc/refman/8.0/en/update.html
             SQLOrderBy orderBy = node.getOrderBy();
@@ -111,6 +123,13 @@ public class UpdatePlanNodeVisitor extends MySQLPlanNodeVisitor {
             this.tableNode = mtv.getTableNode();
             this.containSchema = mtv.isContainSchema();
         } else if (tables instanceof SQLJoinTableSource) {
+            boolean equivalentWhere = ((SQLJoinTableSource) tables).getJoinType() == SQLJoinTableSource.JoinType.COMMA ||
+                    ((SQLJoinTableSource) tables).getJoinType() == SQLJoinTableSource.JoinType.JOIN ||
+                    ((SQLJoinTableSource) tables).getJoinType() == SQLJoinTableSource.JoinType.INNER_JOIN ||
+                    ((SQLJoinTableSource) tables).getJoinType() == SQLJoinTableSource.JoinType.CROSS_JOIN;
+            if (!equivalentWhere) {
+                throw new MySQLOutPutException(ErrorCode.ERR_NOT_SUPPORTED, "", "Update multi-table currently only supports join/inner-join/cross-join");
+            }
             SQLJoinTableSource joinTables = (SQLJoinTableSource) tables;
             UpdatePlanNodeVisitor mtv = new UpdatePlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery, this.usrVariables, this.hintPlanInfo);
             mtv.visit(joinTables);
@@ -158,55 +177,72 @@ public class UpdatePlanNodeVisitor extends MySQLPlanNodeVisitor {
 
     protected String handleQuery(ModifyNode query) {
         List<Item> setValItemList = Lists.newArrayList();
+        List<TableNode> tableNodes = query.getReferedTableNodes();
+        Set<String> updateTableSet = Sets.newHashSet();
         for (ItemFuncEqual itemFuncEqual : query.getSetItemList()) {
             setValItemList.add(itemFuncEqual.arguments().get(1));
+            updateTableSet.add(itemFuncEqual.arguments().get(0).getTableName());
         }
+
+        Set<String> selectTableSet = tableNodes.stream()
+                .filter(tableNode -> !updateTableSet.contains(tableNode.getAlias()))
+                .map(PlanNode::getAlias)
+                .collect(Collectors.toSet());
 
         //only supports update set single table
         StringBuilder setBuilder = new StringBuilder();
-        String tableName = null;
         for (Item item : setValItemList) {
-            if (tableName == null) {
-                tableName = item.getTableName();
+            if (selectTableSet.isEmpty()) {
+                selectTableSet.add(item.getTableName());
                 if (!StringUtil.isEmpty(item.getTableName())) {
                     setBuilder.append("`" + item.getTableName() + "`.`" + item.getItemName() + "`,");
                 }
-            } else if (!tableName.equals(item.getTableName())) {
-                throw new MySQLOutPutException(ErrorCode.ERR_NOT_SUPPORTED, "", "Update set multiple tables is not supported yet!");
+            } else if (!selectTableSet.contains(item.getTableName())) {
+                if (!(item instanceof ItemBasicConstant)) {
+                    throw new MySQLOutPutException(ErrorCode.ERR_NOT_SUPPORTED, "", "Update set multiple tables is not supported yet!");
+                }
             } else {
                 setBuilder.append("`" + item.getTableName() + "`.`" + item.getItemName() + "`,");
             }
         }
 
-        setBuilder.deleteCharAt(setBuilder.length() - 1);
+        if (!setBuilder.toString().isEmpty()) {
+            setBuilder.deleteCharAt(setBuilder.length() - 1);
+        }
         StringBuilder sqlBuilder = new StringBuilder();
         sqlBuilder.append("select ");
+
+        StringBuilder selectBuilder = new StringBuilder();
         //set
-        sqlBuilder.append(setBuilder);
+        selectBuilder.append(setBuilder);
         //where
         StringBuilder whereBuilder = new StringBuilder();
-        String finalTableName = tableName;
 
         List<Item> whereItemList = getAllWhereItem(query.getWhereFilter());
-        whereItemList.stream().forEach(whereItem -> {
-            if (!StringUtil.isEmpty(whereItem.getTableName()) && whereItem.getTableName().equals(finalTableName)) {
+        whereItemList.forEach(whereItem -> {
+            if (!StringUtil.isEmpty(whereItem.getTableName()) && selectTableSet.contains(whereItem.getTableName())) {
                 whereBuilder.append(",`" + whereItem.getTableName() + "`.`" + whereItem.getItemName() + "` ");
             }
         });
-        sqlBuilder.append(whereBuilder);
-        sqlBuilder.append(" from ");
 
-        List<TableNode> tableNodes = query.getReferedTableNodes();
+        if (setBuilder.toString().isEmpty() && !whereBuilder.toString().isEmpty()) {
+            whereBuilder.deleteCharAt(0);
+        }
+        selectBuilder.append(whereBuilder);
+        if (StringUtil.isBlank(selectBuilder.toString())) {
+            throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", DruidUpdateParser.MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+        }
+
+        sqlBuilder.append(selectBuilder).append("from");
+
         for (TableNode tableNode : tableNodes) {
-            if (!StringUtil.isEmpty(tableName) && tableName.equals(tableNode.getAlias())) {
+            if (selectTableSet.contains(tableNode.getAlias())) {
                 buildTableName(tableNode, sqlBuilder);
             }
         }
-        if (!whereBuilder.toString().isEmpty()) {
-            whereBuilder.deleteCharAt(0);
-            sqlBuilder.append(" group by ");
-            sqlBuilder.append(whereBuilder);
-        }
+
+        sqlBuilder.append(" group by ");
+        sqlBuilder.append(selectBuilder);
         return sqlBuilder.toString();
     }
 
@@ -255,9 +291,9 @@ public class UpdatePlanNodeVisitor extends MySQLPlanNodeVisitor {
         }
     }
 
-    protected void handleWhereCondition(SQLExpr whereExpr) {
+    protected void handleCondition(SQLExpr condition) {
         MySQLItemVisitor mev = new MySQLItemVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.usrVariables, this.hintPlanInfo);
-        whereExpr.accept(mev);
+        condition.accept(mev);
         if (this.tableNode != null) {
             Item whereFilter = mev.getItem();
             tableNode.query(whereFilter);

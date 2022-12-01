@@ -660,6 +660,18 @@ public final class StringUtil {
         return value;
     }
 
+    public static String charsetReplace(String clientCharset, String actualCharset, String value) {
+        try {
+            if (isBlank(actualCharset)) {
+                return value;
+            }
+            value = new String(value.getBytes(ISO_8859_1), clientCharset);
+        } catch (Exception e) {
+            return value;
+        }
+        return value;
+    }
+
     public static boolean byteEqual(byte[] a, byte[] b, int i) {
         if (Objects.isNull(a) || Objects.isNull(b)) {
             return false;
@@ -680,6 +692,7 @@ public final class StringUtil {
         Pattern pattern = Pattern.compile("^[-\\+]?[.\\d]*$");
         return pattern.matcher(str).matches();
     }
+
     /**
      * <p>
      * src: https://stackoverflow.com/questions/26357938/detect-chinese-character-in-java/26357985

@@ -82,7 +82,7 @@ public class UpdateSubQueryHandler extends SubQueryHandler {
                 return true;
             }
             if (++rowCount > maxRowsSize) {
-                String errMessage = "update involves too many rows in query,the maximum number of rows allowed is " + maxRowsSize;
+                String errMessage = "update involves too many rows in query,the maximum number of rows [queryForUpdateMaxRowsSize in bootstrap.cnf] allowed is " + maxRowsSize;
                 LOGGER.info(errMessage);
                 genErrorPackage(ErrorCode.ER_UNKNOWN_ERROR, errMessage);
                 try {

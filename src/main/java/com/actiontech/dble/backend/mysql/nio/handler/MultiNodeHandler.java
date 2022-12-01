@@ -112,6 +112,19 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         }
     }
 
+    private void clearSessionResources() {
+        if (session.getShardingService().isAutocommit()) {
+            session.closeAndClearResources(error);
+        } else {
+            session.getShardingService().setTxInterrupt(this.error);
+            this.clearResources();
+        }
+    }
+
+    public void clearResources() {
+    }
+
+
     public boolean clearIfSessionClosed(NonBlockingSession nonBlockingSession) {
         if (nonBlockingSession.closed()) {
             if (LOGGER.isDebugEnabled()) {
@@ -125,15 +138,4 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         }
     }
 
-    private void clearSessionResources() {
-        if (session.getShardingService().isAutocommit()) {
-            session.closeAndClearResources(error);
-        } else {
-            session.getShardingService().setTxInterrupt(this.error);
-            this.clearResources();
-        }
-    }
-
-    public void clearResources() {
-    }
 }

@@ -100,7 +100,7 @@ public class LockTablesHandler extends DefaultMultiNodeHandler implements Execut
     @Override
     protected void finish(byte[] ok) {
         if (this.isFail()) {
-            this.tryErrorFinished(true);
+            handleEndPacket(createErrPkg(this.error, 0));
             return;
         }
         OkPacket okPacket = new OkPacket();
@@ -112,10 +112,16 @@ public class LockTablesHandler extends DefaultMultiNodeHandler implements Execut
     }
 
     private void handleEndPacket(MySQLPacket packet) {
-        if (implicitlyCommitCallback != null)
-            implicitlyCommitCallback.callback();
-        TxnLogHelper.putTxnLog(session.getShardingService(), this.rrs);
-        session.clearResources(false);
-        packet.write(session.getSource());
+        if (!session.closed()) {
+            if (session.getShardingService().isAutocommit()) {
+                session.closeAndClearResources(error);
+            }
+
+            if (implicitlyCommitCallback != null)
+                implicitlyCommitCallback.callback();
+            TxnLogHelper.putTxnLog(session.getShardingService(), this.rrs);
+            session.clearResources(false);
+            packet.write(session.getSource());
+        }
     }
 }

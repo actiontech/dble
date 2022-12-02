@@ -11,6 +11,8 @@ import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.google.common.collect.Lists;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -25,6 +27,8 @@ public class DbleMemoryResident extends ManagerBaseTable {
     private static final String COLUMN_STACKTRACE = "stacktrace";
 
     private static final String COLUMN_BUFFER_TYPE = "buffer_type";
+
+    private static final String COLUMN_ALLOCATE_TIME = "allocate_time";
 
     private static final String COLUMN_ALLOCATE_SIZE = "allocate_size";
 
@@ -55,6 +59,9 @@ public class DbleMemoryResident extends ManagerBaseTable {
         columns.put(COLUMN_ALLOCATE_SIZE, new ColumnMeta(COLUMN_ALLOCATE_SIZE, "int(11)", false, false));
         columnsType.put(COLUMN_ALLOCATE_SIZE, Fields.FIELD_TYPE_LONG);
 
+        columns.put(COLUMN_ALLOCATE_TIME, new ColumnMeta(COLUMN_ALLOCATE_TIME, "timestamp(3)", false));
+        columnsType.put(COLUMN_ALLOCATE_TIME, Fields.FIELD_TYPE_TIMESTAMP);
+
         columns.put(COLUMN_SQL, new ColumnMeta(COLUMN_SQL, "text", false));
         columnsType.put(COLUMN_SQL, Fields.FIELD_TYPE_VAR_STRING);
 
@@ -83,6 +90,8 @@ public class DbleMemoryResident extends ManagerBaseTable {
             row.put(COLUMN_STACKTRACE, str.toString());
             row.put(COLUMN_BUFFER_TYPE, bqr.getType().toString());
             row.put(COLUMN_ALLOCATE_SIZE, String.valueOf(bqr.getAllocateSize()));
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+            row.put(COLUMN_ALLOCATE_TIME, sdf.format(new Date(bqr.getAllocatedTime())));
             row.put(COLUMN_SQL, bqr.getSql());
             rowList.add(row);
         });

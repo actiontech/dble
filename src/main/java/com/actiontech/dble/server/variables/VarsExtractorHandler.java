@@ -27,12 +27,12 @@ public class VarsExtractorHandler {
             "Variable_name",
             "Value"};
     private static final String MYSQL_SHOW_VARIABLES = "show variables";
-    private boolean extracting;
+    private volatile boolean extracting;
     private Lock lock;
     private Condition done;
     private Map<String, PhysicalDbGroup> dbGroups;
-    private PhysicalDbInstance physicalDbInstance;
     private volatile SystemVariables systemVariables = null;
+    private volatile boolean fetchFailed = false;
 
     public VarsExtractorHandler(Map<String, PhysicalDbGroup> dbGroups) {
         this.dbGroups = dbGroups;
@@ -41,25 +41,16 @@ public class VarsExtractorHandler {
         this.done = lock.newCondition();
     }
 
-    public VarsExtractorHandler(PhysicalDbInstance physicalDbInstance) {
-        this.physicalDbInstance = physicalDbInstance;
-        this.extracting = false;
-        this.lock = new ReentrantLock();
-        this.done = lock.newCondition();
-    }
-
 
     public SystemVariables execute() {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-system-variables-from-backend");
+        PhysicalDbInstance physicalDbInstance = getPhysicalDbInstance();
         try {
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
-            if (null == this.physicalDbInstance) {
-                this.physicalDbInstance = getPhysicalDbInstance();
-            }
             if (physicalDbInstance != null) {
                 OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, physicalDbInstance);
                 sqlJob.run();
-                waitDone();
+                waitOrRetry(physicalDbInstance);
             } else {
                 tryInitVars();
                 LOGGER.warn("No dbInstance is alive, server can not get 'show variables' result");
@@ -67,7 +58,6 @@ public class VarsExtractorHandler {
             return systemVariables;
         } finally {
             ReloadLogHelper.debug("get system variables :{},dbInstance:{},result:{}", LOGGER, MYSQL_SHOW_VARIABLES, physicalDbInstance, systemVariables);
-            this.physicalDbInstance = null;
             TraceManager.finishSpan(traceObject);
         }
     }
@@ -115,25 +105,36 @@ public class VarsExtractorHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(sb.toString());
         }
-        signalDone();
+        signalDone(true);
     }
 
 
-    void signalDone() {
+    void signalDone(boolean isSuccess) {
         lock.lock();
         try {
             extracting = true;
+            if (!isSuccess) {
+                fetchFailed = true;
+            }
             done.signal();
         } finally {
             lock.unlock();
         }
     }
 
-    private void waitDone() {
+    private void waitOrRetry(PhysicalDbInstance dbInstance) {
         lock.lock();
         try {
             while (!extracting) {
                 done.await();
+            }
+            dbInstance.setTestConnSuccess(!fetchFailed);
+
+            if (fetchFailed) {
+                //retry
+                fetchFailed = false;
+                extracting = false;
+                systemVariables = execute();
             }
         } catch (InterruptedException e) {
             LOGGER.info("wait variables  grapping done " + e);

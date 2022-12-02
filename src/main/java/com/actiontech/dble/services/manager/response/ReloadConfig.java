@@ -348,10 +348,8 @@ public final class ReloadConfig {
         } else {
             //check version/packetSize/lowerCase
             ConfigUtil.getAndSyncKeyVariables(changeItemList, true);
-            //random one node
             //system variables
-            PhysicalDbInstance physicalDbInstance = getPhysicalDbInstance(loader);
-            newSystemVariables = getSystemVariablesFromDbInstance(loader.isFullyConfigured(), physicalDbInstance);
+            newSystemVariables = getSystemVariablesFromdbGroup(loader, loader.getDbGroups());
         }
         ReloadLogHelper.info("reload config: check and get system variables from random node end", LOGGER);
         return newSystemVariables;
@@ -596,21 +594,6 @@ public final class ReloadConfig {
         for (PhysicalDbGroup dbGroup : newDbGroups.values()) {
             dbGroup.stop("reload fail, stop");
         }
-    }
-
-    private static SystemVariables getSystemVariablesFromDbInstance(boolean fullyConfigured, PhysicalDbInstance physicalDbInstance) throws Exception {
-        VarsExtractorHandler handler = new VarsExtractorHandler(physicalDbInstance);
-        SystemVariables newSystemVariables;
-        newSystemVariables = handler.execute();
-        if (newSystemVariables == null) {
-            if (fullyConfigured) {
-                throw new Exception("Can't get variables from any dbInstance, because all of dbGroup can't connect to MySQL correctly");
-            } else {
-                ReloadLogHelper.info("reload config: no valid dbGroup ,keep variables as old", LOGGER);
-                newSystemVariables = DbleServer.getInstance().getSystemVariables();
-            }
-        }
-        return newSystemVariables;
     }
 
     private static SystemVariables getSystemVariablesFromdbGroup(ConfigInitializer loader, Map<String, PhysicalDbGroup> newDbGroups) throws Exception {

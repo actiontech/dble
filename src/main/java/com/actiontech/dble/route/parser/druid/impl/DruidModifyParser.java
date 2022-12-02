@@ -399,15 +399,21 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         Set<Pair<String, String>> tablesSet = new HashSet<>(ctx.getTables());
         Set<String> involvedNodeSet = new HashSet<>();
 
+        //sharding table
         routeForShardingConditionsToOneNode(rrs, tablesSet, involvedNodeSet, clientCharset);
+        if (involvedNodeSet.size() == 1 && tablesSet.isEmpty()) {
+            return involvedNodeSet;
+        }
+
         String currentNode = null;
         for (String x : involvedNodeSet) {
             currentNode = x;
         }
 
+        //single table or no sharding table
         currentNode = routeForNoShardingTablesToOneNode(currentNode, tablesSet, involvedNodeSet);
 
-
+        //multiple nodes or node not found
         if (involvedNodeSet.size() > 1 || currentNode == null) {
             return null;
         }
@@ -429,7 +435,8 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             } else if (tConfig instanceof GlobalTableConfig) {
                 throw new SQLNonTransientException(getErrorMsg());
             } else {
-                throw new SQLNonTransientException(getErrorMsg());
+                //try complex
+                return null;
             }
         }
         return involvedNodeSet;

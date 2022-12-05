@@ -71,7 +71,7 @@ public abstract class AbstractMultiTreadBatchTester {
         int batchSize = 1000;
         long totalBatch = recordCount / batchSize;
         ArrayList<Runnable> jobs = new ArrayList<Runnable>();
-        for (int i = 0; i < totalBatch; i++) {
+        for (long i = 0; i < totalBatch; i++) {
             long startId = minId + i * batchSize;
             long endId = (startId + batchSize - 1);
             if (endId >= maxId) {

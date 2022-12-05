@@ -154,49 +154,45 @@ public final class TableStatAnalyzer implements QueryResultListener {
         public List<String> parseTableNames(String sql) {
             final List<String> tables = new ArrayList<>();
             try {
-
                 SQLStatement stmt = parseStmt(sql);
                 if (stmt instanceof SQLReplaceStatement) {
                     String table = ((SQLReplaceStatement) stmt).getTableName().getSimpleName();
                     tables.add(fixName(table));
-
                 } else if (stmt instanceof SQLInsertStatement) {
                     String table = ((SQLInsertStatement) stmt).getTableName().getSimpleName();
                     tables.add(fixName(table));
-
                 } else if (stmt instanceof SQLUpdateStatement) {
-                    String table = ((SQLUpdateStatement) stmt).getTableName().getSimpleName();
-                    tables.add(fixName(table));
-
+                    addTableName(tables, stmt);
                 } else if (stmt instanceof SQLDeleteStatement) {
                     String table = ((SQLDeleteStatement) stmt).getTableName().getSimpleName();
                     tables.add(fixName(table));
-
                 } else if (stmt instanceof SQLSelectStatement) {
-
-                    String dbType = stmt.getDbType().name();
-                    if (!StringUtil.isEmpty(dbType) && JdbcConstants.MYSQL.equals(dbType)) {
-                        stmt.accept(new MySqlASTVisitorAdapter() {
-                            public boolean visit(SQLExprTableSource x) {
-                                tables.add(fixName(x.toString()));
-                                return super.visit(x);
-                            }
-                        });
-
-                    } else {
-                        stmt.accept(new SQLASTVisitorAdapter() {
-                            public boolean visit(SQLExprTableSource x) {
-                                tables.add(fixName(x.toString()));
-                                return super.visit(x);
-                            }
-                        });
-                    }
+                    addTableName(tables, stmt);
                 }
             } catch (Exception e) {
                 LOGGER.info("TableStatAnalyzer err:" + e.toString());
             }
-
             return tables;
+        }
+
+        private void addTableName(List<String> tables, SQLStatement stmt) {
+            String dbType = stmt.getDbType().name();
+            if (!StringUtil.isEmpty(dbType) && JdbcConstants.MYSQL.equals(dbType)) {
+                stmt.accept(new MySqlASTVisitorAdapter() {
+                    public boolean visit(SQLExprTableSource x) {
+                        tables.add(fixName(x.toString()));
+                        return super.visit(x);
+                    }
+                });
+
+            } else {
+                stmt.accept(new SQLASTVisitorAdapter() {
+                    public boolean visit(SQLExprTableSource x) {
+                        tables.add(fixName(x.toString()));
+                        return super.visit(x);
+                    }
+                });
+            }
         }
     }
 

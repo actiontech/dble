@@ -220,8 +220,8 @@ public abstract class AbstractService extends VariablesService implements Servic
                             connection.closeImmediately(Strings.join(closedReasons, ';'));
                             return;
                         } else {
-
-                            LOGGER.debug("conn graceful close should delay. {}.", this);
+                            if (LOGGER.isDebugEnabled())
+                                LOGGER.debug("conn graceful close should delay. {}.", this);
                             task.setDelayedTimes(task.getDelayedTimes() + 1);
                             /*
                             delayed, push back to queue.

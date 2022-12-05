@@ -184,10 +184,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     protected void backConnectionErr(ErrorPacket errPkg, @Nullable MySQLResponseService service, boolean syncFinished) {
         ShardingService shardingService = session.getShardingService();
         String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        LOGGER.info("execute sql err:{}, con:{}, frontend host:{}/{}/{}", errMsg, service,
-                shardingService.getConnection().getHost(),
-                shardingService.getConnection().getLocalPort(),
-                shardingService.getUser());
+        LOGGER.info("execute sql err:{}, con:{}", errMsg, service);
 
         if (service != null && !service.isFakeClosed()) {
             if (service.getConnection().isClosed()) {

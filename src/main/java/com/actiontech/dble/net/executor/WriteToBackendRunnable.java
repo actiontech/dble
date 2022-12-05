@@ -42,7 +42,8 @@ public class WriteToBackendRunnable implements Runnable {
         while (true) {
             if (Thread.currentThread().isInterrupted()) {
                 DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
-                LOGGER.debug("interrupt thread:{},writeToBackendQueue:{}", Thread.currentThread().toString(), writeToBackendQueue);
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("interrupt thread:{},writeToBackendQueue:{}", Thread.currentThread().toString(), writeToBackendQueue);
                 break;
             }
             try {
@@ -78,7 +79,8 @@ public class WriteToBackendRunnable implements Runnable {
                 }
             } catch (InterruptedException e) {
                 DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
-                LOGGER.debug("interrupt thread:{},concurrentBackQueue:{}", Thread.currentThread().toString(), writeToBackendQueue, e);
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("interrupt thread:{},concurrentBackQueue:{}", Thread.currentThread().toString(), writeToBackendQueue, e);
                 break;
             } catch (Throwable t) {
                 LOGGER.warn("Unknown error:", t);

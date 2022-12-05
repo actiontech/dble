@@ -36,6 +36,7 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
     public static final char DOUBLE_QUOTE = '\"';
     public static final char WILDCARD = '*';
 
+
     public ItemFuncJsonExtract(List<Item> args, int charsetIndex) {
         super(args, charsetIndex);
     }
@@ -58,13 +59,15 @@ public class ItemFuncJsonExtract extends ItemStrFunc {
 
     @Override
     public String valStr() {
+
         final Item arg1 = args.get(0);
-        if (arg1.isNull()) {
+        String inputStr = arg1.valStr();
+
+        if (inputStr == null || arg1.isNullValue()) {
             LOGGER.debug("use inner json_extract() ,arg null");
             this.nullValue = true;
             return EMPTY;
         }
-        String inputStr = arg1.valStr();
         List<String> patterns = new ArrayList<>();
         for (int i = 1; i < args.size(); i++) {
             patterns.add(args.get(i).valStr());

@@ -90,7 +90,9 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     @Override
     public void okResponse(byte[] ok, @NotNull AbstractService service) {
-        LOGGER.debug("receive ok packet for sync context, service {}", service);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("receive ok packet for sync context, service {}", service);
+        }
         ((MySQLResponseService) service).syncAndExecute();
     }
 

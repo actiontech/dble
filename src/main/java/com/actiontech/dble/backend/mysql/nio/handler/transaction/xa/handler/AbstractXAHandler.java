@@ -91,8 +91,8 @@ public abstract class AbstractXAHandler extends DefaultMultiNodeHandler {
     }
 
     @Override
-    public void handleConnectionClose(@NotNull AbstractService service, final String reason) {
-        currentStage.onConnectionClose((MySQLResponseService) service);
+    public void handleConnectionClose(MySQLResponseService service, RouteResultsetNode rNode, final String reason) {
+        currentStage.onConnectionClose(service);
     }
 
     @Override

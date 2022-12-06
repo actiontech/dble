@@ -100,22 +100,20 @@ public abstract class DefaultMultiNodeHandler extends MultiNodeHandler {
             zeroReached = canResponse();
             if (removed) {
                 this.setFail(closeReason);
-                handleConnectionClose(service, reason);
+                handleConnectionClose(responseService, rNode, reason);
             }
         } finally {
             lock.unlock();
         }
 
-        if (removed) {
-            session.getTargetMap().remove(rNode);
-            responseService.setResponseHandler(null);
-            if (zeroReached) {
-                finish(null);
-            }
+        if (removed && zeroReached) {
+            finish(null);
         }
     }
 
-    protected void handleConnectionClose(@NotNull AbstractService service, String reason) {
+    protected void handleConnectionClose(MySQLResponseService service, RouteResultsetNode rNode, String reason) {
+        session.getTargetMap().remove(rNode);
+        service.setResponseHandler(null);
     }
 
     protected abstract void finish(byte[] ok);

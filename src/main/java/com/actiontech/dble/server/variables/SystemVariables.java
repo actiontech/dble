@@ -14,12 +14,10 @@ import java.util.Map;
 
 public final class SystemVariables {
 
-    private Map<String, String> globalVariables;
     private Map<String, String> sessionVariables;
     private volatile boolean lowerCase = true;
 
     public SystemVariables() {
-        globalVariables = new HashMap<>();
         sessionVariables = new HashMap<>();
         pickSessionVariables();
     }
@@ -218,8 +216,6 @@ public final class SystemVariables {
             }
         } else if ("lower_case_table_names".equals(key)) {
             lowerCase = !value.equals("0");
-        } else {
-            globalVariables.put(key, value);
         }
     }
 

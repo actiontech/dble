@@ -19,7 +19,6 @@ import com.actiontech.dble.services.manager.response.ChangeItem;
 import com.actiontech.dble.services.manager.response.ChangeItemType;
 import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.logging.log4j.util.Strings;
@@ -152,10 +151,9 @@ public final class ConfigUtil {
         }
     }
 
-    public static String getAndSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws Exception {
+    public static List<String> getAndSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("sync-key-variables");
         try {
-            StringBuilder sb = new StringBuilder();
             Map<String, PhysicalDbGroup> mysqlDbGroups = new HashMap<>();
             Map<String, PhysicalDbGroup> clickHouseDbGroups = new HashMap<>();
             dbGroups.forEach((k, v) -> {
@@ -165,26 +163,23 @@ public final class ConfigUtil {
                     clickHouseDbGroups.put(k, v);
                 }
             });
-            String mysqlSyncKeyVariables = getMysqlSyncKeyVariables(mysqlDbGroups, needSync);
-            if (!StringUtil.isEmpty(mysqlSyncKeyVariables)) {
-                sb.append(mysqlSyncKeyVariables);
-            }
-            String clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(clickHouseDbGroups, needSync);
-            if (!StringUtil.isEmpty(clickHouseSyncKeyVariables)) {
-                sb.append(clickHouseSyncKeyVariables);
-            }
-            return sb.length() == 0 ? null : sb.toString();
+
+            List<String> syncKeyVariables = Lists.newArrayList();
+            syncKeyVariables.addAll(getMysqlSyncKeyVariables(mysqlDbGroups, needSync));
+            syncKeyVariables.addAll(getClickHouseSyncKeyVariables(clickHouseDbGroups, needSync));
+            return syncKeyVariables;
         } finally {
             TraceManager.finishSpan(traceObject);
         }
     }
 
     @Nullable
-    private static String getMysqlSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws InterruptedException, ExecutionException, IOException {
+    private static List<String> getMysqlSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws InterruptedException, ExecutionException, IOException {
         String msg = null;
+        List<String> list = Lists.newArrayList();
         if (dbGroups.size() == 0) {
             //with no dbGroups, do not check the variables
-            return null;
+            return list;
         }
         Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
         List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
@@ -192,6 +187,7 @@ public final class ConfigUtil {
 
         boolean lowerCase = false;
         boolean isFirst = true;
+        int instanceIndex = 0;
         Set<String> firstGroup = new HashSet<>();
         Set<String> secondGroup = new HashSet<>();
         int minNodePacketSize = Integer.MAX_VALUE;
@@ -215,11 +211,21 @@ public final class ConfigUtil {
                     majorVersion = 5;
                 }
                 minVersion = Math.min(minVersion, majorVersion);
+                PhysicalDbInstance instance = dbInstanceList.get(instanceIndex);
+                // The back_log value indicates how many requests can be stacked during this short time before MySQL momentarily stops answering new requests
+                int minCon = instance.getConfig().getMinCon();
+                instanceIndex++;
+                int backLog = keyVariables.getBackLog();
+                if (backLog < minCon) {
+                    msg = "dbGroup[" + instance.getDbGroup().getGroupName() + "," + instance.getName() + "] the value of back_log may too small, current value is " + backLog + ", recommended value is " + minCon;
+                    list.add(msg);
+                }
             }
         }
         if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
             SystemConfig.getInstance().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
             msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
+            list.add(msg);
             LOGGER.warn(msg);
         }
         if (minVersion < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
@@ -248,15 +254,16 @@ public final class ConfigUtil {
         }
         dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
         DbleTempConfig.getInstance().setLowerCase(lowerCase);
-        return msg;
+        return list;
     }
 
     @Nullable
-    private static String getClickHouseSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws InterruptedException, ExecutionException, IOException {
+    private static List<String> getClickHouseSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws InterruptedException, ExecutionException, IOException {
         String msg = null;
+        List<String> list = Lists.newArrayList();
         if (dbGroups.size() == 0) {
             //with no dbGroups, do not check the variables
-            return null;
+            return list;
         }
         Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
         List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
@@ -292,6 +299,7 @@ public final class ConfigUtil {
         if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
             SystemConfig.getInstance().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
             msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
+            list.add(msg);
             LOGGER.warn(msg);
         }
         if (minVersion < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
@@ -320,7 +328,7 @@ public final class ConfigUtil {
         }
         dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
         DbleTempConfig.getInstance().setLowerCase(lowerCase);
-        return msg;
+        return list;
     }
 
 

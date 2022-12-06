@@ -88,11 +88,8 @@ class DecryptByPublicKey(object):
         # 这里使用了six库的iterbytes()方法去模拟python2对bytes的轮询
 
         if len(decrypted_bytes) > 0 and list(six.iterbytes(decrypted_bytes))[0] == 1:
-            try:
-                raw_info = decrypted_bytes[decrypted_bytes.find(b'\x00')+1:]
-            except Exception as e:
-                raise e
-        return raw_info.decode("utf-8")
+            raw_info = decrypted_bytes[decrypted_bytes.find(b'\x00') + 1:]
+            return raw_info.decode("utf-8")
 
     def decrypt(self) -> str:
 

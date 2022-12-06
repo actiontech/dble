@@ -155,7 +155,7 @@ public final class Hardware {
         BufferedReader bi = null;
 
         try {
-            Process proc = Runtime.getRuntime().exec("sysctl hw.memsize");
+            Process proc = Runtime.getRuntime().exec("/usr/sbin/sysctl hw.memsize");
 
             bi = new BufferedReader(
                     new InputStreamReader(proc.getInputStream()));
@@ -195,7 +195,7 @@ public final class Hardware {
     private static long getSizeOfPhysicalMemoryForFreeBSD() {
         BufferedReader bi = null;
         try {
-            Process proc = Runtime.getRuntime().exec("sysctl hw.physmem");
+            Process proc = Runtime.getRuntime().exec("/usr/sbin/sysctl hw.physmem");
 
             bi = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 
@@ -210,10 +210,10 @@ public final class Hardware {
                 }
             }
 
-            LOG.error("Cannot determine the size of the physical memory for FreeBSD host (using 'sysctl hw.physmem').");
+            LOG.error("Cannot determine the size of the physical memory for FreeBSD host (using '/usr/sbin/sysctl hw.physmem').");
             return -1;
         } catch (Throwable t) {
-            LOG.error("Cannot determine the size of the physical memory for FreeBSD host (using 'sysctl hw.physmem'): " + t.getMessage(), t);
+            LOG.error("Cannot determine the size of the physical memory for FreeBSD host (using '/usr/sbin/sysctl hw.physmem'): " + t.getMessage(), t);
             return -1;
         } finally {
             if (bi != null) {

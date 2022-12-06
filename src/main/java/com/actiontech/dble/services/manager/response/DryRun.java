@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.services.manager.response;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
@@ -18,8 +17,6 @@ import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.converter.ShardingConverter;
 import com.actiontech.dble.config.converter.UserConverter;
-import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
-import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.helper.ShowDatabaseHandler;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -110,9 +107,9 @@ public final class DryRun {
             }
         }
         try {
-            String msg = ConfigUtil.getAndSyncKeyVariables(loader.getDbGroups(), false);
-            if (msg != null) {
-                list.add(new ErrorInfo("Backend", "WARNING", msg));
+            List<String> syncKeyVariables = ConfigUtil.getAndSyncKeyVariables(loader.getDbGroups(), false);
+            for (String syncKeyVariable : syncKeyVariables) {
+                list.add(new ErrorInfo("Backend", "WARNING", syncKeyVariable));
             }
         } catch (Exception e) {
             list.add(new ErrorInfo("Backend", "ERROR", e.getMessage()));
@@ -155,35 +152,8 @@ public final class DryRun {
         }
 
         delayDetection(serverConfig, list);
-        backLog(list);
 
         printResult(service, list);
-    }
-
-    private static void backLog(List<ErrorInfo> list) {
-        Map<String, PhysicalDbGroup> dbGroupMap = DbleServer.getInstance().getConfig().getDbGroups();
-        Collection<PhysicalDbGroup> dbGroups = dbGroupMap.values();
-        GetAndSyncDbInstanceKeyVariables keyVariables;
-
-        for (PhysicalDbGroup dbGroup : dbGroups) {
-            String groupName = dbGroup.getGroupName();
-            Map<String, PhysicalDbInstance> allDbInstanceMap = dbGroup.getAllDbInstanceMap();
-            Collection<PhysicalDbInstance> values = allDbInstanceMap.values();
-
-            for (PhysicalDbInstance instance : values) {
-                // The back_log value indicates how many requests can be stacked during this short time before MySQL momentarily stops answering new requests,the suggestions here give at least a third of the size of the mincon
-                int minCon = instance.getConfig().getMinCon() / 3;
-                int backLog = minCon;
-                keyVariables = new GetAndSyncDbInstanceKeyVariables(instance, false);
-                KeyVariables variables = keyVariables.call();
-                if (Objects.nonNull(variables)) {
-                    backLog = variables.getBackLog();
-                }
-                if (backLog < minCon) {
-                    list.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + groupName + "," + instance.getName() + "] the value of back_log may too small, current value is + " + backLog));
-                }
-            }
-        }
     }
 
     private static void delayDetection(ServerConfig serverConfig, List<ErrorInfo> list) {

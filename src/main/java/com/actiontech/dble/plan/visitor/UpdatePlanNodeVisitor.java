@@ -43,9 +43,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.actiontech.dble.util.StringUtil.equalsIgnoreCase;
+
 public class UpdatePlanNodeVisitor extends MySQLPlanNodeVisitor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdatePlanNodeVisitor.class);
+
+    private static final String ERROR_MSG = "Update set multiple tables is not supported yet!";
 
 
     public UpdatePlanNodeVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager, boolean isSubQuery, Map<String, String> usrVariables, @Nullable HintPlanInfo hintPlanInfo) {
@@ -183,6 +187,9 @@ public class UpdatePlanNodeVisitor extends MySQLPlanNodeVisitor {
             setValItemList.add(itemFuncEqual.arguments().get(1));
             updateTableSet.add(itemFuncEqual.arguments().get(0).getTableName());
         }
+        if (updateTableSet.size() > 1) {
+            throw new MySQLOutPutException(ErrorCode.ERR_NOT_SUPPORTED, "", ERROR_MSG);
+        }
 
         Set<String> selectTableSet = tableNodes.stream()
                 .filter(tableNode -> !updateTableSet.contains(tableNode.getAlias()))
@@ -190,60 +197,61 @@ public class UpdatePlanNodeVisitor extends MySQLPlanNodeVisitor {
                 .collect(Collectors.toSet());
 
         //only supports update set single table
-        StringBuilder setBuilder = new StringBuilder();
+        Set<Item> selectColumnSet = Sets.newLinkedHashSet();
         for (Item item : setValItemList) {
             if (selectTableSet.isEmpty()) {
                 selectTableSet.add(item.getTableName());
                 if (!StringUtil.isEmpty(item.getTableName())) {
-                    setBuilder.append("`" + item.getTableName() + "`.`" + item.getItemName() + "`,");
+                    addSelectColumn(selectColumnSet, item);
                 }
             } else if (!selectTableSet.contains(item.getTableName())) {
+                if (updateTableSet.contains(item.getTableName())) {
+                    continue;
+                }
                 if (!(item instanceof ItemBasicConstant)) {
-                    throw new MySQLOutPutException(ErrorCode.ERR_NOT_SUPPORTED, "", "Update set multiple tables is not supported yet!");
+                    throw new MySQLOutPutException(ErrorCode.ERR_NOT_SUPPORTED, "", ERROR_MSG);
                 }
             } else {
-                setBuilder.append("`" + item.getTableName() + "`.`" + item.getItemName() + "`,");
+                addSelectColumn(selectColumnSet, item);
             }
         }
-
-        if (!setBuilder.toString().isEmpty()) {
-            setBuilder.deleteCharAt(setBuilder.length() - 1);
-        }
-        StringBuilder sqlBuilder = new StringBuilder();
-        sqlBuilder.append("select ");
-
-        StringBuilder selectBuilder = new StringBuilder();
-        //set
-        selectBuilder.append(setBuilder);
-        //where
-        StringBuilder whereBuilder = new StringBuilder();
 
         List<Item> whereItemList = getAllWhereItem(query.getWhereFilter());
         whereItemList.forEach(whereItem -> {
             if (!StringUtil.isEmpty(whereItem.getTableName()) && selectTableSet.contains(whereItem.getTableName())) {
-                whereBuilder.append(",`" + whereItem.getTableName() + "`.`" + whereItem.getItemName() + "` ");
+                addSelectColumn(selectColumnSet, whereItem);
             }
         });
 
-        if (setBuilder.toString().isEmpty() && !whereBuilder.toString().isEmpty()) {
-            whereBuilder.deleteCharAt(0);
-        }
-        selectBuilder.append(whereBuilder);
-        if (StringUtil.isBlank(selectBuilder.toString())) {
+        if (selectColumnSet.isEmpty()) {
             throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", DruidUpdateParser.MODIFY_SQL_NOT_SUPPORT_MESSAGE);
         }
 
-        sqlBuilder.append(selectBuilder).append("from");
+        StringBuilder selectBuilder = new StringBuilder();
+        for (Item item : selectColumnSet) {
+            selectBuilder.append("`").append(item.getTableName()).append("`.`").append(item.getItemName()).append("`,");
+        }
+        selectBuilder.deleteCharAt(selectBuilder.length() - 1);
 
+        StringBuilder sqlBuilder = new StringBuilder();
+        sqlBuilder.append("select ").append(selectBuilder).append(" from");
         for (TableNode tableNode : tableNodes) {
             if (selectTableSet.contains(tableNode.getAlias())) {
                 buildTableName(tableNode, sqlBuilder);
             }
         }
-
         sqlBuilder.append(" group by ");
         sqlBuilder.append(selectBuilder);
         return sqlBuilder.toString();
+    }
+
+    private void addSelectColumn(Set<Item> selectColumnSet, Item item) {
+        boolean isRepeat = selectColumnSet.stream()
+                .anyMatch(selectColumn -> equalsIgnoreCase(selectColumn.getTableName(), item.getTableName()) &&
+                        equalsIgnoreCase(selectColumn.getItemName(), item.getItemName()));
+        if (!isRepeat) {
+            selectColumnSet.add(item);
+        }
     }
 
     private List<Item> getAllWhereItem(Item item) {
@@ -286,6 +294,16 @@ public class UpdatePlanNodeVisitor extends MySQLPlanNodeVisitor {
             boolean hasSum = itemFuncEqual.arguments().stream().anyMatch(item -> item instanceof ItemSum);
             if (hasSum) {
                 throw new MySQLOutPutException(ErrorCode.ERR_NOT_SUPPORTED, "", " Invalid use of group function");
+            }
+            //Subquery fields are not allowed to be updated
+            Item setKeyItem = itemFuncEqual.arguments().get(0);
+            if (StringUtil.isEmpty(setKeyItem.getTableName())) {
+                throw new MySQLOutPutException(ErrorCode.ERR_NOT_SUPPORTED, "", "Constants are not supported or Set an alias");
+            }
+            boolean setKeyNotFromSubquery = modifyNode.getReferedTableNodes().stream()
+                    .anyMatch(tableNode -> (setKeyItem.getTableName().equals(tableNode.getAlias()) || setKeyItem.getTableName().equals(tableNode.getTableName())));
+            if (!setKeyNotFromSubquery) {
+                throw new MySQLOutPutException(ErrorCode.ERR_NOT_SUPPORTED, "", "Subquery fields are not allowed to be updated");
             }
             modifyNode.addSetItem(itemFuncEqual);
         }

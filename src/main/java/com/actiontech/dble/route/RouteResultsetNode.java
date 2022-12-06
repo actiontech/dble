@@ -220,7 +220,8 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder(name);
+        StringBuilder sb = new StringBuilder("rrsNode[");
+        sb.append(name);
         sb.append('-').append(nodeRepeat).append('-');
         if (null != tableSet && !tableSet.isEmpty()) {
             sb.append("{" + tableSet.stream().collect(Collectors.joining(",")) + "}." + repeatTableIndex + "-");
@@ -229,6 +230,7 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
         sb.append(statement.length() <= 1024 ? statement : statement.substring(0, 1024) + "...");
         sb.append("}.");
         sb.append(multiplexNum.get());
+        sb.append("]");
         return sb.toString();
     }
 

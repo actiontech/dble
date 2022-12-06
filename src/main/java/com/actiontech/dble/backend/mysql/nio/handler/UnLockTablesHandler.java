@@ -7,9 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -20,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,7 +25,7 @@ import java.util.Map;
  *
  * @author songdabin
  */
-public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHandler {
+public class UnLockTablesHandler extends DefaultMultiNodeHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UnLockTablesHandler.class);
 
@@ -79,82 +76,26 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
     }
 
     @Override
-    public void connectionAcquired(BackendConnection conn) {
-        LOGGER.info("unexpected invocation: connectionAcquired from unlock tables");
+    public void handleErrorResponse(ErrorPacket err, @NotNull AbstractService service) {
+        session.releaseConnectionIfSafe(((MySQLResponseService) service), false);
     }
 
     @Override
-    public void errorResponse(byte[] err, @NotNull AbstractService service) {
-        boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
-        if (executeResponse) {
-            session.releaseConnectionIfSafe(((MySQLResponseService) service), false);
-        } else {
-            service.getConnection().businessClose("unfinished sync");
-            session.getTargetMap().remove((RouteResultsetNode) (((MySQLResponseService) service).getAttachment()));
+    public void handleOkResponse(byte[] data, @NotNull AbstractService service) {
+        session.releaseConnection(((MySQLResponseService) service).getConnection());
+    }
+
+    @Override
+    protected void finish(byte[] ok) {
+        if (this.isFail()) {
+            this.tryErrorFinished(true);
+            return;
         }
-        ErrorPacket errPacket = new ErrorPacket();
-        errPacket.read(err);
-        String errMsg = new String(errPacket.getMessage());
-        if (!isFail()) {
-            setFail(errMsg);
-        }
-        LOGGER.info("error response from " + service + " err " + errMsg + " code:" + errPacket.getErrNo());
-
-        this.tryErrorFinished(this.decrementToZero(((MySQLResponseService) service)));
-    }
-
-    @Override
-    public void okResponse(byte[] data, @NotNull AbstractService service) {
-        boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
-        if (executeResponse) {
-            boolean isEndPack = decrementToZero(((MySQLResponseService) service));
-            session.releaseConnection(((MySQLResponseService) service).getConnection());
-            if (isEndPack) {
-                if (this.isFail()) {
-                    this.tryErrorFinished(true);
-                    return;
-                }
-                OkPacket ok = new OkPacket();
-                ok.read(data);
-                lock.lock();
-                try {
-                    ok.setPacketId(session.getShardingService().nextPacketId());
-                    ok.setServerStatus(session.getShardingService().isAutocommit() ? 2 : 1);
-                } finally {
-                    lock.unlock();
-                }
-                ok.write(session.getSource());
-            }
-        }
-    }
-
-    @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, @NotNull AbstractService service) {
-        LOGGER.info("unexpected packet for " +
-                service + " bound by " + session.getSource() +
-                ": field's eof");
-    }
-
-    @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
-        LOGGER.info("unexpected packet for " +
-                service + " bound by " + session.getSource() +
-                ": row data packet");
-        return false;
-    }
-
-    @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
-        LOGGER.info("unexpected packet for " +
-                service + " bound by " + session.getSource() +
-                ": row's eof");
-    }
-
-    @Override
-    public void connectionClose(@NotNull AbstractService service, String reason) {
-        // TODO Auto-generated method stub
-
+        OkPacket okPacket = new OkPacket();
+        okPacket.read(ok);
+        okPacket.setPacketId(session.getShardingService().nextPacketId());
+        okPacket.setServerStatus(session.getShardingService().isAutocommit() ? 2 : 1);
+        okPacket.write(session.getSource());
     }
 
 }

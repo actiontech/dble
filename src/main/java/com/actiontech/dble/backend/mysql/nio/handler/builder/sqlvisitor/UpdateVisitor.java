@@ -112,16 +112,19 @@ public class UpdateVisitor extends MysqlVisitor {
             return valueItem.toString();
         } else if (!StringUtil.equalsIgnoreCase(tableName, valueItem.getTableName()) && isExplain) {
             return new ItemString(NEED_REPLACE, valueItem.getCharsetIndex()).toString();
-        }
-        if (valueItemList.size() == 1) {
-            //autoalias_scalar
-            return valueItemList.get(0).toString();
-        }
-        int index = getItemIndex(valueItem);
-        if (index < 0) {
+        } else if (StringUtil.equalsIgnoreCase(tableName, valueItem.getTableName())) {
             return valueItem.toExpression().toString();
         } else {
-            return valueItemList.get(index).toString();
+            if (valueItemList.size() == 1) {
+                //autoalias_scalar
+                return valueItemList.get(0).toString();
+            }
+            int index = getItemIndex(valueItem);
+            if (index < 0) {
+                return valueItem.toExpression().toString();
+            } else {
+                return valueItemList.get(index).toString();
+            }
         }
     }
 

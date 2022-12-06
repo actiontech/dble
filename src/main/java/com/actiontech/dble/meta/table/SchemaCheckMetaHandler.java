@@ -74,7 +74,8 @@ public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
                 AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
                         ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY, tableId);
             }
-            LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
         }
     }
 

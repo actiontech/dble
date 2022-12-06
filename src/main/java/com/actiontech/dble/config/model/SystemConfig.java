@@ -1854,7 +1854,7 @@ public final class SystemConfig {
         if (enableBufferMonitorTmp >= 0 && enableBufferMonitorTmp <= 1) {
             this.enableMemoryBufferMonitor = enableBufferMonitorTmp;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "enableBufferMonitor", enableBufferMonitorTmp, this.enableMemoryBufferMonitor));
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableMemoryBufferMonitor", enableBufferMonitorTmp, this.enableMemoryBufferMonitor));
         }
     }
 
@@ -1866,7 +1866,7 @@ public final class SystemConfig {
         if (enableBufferMonitorRecordPoolTmp >= 0 && enableBufferMonitorRecordPoolTmp <= 1) {
             this.enableMemoryBufferMonitorRecordPool = enableBufferMonitorRecordPoolTmp;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "enableBufferMonitorRecordPool", enableBufferMonitorRecordPoolTmp, this.enableMemoryBufferMonitorRecordPool));
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableMemoryBufferMonitorRecordPool", enableBufferMonitorRecordPoolTmp, this.enableMemoryBufferMonitorRecordPool));
         }
     }
 

@@ -59,7 +59,8 @@ public class MemoryBufferMonitor {
         }
         final BufferPoolRecord record = monitorMap.remove(allocateAddress);
         if (record != null) {
-            LOGGER.debug("removed  buffer record ,address: {}, content:{}", allocateAddress, record);
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("removed  buffer record ,address: {}, content:{}", allocateAddress, record);
         }
     }
 
@@ -90,7 +91,8 @@ public class MemoryBufferMonitor {
 
             }
             final BufferPoolRecord record = bufferRecordBuilder.withAllocatedTime(System.currentTimeMillis()).withAllocateSize(allocateSize).build();
-            LOGGER.debug("new  buffer record ,address: {}, content:{}", allocateAddress, record);
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("new  buffer record ,address: {}, content:{}", allocateAddress, record);
             monitorMap.put(allocateAddress, record);
 
         } catch (Exception e) {

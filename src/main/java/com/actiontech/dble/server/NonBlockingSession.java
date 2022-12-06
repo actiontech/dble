@@ -401,13 +401,13 @@ public class NonBlockingSession extends Session {
         TraceManager.log(ImmutableMap.of("route-result-set", rrs), traceObject);
         try {
             if (killed) {
+                LOGGER.info("{} sql[{}] is killed.", getShardingService().toString2(), getShardingService().getExecuteSql());
                 shardingService.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
                 return;
             }
 
             if (LOGGER.isDebugEnabled()) {
-                StringBuilder s = new StringBuilder();
-                LOGGER.debug(s.append(shardingService).append(rrs).toString() + " rrs ");
+                LOGGER.debug("{} print current {}", shardingService.toString2(), rrs);
             }
 
             if (PauseShardingNodeManager.getInstance().getIsPausing().get() &&
@@ -746,7 +746,6 @@ public class NonBlockingSession extends Session {
     }
 
 
-
     public void unLockTable(String sql) {
         UnLockTablesHandler handler = new UnLockTablesHandler(this, this.shardingService.isAutocommit(), sql);
         handler.execute();
@@ -761,6 +760,9 @@ public class NonBlockingSession extends Session {
         if ((shardingService.isInTransaction() && transactionManager.getXAStage() != null) ||
                 needWaitFinished) {
             return;
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("terminate {}", this);
         }
         for (BackendConnection node : target.values()) {
             node.close("client closed or timeout killed");
@@ -842,6 +844,7 @@ public class NonBlockingSession extends Session {
     }
 
     public void bindConnection(RouteResultsetNode key, BackendConnection conn) {
+        conn.setBindFront(this.getSource().getSimple());
         target.put(key, conn);
     }
 
@@ -961,7 +964,6 @@ public class NonBlockingSession extends Session {
     }
 
 
-
     public void rowCountRolling() {
         rowCountLastSQL = rowCountCurrentSQL;
         rowCountCurrentSQL = -1;
@@ -1060,22 +1062,24 @@ public class NonBlockingSession extends Session {
                         con.enableRead();
                         iterator.remove();
                     } else {
-                        LOGGER.debug("This front connection want to remove flow control, but mysql conn [{}]'s size [{}] is not lower the FlowLowLevel", con.getThreadId(), size);
+                        if (LOGGER.isDebugEnabled())
+                            LOGGER.debug("This front connection want to remove flow control, but mysql conn [{}]'s size [{}] is not lower the FlowLowLevel", con.getThreadId(), size);
                     }
                 } else {
                     con.enableRead();
                     iterator.remove();
                 }
             }
-
-            LOGGER.debug("This front connection remove flow control, currentWritingSize= {} and now still have {} backend connections in flow control state, the front conn info :{} ", currentWritingSize, flowControlledTarget.size(), this.getSource());
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("This front connection remove flow control, currentWritingSize= {} and now still have {} backend connections in flow control state, the front conn info :{} ", currentWritingSize, flowControlledTarget.size(), this.getSource());
         }
     }
 
     @Override
     public void startFlowControl(int currentWritingSize) {
         synchronized (flowControlledTarget) {
-            LOGGER.debug("This front connection begins flow control, currentWritingSize= {},conn info:{}", currentWritingSize, this.getSource());
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("This front connection begins flow control, currentWritingSize= {},conn info:{}", currentWritingSize, this.getSource());
             shardingService.getConnection().setFrontWriteFlowControlled(true);
             for (BackendConnection con : target.values()) {
                 con.disableRead();
@@ -1094,7 +1098,8 @@ public class NonBlockingSession extends Session {
                 con.getSocketWR().enableRead();
             }
             if (flowControlledTarget.size() == 0) {
-                LOGGER.debug("This frontend connection remove flow control because of release:{} ", this.getSource());
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("This frontend connection remove flow control because of release:{} ", this.getSource());
                 shardingService.getConnection().setFrontWriteFlowControlled(false);
             }
         }
@@ -1103,9 +1108,10 @@ public class NonBlockingSession extends Session {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("NonBlockSession with target ");
+        sb.append("NonBlockSession with target = [");
         for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet())
-            sb.append(" rrs = [").append(entry.getKey()).append("] with connection [").append(entry.getValue()).append("]");
+            sb.append(entry.getKey()).append(" with ").append(entry.getValue().toString2()).append(";");
+        sb.append("]");
         return sb.toString();
     }
 

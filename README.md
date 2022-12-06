@@ -7,7 +7,6 @@
 [![GitHub contributors](https://img.shields.io/github/contributors/actiontech/dble.svg)](https://github.com/actiontech/dble/graphs/contributors)
 [![GitHub license](https://img.shields.io/github/license/actiontech/dble.svg)](https://github.com/actiontech/dble/blob/master/LICENSE)
 
-[![Code Quality: Java](https://img.shields.io/lgtm/grade/java/github/actiontech/dble.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/actiontech/dble/context:java)
 [![Travis-ci build](https://img.shields.io/travis/com/actiontech/dble/master.svg)](https://travis-ci.com/actiontech?tab=insights)
 [![GitHub release](https://img.shields.io/github/release/actiontech/dble.svg)](https://github.com/actiontech/dble/releases) 
 [![GitHub download](https://img.shields.io/github/downloads/actiontech/dble/total.svg)](https://github.com/actiontech/dble/releases) 

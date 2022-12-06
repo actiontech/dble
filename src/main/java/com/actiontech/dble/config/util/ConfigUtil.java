@@ -165,8 +165,10 @@ public final class ConfigUtil {
             });
 
             List<String> syncKeyVariables = Lists.newArrayList();
-            syncKeyVariables.addAll(getMysqlSyncKeyVariables(mysqlDbGroups, needSync));
-            syncKeyVariables.addAll(getClickHouseSyncKeyVariables(clickHouseDbGroups, needSync));
+            List<String> mysqlSyncKeyVariables = getMysqlSyncKeyVariables(mysqlDbGroups, needSync);
+            Optional.ofNullable(mysqlSyncKeyVariables).ifPresent(list -> syncKeyVariables.addAll(list));
+            List<String> clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(clickHouseDbGroups, needSync);
+            Optional.ofNullable(clickHouseSyncKeyVariables).ifPresent(list -> syncKeyVariables.addAll(list));
             return syncKeyVariables;
         } finally {
             TraceManager.finishSpan(traceObject);
@@ -176,7 +178,7 @@ public final class ConfigUtil {
     @Nullable
     private static List<String> getMysqlSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws InterruptedException, ExecutionException, IOException {
         String msg = null;
-        List<String> list = Lists.newArrayList();
+        List<String> list = new ArrayList<>();
         if (dbGroups.size() == 0) {
             //with no dbGroups, do not check the variables
             return list;
@@ -260,7 +262,7 @@ public final class ConfigUtil {
     @Nullable
     private static List<String> getClickHouseSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws InterruptedException, ExecutionException, IOException {
         String msg = null;
-        List<String> list = Lists.newArrayList();
+        List<String> list = new ArrayList<>();
         if (dbGroups.size() == 0) {
             //with no dbGroups, do not check the variables
             return list;

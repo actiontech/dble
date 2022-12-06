@@ -319,7 +319,9 @@ public class MySQLResponseService extends BackendService {
 
         if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE && !isDDL) {
             // clientTxIsolation = Isolation.SERIALIZABLE;TODO:NEEDED?
-            XaDelayProvider.delayBeforeXaStart(rrn.getName(), xaTxID);
+            if (rrn != null) {
+                XaDelayProvider.delayBeforeXaStart(rrn.getName(), xaTxID);
+            }
             if (sb == null) {
                 sb = new StringBuilder(10);
             }

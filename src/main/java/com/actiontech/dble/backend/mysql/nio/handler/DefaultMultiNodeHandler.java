@@ -45,9 +45,9 @@ public abstract class DefaultMultiNodeHandler extends MultiNodeHandler {
     public final void errorResponse(byte[] err, @Nonnull AbstractService service) {
         MySQLResponseService responseService = (MySQLResponseService) service;
         boolean executeResponse = responseService.syncAndExecute();
+        RouteResultsetNode rNode = (RouteResultsetNode) responseService.getAttachment();
         if (!executeResponse) {
             responseService.getConnection().businessClose("unfinished sync");
-            RouteResultsetNode rNode = (RouteResultsetNode) responseService.getAttachment();
             session.getTargetMap().remove(rNode);
         }
 
@@ -59,7 +59,7 @@ public abstract class DefaultMultiNodeHandler extends MultiNodeHandler {
             LOGGER.debug("receive error [{}] from {}", errMsg, responseService);
         }
         handleErrorResponse(errPacket, responseService);
-        if (decrementToZero(responseService)) {
+        if (decrementToZero(rNode)) {
             finish(null);
         }
     }
@@ -75,8 +75,10 @@ public abstract class DefaultMultiNodeHandler extends MultiNodeHandler {
         }
         boolean executeResponse = responseService.syncAndExecute();
         if (executeResponse) {
+            // record attachment,because this backend conn may be released in handleOkResponse
+            RouteResultsetNode rNode = (RouteResultsetNode) responseService.getAttachment();
             handleOkResponse(ok, service);
-            if (decrementToZero(responseService)) {
+            if (decrementToZero(rNode)) {
                 finish(ok);
             }
         }

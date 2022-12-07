@@ -67,6 +67,18 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         return zeroReached;
     }
 
+    protected boolean decrementToZero(RouteResultsetNode rNode) {
+        boolean zeroReached;
+        lock.lock();
+        try {
+            unResponseRrns.remove(rNode);
+            zeroReached = canResponse();
+        } finally {
+            lock.unlock();
+        }
+        return zeroReached;
+    }
+
     protected void reset() {
         errorConnsCnt = 0;
         firstResponsed = false;

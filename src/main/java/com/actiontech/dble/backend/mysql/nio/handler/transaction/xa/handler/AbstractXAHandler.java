@@ -68,18 +68,6 @@ public abstract class AbstractXAHandler extends DefaultMultiNodeHandler {
         }
     }
 
-    protected boolean decrementToZero(RouteResultsetNode rrsn) {
-        boolean zeroReached;
-        lock.lock();
-        try {
-            unResponseRrns.remove(rrsn);
-            zeroReached = canResponse();
-        } finally {
-            lock.unlock();
-        }
-        return zeroReached;
-    }
-
     @Override
     public void handleOkResponse(byte[] ok, @NotNull AbstractService service) {
         this.currentStage.onConnectionOk((MySQLResponseService) service);

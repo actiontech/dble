@@ -177,10 +177,10 @@ public final class SystemParams {
         params.add(new ParamInfo("enableAlert", AlertUtil.isEnable() ? "1" : "0", "Enable or disable alert"));
         params.add(new ParamInfo("capClientFoundRows", CapClientFoundRows.getInstance().isEnableCapClientFoundRows() + "", "Whether to turn on EOF_Packet to return found rows, the default value is false"));
         params.add(new ParamInfo("maxRowSizeToFile", LoadDataBatch.getInstance().getSize() + "", "The maximum row size,if over this value,row data will be saved to file when load data.The default value is 100000"));
-        params.add(new ParamInfo("enableBatchLoadData", LoadDataBatch.getInstance().isEnableBatchLoadData() ? "1" : "0", "Enable Batch Load Data. The default value is false"));
+        params.add(new ParamInfo("enableBatchLoadData", LoadDataBatch.getInstance().isEnableBatchLoadData() ? "1" : "0", "Enable Batch Load Data. The default value is 0(false)"));
         params.add(new ParamInfo("enableGeneralLog", GeneralLog.getInstance().isEnableGeneralLog() ? "1" : "0", "Enable general log"));
         params.add(new ParamInfo("generalLogFile", GeneralLog.getInstance().getGeneralLogFile(), "The path of general log, the default value is ./general/general.log"));
-        params.add(new ParamInfo("enableStatistic", StatisticManager.getInstance().isEnable() ? "1" : "0", "Enable statistic sql, the default is false"));
+        params.add(new ParamInfo("enableStatistic", StatisticManager.getInstance().isEnable() ? "1" : "0", "Enable statistic sql, the default is 0(false)"));
         params.add(new ParamInfo("associateTablesByEntryByUserTableSize", StatisticManager.getInstance().getAssociateTablesByEntryByUserTableSize() + "", "AssociateTablesByEntryByUser table size, the default is 1024"));
         params.add(new ParamInfo("frontendByBackendByEntryByUserTableSize", StatisticManager.getInstance().getFrontendByBackendByEntryByUserTableSize() + "", "FrontendByBackendByEntryByUser table size, the default is 1024"));
         params.add(new ParamInfo("tableByUserByEntryTableSize", StatisticManager.getInstance().getTableByUserByEntryTableSize() + "", "TableByUserByEntry table size, the default is 1024"));

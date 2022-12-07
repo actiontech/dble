@@ -447,14 +447,14 @@ public class StatisticCf {
 
             @Override
             public void run() {
-                if (count > observe) {
-                    StatisticManager.getInstance().cancelMonitoring();
-                    return;
-                }
                 StatisticManager.getInstance().
                         getUsageData().add(new UsageDataBlock(DateUtil.parseStr(System.currentTimeMillis(), DateUtil.DEFAULT_DATE_PATTERN),
                         DF.format(1 - (StatisticManager.getInstance().getDisruptorRemaining() / queueSize))));
                 count += interval;
+                if (count > observe) {
+                    StatisticManager.getInstance().cancelMonitoring();
+                    return;
+                }
             }
         }
     }

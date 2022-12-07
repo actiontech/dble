@@ -11,6 +11,7 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -36,12 +37,17 @@ public abstract class AbstractService implements Service {
     protected ServiceTask currentTask = null;
     private volatile boolean isSupportCompress = false;
     protected volatile ProtoHandler proto;
-    protected final BlockingQueue<ServiceTask> taskQueue = new LinkedBlockingQueue<>(2000);
+    protected final BlockingQueue<ServiceTask> taskQueue;
 
     public AbstractService(AbstractConnection connection) {
         this.connection = connection;
         this.proto = new MySQLProtoHandlerImpl();
         this.packetId = new AtomicInteger(0);
+        if (this instanceof MySQLResponseService) {
+            taskQueue = new LinkedBlockingQueue<>();
+        } else {
+            taskQueue = new LinkedBlockingQueue<>(2000);
+        }
     }
 
     @Override

@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.buffer;
 
-import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
@@ -77,9 +76,6 @@ public class DirectByteBufferPool implements BufferPool {
             return;
         }
 
-        if (SystemConfig.getInstance().getDisableRecycleBuffer() == 1) {
-            return;
-        }
         bufferPoolMonitor.remove(((DirectBuffer) theBuf).address());
 
 

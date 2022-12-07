@@ -256,7 +256,6 @@ public final class SystemConfig {
     //unit: ms
     private long releaseTimeout = 10 * 60 * 1000L;
 
-    private int disableRecycleBuffer = 0; //temp
     private int enableMemoryBufferMonitor = 0;
     private int enableMemoryBufferMonitorRecordPool = 1;
 
@@ -1834,17 +1833,7 @@ public final class SystemConfig {
         this.supportSSL = supportSSL;
     }
 
-    public int getDisableRecycleBuffer() {
-        return disableRecycleBuffer;
-    }
 
-    public void setDisableRecycleBuffer(int disableRecycleBufferTmp) {
-        if (disableRecycleBufferTmp >= 0 && disableRecycleBufferTmp <= 1) {
-            this.disableRecycleBuffer = disableRecycleBufferTmp;
-        } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "disableRecycleBuffer", disableRecycleBufferTmp, this.disableRecycleBuffer));
-        }
-    }
 
     public int getEnableMemoryBufferMonitor() {
         return enableMemoryBufferMonitor;
@@ -2016,7 +2005,6 @@ public final class SystemConfig {
                 ", xaIdCheckPeriod=" + xaIdCheckPeriod +
                 ", enableBufferMonitor=" + enableMemoryBufferMonitor +
                 ", enableBufferMonitorRecordPool=" + enableMemoryBufferMonitorRecordPool +
-                ", disableRecycleBuffer=" + disableRecycleBuffer +
                 ", enableSqlDumpLog=" + enableSqlDumpLog +
                 ", sqlDumpLogBasePath='" + sqlDumpLogBasePath + '\'' +
                 ", sqlDumpLogFileName='" + sqlDumpLogFileName + '\'' +

@@ -192,7 +192,7 @@ public class PhysicalDbGroup {
 
     private boolean checkSlaveSynStatus(PhysicalDbInstance ds) {
         return (dbGroupConfig.getDelayThreshold() != -1 &&
-                dbGroupConfig.isShowSlaveSql()) || ds.getDbGroup().isDelayDetectionStart() ;
+                dbGroupConfig.isShowSlaveSql()) || ds.getDbGroup().isDelayDetectionStart();
     }
 
 
@@ -202,7 +202,7 @@ public class PhysicalDbGroup {
 
     public void init(String reason) {
         if (LOGGER.isDebugEnabled()) {
-            ReloadLogHelper.debug("init new group :{},reason:{}", LOGGER, this.toString(), reason);
+            ReloadLogHelper.debug("init new group :{},reason:{}", this.toString(), reason);
         }
         for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
             entry.getValue().init(reason, true, true);
@@ -236,7 +236,7 @@ public class PhysicalDbGroup {
 
     public void stop(String reason, boolean closeFront) {
         if (LOGGER.isDebugEnabled()) {
-            ReloadLogHelper.debug("recycle old group :{},reason:{},is close front:{}", LOGGER, this.toString(), reason, closeFront);
+            ReloadLogHelper.debug("recycle old group :{},reason:{},is close front:{}", this.toString(), reason, closeFront);
         }
         boolean flag = checkState();
         if (!flag) {
@@ -509,6 +509,7 @@ public class PhysicalDbGroup {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         adjustLock.writeLock().lock();
+        HaConfigManager.getInstance().info("added dbGroupLock");
         try {
             HaConfigManager.getInstance().updateDbGroupConf(createDisableSnapshot(this, nameList), syncWriteConf);
             for (String dsName : nameList) {
@@ -518,6 +519,7 @@ public class PhysicalDbGroup {
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
+            HaConfigManager.getInstance().info("released dbGroupLock");
         }
     }
 
@@ -535,6 +537,7 @@ public class PhysicalDbGroup {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         adjustLock.writeLock().lock();
+        HaConfigManager.getInstance().info("added dbGroupLock");
         try {
 
             HaConfigManager.getInstance().updateDbGroupConf(createEnableSnapshot(this, nameList), syncWriteConf);
@@ -546,6 +549,7 @@ public class PhysicalDbGroup {
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
+            HaConfigManager.getInstance().info("released dbGroupLock");
         }
     }
 
@@ -562,6 +566,7 @@ public class PhysicalDbGroup {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         adjustLock.writeLock().lock();
+        HaConfigManager.getInstance().info("added dbGroupLock");
         try {
             HaConfigManager.getInstance().updateDbGroupConf(createSwitchSnapshot(writeHost), syncWriteConf);
 
@@ -575,7 +580,7 @@ public class PhysicalDbGroup {
                 if (variables != null) {
                     newWriteHost.setReadOnly(variables.isReadOnly());
                 } else {
-                    LOGGER.warn(" GetAndSyncDbInstanceKeyVariables failed, set new Primary dbInstance ReadOnly");
+                    HaConfigManager.getInstance().warn("GetAndSyncDbInstanceKeyVariables failed, set new Primary dbInstance ReadOnly");
                     newWriteHost.setReadOnly(true);
                 }
             }
@@ -585,11 +590,12 @@ public class PhysicalDbGroup {
             newWriteHost.start("switch master from " + oldWriteInstance + " to the instance", false, false);
             return this.getClusterHaJson();
         } catch (Exception e) {
-            LOGGER.warn("switchMaster Exception ", e);
+            HaConfigManager.getInstance().warn("switchMaster Exception ", e);
             throw e;
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
+            HaConfigManager.getInstance().info("released dbGroupLock");
         }
     }
 

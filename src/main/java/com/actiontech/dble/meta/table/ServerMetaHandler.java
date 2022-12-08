@@ -57,7 +57,7 @@ public class ServerMetaHandler {
             if (config.getSchemas().containsKey(schema)) {
                 newReload.put(schema, config.getSchemas().get(schema));
             } else {
-                ReloadLogHelper.warn("reload schema[" + schema + "] metadata, but schema doesn't exist", LOGGER);
+                ReloadLogHelper.warn2("reload schema[" + schema + "] metadata, but schema doesn't exist");
             }
         }
         this.reloadSchemas = newReload;
@@ -66,16 +66,16 @@ public class ServerMetaHandler {
 
     public boolean execute() {
         filter();
-        ReloadLogHelper.infoList("Meta reload ", LOGGER, reloadSchemas.keySet());
+        ReloadLogHelper.infoList2("Meta reload ", reloadSchemas.keySet());
         for (Entry<String, SchemaConfig> entry : reloadSchemas.entrySet()) {
             if (ReloadManager.getReloadInstance().isReloadInterrupted()) {
-                ReloadLogHelper.info("reload meta loop interrupted by command ,break the loop", LOGGER);
+                ReloadLogHelper.briefInfo("reload meta loop interrupted by command ,break the loop");
                 break;
             }
             SchemaInitMetaHandler multiTableMeta = new SchemaInitMetaHandler(this, entry.getValue(), selfNode);
             if (filter != null) {
                 multiTableMeta.setFilterTables(filter.get(entry.getKey()));
-                ReloadLogHelper.infoList("sharding filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));
+                ReloadLogHelper.infoList2("sharding filter " + entry.getKey(), filter.get(entry.getKey()));
             }
             multiTableMeta.execute();
         }
@@ -104,7 +104,7 @@ public class ServerMetaHandler {
                 allSchemaDone.await();
             }
         } catch (InterruptedException e) {
-            ReloadLogHelper.info("waitAllSchemaDone " + e, LOGGER);
+            ReloadLogHelper.briefInfo("waitAllSchemaDone " + e);
         } finally {
             lock.unlock();
         }

@@ -48,7 +48,7 @@ public class ManagerQueryHandler {
                     return;
                 }
                 FrontendConnection con = service.getConnection();
-                LOGGER.info("execute manager cmd from {}: {} ", con.getSimple(), sql);
+                LOGGER.info("execute manager cmd from frontendConnection [{}]: {} ", con.getSimple(), sql);
             }
             switch (sqlType) {
                 case ManagerParse.SELECT:

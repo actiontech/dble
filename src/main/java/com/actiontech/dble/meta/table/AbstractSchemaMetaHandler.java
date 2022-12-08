@@ -85,7 +85,7 @@ public abstract class AbstractSchemaMetaHandler {
         }
         if (isAllComplete) {
             if (countDownFlag.compareAndSet(false, true)) {
-                logger.info("schema[" + schema + "] loading metadata is complete");
+                logger.info("schema[" + schema + "] loading metadata is completed");
                 schemaMetaFinish();
             }
         }

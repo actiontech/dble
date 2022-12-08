@@ -78,7 +78,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
             LOGGER.warn("test conn Interrupted:", e);
         } finally {
             lock.unlock();
-            ReloadLogHelper.debug("get key variables :{},dbInstance:{},result:{}", LOGGER, sql.toString(), ds, keyVariables);
+            ReloadLogHelper.debug("get key variables :{},dbInstance:{},result:{}", sql.toString(), ds, keyVariables);
         }
         return keyVariables;
     }

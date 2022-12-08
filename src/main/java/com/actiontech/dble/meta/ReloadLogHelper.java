@@ -15,7 +15,7 @@ import java.util.Set;
  * Created by szf on 2019/7/16.
  */
 public class ReloadLogHelper {
-    private static final Logger LOGGER = LoggerFactory.getLogger("META-REACQUIRE");
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadLogHelper.class);
     public final ReloadStatus reload;
     private final boolean isReload;
 
@@ -28,79 +28,13 @@ public class ReloadLogHelper {
         }
     }
 
-    public static void infoList(String message, Logger logger, Set<String> keySet) {
-        String sb = keySet == null ? "" : StringUtil.join(keySet, ",");
-        if (ReloadManager.getReloadInstance().getStatus() == null) {
-            logger.info(message + " " + sb);
-        } else {
-            logger.info(ReloadManager.getReloadInstance().getStatus().getLogStage() + message + " " + sb.toString());
-        }
+    public void info(String message) {
+        LOGGER.info(getStage() + message);
     }
 
     public void infoList(String message, Set<String> keySet) {
         String sb = keySet == null ? "" : StringUtil.join(keySet, ",");
         LOGGER.info(getStage() + message + " " + sb);
-    }
-
-    public static void info(String message, Logger logger) {
-        if (ReloadManager.getReloadInstance().getStatus() != null) {
-            logger.info(ReloadManager.getReloadInstance().getStatus().getLogStage() + message);
-        } else {
-            logger.info(message);
-        }
-    }
-
-    public void info(String message) {
-        LOGGER.info(getStage() + message);
-    }
-
-    public static void debug(String message, Logger logger) {
-        if (!logger.isDebugEnabled()) {
-            return;
-        }
-        if (ReloadManager.getReloadInstance().getStatus() != null) {
-            logger.debug(ReloadManager.getReloadInstance().getStatus().getLogStage() + message);
-        } else {
-            logger.debug(message);
-        }
-    }
-
-    public static void debug(String message, Logger logger, Object val) {
-        if (!logger.isDebugEnabled()) {
-            return;
-        }
-        if (ReloadManager.getReloadInstance().getStatus() != null) {
-            logger.debug(ReloadManager.getReloadInstance().getStatus().getLogStage() + message, val);
-        } else {
-            logger.debug(message, val);
-        }
-    }
-
-    public static void debug(String message, Logger logger, Object... val) {
-        if (!logger.isDebugEnabled()) {
-            return;
-        }
-        if (ReloadManager.getReloadInstance().getStatus() != null) {
-            logger.debug(ReloadManager.getReloadInstance().getStatus().getLogStage() + message, val);
-        } else {
-            logger.debug(message, val);
-        }
-    }
-
-    public static void warn(String message, Logger logger) {
-        if (ReloadManager.getReloadInstance().getStatus() != null) {
-            logger.info(ReloadManager.getReloadInstance().getStatus().getLogStage() + message);
-        } else {
-            logger.info(message);
-        }
-    }
-
-    public static void warn(String message, Throwable var2, Logger logger) {
-        if (ReloadManager.getReloadInstance().getStatus() != null) {
-            logger.info(ReloadManager.getReloadInstance().getStatus().getLogStage() + message, var2);
-        } else {
-            logger.info(message, var2);
-        }
     }
 
     public void warn(String message) {
@@ -111,7 +45,6 @@ public class ReloadLogHelper {
         LOGGER.warn(getStage() + message, var2);
     }
 
-
     private String getStage() {
         return reload == null ? "" : reload.getLogStage();
     }
@@ -120,4 +53,39 @@ public class ReloadLogHelper {
         return isReload;
     }
 
+
+    // ========= static method
+    public static String getLogStage() {
+        return ReloadManager.getReloadInstance().getStatus() != null ? ReloadManager.getReloadInstance().getStatus().getLogStage() : "";
+    }
+
+    public static void debug(String message, Object... val) {
+        if (!LOGGER.isDebugEnabled()) return;
+        LOGGER.debug(getLogStage() + message, val);
+    }
+
+    public static void briefInfo(String message) {
+        LOGGER.info(getLogStage() + message);
+    }
+
+    public static void graceInfo(String message) {
+        LOGGER.info("[RL][NONE] " + message);
+    }
+
+    public static void infoList2(String message, Set<String> keySet) {
+        String sb = keySet == null ? "" : StringUtil.join(keySet, ",");
+        LOGGER.info(getLogStage() + message + sb);
+    }
+
+    public static void warn2(String message) {
+        LOGGER.warn(getLogStage() + message);
+    }
+
+    public static void warn2(String message, Object vals) {
+        LOGGER.warn(getLogStage() + message, vals);
+    }
+
+    public static void warn2(String message, Exception ex) {
+        LOGGER.warn(getLogStage() + message, ex);
+    }
 }

@@ -8,6 +8,7 @@ package com.actiontech.dble.services.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -59,9 +60,10 @@ public final class ReloadMetaData {
         final ReentrantLock lock = ProxyMeta.getInstance().getTmManager().getMetaLock();
         lock.lock();
         try {
+            ReloadLogHelper.graceInfo("added metaLock");
             String checkResult = ProxyMeta.getInstance().getTmManager().metaCountCheck();
             if (checkResult != null) {
-                LOGGER.warn(checkResult);
+                ReloadLogHelper.warn2(checkResult);
                 service.writeErrMessage(ErrorCode.ER_DOING_DDL, checkResult);
                 return;
             }
@@ -69,6 +71,7 @@ public final class ReloadMetaData {
                 if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
                     final ReentrantReadWriteLock confLock = DbleServer.getInstance().getConfig().getLock();
                     confLock.readLock().lock();
+                    ReloadLogHelper.graceInfo("added configLock");
                     try {
                         if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_META)) {
                             service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Reload status error ,other client or cluster may in reload");
@@ -83,6 +86,7 @@ public final class ReloadMetaData {
                         }
                     } finally {
                         confLock.readLock().unlock();
+                        ReloadLogHelper.briefInfo("released configLock");
                     }
                 }
             } catch (Exception e) {
@@ -91,6 +95,7 @@ public final class ReloadMetaData {
             }
         } finally {
             lock.unlock();
+            ReloadLogHelper.briefInfo("released metaLock");
         }
         ReloadManager.reloadFinish();
         if (isOK) {

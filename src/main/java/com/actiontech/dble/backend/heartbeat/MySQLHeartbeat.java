@@ -92,7 +92,7 @@ public class MySQLHeartbeat {
         this.isStop = false;
         if (initHeartbeat.compareAndSet(false, true)) {
             if (LOGGER.isDebugEnabled()) {
-                ReloadLogHelper.debug("start heartbeat :{}", LOGGER, this.toString());
+                ReloadLogHelper.debug("start heartbeat :{}", this.toString());
             }
             this.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
                 if (DbleServer.getInstance().getConfig().isFullyConfigured()) {

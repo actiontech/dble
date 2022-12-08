@@ -366,7 +366,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             ConnectionPoolProvider.stopConnGetFrenshLocekAfter();
             if (isClosed.compareAndSet(false, true)) {
                 if (LOGGER.isDebugEnabled() && totalConnections.get() > 0) {
-                    ReloadLogHelper.debug("stop connection pool :{},reason:{},is close front:{}", LOGGER, instance.toString(), closureReason, closeFront);
+                    ReloadLogHelper.debug("stop connection pool :{},reason:{},is close front:{}", instance.toString(), closureReason, closeFront);
                 }
                 stopEvictor();
                 if (closeFront) {
@@ -455,7 +455,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         if (isClosed.compareAndSet(true, false)) {
             LOGGER.info("start connection pool of physical db instance[{}], due to {}", instanceName, reason);
             if (LOGGER.isDebugEnabled()) {
-                ReloadLogHelper.debug("start connection pool :{},reason:{}", LOGGER, instance.toString(), reason);
+                ReloadLogHelper.debug("start connection pool :{},reason:{}", instance.toString(), reason);
             }
             if (evictor != null) {
                 EvictionTimer.cancel(evictor, poolConfig.getEvictorShutdownTimeoutMillis(), TimeUnit.MILLISECONDS);

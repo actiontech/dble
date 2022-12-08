@@ -510,14 +510,14 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public void stopHeartbeat(String reason) {
         if (LOGGER.isDebugEnabled()) {
-            ReloadLogHelper.debug("stop heartbeat :{},reason:{}", LOGGER, this.toString(), reason);
+            ReloadLogHelper.debug("stop heartbeat :{},reason:{}", this.toString(), reason);
         }
         heartbeat.stop(reason);
     }
 
     public void stopDelayDetection(String reason) {
         if (LOGGER.isDebugEnabled()) {
-            ReloadLogHelper.debug("stop delayDetection :{},reason:{}", LOGGER, this.toString(), reason);
+            ReloadLogHelper.debug("stop delayDetection :{},reason:{}", this.toString(), reason);
         }
         if (Objects.nonNull(delayDetection)) {
             delayDetection.stop(reason);

@@ -15,6 +15,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
+import com.actiontech.dble.meta.ReloadException;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
@@ -102,10 +103,13 @@ public final class InsertHandler {
             managerTable.checkPrimaryKeyDuplicate(rows);
             rowSize = managerTable.insertRows(rows);
             if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()), packetResult);
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()));
             }
             managerTable.afterExecute();
         } catch (SQLException e) {
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg(e.getMessage());
+        } catch (ReloadException e) {
             packetResult.setSuccess(false);
             packetResult.setErrorMsg(e.getMessage());
         } catch (ConfigException e) {
@@ -113,12 +117,14 @@ public final class InsertHandler {
             packetResult.setErrorMsg("Insert failure.The reason is " + e.getMessage());
         } catch (Exception e) {
             packetResult.setSuccess(false);
-            if (e.getCause() instanceof ConfigException) {
+            if (e.getCause() instanceof ReloadException) {
                 packetResult.setErrorMsg("Insert failure.The reason is " + e.getMessage());
-                LOGGER.warn("Insert failure.The reason is ", e);
+                packetResult.setErrorCode(((ReloadException) e).getErrorCode());
+            } else if (e.getCause() instanceof ConfigException) {
+                packetResult.setErrorMsg("Insert failure.The reason is " + e.getMessage());
             } else {
                 packetResult.setErrorMsg("unknown error:" + e.getMessage());
-                LOGGER.warn("unknown error:", e);
+                LOGGER.warn("unknown error: {}", e.getMessage());
             }
         } finally {
             managerTable.updateTempConfig();

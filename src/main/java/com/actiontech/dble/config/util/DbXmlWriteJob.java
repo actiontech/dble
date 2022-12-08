@@ -52,14 +52,14 @@ public class DbXmlWriteJob implements Runnable {
                 if (dbGroupBean != null) {
                     changeHostInfo(dbGroupBean, dbGroup);
                 } else {
-                    LOGGER.warn("dbGroup " + dbGroup.getGroupName() + " is not found");
+                    HaConfigManager.getInstance().warn("dbGroup " + dbGroup.getGroupName() + " is not found");
                 }
             }
             HaConfigManager.getInstance().write(dbGroups, reloadIndex);
             DbleServer.getInstance().getConfig().setDbConfig(DBConverter.dbBeanToJson(dbGroups));
         } catch (Exception e) {
             errorMessage = e.getMessage();
-            HaConfigManager.getInstance().log("get error from SchemaWriteJob", e);
+            HaConfigManager.getInstance().info("get error from SchemaWriteJob", e);
         } finally {
             HaConfigManager.getInstance().finishAndNext();
             this.signalAll();

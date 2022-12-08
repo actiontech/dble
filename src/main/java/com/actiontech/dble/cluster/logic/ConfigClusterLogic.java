@@ -37,6 +37,7 @@ import com.actiontech.dble.config.converter.ShardingConverter;
 import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import com.actiontech.dble.services.manager.response.ReloadConfig;
@@ -74,12 +75,12 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
         try {
             ClusterDelayProvider.delayBeforeSlaveReload();
 
-            LOGGER.info("reload config from " + ClusterMetaUtil.getConfStatusOperatorPath() + " " + value);
+            ReloadLogHelper.graceInfo("from " + ClusterMetaUtil.getConfStatusOperatorPath() + " " + value);
             final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
             lock.writeLock().lock();
             try {
                 if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, ConfStatus.Status.RELOAD_ALL)) {
-                    LOGGER.info("fail to reload config because current dble is in reloading");
+                    ReloadLogHelper.graceInfo("fail to reload config because current dble is in reloading");
                     clusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(),
                             FeedBackType.ofError("Reload status error ,other client or cluster may in reload"));
                     return;
@@ -90,7 +91,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
                         return;
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("reload config for cluster error: ", e);
+                    ReloadLogHelper.warn2("reload config for cluster error: ", e);
                     throw e;
                 } finally {
                     ReloadManager.reloadFinish();
@@ -100,20 +101,20 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
                 lock.writeLock().unlock();
             }
             ClusterDelayProvider.delayAfterSlaveReload();
-            LOGGER.info("reload config: sent config status success to cluster center start");
+            ReloadLogHelper.briefInfo("sent config status success to cluster center start");
             clusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), FeedBackType.SUCCESS);
-            LOGGER.info("reload config: sent config status success to cluster center end");
+            ReloadLogHelper.briefInfo("sent config status success to cluster center end");
         } catch (Exception e) {
             String errorInfo = e.getMessage() == null ? e.toString() : e.getMessage();
-            LOGGER.info("reload config: sent config status failed to cluster center start");
+            ReloadLogHelper.briefInfo("sent config status failed to cluster center start");
             clusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), FeedBackType.ofError(errorInfo));
-            LOGGER.info("reload config: sent config status failed to cluster center end");
+            ReloadLogHelper.briefInfo("sent config status failed to cluster center end");
         }
     }
 
     private boolean checkLocalResult(boolean result) throws Exception {
         if (!result) {
-            LOGGER.info("reload config: sent config status success to cluster center start");
+            ReloadLogHelper.briefInfo("sent config status success to cluster center start");
             ClusterDelayProvider.delayAfterSlaveReload();
             clusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), FeedBackType.ofError("interrupt by command.should reload config again"));
         }

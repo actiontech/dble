@@ -481,7 +481,7 @@ public class ConfigInitializer implements ProblemReporter {
             LOGGER.warn("SelfCheck### can't connect to [" + dbInstanceKey + "]");
             isConnectivity = false;
         } finally {
-            ReloadLogHelper.debug("test connection dbInstance:{},is connect:{},schemaList:{}", LOGGER, ds, isConnectivity, schemaList);
+            ReloadLogHelper.debug("test connection dbInstance:{},is connect:{},schemaList:{}", ds, isConnectivity, schemaList);
         }
         return isConnectivity;
     }

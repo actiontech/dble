@@ -220,8 +220,8 @@
 #-DgmsslOcaPem=
 #-DsupportSSL=
 
--DenableAsyncRelease=0
--DreleaseTimeout=600000
+-DenableAsyncRelease=1
+-DreleaseTimeout=10
 -DenableSessionActiveRatioStat=1
 -DenableConnectionAssociateThread=1
 -DxaIdCheckPeriod=300

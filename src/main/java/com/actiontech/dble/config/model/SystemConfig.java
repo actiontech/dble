@@ -252,9 +252,9 @@ public final class SystemConfig {
     private String gmsslOcaPem = null;
     private boolean supportSSL = false;
 
-    private int enableAsyncRelease = 0;
+    private int enableAsyncRelease = 1;
     //unit: ms
-    private long releaseTimeout = 10 * 60 * 1000L;
+    private long releaseTimeout = 10L;
 
     private int enableMemoryBufferMonitor = 0;
     private int enableMemoryBufferMonitorRecordPool = 1;

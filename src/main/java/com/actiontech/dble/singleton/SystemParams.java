@@ -162,8 +162,8 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("district", sysConfig.getDistrict() + "", "The location of the DBLE"));
         readOnlyParams.add(new ParamInfo("dataCenter", sysConfig.getDataCenter() + "", "The data center where the DBLE resides"));
         readOnlyParams.add(new ParamInfo("groupConcatMaxLen", sysConfig.getGroupConcatMaxLen() + "", "The maximum permitted result length in bytes for the GROUP_CONCAT() function. The default is 1024."));
-        readOnlyParams.add(new ParamInfo("enableAsyncRelease", sysConfig.getEnableAsyncRelease() + "", "Whether enable async release . default value is 0(off)."));
-        readOnlyParams.add(new ParamInfo("releaseTimeout", sysConfig.getReleaseTimeout() + "", "time wait for release ,unit is ms,  default value is 10mins"));
+        readOnlyParams.add(new ParamInfo("enableAsyncRelease", sysConfig.getEnableAsyncRelease() + "", "Whether enable async release . default value is 1(on)."));
+        readOnlyParams.add(new ParamInfo("releaseTimeout", sysConfig.getReleaseTimeout() + "", "time wait for release ,unit is ms,  default value is 10ms"));
 
         readOnlyParams.add(new ParamInfo("sqlDumpLogBasePath", SqlDumpLog.getInstance().getSqlDumpLogBasePath() + "", "The base path of sqldump log, the default value is 'sqldump'"));
         readOnlyParams.add(new ParamInfo("sqlDumpLogFileName", SqlDumpLog.getInstance().getSqlDumpLogFileName() + "", "The sqldump log file name, the default value is 'sqldump.log'"));

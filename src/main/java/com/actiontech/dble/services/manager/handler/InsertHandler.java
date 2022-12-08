@@ -42,6 +42,7 @@ public final class InsertHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(InsertHandler.class);
 
     public void handle(String stmt, ManagerService service) {
+        int i = 0;
         MySqlInsertStatement insert;
         try {
             insert = (MySqlInsertStatement) DruidUtil.parseMultiSQL(stmt);

@@ -14,10 +14,9 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
-import java.sql.*;
-
 public class TestParser {
     public static void main(String args[]) {
+        int j = 0;
 
         TestParser obj = new TestParser();
         //		obj.test("CREATE TABLE `char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
@@ -205,7 +204,7 @@ public class TestParser {
         //		obj.test("create index idx_test on char_columns_test(id) ;");
         //		obj.test("drop index  idx_test on char_columns_test;");
         String strAlterSql = "";
-        strAlterSql ="alter table char_columns_test add column id2 int(11) NOT NULL after x ALGORITHM = default LOCK =default;";
+        strAlterSql = "alter table char_columns_test add column id2 int(11) NOT NULL after x ALGORITHM = default LOCK =default;";
         //        		obj.test(strAlterSql);
         //		strAlterSql ="alter table char_columns_test add column id2 int(11) NOT NULL after x;";
         //		obj.test(strAlterSql);
@@ -674,13 +673,12 @@ public class TestParser {
                     }
                 }
                 if (selectQueryBlock.getWhere() != null) {
-                    if(selectQueryBlock.getWhere() instanceof  SQLBinaryOpExpr){
-                        SQLBinaryOpExpr where = (SQLBinaryOpExpr)(selectQueryBlock.getWhere());
+                    if (selectQueryBlock.getWhere() instanceof SQLBinaryOpExpr) {
+                        SQLBinaryOpExpr where = (SQLBinaryOpExpr) (selectQueryBlock.getWhere());
                         System.out.println("where right:");
                         System.out.println("class :" + where.getRight().getClass());
                         System.out.println("---------------------------");
-                    }
-                    else{
+                    } else {
                         System.out.println("where:");
                         System.out.println("class :" + selectQueryBlock.getWhere().getClass());
                         System.out.println("---------------------------");
@@ -702,32 +700,32 @@ public class TestParser {
             System.out.println("change to 2->" + SQLUtils.toMySqlString(mySqlShowIndexesStatement));
         } else if (statement instanceof SQLSetStatement) {
             SQLSetStatement setStatement = (SQLSetStatement) statement;
-            for(SQLAssignItem assignItem:setStatement.getItems()){
-                if(assignItem.getTarget() instanceof SQLVariantRefExpr){
-                    SQLVariantRefExpr target =  (SQLVariantRefExpr)assignItem.getTarget();
+            for (SQLAssignItem assignItem : setStatement.getItems()) {
+                if (assignItem.getTarget() instanceof SQLVariantRefExpr) {
+                    SQLVariantRefExpr target = (SQLVariantRefExpr) assignItem.getTarget();
                     System.out.println("target is " + target + ", global is " + target.isGlobal() + ", session is " + target.isSession());
-                }else if(assignItem.getTarget() instanceof SQLPropertyExpr){
-                    SQLPropertyExpr target =  (SQLPropertyExpr)assignItem.getTarget();
+                } else if (assignItem.getTarget() instanceof SQLPropertyExpr) {
+                    SQLPropertyExpr target = (SQLPropertyExpr) assignItem.getTarget();
                     System.out.println("target is " + target.getName() + ", Owner is " + target.getOwner());
-                } else if(assignItem.getTarget() instanceof SQLIdentifierExpr){
-                    SQLIdentifierExpr target =  (SQLIdentifierExpr)assignItem.getTarget();
+                } else if (assignItem.getTarget() instanceof SQLIdentifierExpr) {
+                    SQLIdentifierExpr target = (SQLIdentifierExpr) assignItem.getTarget();
                     System.out.println("target is " + target.getName());
                 } else {
                     System.out.println("target is " + assignItem.getTarget() + ", class is " + assignItem.getTarget().getClass());
                 }
-                if(assignItem.getValue() instanceof SQLIdentifierExpr ){
-                    SQLIdentifierExpr value = (SQLIdentifierExpr)assignItem.getValue();
+                if (assignItem.getValue() instanceof SQLIdentifierExpr) {
+                    SQLIdentifierExpr value = (SQLIdentifierExpr) assignItem.getValue();
                     System.out.println("value is " + value.getName() + ", class is " + assignItem.getValue().getClass());
                 } else if (assignItem.getValue() instanceof MySqlCharExpr) {
                     MySqlCharExpr value = (MySqlCharExpr) assignItem.getValue();
                     System.out.println("value is " + value.getText() + ",charset is " + value.getCharset() + ",collate is " + value.getCollate() + ", class is " + assignItem.getValue().getClass());
-                }  else if (assignItem.getValue() instanceof SQLCharExpr) {
+                } else if (assignItem.getValue() instanceof SQLCharExpr) {
                     SQLCharExpr value = (SQLCharExpr) assignItem.getValue();
                     System.out.println("value is " + value.getText() + ", class is " + assignItem.getValue().getClass());
                 } else if (assignItem.getValue() instanceof SQLDefaultExpr) {
                     SQLDefaultExpr value = (SQLDefaultExpr) assignItem.getValue();
                     System.out.println("value is " + value.toString() + ", class is " + assignItem.getValue().getClass());
-                }else {
+                } else {
                     System.out.println("value is " + assignItem.getValue() + ", class is " + assignItem.getValue().getClass());
                 }
             }
@@ -739,7 +737,7 @@ public class TestParser {
             //            System.out.println("charset ="+setStatement.getCharSet()+ ",Collate ="+setStatement.getCollate()+",default ="+setStatement.isDefault());
         } else if (statement instanceof MySqlSetTransactionStatement) {
             MySqlSetTransactionStatement setStatement = (MySqlSetTransactionStatement) statement;
-            System.out.println("global"+setStatement.getGlobal()+",IsolationLevel="+ setStatement.getIsolationLevel()+",access mode"+setStatement.getAccessModel());
+            System.out.println("global" + setStatement.getGlobal() + ",IsolationLevel=" + setStatement.getIsolationLevel() + ",access mode" + setStatement.getAccessModel());
         } else {
             System.out.println("statement:" + statement + "," + statement.getClass().toString());
         }

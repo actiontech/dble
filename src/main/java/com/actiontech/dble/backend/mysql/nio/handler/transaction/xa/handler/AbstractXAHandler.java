@@ -5,15 +5,12 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler;
 
-import com.actiontech.dble.backend.mysql.nio.handler.MultiNodeHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.DefaultMultiNodeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAStage;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -23,10 +20,9 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Set;
 
-public abstract class AbstractXAHandler extends MultiNodeHandler {
+public abstract class AbstractXAHandler extends DefaultMultiNodeHandler {
 
     private static Logger logger = LoggerFactory.getLogger(AbstractXAHandler.class);
     protected volatile XAStage currentStage;
@@ -54,18 +50,6 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         }
     }
 
-    @Override
-    public void okResponse(byte[] ok, @NotNull AbstractService service) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("receive ok from " + service);
-        }
-        ((MySQLResponseService) service).syncAndExecute();
-        this.currentStage.onConnectionOk((MySQLResponseService) service);
-        if (decrementToZero((MySQLResponseService) service)) {
-            changeStageTo(next());
-        }
-    }
-
     public void fakedResponse(MySQLResponseService service, String reason) {
         if (reason != null) {
             if (logger.isDebugEnabled()) {
@@ -84,73 +68,24 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         }
     }
 
-    protected boolean decrementToZero(RouteResultsetNode rrsn) {
-        boolean zeroReached;
-        lock.lock();
-        try {
-            unResponseRrns.remove(rrsn);
-            zeroReached = canResponse();
-        } finally {
-            lock.unlock();
-        }
-        return zeroReached;
-    }
-
-
     @Override
-    public void errorResponse(byte[] err, @NotNull AbstractService service) {
-        ((MySQLResponseService) service).syncAndExecute();
-        ErrorPacket errPacket = new ErrorPacket();
-        errPacket.read(err);
-        String errMsg = new String(errPacket.getMessage());
-        this.setFail(errMsg);
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("receive error [" + errMsg + "] from " + service);
-        }
-        currentStage.onConnectionError((MySQLResponseService) service, errPacket.getErrNo());
-        if (decrementToZero((MySQLResponseService) service)) {
-            changeStageTo(next());
-        }
+    public void handleOkResponse(byte[] ok, @NotNull AbstractService service) {
+        this.currentStage.onConnectionOk((MySQLResponseService) service);
     }
 
     @Override
-    public void connectionClose(@NotNull final AbstractService service, final String reason) {
-        boolean[] result = decrementToZeroAndCheckNode((MySQLResponseService) service);
-        boolean finished = result[0];
-        boolean justRemoved = result[1];
-        if (justRemoved) {
-            String closeReason = "Connection {dbInstance[" + service.getConnection().getHost() + ":" + service.getConnection().getPort() + "],Schema[" + ((MySQLResponseService) service).getConnection().getSchema() + "],threadID[" +
-                    ((MySQLResponseService) service).getConnection().getThreadId() + "]} was closed ,reason is [" + reason + "]";
-            if (logger.isDebugEnabled()) {
-                logger.debug(closeReason);
-            }
-            this.setFail(closeReason);
-            currentStage.onConnectionClose((MySQLResponseService) service);
-            if (finished) {
-                changeStageTo(next());
-            }
-        } else {
-            if (logger.isDebugEnabled()) {
-                logger.debug("conn[backendId=" + service.getConnection().getId() + "] was closed in gap of two stage");
-            }
-        }
+    public void handleErrorResponse(ErrorPacket err, @NotNull AbstractService service) {
+        currentStage.onConnectionError((MySQLResponseService) service, err.getErrNo());
     }
 
     @Override
-    public void connectionError(Throwable e, Object attachment) {
-        logger.warn("connection Error in xa transaction, err:", e);
-        boolean finished;
-        lock.lock();
-        try {
-            errorConnsCnt++;
-            finished = canResponse();
-        } finally {
-            lock.unlock();
-        }
-        if (finished) {
-            changeStageTo(next());
-        }
+    public void handleConnectionClose(@NotNull MySQLResponseService service, RouteResultsetNode rNode, final String reason) {
+        currentStage.onConnectionClose(service);
+    }
+
+    @Override
+    protected void finish(byte[] ok) {
+        changeStageTo(next());
     }
 
     @Override
@@ -159,14 +94,6 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         this.interruptTx = true;
         this.packetIfSuccess = null;
         this.implicitCommitHandler = null;
-    }
-
-    @Override
-    public void reset() {
-        errorConnsCnt = 0;
-        firstResponsed = false;
-        unResponseRrns.clear();
-        isFailed.set(false);
     }
 
     public Set<RouteResultsetNode> setUnResponseRrns() {
@@ -213,24 +140,4 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         return implicitCommitHandler;
     }
 
-    @Override
-    public void connectionAcquired(BackendConnection conn) {
-        logger.warn("unexpected connection acquired in xa transaction");
-    }
-
-    @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
-        logger.warn("unexpected filed eof response in xa transaction");
-    }
-
-    @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
-        logger.warn("unexpected row response in xa transaction");
-        return false;
-    }
-
-    @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
-        logger.warn("unexpected row eof response in xa transaction");
-    }
 }

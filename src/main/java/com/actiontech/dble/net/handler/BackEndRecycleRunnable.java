@@ -5,7 +5,9 @@
 
 package com.actiontech.dble.net.handler;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.config.model.SystemConfig;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -28,23 +30,32 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
 
     @Override
     public void run() {
+        if (backendConnection.isClosed()) {
+            return;
+        }
+        boolean awaitTimeout = false;
+
         try {
             lock.lock();
             try {
                 if (backendConnection.isRowDataFlowing()) {
-
-                    if (!condRelease.await(10, TimeUnit.MILLISECONDS)) {
-                        backendConnection.close("recycle time out");
-                    } else {
-                        backendConnection.release();
+                    SystemConfig systemConfig = DbleServer.getInstance().getConfig().getSystem();
+                    if (!condRelease.await(systemConfig.getReleaseTimeout(), TimeUnit.MILLISECONDS)) {
+                        awaitTimeout = true;
                     }
-                } else {
-                    backendConnection.release();
                 }
             } catch (Exception e) {
                 backendConnection.close("recycle exception");
             } finally {
                 lock.unlock();
+            }
+            if (backendConnection.isClosed()) {
+                return;
+            }
+            if (awaitTimeout) {
+                backendConnection.close("recycle time out");
+            } else {
+                backendConnection.release();
             }
         } catch (Throwable e) {
             backendConnection.close("recycle exception");
@@ -55,10 +66,12 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
     public void signal() {
         lock.lock();
         try {
+            backendConnection.setRowDataFlowing(false);
             condRelease.signal();
         } finally {
             lock.unlock();
         }
+
     }
 
 }

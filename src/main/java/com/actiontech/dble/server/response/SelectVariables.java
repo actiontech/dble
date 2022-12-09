@@ -8,6 +8,7 @@ package com.actiontech.dble.server.response;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.FrontendService;
@@ -78,6 +79,10 @@ public final class SelectVariables {
                     break;
                 case "collation_connection":
                     row.add(service.getCharset().getCollation() != null ? service.getCharset().getCollation().getBytes() : null);
+                    break;
+                case "max_allowed_packet":
+                case "@@max_allowed_packet":
+                    row.add(String.valueOf(SystemConfig.getInstance().getMaxPacketSize()).getBytes());
                     break;
                 default:
                     String value = VARIABLES.get(s) == null ? "" : VARIABLES.get(s);

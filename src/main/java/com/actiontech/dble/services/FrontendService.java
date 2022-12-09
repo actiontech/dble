@@ -14,6 +14,7 @@ import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.AuthPacket;
 import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.manager.ManagerService;
@@ -202,6 +203,11 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
                 if (data != null && !executeTask.isReuse()) {
                     this.setPacketId(executeTask.getLastSequenceId());
                 }
+
+                if (data != null && data.length - MySQLPacket.PACKET_HEADER_SIZE >= SystemConfig.getInstance().getMaxPacketSize()) {
+                    throw new IllegalArgumentException("Packet for query is too large (" + data.length + " > " + SystemConfig.getInstance().getMaxPacketSize() + ").You can change maxPacketSize value in bootstrap.cnf.");
+                }
+
             }
 
             super.consumeSingleTask(serviceTask);

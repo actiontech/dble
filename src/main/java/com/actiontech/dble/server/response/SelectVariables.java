@@ -8,6 +8,7 @@ package com.actiontech.dble.server.response;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.FrontendService;
@@ -79,6 +80,10 @@ public final class SelectVariables {
                 case "collation_connection":
                     row.add(service.getCharset().getCollation() != null ? service.getCharset().getCollation().getBytes() : null);
                     break;
+                case "max_allowed_packet":
+                case "@@max_allowed_packet":
+                    row.add(String.valueOf(SystemConfig.getInstance().getMaxPacketSize()).getBytes());
+                    break;
                 default:
                     String value = VARIABLES.get(s) == null ? "" : VARIABLES.get(s);
                     row.add(value.getBytes());
@@ -125,7 +130,6 @@ public final class SelectVariables {
         VARIABLES.put("@@interactive_timeout", "172800");
         VARIABLES.put("@@license", "GPL");
         VARIABLES.put("@@lower_case_table_names", "1");
-        VARIABLES.put("@@max_allowed_packet", "16777216");
         VARIABLES.put("@@net_buffer_length", "16384");
         VARIABLES.put("@@net_write_timeout", "60");
         VARIABLES.put("@@query_cache_size", "0");
@@ -146,7 +150,6 @@ public final class SelectVariables {
         VARIABLES.put("interactive_timeout", "172800");
         VARIABLES.put("license", "GPL");
         VARIABLES.put("lower_case_table_names", "1");
-        VARIABLES.put("max_allowed_packet", "16777216");
         VARIABLES.put("net_buffer_length", "16384");
         VARIABLES.put("net_write_timeout", "60");
         VARIABLES.put("query_cache_size", "0");

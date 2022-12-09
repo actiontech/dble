@@ -577,9 +577,10 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
         if (isClosed()) {
             return;
         }
-
+        this.setFlowControlled(false);
         if (recycler != null) {
             recycler.signal();
+            recycler = null;
         }
     }
 
@@ -837,7 +838,11 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
             if (logResponse.compareAndSet(false, true)) {
                 session.setBackendResponseEndTime(this);
             }
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
+            if (SystemConfig.getInstance().getEnableAsyncRelease() == 1) {
+                DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
+            } else {
+                new BackEndRecycleRunnable(this).run();
+            }
             return;
         }
         complexQuery = false;

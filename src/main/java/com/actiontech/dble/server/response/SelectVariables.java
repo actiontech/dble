@@ -130,7 +130,6 @@ public final class SelectVariables {
         VARIABLES.put("@@interactive_timeout", "172800");
         VARIABLES.put("@@license", "GPL");
         VARIABLES.put("@@lower_case_table_names", "1");
-        VARIABLES.put("@@max_allowed_packet", "16777216");
         VARIABLES.put("@@net_buffer_length", "16384");
         VARIABLES.put("@@net_write_timeout", "60");
         VARIABLES.put("@@query_cache_size", "0");
@@ -151,7 +150,6 @@ public final class SelectVariables {
         VARIABLES.put("interactive_timeout", "172800");
         VARIABLES.put("license", "GPL");
         VARIABLES.put("lower_case_table_names", "1");
-        VARIABLES.put("max_allowed_packet", "16777216");
         VARIABLES.put("net_buffer_length", "16384");
         VARIABLES.put("net_write_timeout", "60");
         VARIABLES.put("query_cache_size", "0");

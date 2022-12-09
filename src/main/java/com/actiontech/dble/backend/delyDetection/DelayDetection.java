@@ -183,6 +183,10 @@ public class DelayDetection {
         PhysicalDbGroup dbGroup = source.getDbGroup();
         long logic = dbGroup.getLogicTimestamp().get();
         long result = logic - delay;
+        // master-slave switch need ignore
+        if (result < 0) {
+            result = 0;
+        }
         DelayDetectionStatus writeDbStatus = dbGroup.getWriteDbInstance().getDelayDetectionStatus();
         delayVal = result * delayPeriodMillis;
 
@@ -194,7 +198,7 @@ public class DelayDetection {
         if (delayThreshold > delayVal) {
             setResult(DelayDetectionStatus.OK);
         } else {
-            errorMessage = "found MySQL master/slave Replication delay" + source.getConfig() + ",sync time delay: " + delayVal + " ms";
+            errorMessage = "found MySQL master/slave Replication delay, instance is  " + source.getConfig() + " ,sync delay time: " + delayVal + " ms";
             setResult(DelayDetectionStatus.TIMEOUT);
         }
     }
@@ -238,6 +242,9 @@ public class DelayDetection {
         LOGGER.debug("delayDetection to [" + source.getConfig().getUrl() + "] setOK");
         if (errorCount.get() > 0) {
             errorCount.set(0);
+        }
+        if (!source.isReadInstance()) {
+            delayVal = 0;
         }
         delayDetectionStatus = DelayDetectionStatus.OK;
         source.setDelayDetectionStatus(delayDetectionStatus);

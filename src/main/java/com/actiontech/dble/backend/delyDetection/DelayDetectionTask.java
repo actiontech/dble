@@ -59,7 +59,7 @@ public class DelayDetectionTask {
             PhysicalDbInstance source = delayDetection.getSource();
             if (source.isReadInstance()) {
                 Map<String, String> resultResult = result.getResult();
-                String logicTimestamp = Optional.ofNullable(resultResult.get(LOGIC_TIMESTAMP)).orElse(String.valueOf(source.getDbGroup().getLogicTimestamp().get()));
+                String logicTimestamp = Optional.ofNullable(resultResult.get(LOGIC_TIMESTAMP)).orElse("0");
                 long logic = Long.parseLong(logicTimestamp);
                 delayDetection.delayCal(logic);
             } else {

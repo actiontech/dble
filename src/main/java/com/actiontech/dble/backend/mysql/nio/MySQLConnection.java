@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.Isolations;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.AbstractConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.handler.BackEndCleaner;
@@ -560,8 +561,10 @@ public class MySQLConnection extends AbstractConnection implements
             return;
         }
 
+        this.setRowDataFlowing(false);
         if (recycler != null) {
             recycler.signal();
+            recycler = null;
         }
     }
 
@@ -785,7 +788,12 @@ public class MySQLConnection extends AbstractConnection implements
             if (logResponse.compareAndSet(false, true)) {
                 session.setBackendResponseEndTime(this);
             }
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
+            SystemConfig systemConfig = DbleServer.getInstance().getConfig().getSystem();
+            if (systemConfig.getEnableAsyncRelease() == 1) {
+                DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
+            } else {
+                new BackEndRecycleRunnable(this).run();
+            }
             return;
         }
         complexQuery = false;

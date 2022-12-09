@@ -169,6 +169,26 @@ public final class SystemConfig {
     private String routePenetrationRules = "";
     private boolean closeHeartBeatRecord = false;
 
+    private int enableAsyncRelease = 1;
+    //unit: ms
+    private long releaseTimeout = 10L;
+
+    public int getEnableAsyncRelease() {
+        return enableAsyncRelease;
+    }
+
+    public void setEnableAsyncRelease(int enableAsyncRelease) {
+        this.enableAsyncRelease = enableAsyncRelease;
+    }
+
+    public long getReleaseTimeout() {
+        return releaseTimeout;
+    }
+
+    public void setReleaseTimeout(long releaseTimeout) {
+        this.releaseTimeout = releaseTimeout;
+    }
+
 
     public SystemConfig(ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
@@ -1315,6 +1335,8 @@ public final class SystemConfig {
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
                 ", closeHeartBeatRecord=" + closeHeartBeatRecord +
+                ", releaseTimeout=" + releaseTimeout +
+                ", enableAsyncRelease=" + enableAsyncRelease +
                 "]";
     }
 

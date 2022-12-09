@@ -413,7 +413,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                             errorCount += ok.getWarningCount();
                         }
                         dnSet.add(rrn.getName());
-                        removeNode(rrn.getName());
                         transformOkPackage(ok, shardingService);
                         if (packet == null)
                             packet = ok;
@@ -604,6 +603,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             RouteResultsetNode rrn = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
             RowDataPacket rowDataPkg = new RowDataPacket(3);
             rowDataPkg.read(row);
+            removeNode(rrn.getName());
             Map<String, List<String>> warnings = LoadDataBatch.getInstance().getWarnings();
             String name = rrn.getName();
             if (!warnings.containsKey(name)) {

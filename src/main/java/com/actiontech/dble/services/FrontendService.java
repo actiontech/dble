@@ -123,6 +123,9 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
             if (data != null && !executeTask.isReuse()) {
                 this.setPacketId(executeTask.getLastSequenceId());
             }
+            if (data != null && data.length - MySQLPacket.PACKET_HEADER_SIZE >= SystemConfig.getInstance().getMaxPacketSize()) {
+                throw new IllegalArgumentException("Packet for query is too large (" + data.length + " > " + SystemConfig.getInstance().getMaxPacketSize() + ").You can change maxPacketSize value in bootstrap.cnf.");
+            }
 
             this.handleInnerData(data);
 

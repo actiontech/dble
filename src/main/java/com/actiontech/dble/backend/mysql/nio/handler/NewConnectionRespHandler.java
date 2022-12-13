@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -25,8 +26,12 @@ public class NewConnectionRespHandler implements ResponseHandler {
     public BackendConnection getBackConn() throws IOException {
         lock.lock();
         try {
-            if (backConn == null) {
-                initiated.await();
+            if (errMsg == null && backConn == null) {
+                long waitTimeSecond = 10000;
+                boolean await = initiated.await(waitTimeSecond, TimeUnit.MILLISECONDS);
+                if (!await) {
+                    errMsg = "create conn timeout, TCP connection may be lost";
+                }
             }
             if (backConn == null) {
                 throw new IOException(errMsg);

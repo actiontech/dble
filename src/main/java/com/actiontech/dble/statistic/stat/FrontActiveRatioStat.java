@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 public class FrontActiveRatioStat {
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontActiveRatioStat.class);
 
-    private static final int COMPRESSION_INTERVAL = 500; // ms
+    private static final int COMPRESSION_INTERVAL = 200; // ms
     public static final long INTERVAL = COMPRESSION_INTERVAL;
 
     private static final int LAST_STAT_30S = 30 * 1000; // 30s
@@ -24,7 +24,7 @@ public class FrontActiveRatioStat {
 
     public static final int CACHE_30S_SIZE = LAST_STAT_30S / COMPRESSION_INTERVAL;
     public static final int CACHE_1MIN_SIZE = LAST_STAT_1MIN / COMPRESSION_INTERVAL;
-    public static final int CACHE_5MIN_SIZE = LAST_STAT_5MIN / COMPRESSION_INTERVAL;
+    public static final int CACHE_5MIN_SIZE = LAST_STAT_5MIN / COMPRESSION_INTERVAL; // best divisible
     private Map<FrontendConnection, WorkStat> usageStats;
     private static final FrontActiveRatioStat INSTANCE = new FrontActiveRatioStat();
 
@@ -316,7 +316,7 @@ public class FrontActiveRatioStat {
         private void tryMakeUpMissingTimeInStatic(Object firstWritePointInDynamic, long lastCompressTime0) {
             int missingTime = getMissingTime(firstWritePointInDynamic, lastCompressTime0);
             if (missingTime > 0) {
-                staticArray.updateLastToCumulative(missingTime); // update last
+                staticArray.cumulativeMissTime(missingTime);
             }
         }
 
@@ -461,21 +461,44 @@ public class FrontActiveRatioStat {
             this.array[index] = time;
         }
 
-        private void updateLastToCumulative(int value) {
+        private void cumulativeMissTime(int value) {
             if (index == -1) {
                 return;
             } else {
-                array[index] += value; // cumulative
+                int multiple = value / COMPRESSION_INTERVAL;
+                int remainder = value % COMPRESSION_INTERVAL;
+                if (remainder > 0) {
+                    multiple++;
+                }
+                if (--multiple < 0) return;
+                for (int i = multiple; i >= 0; i--) {
+                    if (i == multiple) {
+                        array[getPrefixIndex(i)] += remainder; // cumulative
+                    } else {
+                        array[getPrefixIndex(i)] = COMPRESSION_INTERVAL;
+                    }
+                }
+            }
+        }
+
+        private int getPrefixIndex(int prefixNum) {
+            if (prefixNum == 0) return index;
+            int d = index - prefixNum;
+            if (d < 0) {
+                return capacity + d;
+            } else {
+                return index - prefixNum;
             }
         }
 
         private int[] getSort() {
             if (index == -1) return new int[0];
-            if (index + 1 == capacity - 1) return array;
+            if (index == capacity - 1) return array.clone();
             int[] newArray = new int[capacity];
-            int aLen = (index + 1);
+            int aLen = capacity - (index + 1);
+            int bLen = index + 1;
             System.arraycopy(array, index + 1, newArray, 0, aLen);
-            System.arraycopy(array, 0, newArray, aLen, index);
+            System.arraycopy(array, 0, newArray, aLen, bLen);
             return newArray;
         }
 

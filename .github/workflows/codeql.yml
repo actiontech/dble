@@ -3,8 +3,6 @@ name: "CodeQL"
 on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
-  push:
-    branches: [ 'master' ]
 
 jobs:
   analyze:
@@ -44,7 +42,7 @@ jobs:
         # Prefix the list here with "+" to use these queries and those in the config file.
 
         # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
-
+        queries: security-extended
 
     # Autobuild attempts to build any compiled languages  (C/C++, C#, Go, or Java).
     # If this step fails, then you should remove it and run the build manually (see below)

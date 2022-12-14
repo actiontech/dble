@@ -358,8 +358,8 @@ public class ServerConfig {
         List<String> delSchema = new ArrayList<>();
         List<String> reloadSchema = new ArrayList<>();
         if (isFullyConfigured) {
+            ReloadLogHelper.briefInfo("calcDiffForMetaData ...");
             calcDiffForMetaData(newSchemas, newShardingNodes, loadAllMode, delTables, reloadTables, delSchema, reloadSchema);
-            ReloadLogHelper.briefInfo("calcDiffForMetaData end");
         }
         final ReentrantLock metaLock = ProxyMeta.getInstance().getTmManager().getMetaLock();
         metaLock.lock();
@@ -367,8 +367,8 @@ public class ServerConfig {
         try {
             ReloadLogHelper.briefInfo("added metaLock");
             // user in use cannot be deleted
+            ReloadLogHelper.briefInfo("checkUser ...");
             checkUser(changeItemList);
-            ReloadLogHelper.briefInfo("checkUser end");
             String checkResult = ProxyMeta.getInstance().getTmManager().metaCountCheck();
             if (checkResult != null) {
                 LOGGER.warn(checkResult);
@@ -394,7 +394,7 @@ public class ServerConfig {
                 newDbGroups = oldDbGroups;
             }
             ReloadLogHelper.briefInfo("init new dbGroup end");
-
+            ReloadLogHelper.briefInfo("config the transformation ...");
             this.shardingNodes = newShardingNodes;
             this.dbGroups = newDbGroups;
             this.fullyConfigured = isFullyConfigured;
@@ -411,11 +411,10 @@ public class ServerConfig {
             this.shardingConfig = shardingJsonConfig;
             this.sequenceConfig = sequenceJsonConfig;
             this.lowerCase = DbleTempConfig.getInstance().isLowerCase();
-            ReloadLogHelper.briefInfo("config the transformation end");
 
             try {
+                ReloadLogHelper.briefInfo("ha config init ...");
                 HaConfigManager.getInstance().init(true);
-                ReloadLogHelper.briefInfo("ha config init end");
             } catch (Exception e) {
                 throw new SQLNonTransientException("HaConfigManager init failed", "HY000", ErrorCode.ER_YES);
             }

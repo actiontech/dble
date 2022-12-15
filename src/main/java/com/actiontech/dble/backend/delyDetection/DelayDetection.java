@@ -68,7 +68,7 @@ public class DelayDetection {
     }
 
     private void synSql() {
-        String[] str = {"dble", SystemConfig.getInstance().getInstanceName(), dbGroupConfig.getName()};
+        String[] str = {"dble", dbGroupConfig.getName(), SystemConfig.getInstance().getInstanceName()};
         sourceName = Joiner.on("_").join(str);
         String schema = dbGroupConfig.getDelayDatabase();
         String tableName = ".u_delay ";

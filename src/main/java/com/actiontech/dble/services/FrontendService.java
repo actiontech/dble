@@ -200,14 +200,15 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
             if (serviceTask.getType() == ServiceTaskType.NORMAL) {
                 NormalServiceTask executeTask = (NormalServiceTask) serviceTask;
                 byte[] data = executeTask.getOrgData();
-                if (data != null && !executeTask.isReuse()) {
-                    this.setPacketId(executeTask.getLastSequenceId());
-                }
 
-                if (data != null && data.length - MySQLPacket.PACKET_HEADER_SIZE >= SystemConfig.getInstance().getMaxPacketSize()) {
-                    throw new IllegalArgumentException("Packet for query is too large (" + data.length + " > " + SystemConfig.getInstance().getMaxPacketSize() + ").You can change maxPacketSize value in bootstrap.cnf.");
+                if (data != null) {
+                    if (!executeTask.isReuse()) {
+                        this.setPacketId(executeTask.getLastSequenceId());
+                    }
+                    if (data.length - MySQLPacket.PACKET_HEADER_SIZE >= SystemConfig.getInstance().getMaxPacketSize()) {
+                        throw new IllegalArgumentException("Packet for query is too large (" + data.length + " > " + SystemConfig.getInstance().getMaxPacketSize() + ").You can change maxPacketSize value in bootstrap.cnf.");
+                    }
                 }
-
             }
 
             super.consumeSingleTask(serviceTask);

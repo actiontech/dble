@@ -22,8 +22,7 @@ public class LoadDataProtoHandlerImpl extends MySQLProtoHandlerImpl {
     public ProtoHandlerResult handle(ByteBuffer dataBuffer, int dataBufferOffset, boolean isSupportCompress) {
         ProtoHandlerResult result = super.handle(dataBuffer, dataBufferOffset, isSupportCompress);
         switch (result.getCode()) {
-            case REACH_END_BUFFER:
-            case STLL_DATA_REMING:
+            case COMPLETE_PACKET:
                 byte[] packetData = result.getPacketData();
                 if (packetData != null) {
                     if (isEndOfDataFile(packetData)) {
@@ -31,7 +30,7 @@ public class LoadDataProtoHandlerImpl extends MySQLProtoHandlerImpl {
                     } else {
                         loadDataHandler.handle(packetData);
                     }
-                    return new ProtoHandlerResult(result.getCode(), result.getOffset());
+                    return ProtoHandlerResult.builder().setCode(result.getCode()).setOffset(result.getOffset()).setPacketLength(result.getPacketLength()).setHasMorePacket(result.isHasMorePacket()).build();
                 }
                 return result;
             default:

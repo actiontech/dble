@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.sqlengine;
 
+import com.actiontech.dble.util.TraceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,9 @@ public class MultiRowSQLQueryResultHandler extends OneRawSQLQueryResultHandler {
 
     @Override
     public void finished(String shardingNode, boolean failed) {
+        if (failed) {
+            TraceUtil.print();
+        }
         SQLQueryResult<List<Map<String, String>>> queryResult =
                 new SQLQueryResult<>(this.resultRows, !failed, this.resultRows.isEmpty());
         if (callback != null)

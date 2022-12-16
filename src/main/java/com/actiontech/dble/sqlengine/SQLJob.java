@@ -96,6 +96,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con query sql:" + sql + " to con:" + conn);
         }
+        LOGGER.info("con query sql:" + sql + " to con:" + conn);
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setComplexQuery(true);
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(conn.getBackendService(), "sql-job-send-command");
@@ -103,7 +104,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
             conn.getBackendService().query(sql, true);
             connection = conn;
         } catch (Exception e) { // (UnsupportedEncodingException e) {
-            LOGGER.debug("......", e);
+            LOGGER.warn("connectionAcquired send error ", e);
             doFinished(true);
         } finally {
             TraceManager.finishSpan(traceObject);
@@ -167,6 +168,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
             } else {
                 ((MySQLResponseService) service).release();
             }
+            LOGGER.info("[okResponse] sql is{}, service is {}", sql, service);
             doFinished(false);
         }
     }
@@ -187,11 +189,13 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         ((MySQLResponseService) service).release();
+        LOGGER.info("[rowEofResponse] sql is{}, service is {}", sql, service);
         doFinished(false);
     }
 
     @Override
     public void connectionClose(AbstractService service, String reason) {
+        LOGGER.warn("connectionClose sql {}, reason is {}, service is {}", sql, reason, service);
         doFinished(true);
     }
 

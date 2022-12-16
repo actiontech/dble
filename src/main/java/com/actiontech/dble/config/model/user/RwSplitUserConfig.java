@@ -10,11 +10,14 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.services.mysqlauthenticate.MysqlDatabaseHandler;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.Set;
 
 public class RwSplitUserConfig extends ServerUserConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RwSplitUserConfig.class);
     private final String dbGroup;
 
     public RwSplitUserConfig(UserConfig user, String tenant, WallProvider blacklist, String dbGroup) {
@@ -44,6 +47,10 @@ public class RwSplitUserConfig extends ServerUserConfig {
             exist = result.isPresent();
         } else {
             exist = schemas.contains(schema);
+        }
+        if (!exist) {
+            LOGGER.warn("current schemas size is {}, schemas content is {}, current schema is {} ", schemas.size(), schemas, schema);
+            LOGGER.warn("dble lowerCase is {}  ", DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
         }
         return exist ? 0 : ErrorCode.ER_BAD_DB_ERROR;
     }

@@ -62,7 +62,7 @@ public final class Scheduler {
         }
         scheduledExecutor.scheduleAtFixedRate(threadStatRenew(), 0L, 1, TimeUnit.SECONDS);
         if (FrontActiveRatioStat.getInstance().isEnable()) {
-            scheduledExecutor.scheduleWithFixedDelay(clearStaleData(), 0L, FrontActiveRatioStat.LAST_STAT_MAX, TimeUnit.MILLISECONDS);
+            scheduledExecutor.scheduleWithFixedDelay(compressionsActiveStat(), 0L, FrontActiveRatioStat.INTERVAL, TimeUnit.MILLISECONDS);
         }
         scheduledExecutor.scheduleAtFixedRate(printLongTimeDDL(), 0L, DDL_EXECUTE_CHECK_PERIOD, TimeUnit.SECONDS);
     }
@@ -240,11 +240,11 @@ public final class Scheduler {
         };
     }
 
-    public Runnable clearStaleData() {
+    public Runnable compressionsActiveStat() {
         return new Runnable() {
             @Override
             public void run() {
-                FrontActiveRatioStat.getInstance().clearStaleData();
+                FrontActiveRatioStat.getInstance().compress();
             }
         };
     }

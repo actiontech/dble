@@ -126,15 +126,19 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 lock.unlock();
             }
             LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
-            StringBuilder sb = new StringBuilder();
-            for (final RouteResultsetNode node : rrs.getNodes()) {
+            for (RouteResultsetNode node : rrs.getNodes()) {
                 unResponseRrns.add(node);
-                if (node.isModifySQL()) {
-                    sb.append("[").append(node.getName()).append("]").append(node.getStatement()).append(";\n");
-                }
             }
-            if (sb.length() > 0) {
-                TxnLogHelper.putTxnLog(session.getShardingService(), sb.toString());
+            if (SystemConfig.getInstance().getRecordTxn() == 1) {
+                StringBuilder sb = new StringBuilder();
+                for (final RouteResultsetNode node : rrs.getNodes()) {
+                    if (node.isModifySQL()) {
+                        sb.append("[").append(node.getName()).append("]").append(node.getStatement()).append(";\n");
+                    }
+                }
+                if (sb.length() > 0) {
+                    TxnLogHelper.putTxnLog(session.getShardingService(), sb.toString());
+                }
             }
 
             for (final RouteResultsetNode node : rrs.getNodes()) {

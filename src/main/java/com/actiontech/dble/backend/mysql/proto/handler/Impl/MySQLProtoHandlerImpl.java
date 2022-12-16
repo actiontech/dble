@@ -6,6 +6,7 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 
 import static com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResultCode.*;
@@ -23,17 +24,19 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
     }
 
     @Override
+    @Nonnull
     public ProtoHandlerResult handle(ByteBuffer dataBuffer, int offset, boolean isSupportCompress) {
         int position = dataBuffer.position();
         int length = getPacketLength(dataBuffer, offset, isSupportCompress);
+        final ProtoHandlerResult.ProtoHandlerResultBuilder builder = ProtoHandlerResult.builder();
         if (length == -1) {
             if (offset != 0) {
-                return new ProtoHandlerResult(BUFFER_PACKET_UNCOMPLETE, offset);
+                return builder.setCode(BUFFER_PACKET_UNCOMPLETE).setHasMorePacket(false).setOffset(offset).build();
             } else if (!dataBuffer.hasRemaining()) {
                 throw new RuntimeException("invalid dataBuffer capacity ,too little buffer size " +
                         dataBuffer.capacity());
             }
-            return new ProtoHandlerResult(BUFFER_PACKET_UNCOMPLETE, offset);
+            return builder.setCode(BUFFER_PACKET_UNCOMPLETE).setHasMorePacket(false).setOffset(offset).build();
         }
         if (position >= offset + length) {
             // handle this package
@@ -42,7 +45,9 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
             dataBuffer.get(data, 0, length);
             data = checkData(data, length);
             if (data == null) {
-                return new ProtoHandlerResult(REACH_END_BUFFER, offset);
+                builder.setCode(PART_OF_BIG_PACKET);
+            } else {
+                builder.setCode(COMPLETE_PACKET);
             }
 
             // offset to next position
@@ -51,17 +56,21 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
             if (position != offset) {
                 // try next package parse
                 //dataBufferOffset = offset;
+                //should reset position after read.
                 dataBuffer.position(position);
-                return new ProtoHandlerResult(STLL_DATA_REMING, offset, data);
+                builder.setHasMorePacket(true);
+            } else {
+                builder.setHasMorePacket(false);
             }
-            return new ProtoHandlerResult(REACH_END_BUFFER, offset, data);
+            builder.setOffset(offset).setPacketData(data);
+            return builder.build();
         } else {
             // not read whole message package ,so check if buffer enough and
             // compact dataBuffer
             if (!dataBuffer.hasRemaining()) {
-                return new ProtoHandlerResult(BUFFER_NOT_BIG_ENOUGH, offset, length);
+                return builder.setCode(BUFFER_NOT_BIG_ENOUGH).setHasMorePacket(false).setOffset(offset).setPacketLength(length).build();
             } else {
-                return new ProtoHandlerResult(BUFFER_PACKET_UNCOMPLETE, offset, length);
+                return builder.setCode(BUFFER_PACKET_UNCOMPLETE).setHasMorePacket(false).setOffset(offset).setPacketLength(length).build();
             }
         }
     }
@@ -86,10 +95,12 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
 
     private byte[] checkData(byte[] data, int length) {
         //session packet should be set to the latest one
+        //todo: this method doesn't apply for compress
         if (length >= com.actiontech.dble.net.mysql.MySQLPacket.MAX_PACKET_SIZE + com.actiontech.dble.net.mysql.MySQLPacket.PACKET_HEADER_SIZE) {
             if (incompleteData == null) {
                 incompleteData = data;
             } else {
+                //skip header in package
                 byte[] nextData = new byte[data.length - com.actiontech.dble.net.mysql.MySQLPacket.PACKET_HEADER_SIZE];
                 System.arraycopy(data, com.actiontech.dble.net.mysql.MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, data.length - com.actiontech.dble.net.mysql.MySQLPacket.PACKET_HEADER_SIZE);
                 incompleteData = dataMerge(nextData);
@@ -108,6 +119,7 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
     }
 
     private byte[] dataMerge(byte[] data) {
+        //todo:  could optimize here. for example ,use linked-buffer
         byte[] newData = new byte[incompleteData.length + data.length];
         System.arraycopy(incompleteData, 0, newData, 0, incompleteData.length);
         System.arraycopy(data, 0, newData, incompleteData.length, data.length);

@@ -113,7 +113,7 @@ public final class CompressUtil {
                         byteBuf.put(packet);                            //body
 
                     } else {
-
+                        //todo: process for big package
                         byte[] compress = compress(packet);                //compress
 
                         BufferUtil.writeUB3(byteBuf, compress.length);
@@ -150,13 +150,15 @@ public final class CompressUtil {
             List<byte[]> lst = new ArrayList(1);
             lst.add(data);
             return lst;
-            //compressed failed
+
         } else if (oldLen == 0) {
+            // Uncompressed Payload.
             byte[] readBytes = msg.readBytes();
             return splitPack(readBytes, decompressUnfinishedDataQueue);
 
-            //decompress
+
         } else {
+            // Compressed Payload.
             byte[] de = decompress(data, 7, data.length - 7);
             return splitPack(de, decompressUnfinishedDataQueue);
         }
@@ -170,7 +172,7 @@ public final class CompressUtil {
      * @return
      */
     private static List<byte[]> splitPack(byte[] in, ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue) {
-
+        //todo: process for big package
         //merge
         in = mergeBytes(in, decompressUnfinishedDataQueue);
 

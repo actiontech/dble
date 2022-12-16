@@ -12,6 +12,7 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -38,6 +39,7 @@ public abstract class AbstractService implements Service {
     private volatile boolean isSupportCompress = false;
     protected volatile ProtoHandler proto;
     protected final BlockingQueue<ServiceTask> taskQueue;
+    private int sequenceId = 0;
 
     public AbstractService(AbstractConnection connection) {
         this.connection = connection;
@@ -53,44 +55,50 @@ public abstract class AbstractService implements Service {
     @Override
     public void handle(ByteBuffer dataBuffer) {
         this.sessionStart();
-        boolean hasReming = true;
+        boolean hasRemaining = true;
         int offset = 0;
-        while (hasReming) {
+        while (hasRemaining) {
             ProtoHandlerResult result = proto.handle(dataBuffer, offset, isSupportCompress);
             switch (result.getCode()) {
-                case REACH_END_BUFFER:
-                    connection.readReachEnd();
-                    byte[] packetData = result.getPacketData();
-                    if (packetData != null) {
-                        taskCreate(packetData);
+                case PART_OF_BIG_PACKET:
+
+                    sequenceId++;
+                    if (!result.isHasMorePacket()) {
+                        connection.readReachEnd();
+                        dataBuffer.clear();
                     }
-                    dataBuffer.clear();
-                    hasReming = false;
+
+                    break;
+                case COMPLETE_PACKET:
+                    taskCreate(result.getPacketData());
+                    if (!result.isHasMorePacket()) {
+                        connection.readReachEnd();
+                        dataBuffer.clear();
+                    }
                     break;
                 case BUFFER_PACKET_UNCOMPLETE:
                     connection.compactReadBuffer(dataBuffer, result.getOffset());
-                    hasReming = false;
                     break;
                 case BUFFER_NOT_BIG_ENOUGH:
                     connection.ensureFreeSpaceOfReadBuffer(dataBuffer, result.getOffset(), result.getPacketLength());
-                    hasReming = false;
                     break;
-                case STLL_DATA_REMING:
-                    byte[] partData = result.getPacketData();
-                    if (partData != null) {
-                        taskCreate(partData);
-                    }
-                    offset = result.getOffset();
-                    continue;
                 default:
                     throw new RuntimeException("unknown error when read data");
+            }
+
+            hasRemaining = result.isHasMorePacket();
+            if (hasRemaining) {
+                offset = result.getOffset();
             }
         }
     }
 
     protected void taskCreate(byte[] packetData) {
+        if (packetData == null) {
+            return;
+        }
         if (beforeHandlingTask()) {
-            ServiceTask task = new ServiceTask(packetData, this);
+            ServiceTask task = new ServiceTask(packetData, this, sequenceId);
             try {
                 taskQueue.put(task);
             } catch (InterruptedException e) {
@@ -209,11 +217,15 @@ public abstract class AbstractService implements Service {
         length -= (MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
         ByteUtil.writeUB3(singlePacket, MySQLPacket.MAX_PACKET_SIZE);
         singlePacket[3] = data[3];
+        byte currentPacketId = data[3];
         buffer = writeToBuffer(singlePacket, buffer);
         while (length >= MySQLPacket.MAX_PACKET_SIZE) {
             singlePacket = new byte[MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
             ByteUtil.writeUB3(singlePacket, MySQLPacket.MAX_PACKET_SIZE);
-            singlePacket[3] = (byte) nextPacketId();
+            singlePacket[3] = ++currentPacketId;
+            if (this instanceof ShardingService) {
+                singlePacket[3] = (byte) this.nextPacketId();
+            }
             System.arraycopy(data, srcPos, singlePacket, MySQLPacket.PACKET_HEADER_SIZE, MySQLPacket.MAX_PACKET_SIZE);
             srcPos += MySQLPacket.MAX_PACKET_SIZE;
             length -= MySQLPacket.MAX_PACKET_SIZE;
@@ -221,7 +233,10 @@ public abstract class AbstractService implements Service {
         }
         singlePacket = new byte[length + MySQLPacket.PACKET_HEADER_SIZE];
         ByteUtil.writeUB3(singlePacket, length);
-        singlePacket[3] = (byte) nextPacketId();
+        singlePacket[3] = ++currentPacketId;
+        if (this instanceof ShardingService) {
+            singlePacket[3] = (byte) this.nextPacketId();
+        }
         System.arraycopy(data, srcPos, singlePacket, MySQLPacket.PACKET_HEADER_SIZE, length);
         buffer = writeToBuffer(singlePacket, buffer);
         return buffer;
@@ -297,16 +312,21 @@ public abstract class AbstractService implements Service {
         try {
             byte[] data = executeTask.getOrgData();
             if (data != null && !executeTask.isReuse()) {
-                this.setPacketId(data[3]);
+                this.setPacketId(executeTask.getSequenceId());
             }
             if (isSupportCompress()) {
-                List<byte[]> packs = CompressUtil.decompressMysqlPacket(data, new ConcurrentLinkedQueue<>());
+                final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
+                List<byte[]> packs = CompressUtil.decompressMysqlPacket(data, decompressUnfinishedDataQueue);
+                if (decompressUnfinishedDataQueue.isEmpty()) {
+                    sequenceId = 0;
+                }
                 for (byte[] pack : packs) {
                     if (pack.length != 0) {
                         handleInnerData(pack);
                     }
                 }
             } else {
+                sequenceId = 0;
                 this.handleInnerData(data);
 
             }

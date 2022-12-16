@@ -104,7 +104,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
             conn.getBackendService().query(sql, true);
             connection = conn;
         } catch (Exception e) { // (UnsupportedEncodingException e) {
-            LOGGER.warn("connectionAcquired send error " + e);
+            LOGGER.warn("connectionAcquired send error ", e);
             doFinished(true);
         } finally {
             TraceManager.finishSpan(traceObject);

@@ -41,7 +41,9 @@ public class RwSplitUserConfig extends ServerUserConfig {
             return 0;
         }
         boolean exist;
+        LOGGER.info("start checkSchema");
         Set<String> schemas = new MysqlDatabaseHandler(DbleServer.getInstance().getConfig().getDbGroups()).execute(dbGroup);
+        LOGGER.info("checkSchema schemas size is {}, schemas content is {}, current schema is {} ", schemas.size(), schemas, schema);
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             Optional<String> result = schemas.stream().filter(item -> StringUtil.equals(item.toLowerCase(), schema.toLowerCase())).findFirst();
             exist = result.isPresent();
@@ -50,8 +52,9 @@ public class RwSplitUserConfig extends ServerUserConfig {
         }
         if (!exist) {
             LOGGER.warn("current schemas size is {}, schemas content is {}, current schema is {} ", schemas.size(), schemas, schema);
-            LOGGER.warn("dble lowerCase is {}  ", DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
+            LOGGER.warn("dble lowerCase is {}", DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
         }
+        LOGGER.info("end checkSchema");
         return exist ? 0 : ErrorCode.ER_BAD_DB_ERROR;
     }
 

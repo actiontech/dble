@@ -28,10 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -203,6 +200,7 @@ public class MySQLResponseService extends BackendService {
         if (protocolResponseHandler != defaultResponseHandler) {
             protocolResponseHandler = defaultResponseHandler;
         }
+        LOGGER.info("sqySQL is {}, query is {}, conn is {}", Optional.ofNullable(synSQL).orElse(new StringBuilder("null")), query, connection);
         synAndDoExecute(synSQL, rrn.getStatement(), connection.getCharsetName());
     }
 

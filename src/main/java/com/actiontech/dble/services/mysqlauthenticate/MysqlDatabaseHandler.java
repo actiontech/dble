@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.sqlengine.*;
 import com.actiontech.dble.util.TraceUtil;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +23,7 @@ public class MysqlDatabaseHandler {
     private static final String MYSQL_SHOW_DATABASES = "show databases";
     private final ReentrantLock lock = new ReentrantLock();
     private Map<String, PhysicalDbGroup> dbGroups;
-    private Set<String> databases = new HashSet<>();
+    private Set<String> databases = Sets.newConcurrentHashSet();
     private final Condition finishCond = lock.newCondition();
     private boolean isFinish = false;
 
@@ -72,6 +73,7 @@ public class MysqlDatabaseHandler {
             if (dbGroup != null) {
                 ds = dbGroup.rwSelect(null, false);
             }
+            LOGGER.info("current ds is {}", ds);
         } catch (IOException e) {
             LOGGER.warn("select dbInstance error", e);
         }
@@ -112,7 +114,7 @@ public class MysqlDatabaseHandler {
 
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
-            LOGGER.info("current result size is {}, result is {}", result.getResult().size(), result.getResult());
+            LOGGER.info("current result size is {}, result is {}, isSuc {}", result.getResult().size(), result.getResult(), result.isSuccess());
             if (result.isSuccess()) {
                 List<Map<String, String>> rows = result.getResult();
                 for (Map<String, String> row : rows) {

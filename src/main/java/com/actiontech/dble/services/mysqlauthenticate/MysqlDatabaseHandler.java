@@ -9,7 +9,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.sqlengine.*;
 import com.actiontech.dble.util.TraceUtil;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +22,7 @@ public class MysqlDatabaseHandler {
     private static final String MYSQL_SHOW_DATABASES = "show databases";
     private final ReentrantLock lock = new ReentrantLock();
     private Map<String, PhysicalDbGroup> dbGroups;
-    private Set<String> databases = Sets.newConcurrentHashSet();
+    private Set<String> databases = new HashSet<>();
     private final Condition finishCond = lock.newCondition();
     private boolean isFinish = false;
 

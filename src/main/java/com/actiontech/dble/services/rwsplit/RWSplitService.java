@@ -25,6 +25,7 @@ import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
+import com.actiontech.dble.services.mysqlsharding.LoadDataProtoHandlerImpl;
 import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
@@ -116,7 +117,12 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     protected boolean beforeHandlingTask(@NotNull ServiceTask task) {
         TraceManager.sessionStart(this, "rwSplit-server-start");
         if (task.getType() == ServiceTaskType.NORMAL) {
-            final int packetType = ((NormalServiceTask) task).getPacketType();
+            NormalServiceTask task0 = ((NormalServiceTask) task);
+            // Filter Load Data's empty package
+            if (this.isInLoadData() && LoadDataProtoHandlerImpl.isEndOfDataFile(task0.getOrgData()))
+                return true;
+
+            final int packetType = task0.getPacketType();
             if (packetType == MySQLPacket.COM_STMT_PREPARE || packetType == MySQLPacket.COM_STMT_EXECUTE || packetType == MySQLPacket.COM_QUERY) {
                 StatisticListener.getInstance().record(session, r -> r.onFrontendSqlStart());
             }

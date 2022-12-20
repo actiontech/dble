@@ -46,7 +46,8 @@ public class LoadDataProtoHandlerImpl implements ProtoHandler {
         return mySQLProtoHandler;
     }
 
-    private boolean isEndOfDataFile(byte[] data) {
+    public static boolean isEndOfDataFile(byte[] data) {
+        // Load Data's empty package
         return (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0);
     }
 }

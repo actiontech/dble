@@ -196,9 +196,9 @@ public final class HaConfigManager {
             resultString.append("\n result status of dbGroup :").append(result);
         }
         if (errorMsg == null) {
-            info(resultString.toString());
+            HA_LOGGER.info(resultString.toString());
         } else {
-            warn(resultString.toString());
+            HA_LOGGER.warn(resultString.toString());
         }
     }
 

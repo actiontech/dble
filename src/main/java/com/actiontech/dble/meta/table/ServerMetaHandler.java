@@ -104,7 +104,7 @@ public class ServerMetaHandler {
                 allSchemaDone.await();
             }
         } catch (InterruptedException e) {
-            ReloadLogHelper.briefInfo("waitAllSchemaDone " + e);
+            ReloadLogHelper.briefInfo("waitAllSchemaDone interrupted: " + e);
         } finally {
             lock.unlock();
         }

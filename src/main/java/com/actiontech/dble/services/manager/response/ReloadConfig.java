@@ -237,13 +237,12 @@ public final class ReloadConfig {
         sequenceConfig = sequenceConfig == null ? DbleServer.getInstance().getConfig().getSequenceConfig() : sequenceConfig;
         final boolean reloadResult = reload(loadAllMode, userConfig, dbConfig, shardingConfig, sequenceConfig);
 
-        ReloadLogHelper.briefInfo("clean temp config");
+        ReloadLogHelper.briefInfo("clean temp config ...");
         DbleTempConfig.getInstance().clean();
         //sync json to local
+        if (isWriteToLocal)
+            ReloadLogHelper.briefInfo("sync json to local ...");
         DbleServer.getInstance().getConfig().syncJsonToLocal(isWriteToLocal);
-        if (isWriteToLocal) {
-            ReloadLogHelper.briefInfo("sync json to local");
-        }
         return reloadResult;
     }
 
@@ -278,12 +277,12 @@ public final class ReloadConfig {
             // lowerCase && load sequence
             if (loader.isFullyConfigured()) {
                 if (newSystemVariables.isLowerCaseTableNames()) {
-                    ReloadLogHelper.briefInfo("dbGroup's lowerCaseTableNames=1, lower the config properties start");
+                    ReloadLogHelper.briefInfo("dbGroup's lowerCaseTableNames=1, lower the config properties ...");
                     newConfig.reviseLowerCase();
                 }
-                ReloadLogHelper.briefInfo("loadSequence start");
+                ReloadLogHelper.briefInfo("loadSequence ...");
                 newConfig.loadSequence(loader.getSequenceConfig());
-                ReloadLogHelper.briefInfo("selfChecking0 start");
+                ReloadLogHelper.briefInfo("selfChecking0 ...");
                 newConfig.selfChecking0();
             }
 
@@ -403,7 +402,7 @@ public final class ReloadConfig {
                         "memory to sequence is :{}", userConfig, dbConfig, shardingConfig, sequenceConfig);
                 loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
             }
-            ReloadLogHelper.briefInfo("load config end");
+            ReloadLogHelper.briefInfo("load info end");
             return loader;
         } catch (Exception e) {
             throw new Exception(e.getMessage() == null ? e.toString() : e.getMessage(), e);

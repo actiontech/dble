@@ -101,7 +101,9 @@ public class FrontActiveRatioStat {
                 return maps;
             long currentTime = System.currentTimeMillis();
             for (Map.Entry<FrontendConnection, WorkStat> s : usageStats.entrySet()) {
-                maps.put(s.getKey(), s.getValue().getActiveRatioStat(currentTime));
+                String[] activeRatioStats = s.getValue().getActiveRatioStat(currentTime);
+                if (activeRatioStats != null)
+                    maps.put(s.getKey(), activeRatioStats);
             }
         } catch (Exception e) {
             LOGGER.warn("getActiveRatioStat() exception：{}", e);
@@ -131,6 +133,7 @@ public class FrontActiveRatioStat {
 
         public void readTime(long time) {
             synchronized (mutex) {
+                if (isClose()) return;
                 if (CollectionUtil.isEmpty(dynamicArray)) {
                     dynamicArray.add(new ReadTime(time));
                 } else {
@@ -151,6 +154,7 @@ public class FrontActiveRatioStat {
 
         public void writeTime(long time) {
             synchronized (mutex) {
+                if (isClose()) return;
                 if (CollectionUtil.isEmpty(dynamicArray)) {
                     dynamicArray.add(new WriteTime(time));
                 } else {
@@ -170,10 +174,18 @@ public class FrontActiveRatioStat {
 
         private void clear() {
             synchronized (mutex) {
+                if (isClose()) return;
                 dynamicArray.clear();
+                dynamicArray = null;
                 staticArray.clear();
+                staticArray = null;
                 lastPointTimeInStatic = null;
+                lastStaticTime = 0L;
             }
+        }
+
+        private boolean isClose() {
+            return staticArray == null || dynamicArray == null;
         }
 
         public String[] getActiveRatioStat(long currentTime) {
@@ -181,6 +193,7 @@ public class FrontActiveRatioStat {
             int[] staticArray0;
             long lastStaticTime0;
             synchronized (mutex) {
+                if (isClose()) return null;
                 dynamicArray0 = new LinkedList<>(dynamicArray);
                 staticArray0 = staticArray.getSort();
                 lastStaticTime0 = this.getLastStaticTime() == 0 ? currentTime - COMPRESSION_INTERVAL : this.getLastStaticTime(); // query time, greater than the first compression time
@@ -282,6 +295,7 @@ public class FrontActiveRatioStat {
          */
         private void compressToStatic(long currentCompressTime) {
             synchronized (mutex) {
+                if (isClose()) return;
                 this.initLastStaticTime(currentCompressTime);
                 int currentActiveTimeCount;
                 int index = lastObsoleteIndex(dynamicArray, currentCompressTime);

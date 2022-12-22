@@ -395,14 +395,14 @@ public final class ReloadConfig {
                 ReloadLogHelper.briefInfo("load config start [local xml]");
                 loader = new ConfigInitializer();
             } else {
-                ReloadLogHelper.briefInfo("load info start [memory]");
+                ReloadLogHelper.briefInfo("load config start [memory]");
                 ReloadLogHelper.debug("memory to Users is :{}\r\n" +
                         "memory to DbGroups is :{}\r\n" +
                         "memory to Shardings is :{}\r\n" +
                         "memory to sequence is :{}", userConfig, dbConfig, shardingConfig, sequenceConfig);
                 loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
             }
-            ReloadLogHelper.briefInfo("load info end");
+            ReloadLogHelper.briefInfo("load config end");
             return loader;
         } catch (Exception e) {
             throw new Exception(e.getMessage() == null ? e.toString() : e.getMessage(), e);

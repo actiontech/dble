@@ -162,6 +162,7 @@ public final class SqlDumpLogHelper {
     }
 
     private static String[] packageLog(byte[] data, String sql, RWSplitService rwSplitService) {
+        if (data.length < 5) return null;
         switch (data[4]) {
             case MySQLPacket.COM_QUERY:
                 return packageLog(sql);

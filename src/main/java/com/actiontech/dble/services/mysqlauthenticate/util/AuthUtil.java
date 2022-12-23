@@ -18,16 +18,12 @@ import com.actiontech.dble.services.mysqlauthenticate.PluginName;
 import com.actiontech.dble.services.mysqlauthenticate.SecurityUtil;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.util.IPAddressUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 
 public final class AuthUtil {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(AuthUtil.class);
-
     private AuthUtil() {
     }
 
@@ -56,7 +52,6 @@ public final class AuthUtil {
         }
         // check schema
         final String schema = authPacket.getDatabase();
-        LOGGER.info("frontConn is {}, schema is {}", fconn, schema);
         switch (userConfig.checkSchema(schema)) {
             case ErrorCode.ER_BAD_DB_ERROR:
                 return new AuthResultInfo("Unknown database '" + schema + "'");
@@ -99,7 +94,6 @@ public final class AuthUtil {
         }
         // check schema
         final String schema = changeUserPacket.getDatabase();
-        LOGGER.info("frontConn is {}, schema is {} user is {}", fconn, schema, changeUserPacket);
         switch (userConfig.checkSchema(schema)) {
             case ErrorCode.ER_BAD_DB_ERROR:
                 return new AuthResultInfo("Unknown database '" + schema + "'");

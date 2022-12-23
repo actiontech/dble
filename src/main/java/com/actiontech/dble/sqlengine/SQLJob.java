@@ -19,7 +19,6 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.util.TraceUtil;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +96,6 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con query sql:" + sql + " to con:" + conn);
         }
-        LOGGER.info("con query sql:" + sql + " to con:" + conn);
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setComplexQuery(true);
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(conn.getBackendService(), "sql-job-send-command");
@@ -122,8 +120,6 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
             jobHandler.finished(shardingNode == null ? schema : shardingNode, failed);
             return true;
         }
-        LOGGER.warn("[doFinished] sql is {}, conn is {}", sql, connection);
-        TraceUtil.print();
         return false;
     }
 
@@ -165,7 +161,6 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
 
     @Override
     public void okResponse(byte[] ok, AbstractService service) {
-        LOGGER.info("[okResponse] sql is {}, sync is {}, service is {}， conn is {}", sql, ((MySQLResponseService) service).syncAndExecute(), service, connection);
         if (((MySQLResponseService) service).syncAndExecute()) {
             if (testXid) {
                 service.getConnection().businessClose("test xid existence");
@@ -174,13 +169,11 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
             }
             doFinished(false);
         }
-
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, AbstractService service) {
-        LOGGER.info("[fieldEofResponse] sql is {}, service is {}, conn is {}", sql, service, connection);
         jobHandler.onHeader(fields);
 
     }
@@ -193,14 +186,12 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
-        LOGGER.info("[rowEofResponse] sql is {}, service is {}, conn is {}", sql, service, connection);
         ((MySQLResponseService) service).release();
         doFinished(false);
     }
 
     @Override
     public void connectionClose(AbstractService service, String reason) {
-        LOGGER.warn("connectionClose sql {}, reason is {}, service is {}", sql, reason, service);
         doFinished(true);
     }
 

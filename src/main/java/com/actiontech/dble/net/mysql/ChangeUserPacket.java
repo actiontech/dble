@@ -159,15 +159,4 @@ public class ChangeUserPacket extends MySQLPacket {
         return tenant;
     }
 
-    @Override
-    public String toString() {
-        return "ChangeUserPacket{" +
-                "clientFlags=" + clientFlags +
-                ", charsetIndex=" + charsetIndex +
-                ", user='" + user + '\'' +
-                ", database='" + database + '\'' +
-                ", authPlugin='" + authPlugin + '\'' +
-                ", tenant='" + tenant + '\'' +
-                '}';
-    }
 }

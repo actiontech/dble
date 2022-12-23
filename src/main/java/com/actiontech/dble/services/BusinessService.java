@@ -95,7 +95,7 @@ public abstract class BusinessService extends FrontEndService {
                     }
                     break;
                 case CHARSET:
-                    this.setCharacterSet(variable.getValue());
+                    this.setNames(variable.getValue(), "@@session.collation_database");
                     break;
                 case NAMES:
                     String[] charsetAndCollate = variable.getValue().split(":");

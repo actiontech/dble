@@ -69,7 +69,7 @@ public class RWSplitNonBlockingSession {
 
     @Nullable
     private RWSplitHandler getRwSplitHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException {
-        RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback);
+        RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback, false);
         if (conn != null && !conn.isClosed()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select bind conn[id={}]", conn.getId());
@@ -115,7 +115,7 @@ public class RWSplitNonBlockingSession {
     }
 
     public void executeHint(int sqlType, String sql, Callback callback) throws IOException {
-        RWSplitHandler handler = new RWSplitHandler(rwSplitService, null, callback);
+        RWSplitHandler handler = new RWSplitHandler(rwSplitService, null, callback, true);
         try {
             PhysicalDbInstance dbInstance = RouteService.getInstance().routeRwSplit(sqlType, sql, rwSplitService);
             if (dbInstance == null) {

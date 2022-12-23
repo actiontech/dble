@@ -111,6 +111,7 @@ public class DbleDbGroup extends ManagerWritableTable {
     }
 
     private void defaultVal(LinkedHashMap<String, String> rows) {
+        //if the argument is null, then a string equal to "null"
         String delayDatabase = rows.get(DELAY_DATABASE);
         rows.put(DELAY_DATABASE, String.valueOf(delayDatabase));
     }

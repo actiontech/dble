@@ -16,7 +16,9 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.response.ProtocolResponseHandler;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.NormalServiceTask;
 import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.net.service.ServiceTaskType;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
@@ -167,6 +169,18 @@ public abstract class BackendService extends AbstractService {
         }
     }
 
+    void parseErrorPacket(byte[] data, String reason) {
+        try {
+            ErrorPacket errPkg = new ErrorPacket();
+            errPkg.read(data);
+            String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+            LOGGER.warn("no handler process the execute packet err,sql error:{},back service:{},from reason:{}", errMsg, this, reason);
+
+        } catch (RuntimeException e) {
+            LOGGER.info("error handle error-packet", e);
+        }
+    }
+
     /**
      * handle mysql packet returned from backend mysql
      *
@@ -174,6 +188,9 @@ public abstract class BackendService extends AbstractService {
      */
     protected void handleInnerData(byte[] data) {
         if (connection.isClosed()) {
+            if (data != null && data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
+                parseErrorPacket(data, "connection close");
+            }
             return;
         }
 
@@ -201,15 +218,27 @@ public abstract class BackendService extends AbstractService {
         LOGGER.warn(this.toString() + " handle data error:", e);
         connection.close("handle data error:" + e.getMessage());
         while (taskQueue.size() > 0) {
-            taskQueue.clear();
+            clearTaskQueue();
             // clear all data from the client
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
         }
     }
 
+    private void clearTaskQueue() {
+        ServiceTask task;
+        while ((task = taskQueue.poll()) != null) {
+            if (task.getType() == ServiceTaskType.NORMAL) {
+                final byte[] data = ((NormalServiceTask) task).getOrgData();
+                if (data != null && data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
+                    parseErrorPacket(data, "cleanup");
+                }
+            }
+        }
+    }
+
     @Override
     public void cleanup() {
-        this.taskQueue.clear();
+        clearTaskQueue();
         backendSpecialCleanUp();
         TraceManager.sessionFinish(this);
     }

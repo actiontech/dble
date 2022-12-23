@@ -105,8 +105,15 @@ public class DbleDbGroup extends ManagerWritableTable {
             map.put(COLUMN_ACTIVE, Boolean.TRUE.toString());
             return map;
         }).collect(Collectors.toList());
+        tempRowList.forEach(this::defaultVal);
         rowList.addAll(tempRowList);
         return rowList;
+    }
+
+    private void defaultVal(LinkedHashMap<String, String> rows) {
+        //if the argument is null, then a string equal to "null"
+        String delayDatabase = rows.get(DELAY_DATABASE);
+        rows.put(DELAY_DATABASE, String.valueOf(delayDatabase));
     }
 
     @Override

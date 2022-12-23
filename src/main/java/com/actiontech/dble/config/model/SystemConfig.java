@@ -190,6 +190,7 @@ public final class SystemConfig {
 
     private boolean closeHeartBeatRecord = false;
 
+    private int enableCheckSchema = 1;
     public int getSamplingRate() {
         return samplingRate;
     }
@@ -1393,6 +1394,18 @@ public final class SystemConfig {
         routePenetrationRules = sqlPenetrationRegexesTmp;
     }
 
+    public int getEnableCheckSchema() {
+        return enableCheckSchema;
+    }
+
+    public void setEnableCheckSchema(int enableCheckSchema) {
+        if (enableCheckSchema >= 0 && enableCheckSchema <= 1) {
+            this.enableCheckSchema = enableCheckSchema;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableCheckSchema", enableCheckSchema, this.enableCheckSchema));
+        }
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1491,6 +1504,7 @@ public final class SystemConfig {
                 ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
+                ", enableCheckSchema=" + enableCheckSchema +
                 "]";
     }
 

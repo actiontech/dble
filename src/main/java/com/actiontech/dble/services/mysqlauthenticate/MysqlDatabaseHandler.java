@@ -8,7 +8,6 @@ package com.actiontech.dble.services.mysqlauthenticate;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.sqlengine.*;
-import com.actiontech.dble.util.TraceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +71,6 @@ public class MysqlDatabaseHandler {
             if (dbGroup != null) {
                 ds = dbGroup.rwSelect(null, false);
             }
-            LOGGER.info("current ds is {}", ds);
         } catch (IOException e) {
             LOGGER.warn("select dbInstance error", e);
         }
@@ -113,16 +111,12 @@ public class MysqlDatabaseHandler {
 
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
-            LOGGER.info("current result size is {}, result is {}, isSuc {}", result.getResult().size(), result.getResult(), result.isSuccess());
             if (result.isSuccess()) {
                 List<Map<String, String>> rows = result.getResult();
                 for (Map<String, String> row : rows) {
                     String databaseName = row.get(mysqlShowDataBasesCol);
                     databases.add(databaseName);
                 }
-                LOGGER.info("current databases size is {}, databases is {}", databases.size(), databases);
-            } else {
-                TraceUtil.print();
             }
             handleFinished();
         }

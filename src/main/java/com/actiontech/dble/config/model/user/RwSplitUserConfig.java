@@ -7,6 +7,7 @@ package com.actiontech.dble.config.model.user;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.services.mysqlauthenticate.MysqlDatabaseHandler;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallProvider;
@@ -35,6 +36,9 @@ public class RwSplitUserConfig extends ServerUserConfig {
     @Override
     public int checkSchema(String schema) {
         if (schema == null) {
+            return 0;
+        }
+        if (SystemConfig.getInstance().getEnableCheckSchema() == 0) {
             return 0;
         }
         boolean exist;

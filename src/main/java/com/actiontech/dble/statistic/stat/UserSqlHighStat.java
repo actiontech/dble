@@ -7,34 +7,23 @@ package com.actiontech.dble.statistic.stat;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class UserSqlHighStat {
 
     private static final int CAPACITY_SIZE = 1024;
 
     private Map<String, SqlFrequency> sqlFrequencyMap = new ConcurrentHashMap<>();
-
-    private ReentrantLock lock = new ReentrantLock();
-
-
     private StatSqlParser sqlParser = new StatSqlParser();
 
     public void addSql(String sql, long executeTime, long startTime, long endTime) {
         String newSql = this.sqlParser.mergeSql(sql);
         SqlFrequency frequency = this.sqlFrequencyMap.get(newSql);
         if (frequency == null) {
-            if (lock.tryLock()) {
-                try {
-                    frequency = new SqlFrequency();
-                    frequency.setSql(newSql);
-                } finally {
-                    lock.unlock();
-                }
-            } else {
-                while (frequency == null) {
-                    frequency = this.sqlFrequencyMap.get(newSql);
-                }
+            frequency = new SqlFrequency();
+            frequency.setSql(newSql);
+            SqlFrequency tmp = sqlFrequencyMap.putIfAbsent(newSql, frequency);
+            if (tmp != null) {
+                frequency = tmp;
             }
         }
         frequency.setLastTime(endTime);

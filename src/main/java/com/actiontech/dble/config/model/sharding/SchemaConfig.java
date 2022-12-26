@@ -289,11 +289,4 @@ public class SchemaConfig {
         return o1 == o2 || o1.equals(o2);
     }
 
-    public boolean charsetReplace(String tableName) {
-        if (!tables.containsKey(tableName)) {
-            return false;
-        }
-        return tables.get(tableName).isSpecifyCharset();
-    }
-
 }

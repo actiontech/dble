@@ -644,20 +644,28 @@ public final class StringUtil {
      * @param value
      * @return
      */
-    public static String isoCharsetReplace(String clientCharset, String value, boolean charsetReplace) {
-        if (!charsetReplace) {
-            return value;
-        }
+    public static String isoCharsetReplace(String clientCharset, String value) {
         try {
-            byte[] isoBytes = value.getBytes(ISO_8859_1);
-            String isoValues = new String(isoBytes, ISO_8859_1);
+            String isoValues = new String(value.getBytes(ISO_8859_1), ISO_8859_1);
             String clientValues = new String(value.getBytes(clientCharset), clientCharset);
             if (!equals(isoValues, clientValues) && equals(value, clientValues)) {
                 return value;
             }
             if (charsetParseString(clientCharset, value.getBytes(clientCharset))) {
-                value = new String(isoBytes, clientCharset);
+                value = new String(value.getBytes(ISO_8859_1), clientCharset);
             }
+        } catch (Exception e) {
+            return value;
+        }
+        return value;
+    }
+
+    public static String charsetReplace(String clientCharset, String actualCharset, String value) {
+        try {
+            if (isBlank(actualCharset)) {
+                return value;
+            }
+            value = new String(value.getBytes(ISO_8859_1), clientCharset);
         } catch (Exception e) {
             return value;
         }
@@ -684,6 +692,7 @@ public final class StringUtil {
         Pattern pattern = Pattern.compile("^[-\\+]?[.\\d]*$");
         return pattern.matcher(str).matches();
     }
+
     /**
      * <p>
      * src: https://stackoverflow.com/questions/26357938/detect-chinese-character-in-java/26357985

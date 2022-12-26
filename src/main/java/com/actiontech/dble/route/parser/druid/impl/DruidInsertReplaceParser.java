@@ -23,6 +23,7 @@ import com.actiontech.dble.server.handler.ExplainHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.util.CharsetContext;
 import com.actiontech.dble.util.HexFormatUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -114,8 +115,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         rrs.setFinishedRoute(true);
     }
 
-    static String shardingValueToSting(SQLExpr valueExpr, String clientCharset, String dataType, SchemaInfo schemaInfo) throws SQLNonTransientException {
-        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaInfo.getSchema());
+    static String shardingValueToSting(SQLExpr valueExpr, String clientCharset, String dataType) throws SQLNonTransientException {
         String shardingValue = null;
         if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr intExpr = (SQLIntegerExpr) valueExpr;
@@ -135,7 +135,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         if (shardingValue == null && !(valueExpr instanceof SQLNullExpr)) {
             throw new SQLNonTransientException("Not Supported of Sharding Value EXPR :" + valueExpr.toString());
         }
-        shardingValue = StringUtil.isoCharsetReplace(clientCharset, shardingValue, schemaConfig.charsetReplace(schemaInfo.getTable()));
+        shardingValue = StringUtil.charsetReplace(clientCharset, CharsetContext.remove(), shardingValue);
         return shardingValue;
     }
 

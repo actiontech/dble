@@ -25,12 +25,14 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     protected volatile ByteBuffer buffer;
     private boolean write2Client = false;
     private final Callback callback;
+    private final boolean isHint;
 
-    public RWSplitHandler(RWSplitService service, byte[] originPacket, Callback callback) {
+    public RWSplitHandler(RWSplitService service, byte[] originPacket, Callback callback, boolean isHint) {
         this.rwSplitService = service;
         this.originPacket = originPacket;
         this.frontedConnection = service.getConnection();
         this.callback = callback;
+        this.isHint = isHint;
     }
 
     public void execute(final BackendConnection conn) {
@@ -38,8 +40,12 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         mysqlService.setResponseHandler(this);
         if (originPacket != null) {
             mysqlService.execute(rwSplitService, originPacket);
-        } else {
+        } else if (isHint) {
+            //remove comment sentences
             mysqlService.execute(rwSplitService, rwSplitService.getExecuteSql());
+        } else {
+            //ensure that the character set is consistent with the client
+            mysqlService.execute(rwSplitService, rwSplitService.getExecuteSqlBytes());
         }
     }
 

@@ -33,6 +33,7 @@ public class RWSplitService extends BusinessService {
     private volatile boolean inPrepare;
 
     private volatile String executeSql;
+    private volatile byte[] executeSqlBytes;
     // only for test
     private volatile String expectedDest;
 
@@ -183,6 +184,7 @@ public class RWSplitService extends BusinessService {
                 }
             }
             executeSql = sql;
+            executeSqlBytes = data;
             queryHandler.query(sql);
         } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
@@ -253,6 +255,9 @@ public class RWSplitService extends BusinessService {
         this.inLoadData = inLoadData;
     }
 
+    public byte[] getExecuteSqlBytes() {
+        return executeSqlBytes;
+    }
     public boolean isInPrepare() {
         return inPrepare;
     }

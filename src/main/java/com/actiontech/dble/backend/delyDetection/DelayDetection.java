@@ -63,6 +63,7 @@ public class DelayDetection {
         delayThreshold = dbGroupConfig.getDelayThreshold();
         delayPeriodMillis = dbGroupConfig.getDelayPeriodMillis();
         delayDetectionStatus = DelayDetectionStatus.INIT;
+        source.setDelayDetectionStatus(delayDetectionStatus);
         delayDetectionTask = new DelayDetectionTask(this);
         synSql();
     }

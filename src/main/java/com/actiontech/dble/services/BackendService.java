@@ -211,7 +211,7 @@ public abstract class BackendService extends AbstractService {
     @Override
     protected void handleInnerData(byte[] data) {
         if (connection.isClosed()) {
-            if (data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
+            if (data != null && data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
                 parseErrorPacket(data, "connection close");
             }
             return;
@@ -241,11 +241,11 @@ public abstract class BackendService extends AbstractService {
     }
 
     private void clearTaskQueue() {
-        while (!taskQueue.isEmpty()) {
-            final ServiceTask task = taskQueue.poll();
+        ServiceTask task;
+        while ((task = taskQueue.poll()) != null) {
             if (task.getType() == ServiceTaskType.NORMAL) {
                 final byte[] data = ((NormalServiceTask) task).getOrgData();
-                if (data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
+                if (data != null && data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
                     parseErrorPacket(data, "cleanup");
                 }
             }

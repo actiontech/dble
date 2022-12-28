@@ -30,7 +30,6 @@ public class UserSqlHighStat {
         frequency.incCount();
         //TODO setExecuteTime has thread safe problem
         frequency.setExecuteTime(executeTime);
-        this.sqlFrequencyMap.put(newSql, frequency);
     }
 
 

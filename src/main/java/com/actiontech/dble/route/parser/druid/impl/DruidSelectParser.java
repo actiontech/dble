@@ -693,7 +693,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 // get column from table.column
                 column = column.substring(dotIndex + 1);
             }
-            groupByCols[i] = getAliaColumn(aliaColumns, column); // column;
+            groupByCols[i] = getAliaColumn(aliaColumns, StringUtil.removeBackQuote(column)); // column;
         }
         return groupByCols;
     }

@@ -82,6 +82,9 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     @Override
     protected void handleData(byte[] data) {
         if (source.isClosed()) {
+            if (data != null && data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
+                parseErrorPacket(data, "connection close");
+            }
             return;
         }
         switch (resultStatus) {
@@ -253,7 +256,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     protected void handleDataError(Exception e) {
         LOGGER.info(this.source.toString() + " handle data error:", e);
         while (dataQueue.size() > 0) {
-            dataQueue.clear();
+            clearTaskQueue();
             // clear all data from the client
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
         }
@@ -264,5 +267,27 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         ResponseHandler handler = this.responseHandler;
         if (handler != null)
             handler.connectionError(e, this.source);
+    }
+
+    private void clearTaskQueue() {
+        byte[] data;
+        while ((data = dataQueue.poll()) != null) {
+            if (data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
+                parseErrorPacket(data, "cleanup");
+            }
+
+        }
+    }
+
+    public void parseErrorPacket(byte[] data, String reason) {
+        try {
+            ErrorPacket errPkg = new ErrorPacket();
+            errPkg.read(data);
+            String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+            LOGGER.warn("no handler process the execute packet err,sql error:{},back service:{},from reason:{}", new Object[]{errMsg, source, reason});
+
+        } catch (RuntimeException e) {
+            LOGGER.info("error handle error-packet", e);
+        }
     }
 }

@@ -4,6 +4,7 @@ import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.PreparedResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
+import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.MysqlBackendLogicHandler;
 import org.slf4j.Logger;
@@ -29,6 +30,9 @@ public class MysqlPrepareLogicHandler extends MysqlBackendLogicHandler {
 
     public void handleInnerData(byte[] data) {
         if (service.getConnection().isClosed()) {
+            if (data != null && data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
+                service.parseErrorPacket(data, "connection close");
+            }
             return;
         }
         switch (resultStatus) {

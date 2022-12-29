@@ -35,6 +35,9 @@ public class MysqlBackendLogicHandler {
 
     protected void handleInnerData(byte[] data) {
         if (service.getConnection().isClosed()) {
+            if (data != null && data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
+                service.parseErrorPacket(data, "connection close");
+            }
             return;
         }
         switch (resultStatus) {

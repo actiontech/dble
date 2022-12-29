@@ -142,6 +142,9 @@ public class MySQLResponseService extends VariablesService {
     protected void handleInnerData(byte[] data) {
         try {
             if (connection.isClosed()) {
+                if (data != null && data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
+                    parseErrorPacket(data, "connection close");
+                }
                 return;
             }
             if (prepareOK) {
@@ -236,7 +239,7 @@ public class MySQLResponseService extends VariablesService {
     protected void handleDataError(Exception e) {
         LOGGER.info(this.toString() + " handle data error:", e);
         while (taskQueue.size() > 0) {
-            taskQueue.clear();
+            clearTaskQueue();
             // clear all data from the client
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
         }
@@ -716,6 +719,19 @@ public class MySQLResponseService extends VariablesService {
         if (recycler != null) {
             recycler.signal();
             recycler = null;
+        }
+    }
+
+
+    @Override
+    protected void clearTaskQueue() {
+        ServiceTask task;
+        while ((task = taskQueue.poll()) != null) {
+            final byte[] data = task.getOrgData();
+            if (data != null && data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
+                parseErrorPacket(data, "cleanup");
+            }
+
         }
     }
 

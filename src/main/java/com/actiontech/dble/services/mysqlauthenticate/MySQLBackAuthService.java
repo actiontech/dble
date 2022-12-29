@@ -284,7 +284,7 @@ public class MySQLBackAuthService extends AuthService {
     private void handleDataError(Exception e) {
         LOGGER.info(this.toString() + " handle data error:", e);
         while (taskQueue.size() > 0) {
-            taskQueue.clear();
+            clearTaskQueue();
         }
         connection.close("handle data error:" + e.getMessage());
         if (listener != null) {
@@ -350,6 +350,18 @@ public class MySQLBackAuthService extends AuthService {
             return DbleServer.getInstance().getComplexQueryExecutor();
         } else {
             return DbleServer.getInstance().getBackendBusinessExecutor();
+        }
+    }
+
+    @Override
+    protected void clearTaskQueue() {
+        ServiceTask task;
+        while ((task = taskQueue.poll()) != null) {
+            final byte[] data = task.getOrgData();
+            if (data != null && data.length > 4 && data[4] == ErrorPacket.FIELD_COUNT) {
+                parseErrorPacket(data, "cleanup");
+            }
+
         }
     }
 }

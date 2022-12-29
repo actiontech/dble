@@ -133,8 +133,12 @@ public abstract class AbstractService implements Service {
     }
 
     public void cleanup() {
-        this.taskQueue.clear();
+        clearTaskQueue();
         TraceManager.sessionFinish(this);
+    }
+
+    protected void clearTaskQueue() {
+        this.taskQueue.clear();
     }
 
     public void register() throws IOException {
@@ -386,5 +390,18 @@ public abstract class AbstractService implements Service {
     }
 
     protected void markFinished() {
+    }
+
+
+    public void parseErrorPacket(byte[] data, String reason) {
+        try {
+            ErrorPacket errPkg = new ErrorPacket();
+            errPkg.read(data);
+            String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+            LOGGER.warn("no handler process the execute packet err,sql error:{},back service:{},from reason:{}", errMsg, this, reason);
+
+        } catch (RuntimeException e) {
+            LOGGER.info("error handle error-packet", e);
+        }
     }
 }

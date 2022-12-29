@@ -682,7 +682,9 @@ public class MySQLConnection extends AbstractConnection implements
                     conn.setExecuting(false);
                     conn.setRowDataFlowing(false);
                     conn.signal();
-                    handler.connectionClose(conn, reason);
+                    if (handler != null) {
+                        handler.connectionClose(conn, reason);
+                    }
                     respHandler = null;
                 } catch (Throwable e) {
                     LOGGER.warn("get error close mysqlconnection ", e);

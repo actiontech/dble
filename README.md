@@ -91,7 +91,7 @@ for details on submitting patches and the contribution workflow.
 
 Dble has enterprise support plans, you may contact our sales team: 
 * Global Sales: 400-820-6580
-* North China: 86-13718877200, Mr.Wang
+* North China: 86-13910506562, Mr.Wang
 * South China: 86-18503063188, Mr.Cao
 * East China: 86-18930110869, Mr.Liang
 * South-West China: 86-13540040119, Mr.Hong

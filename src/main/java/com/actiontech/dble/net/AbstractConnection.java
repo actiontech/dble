@@ -285,7 +285,6 @@ public abstract class AbstractConnection implements NIOConnection {
         if (got < 0) {
             if (this instanceof MySQLConnection) {
                 ((MySQLConnection) this).closeInner("stream closed");
-                ((MySQLConnection) this).onConnectFailed(new IOException("stream closed"));
             } else {
                 this.close("stream closed");
             }

@@ -63,7 +63,7 @@
 -DmaxPacketSize=4194304
 -DtxIsolation=3
 -Dautocommit=1
--DidleTimeout=60000
+-DidleTimeout=600000
 
 # option
 -DuseCompression=0
@@ -145,7 +145,7 @@
 #  XA Retry count, retry times in backend, 0 means always retry until success
 -DxaRetryCount=0
 
--DviewPersistenceConfBaseDir=viewPath
+-DviewPersistenceConfBaseDir=viewConf
 -DviewPersistenceConfBaseName=viewJson
 
 #  for join tmp results
@@ -199,6 +199,8 @@
 -DtableByUserByEntryTableSize=1024
 #  processing queue size must not be less than 1 and must be a power of 2
 -DstatisticQueueSize=4096
+-DsamplingRate=0
+-DsqlLogTableSize=1024
 
 -DinSubQueryTransformToJoin=false
 #For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms
@@ -216,6 +218,10 @@
 #-DgmsslRcaPem=
 #-DgmsslOcaPem=
 #-DsupportSSL=
+
+#local read
+#-Ddistrict=
+#-DdataCenter=
 
 -DenableAsyncRelease=0
 -DreleaseTimeout=600000

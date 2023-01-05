@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.backend.BackendConnection;
@@ -27,13 +27,14 @@ public class NewConnectionRespHandler implements ResponseHandler {
 
     public BackendConnection getBackConn() throws IOException {
         lock.lock();
+        boolean await = true;
         try {
             if (errMsg == null && backConn == null) {
-                long waitTimeSecond = 10000;
-                boolean await = initiated.await(waitTimeSecond, TimeUnit.MILLISECONDS);
-                if (!await) {
-                    errMsg = "create conn timeout，TCP connection may be lost";
-                }
+                await = initiated.await(10000, TimeUnit.MILLISECONDS);
+            }
+            if (!await) {
+                errMsg = "test conn timeout,TCP connection may be lost";
+                LOGGER.warn(errMsg);
             }
             if (backConn == null) {
                 throw new IOException(errMsg);

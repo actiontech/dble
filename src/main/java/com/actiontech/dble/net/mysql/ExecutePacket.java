@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2022 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2023 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BindValue;
@@ -124,7 +124,6 @@ public class ExecutePacket extends MySQLPacket {
             values[i] = bv;
         }
     }
-
 
 
     @Override

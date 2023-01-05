@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -82,7 +82,7 @@ public class NIOSocketWR extends SocketWR {
             clearWriteQueue();
             con.getWritingSize().set(0);
             if (Objects.equals(e.getMessage(), "Broken pipe") || Objects.equals(e.getMessage(), "Connection reset by peer") ||
-                     e instanceof ClosedChannelException) {
+                    e instanceof ClosedChannelException) {
                 // target problem,
                 //ignore this exception,will close by read side.
                 LOGGER.warn("Connection was closed while write. Detail reason:{}. {}.", e.toString(), con.getService());

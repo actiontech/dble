@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 package com.actiontech.dble.net;
@@ -11,12 +11,14 @@ import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.ParseUtil;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class Session {
 
     protected final AtomicBoolean isMultiStatement = new AtomicBoolean(false);
     protected volatile String remainingSql = null;
+
     /**
      * get frontend conn
      */

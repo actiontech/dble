@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -119,21 +119,21 @@ public abstract class ItemFuncMinMax extends ItemFunc {
         }
         /*
          * TS-TODO: val_str decides which type to use using cmp_type. val_int,
-     * val_decimal, val_real do not check cmp_type and decide data type
-     * according to the method type. This is probably not good:
-     *
-     * mysql> select least('11', '2'), least('11', '2')+0,
-     * concat(least(11,2));
-     * +------------------+--------------------+---------------------+ |
-     * least('11', '2') | least('11', '2')+0 | concat(least(11,2)) |
-     * +------------------+--------------------+---------------------+ | 11
-     * | 2 | 2 |
-     * +------------------+--------------------+---------------------+ 1 row
-     * in set (0.00 sec)
-     *
-     * Should not the second column return 11? I.e. compare as strings and
-     * return '11', then convert to number.
-     */
+         * val_decimal, val_real do not check cmp_type and decide data type
+         * according to the method type. This is probably not good:
+         *
+         * mysql> select least('11', '2'), least('11', '2')+0,
+         * concat(least(11,2));
+         * +------------------+--------------------+---------------------+ |
+         * least('11', '2') | least('11', '2')+0 | concat(least(11,2)) |
+         * +------------------+--------------------+---------------------+ | 11
+         * | 2 | 2 |
+         * +------------------+--------------------+---------------------+ 1 row
+         * in set (0.00 sec)
+         *
+         * Should not the second column return 11? I.e. compare as strings and
+         * return '11', then convert to number.
+         */
         for (int i = 0; i < args.size(); i++) {
             if (i == 0)
                 value = args.get(i).valInt().longValue();

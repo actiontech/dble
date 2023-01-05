@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2022 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2023 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.route.function;
 
 
@@ -38,8 +38,8 @@ public class AutoPartitionByLongTest {
         Assert.assertEquals(true, null == autoPartition.calculate(idVal));
         Map<String, String> map = autoPartition.getAllProperties();
         Assert.assertEquals(true, map.get("mapFile").equals("{\"0-200M\":\"0\"," +
-                "\"200M1-400M\":\"1\","+
-                "\"400M1-600M\":\"2\"}") );
+                "\"200M1-400M\":\"1\"," +
+                "\"400M1-600M\":\"2\"}"));
     }
 
     @Test

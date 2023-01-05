@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -29,7 +29,7 @@ public class PartitionByFileMapTest {
         Assert.assertEquals(true, null == partition.calculate(idVal));
         Map<String, String> map = partition.getAllProperties();
         Assert.assertEquals(true, map.get("mapFile").equals("{\"10000\":\"0\"," +
-                "\"10010\":\"1\"}") );
+                "\"10010\":\"1\"}"));
     }
 
     @Test

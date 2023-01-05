@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -84,9 +84,9 @@ public class ItemFuncDateFormat extends ItemStrFunc {
                     case 'Y': /* year, numeric, 4 digits */
                     case 'x': /* Year, used with 'v' */
                     case 'X': /*
-                             * Year, used with 'v, where week starts with
-                             * Monday'
-                             */
+                     * Year, used with 'v, where week starts with
+                     * Monday'
+                     */
                         size += 4;
                         break;
                     case 'a': /* locale's abbreviated weekday name (Sun..Sat) */
@@ -100,9 +100,9 @@ public class ItemFuncDateFormat extends ItemStrFunc {
                     case 'u': /* week (00..52), where week starts with Monday */
                     case 'V': /* week 1..53 used with 'x' */
                     case 'v': /*
-                             * week 1..53 used with 'x', where week starts with
-                             * Monday
-                             */
+                     * week 1..53 used with 'x', where week starts with
+                     * Monday
+                     */
                     case 'y': /* year, numeric, 2 digits */
                     case 'm': /* month, numeric */
                     case 'd': /* day (of the month), numeric */
@@ -119,13 +119,13 @@ public class ItemFuncDateFormat extends ItemStrFunc {
                         break;
                     case 'k': /* hour ( 0..23) */
                     case 'H': /*
-                             * hour (00..23; value > 23 OK, padding always
-                             * 2-digit)
-                             */
+                     * hour (00..23; value > 23 OK, padding always
+                     * 2-digit)
+                     */
                         size += 7; /*
-                                 * docs allow > 23, range depends on
-                                 * sizeof(unsigned int)
-                                 */
+                         * docs allow > 23, range depends on
+                         * sizeof(unsigned int)
+                         */
                         break;
                     case 'r': /* time, 12-hour (hh:mm:ss [AP]M) */
                         size += 11;

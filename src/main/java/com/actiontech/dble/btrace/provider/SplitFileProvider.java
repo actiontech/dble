@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -8,6 +8,7 @@ package com.actiontech.dble.btrace.provider;
 public final class SplitFileProvider {
     private SplitFileProvider() {
     }
+
     public static void getReadQueueSizeOfPut(int queueSize) {
     }
 

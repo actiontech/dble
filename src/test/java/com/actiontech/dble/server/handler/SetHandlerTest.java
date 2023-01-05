@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -22,7 +22,7 @@ public class SetHandlerTest {
         Assert.assertEquals("SET names utf8,character set UTF8,character set gbk,@@tx_readonly=1", convertCharsetKeyWord.invoke(null, "SET names utf8,CHARSET UTF8,CHARSET gbk,@@tx_readonly=1"));
     }
 
-//    @Test
+    //    @Test
     //    public void testCheckSetNamesSyntax() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
     //        Method checkSetNamesSyntax = SetHandler.class.getDeclaredMethod("checkSetNamesSyntax", String.class);
     //        checkSetNamesSyntax.setAccessible(true);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -288,6 +288,7 @@ public class ArgComparator {
         CompareBinaryString(boolean caseInsensitive) {
             this.caseInsensitive = caseInsensitive;
         }
+
         @Override
         public int compare(ArgComparator ac) {
             String res1, res2;
@@ -438,9 +439,11 @@ public class ArgComparator {
 
     private static class CompareEBinaryString implements ArgCmpFunc {
         private boolean caseInsensitive;
+
         CompareEBinaryString(boolean caseInsensitive) {
             this.caseInsensitive = caseInsensitive;
         }
+
         @Override
         public int compare(ArgComparator ac) {
             String res1, res2;

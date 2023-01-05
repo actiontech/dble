@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -35,6 +35,7 @@ public class ColumnMeta {
         this.dataType = dataType;
         this.canNull = canNull;
     }
+
     // used for tables of dble_information
     public ColumnMeta(String name, String dataType, boolean canNull, boolean isPrimaryKey) {
         this(name, dataType, canNull);
@@ -65,6 +66,7 @@ public class ColumnMeta {
     public String getDefaultVal() {
         return defaultVal;
     }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {

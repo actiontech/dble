@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -87,7 +87,6 @@ public final class FilterPusher {
 
     /**
      * merge inner joi's otheron to where if we can
-     *
      */
     private static void mergeJoinOnFilter(PlanNode qtn) {
         if (PlanUtil.isGlobalOrER(qtn))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -449,7 +449,7 @@ public class StatisticCf {
             public void run() {
                 StatisticManager.getInstance().
                         getUsageData().add(new UsageDataBlock(DateUtil.parseStr(System.currentTimeMillis(), DateUtil.DEFAULT_DATE_PATTERN),
-                        DF.format(1 - (StatisticManager.getInstance().getDisruptorRemaining() / queueSize))));
+                                DF.format(1 - (StatisticManager.getInstance().getDisruptorRemaining() / queueSize))));
                 count += interval;
                 if (count > observe) {
                     StatisticManager.getInstance().cancelMonitoring();

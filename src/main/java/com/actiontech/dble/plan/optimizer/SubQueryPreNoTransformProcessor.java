@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -38,7 +38,6 @@ public final class SubQueryPreNoTransformProcessor {
 
     /**
      * http://dev.mysql.com/doc/refman/5.0/en/comparisons-using-subqueries.html
-     *
      */
     private static PlanNode handlerComparisonsSubQuery(PlanNode qtn) {
         for (int i = 0; i < qtn.getChildren().size(); i++) {
@@ -76,7 +75,7 @@ public final class SubQueryPreNoTransformProcessor {
 
     private static void buildSubQuery(PlanNode node, Item filter) {
         if (filter == null || !filter.isWithSubQuery()) {
-            return ;
+            return;
         }
         if (filter instanceof ItemCond) {
             buildSubQueryWithCondFilter(node, (ItemCond) filter);

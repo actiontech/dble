@@ -1,14 +1,16 @@
 <!--
-  ~ Copyright (C) 2016-2022 ActionTech.
+  ~ Copyright (C) 2016-2023 ActionTech.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
 <dble:sharding xmlns:dble="http://dble.cloud/" version="3.0">
-    <schema name="cndb" >
+    <schema name="cndb">
         <shardingTable name="offer" shardingNode="offer_dn$0-127" function="func" shardingColumn="member_id"/>
-        <shardingTable name="offer_detail" shardingNode="detail_dn0,detail_dn$1-127" function="func2" shardingColumn="offer_id" sqlRequiredSharding="false"/>
-        <shardingTable name="offer_date" shardingNode="detail_dn0,detail_dn$1-127" function="by-date" shardingColumn="col_date" sqlRequiredSharding="false"/>
-        <globalTable name="independent"  shardingNode="independent_dn$0-126,independent_dn127"/>
+        <shardingTable name="offer_detail" shardingNode="detail_dn0,detail_dn$1-127" function="func2"
+                       shardingColumn="offer_id" sqlRequiredSharding="false"/>
+        <shardingTable name="offer_date" shardingNode="detail_dn0,detail_dn$1-127" function="by-date"
+                       shardingColumn="col_date" sqlRequiredSharding="false"/>
+        <globalTable name="independent" shardingNode="independent_dn$0-126,independent_dn127"/>
     </schema>
 
     <schema name="dbtest">
@@ -18,11 +20,11 @@
     <schema name="dubbo" shardingNode="dubbo_dn"/>
 
     <schema name="dubbo2" shardingNode="dn1">
-        <globalTable name="company"  shardingNode="dn1,dn2,dn3"/>
-        <globalTable name="goods"  shardingNode="dn1,dn2,dn3"/>
+        <globalTable name="company" shardingNode="dn1,dn2,dn3"/>
+        <globalTable name="goods" shardingNode="dn1,dn2,dn3"/>
     </schema>
 
-    <schema name="ignoreSchemaTest" shardingNode="cndb_dn" />
+    <schema name="ignoreSchemaTest" shardingNode="cndb_dn"/>
 
     <schema name="config">
         <shardingTable name="offer" shardingNode="offer_dn$0-127" function="func" shardingColumn="member_id"

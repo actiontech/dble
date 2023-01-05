@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -47,7 +47,6 @@ public class LongDataPacket extends MySQLPacket {
         paramId = mm.readUB2();
         this.longData = mm.readBytes(packetLength - (1 + 4 + 2));
     }
-
 
 
     @Override

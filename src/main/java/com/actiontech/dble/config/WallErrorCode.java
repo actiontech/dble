@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -19,9 +19,9 @@ public final class WallErrorCode {
 
     static {
         /*
-        * see com/alibaba/druid/wall/violation/ErrorCode.java
-        * see https://github.com/alibaba/druid/pull/4304
-        * */
+         * see com/alibaba/druid/wall/violation/ErrorCode.java
+         * see https://github.com/alibaba/druid/pull/4304
+         * */
         CODE_MAP.put(ErrorCode.SYNTAX_ERROR, "strictSyntaxCheck");
         CODE_MAP.put(ErrorCode.SELECT_NOT_ALLOW, "selelctAllow,selectAllColumnAllow");
         CODE_MAP.put(ErrorCode.SELECT_INTO_NOT_ALLOW, "selectIntoAllow");

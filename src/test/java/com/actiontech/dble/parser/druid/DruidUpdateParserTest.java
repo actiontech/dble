@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -124,22 +124,22 @@ public class DruidUpdateParserTest {
     }
 
     /*
-    * add an static to printf where ,eg:
-    * update mytab t set t.ptn_col = 'A', col1 = 3 where ptn_col = 'A' and (col1 = 4 or col2 > 5);
-    * where looks like this
-    *                  AND
-    *              /        \
-    *             =          OR
-    *          /   \       /    \
-    *     ptn_col 'A'    =       >
-    *                  /  \    /   \
-    *               col1  4  col2   5
-    * the output is
-    * BooleanAnd			Num of nodes in next level: 2
-    * Equality	BooleanOr			Num of nodes in next level: 4
-    * ptn_col	'A'	Equality	Equality			Num of nodes in next level: 4
-    * col1	4	col2	5			Num of nodes in next level: 0
-    *
+     * add an static to printf where ,eg:
+     * update mytab t set t.ptn_col = 'A', col1 = 3 where ptn_col = 'A' and (col1 = 4 or col2 > 5);
+     * where looks like this
+     *                  AND
+     *              /        \
+     *             =          OR
+     *          /   \       /    \
+     *     ptn_col 'A'    =       >
+     *                  /  \    /   \
+     *               col1  4  col2   5
+     * the output is
+     * BooleanAnd			Num of nodes in next level: 2
+     * Equality	BooleanOr			Num of nodes in next level: 4
+     * ptn_col	'A'	Equality	Equality			Num of nodes in next level: 4
+     * col1	4	col2	5			Num of nodes in next level: 0
+     *
      */
     public static void printWhereClauseAST(SQLExpr sqlExpr) {
         if (sqlExpr == null)

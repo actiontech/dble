@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -57,11 +57,11 @@ public final class MyLocales {
             MY_LOCALE_TYPELIB_MONTH_NAMES_EN_US, MY_LOCALE_TYPELIB_AB_MONTH_NAMES_EN_US,
             MY_LOCALE_TYPELIB_DAY_NAMES_EN_US, MY_LOCALE_TYPELIB_AB_DAY_NAMES_EN_US, 9, 9,
             '.', /*
-                     * decimal point en_US
-                     */
+     * decimal point en_US
+     */
             ',', /* thousands_sep en_US */
             new String(new byte[]{3, 3}), /* grouping en_US */
             GLOBAL_ERRMSGS[ErrMsgsIndex.en_US.ordinal()]);
-            /***** LOCALE END en_US *****/
+    /***** LOCALE END en_US *****/
 
 }

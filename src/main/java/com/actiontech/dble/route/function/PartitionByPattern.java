@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2022 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2023 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.route.function;
 
 import com.actiontech.dble.config.model.rule.RuleAlgorithm;
@@ -47,6 +47,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     public void setMapFile(String mapFile) {
         this.mapFile = mapFile;
     }
+
     public String getMapFile() {
         return mapFile;
     }
@@ -91,11 +92,11 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     }
 
     /* x2 - x1 < m
-    *     n1 < n2 ---> n1 - n2          type1
-    *     n1 > n2 ---> 0 - n2 && n1 - L      type2
-    * x2 - x1 >= m
-    *     L                 type3
-    */
+     *     n1 < n2 ---> n1 - n2          type1
+     *     n1 > n2 ---> 0 - n2 && n1 - L      type2
+     * x2 - x1 >= m
+     *     L                 type3
+     */
     private void calcAux(HashSet<Integer> ids, long begin, long end) {
         for (LongRange longRang : this.longRanges) {
             if (longRang.getValueEnd() < begin) {
@@ -130,9 +131,9 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     }
 
     /* NODE:
- * if the order of range and the order of nodeid don't match, we give all nodeid.
- * so when writing configure, be cautious
- */
+     * if the order of range and the order of nodeid don't match, we give all nodeid.
+     * so when writing configure, be cautious
+     */
     public Integer[] calculateRange(String beginValue, String endValue) {
         if (!isNumeric(beginValue) || !isNumeric(endValue)) {
             return calcType3();

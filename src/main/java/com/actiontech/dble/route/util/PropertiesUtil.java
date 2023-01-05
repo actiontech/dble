@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -27,7 +27,9 @@ import java.util.Properties;
 public final class PropertiesUtil {
     private PropertiesUtil() {
     }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PropertiesUtil.class);
+
     public static Properties loadProps(String propsFile, boolean isLowerCaseTableNames) {
         Properties props = loadProps(propsFile);
         return handleLowerCase(props, isLowerCaseTableNames);
@@ -89,7 +91,7 @@ public final class PropertiesUtil {
         OutputStream os = null;
         try {
             os = new FileOutputStream(new File(ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH)).getPath() + File.separator + propsFile);
-            props.store(os, "\n Copyright (C) 2016-2022 ActionTech.\n License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.\n");
+            props.store(os, "\n Copyright (C) 2016-2023 ActionTech.\n License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.\n");
         } catch (IOException e) {
             throw e;
         } finally {

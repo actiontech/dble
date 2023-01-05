@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -59,8 +59,8 @@ public final class CmpUtil {
         else {
             value = true;
             status.setWarnings(MyTime.MYSQL_TIME_WARN_TRUNCATED); /*
-                                                                 * force warning
-                                                                 */
+             * force warning
+             */
         }
 
         return value;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -26,6 +26,7 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
     protected ErrorPacket errorPacket;
 
     public abstract void setForExplain();
+
     public abstract void clearForExplain();
 
     public SubQueryHandler(long id, Session session) {

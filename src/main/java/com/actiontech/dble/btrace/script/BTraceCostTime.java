@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -93,7 +93,7 @@ public class BTraceCostTime {
             return;
         }
         long duration = timeNanos() - ts;
-        String blockName = BTraceUtils.strcat(BTraceUtils.strcat("request->4.",BTraceUtils.str(arg2)),".resFromBack");
+        String blockName = BTraceUtils.strcat(BTraceUtils.strcat("request->4.", BTraceUtils.str(arg2)), ".resFromBack");
         Profiling.recordExit(profiler, blockName, duration);
     }
 
@@ -108,7 +108,7 @@ public class BTraceCostTime {
             return;
         }
         long duration = timeNanos() - ts;
-        String blockName = BTraceUtils.strcat(BTraceUtils.strcat("request->5.",BTraceUtils.str(arg2)),".execFromBack");
+        String blockName = BTraceUtils.strcat(BTraceUtils.strcat("request->5.", BTraceUtils.str(arg2)), ".execFromBack");
         Profiling.recordExit(profiler, blockName, duration);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -106,7 +106,7 @@ public final class OnlineStatus {
             onlineLock.release();
         }
         onlineLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getOnlinePath(
-                SystemConfig.getInstance().getInstanceName()),
+                        SystemConfig.getInstance().getInstanceName()),
                 toOnlineType(), 6);
         int time = 0;
         while (!onlineLock.acquire()) {
@@ -142,7 +142,7 @@ public final class OnlineStatus {
                 onlineLock.release();
             }
             onlineLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getOnlinePath(
-                    SystemConfig.getInstance().getInstanceName()),
+                            SystemConfig.getInstance().getInstanceName()),
                     toOnlineType(), 6);
             int time = 0;
             while (!onlineLock.acquire()) {

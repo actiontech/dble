@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -41,7 +41,6 @@ public class ResetPacket extends MySQLPacket {
         assert code == PACKET_FLAG;
         pStmtId = mm.readUB4();
     }
-
 
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -43,9 +43,11 @@ public abstract class AbstractPartitionAlgorithm implements RuleAlgorithm, Seria
     @Override
     public void init() {
     }
+
     /**
      * getPartitionNum
-     * @return   return -1 means no limit
+     *
+     * @return return -1 means no limit
      */
     public int getPartitionNum() {
         return -1; // no limit

@@ -1,33 +1,40 @@
 <?xml version="1.0"?>
 <!--
-  ~ Copyright (C) 2016-2022 ActionTech.
+  ~ Copyright (C) 2016-2023 ActionTech.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
 <dble:sharding xmlns:dble="http://dble.cloud/" version="4.0">
 
-    <schema name="testdb"  sqlMaxLimit="100">
-        <shardingTable name="tb_enum_sharding" shardingNode="dn1,dn2" sqlMaxLimit="200" function="func_enum" shardingColumn="code"/>
+    <schema name="testdb" sqlMaxLimit="100">
+        <shardingTable name="tb_enum_sharding" shardingNode="dn1,dn2" sqlMaxLimit="200" function="func_enum"
+                       shardingColumn="code"/>
         <shardingTable name="tb_range_sharding" shardingNode="dn1,dn2,dn3" function="func_range" shardingColumn="id"/>
         <!--er tables-->
         <shardingTable name="tb_hash_sharding" shardingNode="dn1,dn2" function="func_common_hash" shardingColumn="id"/>
-        <shardingTable name="tb_hash_sharding_er1" shardingNode="dn1,dn2" function="func_common_hash" shardingColumn="id"/>
-        <shardingTable name="tb_hash_sharding_er2" shardingNode="dn1,dn2" function="func_common_hash" shardingColumn="id2"/>
-        <shardingTable name="tb_hash_sharding_er3" shardingNode="dn1,dn2" function="func_common_hash" shardingColumn="id" incrementColumn="id2"/>
+        <shardingTable name="tb_hash_sharding_er1" shardingNode="dn1,dn2" function="func_common_hash"
+                       shardingColumn="id"/>
+        <shardingTable name="tb_hash_sharding_er2" shardingNode="dn1,dn2" function="func_common_hash"
+                       shardingColumn="id2"/>
+        <shardingTable name="tb_hash_sharding_er3" shardingNode="dn1,dn2" function="func_common_hash"
+                       shardingColumn="id" incrementColumn="id2"/>
 
-        <shardingTable name="tb_uneven_hash" shardingNode="dn1,dn2,dn3" function="func_uneven_hash" shardingColumn="id"/>
+        <shardingTable name="tb_uneven_hash" shardingNode="dn1,dn2,dn3" function="func_uneven_hash"
+                       shardingColumn="id"/>
 
-        <shardingTable name="tb_mod" shardingNode="dn1,dn2,dn3,dn4" function="func_mod" shardingColumn="id" sqlRequiredSharding="true"/>
+        <shardingTable name="tb_mod" shardingNode="dn1,dn2,dn3,dn4" function="func_mod" shardingColumn="id"
+                       sqlRequiredSharding="true"/>
 
         <shardingTable name="tb_jump_hash" shardingNode="dn1,dn2" function="func_jumpHash" shardingColumn="code"/>
 
-        <shardingTable name="tb_hash_string" shardingNode="dn1,dn2,dn3,dn4" function="func_hashString" shardingColumn="code"/>
+        <shardingTable name="tb_hash_string" shardingNode="dn1,dn2,dn3,dn4" function="func_hashString"
+                       shardingColumn="code"/>
 
         <shardingTable name="tb_date" shardingNode="dn1,dn2,dn3,dn4" function="func_date" shardingColumn="create_date"/>
 
         <shardingTable name="tb_pattern" shardingNode="dn1,dn2" function="func_pattern" shardingColumn="id"/>
         <!--global  tables-->
-        <globalTable name="tb_global1" shardingNode="dn1,dn2" sqlMaxLimit="103" />
+        <globalTable name="tb_global1" shardingNode="dn1,dn2" sqlMaxLimit="103"/>
         <globalTable name="tb_global2" shardingNode="dn1,dn2,dn3,dn4" cron="0 0 0 * * ?" checkClass="CHECKSUM"/>
         <!--single node table-->
         <singleTable name="tb_single" shardingNode="dn6" sqlMaxLimit="105"/>
@@ -96,7 +103,8 @@
     <function name="func_date" class="Date">
         <property name="dateFormat">yyyy-MM-dd</property>
         <property name="sBeginDate">2015-01-01</property>
-        <property name="sEndDate">2015-01-31</property> <!--if not set sEndDate,then in fact ,the sEndDate = sBeginDate+ (node size)*sPartionDay-1 -->
+        <property name="sEndDate">2015-01-31
+        </property> <!--if not set sEndDate,then in fact ,the sEndDate = sBeginDate+ (node size)*sPartionDay-1 -->
         <property name="sPartionDay">10</property>
         <property name="defaultNode">0</property><!--the default is -1-->
     </function>

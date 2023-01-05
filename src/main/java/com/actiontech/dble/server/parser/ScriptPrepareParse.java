@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2022 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2023 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
@@ -212,7 +212,7 @@ public final class ScriptPrepareParse {
                     char c4 = stmt.charAt(++offset);
                     char c5 = stmt.charAt(++offset);
                     if ((c1 == 'U' || c1 == 'u') && (c2 == 'S' || c2 == 's') && (c3 == 'I' || c3 == 'i') && (c4 == 'N' || c4 == 'n') &&
-                        (c5 == 'G' || c5 == 'g')) {
+                            (c5 == 'G' || c5 == 'g')) {
                         if (needSpaceAndComment(stmt, offset)) {
                             offset = skipSpaceAndComment(stmt, offset);
                             List<String> arguments = new LinkedList<String>();
@@ -297,7 +297,7 @@ public final class ScriptPrepareParse {
                 char c6 = stmt.charAt(++offset);
                 char c7 = stmt.charAt(++offset);
                 if ((c1 == 'P' || c1 == 'p') && (c2 == 'R' || c2 == 'r') && (c3 == 'E' || c3 == 'e') && (c4 == 'P' || c4 == 'p') &&
-                    (c5 == 'A' || c5 == 'a') && (c6 == 'R' || c6 == 'r') && (c7 == 'E' || c7 == 'e')) {
+                        (c5 == 'A' || c5 == 'a') && (c6 == 'R' || c6 == 'r') && (c7 == 'E' || c7 == 'e')) {
                     if (needSpaceAndComment(stmt, offset)) {
                         offset = skipSpaceAndComment(stmt, offset);
                         int i = ++offset;

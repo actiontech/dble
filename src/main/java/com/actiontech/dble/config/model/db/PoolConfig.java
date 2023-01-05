@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -251,6 +251,7 @@ public class PoolConfig {
     public long getConnectionHeartbeatTimeout() {
         return connectionHeartbeatTimeout;
     }
+
     @SuppressWarnings("unused")
     public void setConnectionHeartbeatTimeout(long connectionHeartbeatTimeout) {
         if (connectionHeartbeatTimeout <= 0) {
@@ -263,6 +264,7 @@ public class PoolConfig {
     public long getIdleTimeout() {
         return idleTimeout;
     }
+
     @SuppressWarnings("unused")
     public void setIdleTimeout(long idleTimeout) {
         if (idleTimeout < 0) {
@@ -275,6 +277,7 @@ public class PoolConfig {
     public long getHeartbeatPeriodMillis() {
         return heartbeatPeriodMillis;
     }
+
     @SuppressWarnings("unused")
     public void setHeartbeatPeriodMillis(long heartbeatPeriodMillis) {
         if (heartbeatPeriodMillis <= 0) {
@@ -287,6 +290,7 @@ public class PoolConfig {
     public int getFlowHighLevel() {
         return flowHighLevel;
     }
+
     @SuppressWarnings("unused")
     public void setFlowHighLevel(int flowHighLevel) {
         if (flowHighLevel <= 0) {
@@ -299,6 +303,7 @@ public class PoolConfig {
     public int getFlowLowLevel() {
         return flowLowLevel;
     }
+
     @SuppressWarnings("unused")
     public void setFlowLowLevel(int flowLowLevel) {
         if (flowLowLevel <= 0) {
@@ -307,6 +312,7 @@ public class PoolConfig {
             this.flowLowLevel = flowLowLevel;
         }
     }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -26,6 +26,7 @@ public class RouteCalculateUnitTest {
         ColumnRoute mergeItem = mockMerge(new ColumnRoute("1"), new ColumnRoute("2"));
         Assert.assertEquals(true, mergeItem.isAlwaysFalse());
     }
+
     @Test
     public void testMergeColumnRoute2() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         ColumnRoute mergeItem = mockMerge(new ColumnRoute("1"), new ColumnRoute("1"));
@@ -79,7 +80,6 @@ public class RouteCalculateUnitTest {
         Assert.assertEquals(2, mergeItem.getInValues().size());
         Assert.assertEquals(null, mergeItem.getColValue());
     }
-
 
 
     @Test

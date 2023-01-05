@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -49,6 +49,7 @@ class QueryNodeHandlerBuilder extends BaseHandlerBuilder {
         pres.add(subHandler);
         return pres;
     }
+
     @Override
     protected boolean tryBuildWithCurrentNode(List<DMLResponseHandler> subQueryEndHandlers, Set<String> subQueryRouteNodes) {
         // tryRouteCurrentNode use node.copy(),it will replace sub-queries to 'NEED_REPLACE'

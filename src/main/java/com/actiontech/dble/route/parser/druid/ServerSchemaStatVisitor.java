@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -355,7 +355,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     public boolean visit(SQLUnaryExpr x) {
         switch (x.getOperator()) {
             case Not:
-            // It doesn't match now it might match in the future,don't delete
+                // It doesn't match now it might match in the future,don't delete
             case NOT:
             case Compl:
                 return false;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -31,9 +31,9 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
 
     /**
      * @author sw
-     *         <p>
-     *         Now:
-     *         64 bit ID 30 (millisecond high 30 )+10(instance_ID)+12(autoincrement)+12 (millisecond low 12)
+     * <p>
+     * Now:
+     * 64 bit ID 30 (millisecond high 30 )+10(instance_ID)+12(autoincrement)+12 (millisecond low 12)
      */
     static class IdWorker {
         private static final long TIMESTAMP_LOW_BITS = 12L;

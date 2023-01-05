@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (C) 2016-2022 ActionTech.
+  ~ Copyright (C) 2016-2023 ActionTech.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
@@ -20,24 +20,28 @@
 -->
 <dble:db xmlns:dble="http://dble.cloud/">
 
-    <dbGroup name="localhost1" rwSplitMode="0" >
+    <dbGroup name="localhost1" rwSplitMode="0">
         <heartbeat>select user()</heartbeat>
         <dbInstance name="hostM1" url="localhost:3306" user="root"
-                   password="123456" maxCon="500" minCon="10" primary="true">
+                    password="123456" maxCon="500" minCon="10" primary="true">
         </dbInstance>
     </dbGroup>
 
 
     <!-- 读权重设置 -->
-    <dbGroup name="localhost2" rwSplitMode="0" delayThreshold="100" >
+    <dbGroup name="localhost2" rwSplitMode="0" delayThreshold="100">
         <heartbeat>select user()</heartbeat>
-        <dbInstance name="writeS" url="192.168.1.10:3306" user="root" password="123456" maxCon="1000" minCon="10"  primary="true">
+        <dbInstance name="writeS" url="192.168.1.10:3306" user="root" password="123456" maxCon="1000" minCon="10"
+                    primary="true">
             <!-- can have multi read hosts -->
 
         </dbInstance>
-        <dbInstance name="readS1" url="192.168.1.11:3306" user="root" password="123456" readWeight="1" maxCon="1000" minCon="10" />
-        <dbInstance name="readS2" url="192.168.1.12:3306" user="root" password="123456" readWeight="2" maxCon="1000" minCon="10" />
-        <dbInstance name="readS3" url="192.168.1.13:3306" user="root" password="123456" readWeight="3" maxCon="1000" minCon="10" />
+        <dbInstance name="readS1" url="192.168.1.11:3306" user="root" password="123456" readWeight="1" maxCon="1000"
+                    minCon="10"/>
+        <dbInstance name="readS2" url="192.168.1.12:3306" user="root" password="123456" readWeight="2" maxCon="1000"
+                    minCon="10"/>
+        <dbInstance name="readS3" url="192.168.1.13:3306" user="root" password="123456" readWeight="3" maxCon="1000"
+                    minCon="10"/>
     </dbGroup>
 
 </dble:db>

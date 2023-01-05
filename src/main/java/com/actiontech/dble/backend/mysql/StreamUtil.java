@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2022 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2023 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql;
 
 import java.io.EOFException;
@@ -41,7 +41,7 @@ public final class StreamUtil {
 
     public static byte[] read(byte[] b, int offset, int length) {
         byte[] fixedByte = new byte[length];
-        for (int i = 0 ; i < length ; i++) {
+        for (int i = 0; i < length; i++) {
             fixedByte[i] = b[offset + i];
         }
         return fixedByte;
@@ -49,7 +49,7 @@ public final class StreamUtil {
 
     public static int readBackInt(byte[] b, int offset, int length) {
         byte[] fixedByte = new byte[length];
-        for (int i = 0 ; i < length ; i++) {
+        for (int i = 0; i < length; i++) {
             fixedByte[i] = b[offset + i];
         }
         int i = fixedByte[0] & 0xff;
@@ -68,12 +68,11 @@ public final class StreamUtil {
             offset += got;
             length -= got;
         }
-        for (int i = 4 ; i < b.length ; i++) {
+        for (int i = 4; i < b.length; i++) {
             key[i - 4] = b[i];
         }
         return key;
     }
-
 
 
     public static int readUB2(InputStream in) throws IOException {

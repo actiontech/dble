@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -20,6 +20,7 @@ import java.util.List;
 public class ItemVariables extends Item {
     private String name;
     private Item ref;
+
     public ItemVariables(String name, Item ref) {
         this.name = name;
         this.ref = ref;
@@ -38,6 +39,7 @@ public class ItemVariables extends Item {
         PlanNode tn = getReferTables().iterator().next();
         node.addSelToReferedMap(tn, this);
     }
+
     @Override
     public ItemType type() {
         return ItemType.VARIABLE_ITEM;
@@ -82,6 +84,7 @@ public class ItemVariables extends Item {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         return new ItemVariables(name, ref.cloneStruct());
     }
+
     public Item getRef() {
         return ref;
     }

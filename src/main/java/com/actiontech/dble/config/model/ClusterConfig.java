@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -22,6 +22,7 @@ import static com.actiontech.dble.cluster.ClusterController.CONFIG_MODE_ZK;
 public final class ClusterConfig {
     private static final ClusterConfig INSTANCE = new ClusterConfig();
     private ProblemReporter problemReporter = StartProblemReporter.getInstance();
+
     public static ClusterConfig getInstance() {
         return INSTANCE;
     }

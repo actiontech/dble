@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -37,7 +37,6 @@ public final class SubQueryProcessor {
 
     /**
      * find query node in qtn ,change to other 3 type node
-     *
      */
     private static PlanNode tryTransformerQuery(PlanNode qtn, BoolPtr boolptr) {
         boolean childMerged = false;
@@ -59,7 +58,6 @@ public final class SubQueryProcessor {
 
     /**
      * transformerQuery
-     *
      */
     private static PlanNode transformerQuery(QueryNode query, BoolPtr boolptr) {
         boolean canBeMerged = canBeMerged(query.getChild());
@@ -85,7 +83,6 @@ public final class SubQueryProcessor {
     /**
      * merge parent's property to child,and return new child,
      * of course ,the child is  canBeMerged
-     *
      */
     private static PlanNode mergeNode(QueryNode parent, PlanNode child) {
         mergeSelect(parent, child);
@@ -99,7 +96,6 @@ public final class SubQueryProcessor {
      * view v_t1 as select id+1 idd from t1 tt1 order by idd select view
      * sql:select idd + 1 from v_t1 ==> select (id+1) + 1 from t1 tt1 order by
      * id+1
-     *
      */
 
     //fixme: parent's alias set to select item's table
@@ -121,6 +117,7 @@ public final class SubQueryProcessor {
         }
         child.setColumnsSelected(cNewSelects);
     }
+
     //fixme: parent's alias set to where item's table
     private static void mergeWhere(PlanNode parent, PlanNode child) {
         Item pWhere = parent.getWhereFilter();

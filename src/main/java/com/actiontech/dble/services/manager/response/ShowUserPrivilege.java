@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 ActionTech.
+ * Copyright (C) 2016-2023 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -29,7 +29,7 @@ public final class ShowUserPrivilege {
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
-    private static final int[] ALL_PRIVILEGES = new int[] {1, 1, 1, 1};
+    private static final int[] ALL_PRIVILEGES = new int[]{1, 1, 1, 1};
 
     static {
         int i = 0;
@@ -74,7 +74,7 @@ public final class ShowUserPrivilege {
         // write rows
         byte packetId = EOF.getPacketId();
         Map<UserName, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
-        for (Map.Entry<UserName, UserConfig> entry: users.entrySet()) {
+        for (Map.Entry<UserName, UserConfig> entry : users.entrySet()) {
             UserName userName = entry.getKey();
             UserConfig user = entry.getValue();
             // skip manager

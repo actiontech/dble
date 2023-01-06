@@ -123,15 +123,15 @@ public final class DbleThreadPool extends ManagerWritableTable {
             nameableExecutor.setCorePoolSize(corePoolSize);
             if (!nameableExecutor.getName().equals(DbleServer.COMPLEX_QUERY_EXECUTOR_NAME)) {
                 nameableExecutor.setMaximumPoolSize(corePoolSize);
-            }
-            if (oldSize < corePoolSize) {
-                try {
-                    increasePoolSize(nameableExecutor, corePoolSize - oldSize);
-                } catch (IOException e) {
-                    throw new SQLException(e.getMessage(), "42S22", ErrorCode.ER_YES);
+                if (oldSize < corePoolSize) {
+                    try {
+                        increasePoolSize(nameableExecutor, corePoolSize - oldSize);
+                    } catch (IOException e) {
+                        throw new SQLException(e.getMessage(), "42S22", ErrorCode.ER_YES);
+                    }
+                } else if (oldSize > corePoolSize) {
+                    decreasePoolSize(nameableExecutor, oldSize - corePoolSize);
                 }
-            } else if (oldSize > corePoolSize) {
-                decreasePoolSize(nameableExecutor, oldSize - corePoolSize);
             }
             //persistence
             try {

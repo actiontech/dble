@@ -52,12 +52,12 @@ public class DefaultLayedCachePoolTest {
         // wait expire
         try {
             Thread.sleep(2000);
+            Assert.assertEquals(null, layedCachePool.get("2"));
+            Assert.assertEquals(null, layedCachePool.get("1"));
+            Assert.assertEquals(null, layedCachePool.get("goods", "2"));
+            Assert.assertEquals(null, layedCachePool.get("company", 2));
         } catch (InterruptedException e) {
         }
-        Assert.assertEquals(null, layedCachePool.get("2"));
-        Assert.assertEquals(null, layedCachePool.get("1"));
-        Assert.assertEquals(null, layedCachePool.get("goods", "2"));
-        Assert.assertEquals(null, layedCachePool.get("company", 2));
     }
 
 }

@@ -34,7 +34,6 @@ public final class ClusterController {
     public static final String CONFIG_MODE_CUSTOMIZATION = "customization";
 
     public static final int GRPC_SUBTIMEOUT = 70;
-    public static final int GENERAL_GRPC_TIMEOUT = 10;
 
     private ClusterController() {
     }

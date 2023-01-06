@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import static com.actiontech.dble.cluster.ClusterController.GENERAL_GRPC_TIMEOUT;
 import static com.actiontech.dble.cluster.ClusterController.GRPC_SUBTIMEOUT;
 
 /**
@@ -49,7 +48,7 @@ public class UshardSender extends AbstractConsulSender {
     public void initConInfo() {
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
                 ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-        setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
+        setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS));
     }
 
     @Override
@@ -58,7 +57,7 @@ public class UshardSender extends AbstractConsulSender {
         sourceComponentId = SystemConfig.getInstance().getInstanceName();
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
                 ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-        setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
+        setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS));
         startUpdateNodes();
         ClusterToXml.loadKVtoFile(this);
     }
@@ -69,7 +68,7 @@ public class UshardSender extends AbstractConsulSender {
         UshardInterface.LockOnSessionOutput output;
 
         try {
-            output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).lockOnSession(input);
+            output = stub.withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS).lockOnSession(input);
             if (!"".equals(output.getSessionId())) {
                 final String session = output.getSessionId();
                 Thread renewThread = new Thread(new Runnable() {
@@ -125,7 +124,7 @@ public class UshardSender extends AbstractConsulSender {
             if (renewThread != null) {
                 renewThread.interrupt();
             }
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).unlockOnSession(put);
+            stub.withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS).unlockOnSession(put);
         } catch (Exception e) {
             LOGGER.info(sessionId + " unlockKey " + path + " error ," + stub, e);
         }
@@ -135,7 +134,7 @@ public class UshardSender extends AbstractConsulSender {
     public void setKV(String path, String value) throws Exception {
         UshardInterface.PutKvInput input = UshardInterface.PutKvInput.newBuilder().setKey(path).setValue(value).build();
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).putKv(input);
+            stub.withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS).putKv(input);
         } catch (Exception e1) {
             throw new IOException(ERROR_MSG);
         }
@@ -147,7 +146,7 @@ public class UshardSender extends AbstractConsulSender {
         UshardInterface.GetKvOutput output;
 
         try {
-            output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKv(input);
+            output = stub.withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS).getKv(input);
         } catch (Exception e1) {
             throw new RuntimeException(ERROR_MSG);
         }
@@ -166,7 +165,7 @@ public class UshardSender extends AbstractConsulSender {
         UshardInterface.GetKvTreeOutput output;
 
         try {
-            output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKvTree(input);
+            output = stub.withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS).getKvTree(input);
         } catch (Exception e1) {
             throw new RuntimeException(ERROR_MSG);
         }
@@ -186,7 +185,7 @@ public class UshardSender extends AbstractConsulSender {
             }
             UshardInterface.DeleteKvTreeInput input = UshardInterface.DeleteKvTreeInput.newBuilder().setKey(path).build();
             try {
-                stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
+                stub.withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS).deleteKvTree(input);
             } catch (Exception e1) {
                 throw new RuntimeException(ERROR_MSG);
             }
@@ -201,7 +200,7 @@ public class UshardSender extends AbstractConsulSender {
     public void cleanKV(String path) {
         UshardInterface.DeleteKvInput input = UshardInterface.DeleteKvInput.newBuilder().setKey(path).build();
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKv(input);
+            stub.withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS).deleteKv(input);
         } catch (Exception e1) {
             throw new RuntimeException("cleanKV failure for" + path);
         }
@@ -224,7 +223,7 @@ public class UshardSender extends AbstractConsulSender {
     public void alert(ClusterAlertBean alert) {
         UshardInterface.AlertInput input = getInput(alert);
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(input);
+            stub.withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS).alert(input);
         } catch (Exception e) {
             LOGGER.info("alert to ushard error ", e);
         }
@@ -234,7 +233,7 @@ public class UshardSender extends AbstractConsulSender {
     public boolean alertResolve(ClusterAlertBean alert) {
         UshardInterface.AlertInput input = getInput(alert);
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alertResolve(input);
+            stub.withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS).alertResolve(input);
             return true;
         } catch (Exception e) {
             return false;
@@ -245,7 +244,7 @@ public class UshardSender extends AbstractConsulSender {
     private boolean renewLock(String sessionId) throws Exception {
         UshardInterface.RenewSessionInput input = UshardInterface.RenewSessionInput.newBuilder().setSessionId(sessionId).build();
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).renewSession(input);
+            stub.withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS).renewSession(input);
             return true;
         } catch (Exception e1) {
             LOGGER.info("connect to ushard renew error and will retry");
@@ -311,7 +310,7 @@ public class UshardSender extends AbstractConsulSender {
                         LOGGER.warn("error in ucore nodes watch,try for another time", e);
                         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
                                 ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-                        UshardSender.this.setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
+                        UshardSender.this.setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS));
                         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
                     }
                 }
@@ -348,7 +347,7 @@ public class UshardSender extends AbstractConsulSender {
         try {
             channel = ManagedChannelBuilder.forAddress("127.0.0.1",
                     ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-            stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+            stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(ClusterConfig.getInstance().getGrpcTimeout(), TimeUnit.SECONDS);
             //check connection is ready
             ClusterHelper.isExist(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName()));
         } catch (Exception e) {

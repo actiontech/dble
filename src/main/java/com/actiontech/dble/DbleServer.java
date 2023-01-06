@@ -298,7 +298,7 @@ public final class DbleServer {
         businessExecutor = ExecutorUtil.createFixed(BUSINESS_EXECUTOR_NAME, SystemConfig.getInstance().getProcessorExecutor(), runnableMap);
         backendBusinessExecutor = ExecutorUtil.createFixed(BACKEND_BUSINESS_EXECUTOR_NAME, SystemConfig.getInstance().getBackendProcessorExecutor(), runnableMap);
         writeToBackendExecutor = ExecutorUtil.createFixed(WRITE_TO_BACKEND_EXECUTOR_NAME, SystemConfig.getInstance().getWriteToBackendExecutor(), runnableMap);
-        complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexExecutor(), runnableMap);
+        complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexExecutor(), null);
         timerExecutor = ExecutorUtil.createFixed(TIMER_EXECUTOR_NAME, 1);
         frontExecutor = ExecutorUtil.createFixed(FRONT_EXECUTOR_NAME, FRONT_BACKEND_SUFFIX, frontProcessorCount, runnableMap);
         backendExecutor = ExecutorUtil.createFixed(BACKEND_EXECUTOR_NAME, FRONT_BACKEND_SUFFIX, backendProcessorCount, runnableMap);

@@ -19,8 +19,8 @@
     <managerUser name="user" usingDecrypt="true" whiteIPs="127.0.0.1,0:0:0:0:0:0:0:1" readOnly="true"
                  password="AqEkFEuIFAX6g2TJQnp4cJ2r7Yc0Z4/KBsZqKhT8qSz18Aj91e8lxO49BKQElC6OFfW4c38pCYa8QGFTub7pnw=="/>
 
-    <shardingUser name="root" password="123456" schemas="testdb" readOnly="false" blacklist="blacklist1" maxCon="20"/>
-    <shardingUser name="root2" password="123456" schemas="testdb" maxCon="20" tenant="tenant1">
+    <shardingUser name="root" password="123456" schemas="testdb" readOnly="false" maxCon="20"/>
+    <shardingUser name="root2" password="123456" schemas="testdb" maxCon="20" blacklist="blacklist1" tenant="tenant1">
         <privileges check="true">
             <schema name="testdb" dml="0110">
                 <table name="tb01" dml="0000"/>

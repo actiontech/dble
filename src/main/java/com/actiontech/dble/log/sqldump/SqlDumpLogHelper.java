@@ -110,6 +110,9 @@ public final class SqlDumpLogHelper {
 
     public static void info(String sql, byte[] originPacket, RWSplitService rwSplitService, MySQLResponseService responseService, long affectRows) {
         try {
+            if (SqlDumpLog.getInstance().getEnableSqlDumpLog() != 1)
+                return;
+
             String[] arr = packageLog(originPacket, sql, rwSplitService);
             if (arr == null)
                 return;
@@ -162,17 +165,22 @@ public final class SqlDumpLogHelper {
     }
 
     private static String[] packageLog(byte[] data, String sql, RWSplitService rwSplitService) {
-        if (data.length < 5) return null;
-        switch (data[4]) {
-            case MySQLPacket.COM_QUERY:
-                return packageLog(sql);
-            case MySQLPacket.COM_STMT_EXECUTE:
-                long statementId = ByteUtil.readUB4(data, 5);
-                PreparedStatementHolder holder = rwSplitService.getPrepareStatement(statementId);
-                return packageLog(holder.getPrepareSql());
-            default:
-                return null;
+        if (data != null) {
+            if (data.length < 5) return null;
+            switch (data[4]) {
+                case MySQLPacket.COM_QUERY:
+                    return packageLog(sql);
+                case MySQLPacket.COM_STMT_EXECUTE:
+                    long statementId = ByteUtil.readUB4(data, 5);
+                    PreparedStatementHolder holder = rwSplitService.getPrepareStatement(statementId);
+                    return packageLog(holder.getPrepareSql());
+                default:
+                    return null;
+            }
+        } else if (sql != null) {
+            return packageLog(sql);
         }
+        return null;
     }
 
     private static String[] packageLog(String originSql) {

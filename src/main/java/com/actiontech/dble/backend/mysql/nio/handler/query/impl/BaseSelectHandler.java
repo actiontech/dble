@@ -20,6 +20,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +44,8 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     public MySQLConnection initConnection() throws Exception {
         if (session.closed()) {
-            return null;
+            LOGGER.warn("FrontendConnection is closed without sending a statement");
+            throw new IOException("FrontendConnection is closed");
         }
 
         MySQLConnection exeConn = (MySQLConnection) session.getTarget(rrss);

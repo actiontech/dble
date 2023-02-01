@@ -44,7 +44,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     public MySQLConnection initConnection() throws Exception {
         if (session.closed()) {
-            LOGGER.warn("FrontendConnection is closed without sending a statement");
+            LOGGER.warn("FrontendConnection is closed without sending a statement, conn is" + session.getSource());
             throw new IOException("FrontendConnection is closed");
         }
 

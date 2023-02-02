@@ -51,6 +51,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 "VARIANCE", "VAR_POP", "VAR_SAMP"));
     }
 
+
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
                                      ServerSchemaStatVisitor visitor, ServerConnection sc) throws SQLException {
@@ -58,77 +59,49 @@ public class DruidSelectParser extends DefaultDruidParser {
         SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
         String schemaName = schema == null ? null : schema.getName();
         if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
+            //check the select into sql is not supported
             MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) sqlSelectQuery;
             if (mysqlSelectQuery.getInto() != null) {
                 throw new SQLNonTransientException("select ... into is not supported!");
             }
+
+            //three types of select route according to the from item in select sql
             SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
             if (mysqlFrom == null) {
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
-                if (visitor.getSubQueryList().size() > 0) {
-                    return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
-                }
-                RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
+                routeForNoFrom(schema, rrs, visitor, sc, selectStmt);
                 return schema;
-            }
-            SchemaInfo schemaInfo;
-            if (mysqlFrom instanceof SQLExprTableSource) {
+            } else if (mysqlFrom instanceof SQLExprTableSource) {
                 SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
-                schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
+                SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
                 if (schemaInfo.isDual()) {
+                    //dual just route for a Random dataNode
                     RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
                     return schema;
-                }
-                if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaInfo.getSchema().toUpperCase())) {
+                } else if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaInfo.getSchema().toUpperCase())) {
+                    //sys_schema just use a special handler to response
                     MysqlSystemSchemaHandler.handle(sc, schemaInfo, mysqlSelectQuery);
                     rrs.setFinishedExecute(true);
                     return schema;
-                }
+                } else {
+                    //normal schema in config
+                    if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.SELECT)) {
+                        String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
+                        throw new SQLNonTransientException(msg);
+                    }
+                    super.visitorParse(schema, rrs, stmt, visitor, sc);
+                    //check to route for complex
+                    if (DbleServer.getInstance().getTmManager().getSyncView(schemaInfo.getSchemaConfig().getName(), schemaInfo.getTable()) != null) {
+                        rrs.setNeedOptimizer(true);
+                        rrs.setSqlStatement(selectStmt);
+                        return schemaInfo.getSchemaConfig();
+                    }
+                    if (visitor.getSubQueryList().size() > 0) {
+                        return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
+                    }
 
-                if (schemaInfo.getSchemaConfig() == null) {
-                    String msg = "No Supported, sql:" + stmt;
-                    throw new SQLNonTransientException(msg);
-                }
-                if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.SELECT)) {
-                    String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
-                    throw new SQLNonTransientException(msg);
-                }
-
-                if (DbleServer.getInstance().getTmManager().getSyncView(schemaInfo.getSchemaConfig().getName(), schemaInfo.getTable()) != null) {
-                    rrs.setNeedOptimizer(true);
-                    rrs.setSqlStatement(selectStmt);
-                    return schemaInfo.getSchemaConfig();
-                }
-
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
-                if (visitor.getSubQueryList().size() > 0) {
-                    return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
-                }
-
-                rrs.setSchema(schemaInfo.getSchema());
-                rrs.setTable(schemaInfo.getTable());
-                rrs.setTableAlias(schemaInfo.getTableAlias());
-                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-                schema = schemaInfo.getSchemaConfig();
-
-                String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
-                if (noShardingNode != null) {
-                    RouterUtil.routeToSingleNode(rrs, noShardingNode);
+                    //route for single table
+                    routeSingleTable(rrs, schemaInfo, mysqlSelectQuery, selectStmt, sc);
                     return schema;
-                }
-
-                TableConfig tc = schema.getTables().get(schemaInfo.getTable());
-                if (tc == null) {
-                    String msg = "Table '" + schema.getName() + "." + schemaInfo.getTable() + "' doesn't exist";
-                    throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-                }
-                rrs.setPrimaryKey(tc.getPrimaryKey());
-                // select ...for update /in shard mode /in transaction
-                if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())) {
-                    rrs.setCanRunInReadDB(false);
-                }
-                if (!canRouteTablesToOneNode(schema, stmt, rrs, mysqlSelectQuery, sc, visitor.getSelectTableList().size())) {
-                    parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
                 }
             } else if (mysqlFrom instanceof SQLSubqueryTableSource ||
                     mysqlFrom instanceof SQLJoinTableSource ||
@@ -140,9 +113,91 @@ public class DruidSelectParser extends DefaultDruidParser {
             super.visitorParse(schema, rrs, stmt, visitor, sc);
             return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
         }
-
         return schema;
     }
+
+    private void routeSingleTable(RouteResultset rrs, SchemaInfo schemaInfo, MySqlSelectQueryBlock mysqlSelectQuery,
+                                  SQLSelectStatement selectStmt, ServerConnection sc) throws SQLException {
+        rrs.setSchema(schemaInfo.getSchema());
+        rrs.setTable(schemaInfo.getTable());
+        rrs.setTableAlias(schemaInfo.getTableAlias());
+        rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
+        SchemaConfig schema = schemaInfo.getSchemaConfig();
+
+        String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
+        if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
+            rrs.setCanRunInReadDB(false);
+        }
+        if (noShardingNode != null) {
+            //route to singleNode
+            RouterUtil.routeToSingleNode(rrs, noShardingNode);
+            return;
+        } else {
+            //route for configured table
+            TableConfig tc = schema.getTables().get(schemaInfo.getTable());
+            if (tc == null) {
+                String msg = "Table '" + schema.getName() + "." + schemaInfo.getTable() + "' doesn't exist";
+                throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+            }
+            rrs.setPrimaryKey(tc.getPrimaryKey());
+            //loop conditions to determine the scope
+            SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
+            for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
+                RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tc.getName(), rrs, true,
+                        DbleServer.getInstance().getRouterService().getTableId2DataNodeCache(), null);
+                if (rrsTmp != null && rrsTmp.getNodes() != null) {
+                    Collections.addAll(nodeSet, rrsTmp.getNodes());
+                    if (rrsTmp.isGlobalTable()) {
+                        break;
+                    }
+                }
+            }
+            if (nodeSet.size() == 0) {
+                String msg = " find no Route:" + rrs.getStatement();
+                LOGGER.info(msg);
+                throw new SQLNonTransientException(msg);
+            } else if (nodeSet.size() > 1) {
+                //if the sql involved node more than 1 ,Aggregate function/Group by/Order by should use complexQuery
+                parseOrderAggGroupMysql(schema, selectStmt, rrs, mysqlSelectQuery, tc);
+                if (rrs.isNeedOptimizer()) {
+                    rrs.setNodes(null);
+                    return;
+                }
+            }
+            RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
+            int i = 0;
+            for (RouteResultsetNode aNodeSet : nodeSet) {
+                nodes[i] = aNodeSet;
+                i++;
+            }
+            rrs.setNodes(nodes);
+            rrs.setFinishedRoute(true);
+        }
+    }
+
+    /**
+     * route for from is null
+     * check the sql subquery first
+     * route for a NoNameTable
+     *
+     * @param schema
+     * @param rrs
+     * @param visitor
+     * @param sc
+     * @param selectStmt
+     * @throws SQLException
+     */
+
+    private void routeForNoFrom(SchemaConfig schema, RouteResultset rrs, ServerSchemaStatVisitor visitor, ServerConnection sc,
+                                SQLSelectStatement selectStmt) throws SQLException {
+        super.visitorParse(schema, rrs, selectStmt, visitor, sc);
+        if (visitor.getSubQueryList().size() > 0) {
+            executeComplexSQL(schema.getName(), schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
+            return;
+        }
+        RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
+    }
+
 
     private SchemaConfig tryRouteToOneNode(SchemaConfig schema, RouteResultset rrs, ServerConnection sc, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
         Set<String> schemaList = new HashSet<>();
@@ -161,34 +216,6 @@ public class DruidSelectParser extends DefaultDruidParser {
         return schema;
     }
 
-    private boolean canRouteTablesToOneNode(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-                                            MySqlSelectQueryBlock mysqlSelectQuery, ServerConnection sc, int tableSize) throws SQLException {
-        Set<String> schemaList = new HashSet<>();
-        String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs, schema, ctx, schemaList, tableSize, true);
-        if (dataNode != null) {
-            String sql = rrs.getStatement();
-            assert schemaList.size() <= 1;
-            String schemaName = schema.getName();
-            if (schemaList.size() > 0) {
-                schemaName = schemaList.iterator().next();
-            }
-            boolean isNeedAddLimit = isNeedAddLimit(schema, rrs, mysqlSelectQuery, getAllConditions());
-            if (isNeedAddLimit) {
-                int limitSize = schema.getDefaultMaxLimit();
-                SQLLimit limit = new SQLLimit();
-                limit.setRowCount(new SQLIntegerExpr(limitSize));
-                mysqlSelectQuery.setLimit(limit);
-                rrs.setLimitSize(limitSize);
-                sql = getSql(rrs, stmt, isNeedAddLimit, schemaName);
-            } else {
-                sql = RouterUtil.removeSchema(sql, schemaName);
-            }
-            rrs.setStatement(sql);
-            RouterUtil.routeToSingleNode(rrs, dataNode);
-            return true;
-        }
-        return false;
-    }
 
     private void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
                                          MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
@@ -466,28 +493,27 @@ public class DruidSelectParser extends DefaultDruidParser {
     @Override
     public void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, LayerCachePool cachePool)
             throws SQLException {
-        if (rrs.isFinishedRoute() || rrs.isFinishedExecute() || rrs.isNeedOptimizer()) {
+        if (rrs.isFinishedExecute() || rrs.isNeedOptimizer()) {
             return;
         }
-        tryRouteSingleTable(schema, rrs, cachePool);
         rrs.copyLimitToNodes();
         SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
         SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
-        if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
+        SchemaConfig sqlSchema = DbleServer.getInstance().getConfig().getSchemas().get(rrs.getSchema());
+        if (sqlSelectQuery instanceof MySqlSelectQueryBlock && sqlSchema != null) {
             MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectStmt.getSelect().getQuery();
             int limitStart = 0;
-            int limitSize = schema.getDefaultMaxLimit();
+            int limitSize = sqlSchema.getDefaultMaxLimit();
 
             Map<String, Map<String, Set<ColumnRoutePair>>> allConditions = getAllConditions();
-            boolean isNeedAddLimit = isNeedAddLimit(schema, rrs, mysqlSelectQuery, allConditions);
+            boolean isNeedAddLimit = isNeedAddLimit(sqlSchema, rrs, mysqlSelectQuery, allConditions);
             if (isNeedAddLimit) {
                 SQLLimit limit = new SQLLimit();
                 limit.setRowCount(new SQLIntegerExpr(limitSize));
                 mysqlSelectQuery.setLimit(limit);
                 rrs.setLimitSize(limitSize);
-                String sql = getSql(rrs, stmt, isNeedAddLimit, schema.getName());
+                String sql = getSql(rrs, stmt, isNeedAddLimit, sqlSchema.getName());
                 rrs.changeNodeSqlAfterAddLimit(sql, 0, limitSize);
-
             }
             SQLLimit limit = mysqlSelectQuery.getLimit();
             if (limit != null && !isNeedAddLimit) {
@@ -519,13 +545,13 @@ public class DruidSelectParser extends DefaultDruidParser {
                     }
 
                     mysqlSelectQuery.setLimit(changedLimit);
-                    String sql = getSql(rrs, stmt, isNeedAddLimit, schema.getName());
+                    String sql = getSql(rrs, stmt, isNeedAddLimit, sqlSchema.getName());
                     rrs.changeNodeSqlAfterAddLimit(sql, 0, limitStart + limitSize);
                 } else {
                     rrs.changeNodeSqlAfterAddLimit(rrs.getStatement(), rrs.getLimitStart(), rrs.getLimitSize());
                 }
             }
-            rrs.setCacheAble(isNeedCache(schema));
+            rrs.setCacheAble(isNeedCache(sqlSchema));
         }
 
     }

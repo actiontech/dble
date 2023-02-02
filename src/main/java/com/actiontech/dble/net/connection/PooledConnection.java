@@ -8,6 +8,7 @@ import java.nio.channels.NetworkChannel;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class PooledConnection extends AbstractConnection {
 
@@ -17,6 +18,7 @@ public abstract class PooledConnection extends AbstractConnection {
     private volatile String oldSchema;
     private volatile ConnectionPool poolRelated;
     private AtomicBoolean isCreateFail = new AtomicBoolean(false);
+    private AtomicLong version = new AtomicLong(0);
 
     private AtomicInteger state = new AtomicInteger(INITIAL);
 
@@ -116,5 +118,13 @@ public abstract class PooledConnection extends AbstractConnection {
 
     public AtomicBoolean getIsCreateFail() {
         return isCreateFail;
+    }
+
+    public AtomicLong getVersion() {
+        return version;
+    }
+
+    public void setVersionVal(long val) {
+        version.set(val);
     }
 }

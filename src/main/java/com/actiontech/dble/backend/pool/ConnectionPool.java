@@ -15,6 +15,7 @@ import com.actiontech.dble.net.factory.PooledConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Map;
@@ -24,6 +25,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.actiontech.dble.net.connection.PooledConnection.*;
@@ -48,6 +50,8 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     private final PoolConfig poolConfig;
     private final ReentrantReadWriteLock freshLock;
     private volatile int waiterNum;
+    private final AtomicLong poolVersion = new AtomicLong(0);
+
 
     public ConnectionPool(final DbInstanceConfig config, final ReadTimeStatusInstance instance, final PooledConnectionFactory factory) {
         super(config, instance, factory);
@@ -65,6 +69,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         this.allConnections = new CopyOnWriteArrayList<>();
         this.poolConfig = config.getPoolConfig();
         this.freshLock = new ReentrantReadWriteLock();
+
     }
 
     public PooledConnection borrowDirectly(final String schema) {
@@ -193,8 +198,17 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
 
     @Override
     public void onCreateSuccess(PooledConnection conn) {
+        if (isClosed.get() || conn.getVersion().get() != poolVersion.get()) {
+            onCreateFail(conn, new IOException("Connection pool has been stopped or connection creation timed out"));
+            return;
+        }
         conn.setPoolRelated(this);
         allConnections.add(conn);
+        if (conn.getVersion().get() != poolVersion.get()) {
+            allConnections.remove(conn);
+            onCreateFail(conn, new IOException("Connection expired need close"));
+            return;
+        }
         if (poolConfig.getTestOnCreate()) {
             ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler((BackendConnection) conn, false, this);
             heartBeatHandler.ping(poolConfig.getConnectionHeartbeatTimeout());
@@ -217,8 +231,10 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     @Override
     public void onCreateFail(PooledConnection conn, Throwable e) {
         if (conn == null || conn.getIsCreateFail().compareAndSet(false, true)) {
-            LOGGER.warn("create connection fail " + e.getMessage());
-            totalConnections.decrementAndGet();
+            LOGGER.warn("create connection fail " + e.getMessage() + " conn version is " + conn.getVersion() + " poolVersion is " + poolVersion.get());
+            if (conn.getVersion().get() == poolVersion.get()) {
+                totalConnections.decrementAndGet();
+            }
             // conn can be null if newChannel crashed (eg SocketException("too many open files"))
             if (conn != null) {
                 conn.businessClose("create fail");
@@ -298,7 +314,13 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     }
 
 
+    /**
+     * Close all connections in the connection pool
+     *
+     * @param closureReason
+     */
     public void softCloseAllConnections(final String closureReason) {
+        poolVersion.incrementAndGet();
         while (totalConnections.get() > 0) {
             for (PooledConnection conn : allConnections) {
                 if (conn.getState() == STATE_IN_USE) {
@@ -309,13 +331,22 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
                     conn.close(closureReason);
                 }
             }
+            finishCloseAllConnections();
         }
+    }
+
+    private void finishCloseAllConnections() {
+        if (!allConnections.isEmpty()) {
+            return;
+        }
+        totalConnections.set(0);
     }
 
     /**
      * Closes the keyed object pool. Once the pool is closed
      */
     public void forceCloseAllConnection(final String closureReason) {
+        poolVersion.incrementAndGet();
         while (totalConnections.get() > 0) {
             for (PooledConnection conn : allConnections) {
                 if (conn.getState() == STATE_IN_USE) {
@@ -324,6 +355,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
                     conn.close(closureReason);
                 }
             }
+            finishCloseAllConnections();
         }
     }
 
@@ -385,6 +417,10 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
 
     public final int getThreadsAwaitingConnection() {
         return waiters.get();
+    }
+
+    public AtomicLong getPoolVersion() {
+        return poolVersion;
     }
 
     /**

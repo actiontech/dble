@@ -9,6 +9,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.mysql.CharsetNames;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.net.service.ServiceTask;
@@ -317,6 +318,13 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer) {
+        if (src.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+            return service.writeBigPackageToBuffer(src, buffer);
+        }
+        return writeToBuffer0(src, buffer);
+    }
+
+    public ByteBuffer writeToBuffer0(byte[] src, ByteBuffer buffer) {
         int offset = 0;
         int length = src.length;
         int remaining = buffer.remaining();

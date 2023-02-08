@@ -327,8 +327,6 @@ public class ServerConnection extends FrontendConnection {
         String schema = rrs.getSchema();
         String table = rrs.getTable();
         try {
-            //lock self meta
-            DbleServer.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
             if (DbleServer.getInstance().isUseZK()) {
                 String nodeName = StringUtil.getFullName(schema, table);
                 String ddlPath = KVPathUtil.getDDLPath();
@@ -343,11 +341,12 @@ public class ServerConnection extends FrontendConnection {
             } else if (DbleServer.getInstance().isUseGeneralCluster()) {
                 DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
             }
+            //lock self meta
+            DbleServer.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
         } catch (SQLNonTransientException e) {
             throw e;
         } catch (Exception e) {
-            DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
-            throw new SQLNonTransientException(e.toString() + ",sql:" + rrs.getStatement());
+            throw new SQLNonTransientException(e.getMessage() + ",sql:" + rrs.getStatement());
         }
     }
 

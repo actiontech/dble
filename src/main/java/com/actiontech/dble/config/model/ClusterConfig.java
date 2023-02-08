@@ -48,6 +48,7 @@ public final class ClusterConfig {
     private String sequenceStartTime;
     private boolean sequenceInstanceByZk = true;
     private boolean initZkFirst = false;
+    private int grpcTimeout = 10;
 
     private long startTimeMilliseconds = 1288834974657L; //Thu Nov 04 09:42:54 CST 2010
 
@@ -65,6 +66,14 @@ public final class ClusterConfig {
 
     public void setClusterMode(String clusterMode) {
         this.clusterMode = clusterMode.toLowerCase();
+    }
+
+    public int getGrpcTimeout() {
+        return grpcTimeout;
+    }
+
+    public void setGrpcTimeout(int grpcTimeout) {
+        this.grpcTimeout = grpcTimeout;
     }
 
     public String getClusterIP() {

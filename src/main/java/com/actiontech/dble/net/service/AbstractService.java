@@ -14,6 +14,7 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -223,27 +224,31 @@ public abstract class AbstractService implements Service {
         ByteUtil.writeUB3(singlePacket, MySQLPacket.MAX_PACKET_SIZE);
         singlePacket[3] = data[3];
         byte currentPacketId = data[3];
-        buffer = writeToBuffer(singlePacket, buffer);
+        buffer = connection.writeToBuffer0(singlePacket, buffer);
         while (length >= MySQLPacket.MAX_PACKET_SIZE) {
             singlePacket = new byte[MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
             ByteUtil.writeUB3(singlePacket, MySQLPacket.MAX_PACKET_SIZE);
             singlePacket[3] = ++currentPacketId;
             if (this instanceof ShardingService) {
                 singlePacket[3] = (byte) this.nextPacketId();
+            } else if (this instanceof RWSplitService) {
+                singlePacket[3] = (byte) this.nextPacketId();
             }
             System.arraycopy(data, srcPos, singlePacket, MySQLPacket.PACKET_HEADER_SIZE, MySQLPacket.MAX_PACKET_SIZE);
             srcPos += MySQLPacket.MAX_PACKET_SIZE;
             length -= MySQLPacket.MAX_PACKET_SIZE;
-            buffer = writeToBuffer(singlePacket, buffer);
+            buffer = connection.writeToBuffer0(singlePacket, buffer);
         }
         singlePacket = new byte[length + MySQLPacket.PACKET_HEADER_SIZE];
         ByteUtil.writeUB3(singlePacket, length);
         singlePacket[3] = ++currentPacketId;
         if (this instanceof ShardingService) {
             singlePacket[3] = (byte) this.nextPacketId();
+        } else if (this instanceof RWSplitService) {
+            singlePacket[3] = (byte) this.nextPacketId();
         }
         System.arraycopy(data, srcPos, singlePacket, MySQLPacket.PACKET_HEADER_SIZE, length);
-        buffer = writeToBuffer(singlePacket, buffer);
+        buffer = connection.writeToBuffer0(singlePacket, buffer);
         return buffer;
     }
 

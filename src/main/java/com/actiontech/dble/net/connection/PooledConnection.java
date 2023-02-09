@@ -29,6 +29,8 @@ public abstract class PooledConnection extends AbstractConnection {
 
     public static final Comparator<PooledConnection> LAST_ACCESS_COMPARABLE;
 
+    protected long connectionTimeout;
+
     static {
         LAST_ACCESS_COMPARABLE = Comparator.comparingLong(entryOne -> entryOne.lastTime);
     }

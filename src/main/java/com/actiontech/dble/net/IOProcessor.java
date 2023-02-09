@@ -204,6 +204,7 @@ public final class IOProcessor {
                 it.remove();
                 continue;
             }
+            long cost = System.currentTimeMillis() - c.getStartupTime();
 
             if (c.isPrepareClosedTimeout()) {
                 c.close(c.getCloseReason());
@@ -212,6 +213,10 @@ public final class IOProcessor {
 
             // a connection in change user
             if (c.getService() instanceof MySQLBackAuthService) {
+                //when the connection creation time is greater than the connectionTimeout, it is a network timeout
+                if (cost >= c.getConnectionTimeout()) {
+                    c.close("Create connection timed out");
+                }
                 continue;
             }
 

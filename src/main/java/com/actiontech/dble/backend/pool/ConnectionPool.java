@@ -456,6 +456,10 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         }
     }
 
+    public long getConnectionTimeout() {
+        return poolConfig.getConnectionTimeout();
+    }
+
     /**
      * The idle object evictor.
      */

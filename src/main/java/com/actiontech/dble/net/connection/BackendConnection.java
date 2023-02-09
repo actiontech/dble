@@ -128,7 +128,8 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public synchronized void close(final String reason) {
-        LOGGER.info("connection id " + id + " mysqlId " + threadId + " close for reason " + reason);
+        if (getCloseReason() == null || !getCloseReason().equals(reason))
+            LOGGER.info("connection id " + id + " mysqlId " + threadId + " close for reason " + reason);
         boolean isAuthed = !this.getService().isFakeClosed() && !(this.getService() instanceof AuthService);
         if (!isClosed.get()) {
             if ((isAuthed || this.getService().isFakeClosed()) && channel.isOpen() && closeReason == null) {

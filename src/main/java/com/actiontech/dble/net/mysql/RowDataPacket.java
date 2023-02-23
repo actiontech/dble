@@ -100,7 +100,9 @@ public class RowDataPacket extends MySQLPacket {
             BufferUtil.writeUB3(tmpBuffer, calcPacketSize());
             tmpBuffer.put(packetId--);
             writeBody(tmpBuffer);
-            byte[] array = tmpBuffer.array();
+            tmpBuffer.flip();
+            byte[] array = new byte[tmpBuffer.limit()];
+            tmpBuffer.get(array);
             bufferPool.recycle(tmpBuffer);
             ByteBuffer newBuffer = bufferPool.allocate(array.length);
             return c.writeBigPackageToBuffer(array, newBuffer, packetId);
@@ -165,7 +167,9 @@ public class RowDataPacket extends MySQLPacket {
             BufferPool bufferPool = BufferPoolManager.getBufferPool();
             ByteBuffer tmpBuffer = bufferPool.allocate(size);
             writeBody(tmpBuffer);
-            byte[] tmpArray = tmpBuffer.array();
+            tmpBuffer.flip();
+            byte[] tmpArray = new byte[tmpBuffer.limit()];
+            tmpBuffer.get(tmpArray);
             bufferPool.recycle(tmpBuffer);
             byte[] packets = new byte[size + PACKET_HEADER_SIZE * packageNum];
             int length = size;

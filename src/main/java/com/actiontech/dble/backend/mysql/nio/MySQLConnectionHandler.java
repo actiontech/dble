@@ -285,10 +285,10 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
             ErrorPacket errPkg = new ErrorPacket();
             errPkg.read(data);
             String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-            LOGGER.warn("no handler process the execute packet err,sql error:{},back service:{},from reason:{}", new Object[]{errMsg, source, reason});
+            LOGGER.warn("drop the unprocessed error packet, reason:{},packet content:{},back service:{}", new Object[]{reason, errMsg, source});
 
         } catch (RuntimeException e) {
-            LOGGER.info("error handle error-packet", e);
+            LOGGER.info("error drop error-packet", e);
         }
     }
 }

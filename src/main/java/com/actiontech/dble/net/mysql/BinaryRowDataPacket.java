@@ -251,7 +251,9 @@ public class BinaryRowDataPacket extends MySQLPacket {
             BufferUtil.writeUB3(temp, size);
             temp.put(packetId--);
             writeBody(temp);
-            byte[] array = temp.array();
+            temp.flip();
+            byte[] array = new byte[temp.limit()];
+            temp.get(array);
             bufferPool.recycle(temp);
             return c.writeBigPackageToBuffer(array, bufferPool.allocate(array.length), packetId);
         } else {

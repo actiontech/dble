@@ -143,7 +143,7 @@ public class CommandPacket extends MySQLPacket {
             remain = 0;
         } else {
             int start = arg.length - remain;
-            int available = buffer.limit() - buffer.position();
+            int available = (MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) - buffer.position();
             buffer.put(arg, start, available);
             remain -= available;
         }

@@ -27,7 +27,7 @@ public class LoadDataProtoHandlerImpl implements ProtoHandler {
     }
 
     @Override
-    public ProtoHandlerResult handle(ByteBuffer dataBuffer, int dataBufferOffset, boolean isSupportCompress) {
+    public ProtoHandlerResult handle(ByteBuffer dataBuffer, int dataBufferOffset, boolean isSupportCompress, boolean isContainSSLData) {
         ProtoHandlerResult.ProtoHandlerResultBuilder resultBuilder = mySQLProtoHandler.handlerResultBuilder(dataBuffer, dataBufferOffset, isSupportCompress);
         ProtoHandlerResult result = resultBuilder.build();
         switch (result.getCode()) {

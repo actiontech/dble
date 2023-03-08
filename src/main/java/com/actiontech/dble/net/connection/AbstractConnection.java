@@ -8,6 +8,7 @@ package com.actiontech.dble.net.connection;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
+import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResultCode;
 import com.actiontech.dble.btrace.provider.IODelayProvider;
 import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.buffer.BufferType;
@@ -89,6 +90,8 @@ public abstract class AbstractConnection implements Connection {
     private final ConcurrentLinkedQueue<byte[]> compressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
     protected final AtomicInteger writingSize = new AtomicInteger(0);
 
+    protected volatile Boolean requestSSL;
+
     public AbstractConnection(NetworkChannel channel, SocketWR socketWR) {
         this.channel = channel;
         this.socketWR = socketWR;
@@ -96,7 +99,7 @@ public abstract class AbstractConnection implements Connection {
         this.startupTime = TimeUtil.currentTimeMillis();
         this.lastReadTime = startupTime;
         this.lastWriteTime = startupTime;
-        this.proto = new MySQLProtoHandlerImpl();
+        this.proto = new MySQLProtoHandlerImpl(this);
         FrontActiveRatioStat.getInstance().register(this, startupTime);
     }
 
@@ -229,11 +232,21 @@ public abstract class AbstractConnection implements Connection {
         service.handle(serviceTask);
     }
 
-    public void handle(ByteBuffer dataBuffer) throws IOException {
+    protected void handle(ByteBuffer dataBuffer) throws IOException {
+        handle(dataBuffer, false);
+    }
+
+    /**
+     * need to handle the following scenarios
+     * 1. isSupportSSL == false
+     * 2. isSupportSSL == true and client is not using ssl
+     * 3. isSupportSSL == true and client is using ssl and  login request & client hello protocol
+     */
+    protected void handle(ByteBuffer dataBuffer, boolean isContainSSLData) throws IOException {
         boolean hasRemaining = true;
         int offset = 0;
         while (hasRemaining) {
-            ProtoHandlerResult result = proto.handle(dataBuffer, offset, isSupportCompress);
+            ProtoHandlerResult result = proto.handle(dataBuffer, offset, isSupportCompress, isContainSSLData);
             switch (result.getCode()) {
                 case PART_OF_BIG_PACKET:
                     if (!result.isHasMorePacket()) {
@@ -254,11 +267,20 @@ public abstract class AbstractConnection implements Connection {
                         dataBuffer.clear();
                     }
                     break;
-                case BUFFER_PACKET_UNCOMPLETE:
-                    compactReadBuffer(dataBuffer, result.getOffset());
-                    break;
                 case SSL_PROTO_PACKET:
-                    compactReadBuffer(dataBuffer, offset);
+                    if (!result.isHasMorePacket()) {
+                        readReachEnd();
+                    }
+                    processSSLProto(result.getPacketData(), result.getCode());
+                    if (!result.isHasMorePacket()) {
+                        dataBuffer.clear();
+                    }
+                    break;
+                case BUFFER_PACKET_UNCOMPLETE:
+                    compactReadBuffer(dataBuffer, result.getOffset(), false);
+                    break;
+                case SSL_BUFFER_NOT_BIG_ENOUGH:
+                    compactReadBuffer(dataBuffer, offset, true);
                     break;
                 case BUFFER_NOT_BIG_ENOUGH:
                     ensureFreeSpaceOfReadBuffer(dataBuffer, result.getOffset(), result.getPacketLength());
@@ -270,6 +292,18 @@ public abstract class AbstractConnection implements Connection {
             hasRemaining = result.isHasMorePacket();
             if (hasRemaining) {
                 offset = result.getOffset();
+            }
+        }
+    }
+
+
+    protected void processSSLProto(byte[] packetData, ProtoHandlerResultCode code) {
+        AbstractService frontService = getService();
+        if (packetData != null) {
+            if (code == ProtoHandlerResultCode.SSL_PROTO_PACKET) {
+                pushServiceTask(new SSLProtoServerTask(packetData, frontService));
+            } else {
+                pushServiceTask(ServiceTaskFactory.getInstance(frontService).createForGracefulClose("ssl close", CloseType.READ));
             }
         }
     }
@@ -323,7 +357,7 @@ public abstract class AbstractConnection implements Connection {
         }
     }
 
-    public void compactReadBuffer(ByteBuffer buffer, int offset) throws IOException {
+    public void compactReadBuffer(ByteBuffer buffer, int offset, boolean isSSL) throws IOException {
         if (buffer == null) {
             return;
         }
@@ -348,7 +382,7 @@ public abstract class AbstractConnection implements Connection {
         } else {
             if (offset != 0) {
                 // compact bytebuffer only
-                compactReadBuffer(buffer, offset);
+                compactReadBuffer(buffer, offset, false);
             } else {
                 throw new RuntimeException(" not enough space");
             }
@@ -483,9 +517,10 @@ public abstract class AbstractConnection implements Connection {
         }
         int bufferSize;
         WriteOutTask writeTask;
+        ByteBuffer newBuffer = null;
         try {
             if (isSupportCompress) {
-                ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, compressUnfinishedDataQueue);
+                newBuffer = CompressUtil.compressMysqlPacket(buffer, this, compressUnfinishedDataQueue);
                 newBuffer = wrap(newBuffer);
                 writeTask = new WriteOutTask(newBuffer, false);
                 bufferSize = newBuffer.position();
@@ -496,6 +531,9 @@ public abstract class AbstractConnection implements Connection {
             }
         } catch (SSLException e) {
             recycle(buffer);
+            if (newBuffer != null) {
+                recycle(newBuffer);
+            }
             return;
         }
 
@@ -706,6 +744,14 @@ public abstract class AbstractConnection implements Connection {
         this.readBufferChunk = readBufferChunk;
     }
 
+    public Boolean isRequestSSL() {
+        return requestSSL;
+    }
+
+    public void setRequestSSL(Boolean requestSSL) {
+        this.requestSSL = requestSSL;
+    }
+
     public ByteBuffer getBottomReadBuffer() {
         return this.bottomReadBuffer;
     }
@@ -752,5 +798,10 @@ public abstract class AbstractConnection implements Connection {
 
     public void setBottomReadBuffer(ByteBuffer bottomReadBuffer) {
         this.bottomReadBuffer = bottomReadBuffer;
+    }
+
+
+    public void initSSLContext(int protocol) {
+
     }
 }

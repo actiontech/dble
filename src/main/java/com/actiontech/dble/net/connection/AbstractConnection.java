@@ -752,6 +752,13 @@ public abstract class AbstractConnection implements Connection {
         this.requestSSL = requestSSL;
     }
 
+    /**
+     * ssl login request(non ssl)&client hello(ssl)
+     */
+    protected boolean maybeUseSSL() {
+        return isRequestSSL() == null || isRequestSSL();
+    }
+
     public ByteBuffer getBottomReadBuffer() {
         return this.bottomReadBuffer;
     }

@@ -76,8 +76,9 @@ public class FrontendConnection extends AbstractConnection {
             //after ssl-client hello
             handleSSLData(dataBuffer);
         } else {
+            //ssl buffer -> bottomRead buffer
             transferToReadBuffer(dataBuffer);
-            if (isRequestSSL() == null || isRequestSSL()) {
+            if (maybeUseSSL()) {
                 //ssl login request(non ssl)&client hello(ssl)
                 super.handle(getBottomReadBuffer(), true);
             } else {
@@ -125,7 +126,7 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     private void transferToReadBuffer(ByteBuffer dataBuffer) {
-        if (!isSupportSSL) return;
+        if (!isSupportSSL || !maybeUseSSL()) return;
         dataBuffer.flip();
         ByteBuffer readBuffer = findBottomReadBuffer();
         int len = readBuffer.position() + dataBuffer.limit();
@@ -240,11 +241,15 @@ public class FrontendConnection extends AbstractConnection {
 
     @Override
     public synchronized void recycleReadBuffer() {
-        if (netReadBuffer != null) {
-            this.recycle(netReadBuffer);
+        recycleNetReadBuffer();
+        super.recycleReadBuffer();
+    }
+
+    private void recycleNetReadBuffer() {
+        if (this.netReadBuffer != null) {
+            this.recycle(this.netReadBuffer);
             this.netReadBuffer = null;
         }
-        super.recycleReadBuffer();
     }
 
     @Override
@@ -264,10 +269,7 @@ public class FrontendConnection extends AbstractConnection {
     @Override
     public void cleanup(String reason) {
         if (isCleanUp.compareAndSet(false, true)) {
-            if (netReadBuffer != null) {
-                this.recycle(netReadBuffer);
-                this.netReadBuffer = null;
-            }
+            recycleNetReadBuffer();
             super.cleanup(reason);
             AbstractService service = getService();
             if (service instanceof FrontendService) {
@@ -339,19 +341,21 @@ public class FrontendConnection extends AbstractConnection {
 
     @Override
     public ByteBuffer findReadBuffer() {
-        if (isSupportSSL) {
+        if (isSupportSSL && maybeUseSSL()) {
             if (this.netReadBuffer == null) {
                 netReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateBufferRecordBuilder().withType(BufferType.POOL));
             }
             return netReadBuffer;
         } else {
+            //only recycle this read buffer
+            recycleNetReadBuffer();
             return super.findReadBuffer();
         }
     }
 
     @Override
     ByteBuffer getReadBuffer() {
-        if (isSupportSSL) {
+        if (isSupportSSL && maybeUseSSL()) {
             return netReadBuffer;
         } else {
             return super.getReadBuffer();

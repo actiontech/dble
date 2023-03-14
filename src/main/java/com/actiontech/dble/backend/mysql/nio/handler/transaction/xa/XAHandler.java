@@ -60,7 +60,7 @@ public class XAHandler {
                 sqlJobs.add(sqlJob);
             } else {
                 LOGGER.warn("When prepare execute 'XA RECOVER' in {}, check it's isAlive is false!", pdi);
-                results.put(pdi, null);
+                results.put(pdi, new ArrayList<>());
             }
         }
     }
@@ -158,7 +158,7 @@ public class XAHandler {
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             if (!result.isSuccess()) {
                 LOGGER.warn("execute 'XA RECOVER' in {} error!", pdi);
-                results.put(pdi, null);
+                results.put(pdi, new ArrayList<>());
             } else {
                 isSuccess = true;
                 results.put(pdi, result.getResult());

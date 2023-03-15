@@ -239,7 +239,7 @@ public class MySQLPlanNodeVisitor {
 
             ManagerBaseView view = ManagerSchemaInfo.getInstance().getView(tableName);
             if (view != null) {
-                this.tableNode = view.getViewNode();
+                this.tableNode = view.getViewNode().copy();
                 return true;
             }
 

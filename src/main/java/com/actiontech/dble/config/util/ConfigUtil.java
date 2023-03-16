@@ -100,7 +100,7 @@ public final class ConfigUtil {
                 //with no dbGroups, do not check the variables
                 return null;
             }
-            Map<String, Future<KeyVariables>> keyVariablesTaskMap = Maps.newHashMap();
+            Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap = Maps.newHashMap();
             List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
             getAndSyncKeyVariablesForDataSources(needCheckItemList, keyVariablesTaskMap, needSync, dbInstanceList);
 
@@ -108,15 +108,15 @@ public final class ConfigUtil {
             int minNodePacketSize = Integer.MAX_VALUE;
             int minVersion = Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1));
             Boolean lowerCase = DbleServer.getInstance().getConfig().isLowerCase();
-            for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
-                String dataSourceName = entry.getKey();
+            for (Map.Entry<VariableMapKey, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
+                VariableMapKey variableMapKey = entry.getKey();
                 Future<KeyVariables> future = entry.getValue();
                 KeyVariables keyVariables = future.get();
                 if (keyVariables != null) {
                     if (dbInstanceList.size() == 1 || lowerCase == null) {
                         lowerCase = keyVariables.isLowerCase();
                     } else if (keyVariables.isLowerCase() != lowerCase && dbInstanceList.size() > 1) {
-                        diffGroup.add(dataSourceName);
+                        diffGroup.add(variableMapKey.getDataSourceName());
                     }
                     minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                     int version = Integer.parseInt(keyVariables.getVersion().substring(0, 1));
@@ -166,9 +166,9 @@ public final class ConfigUtil {
 
             List<String> syncKeyVariables = Lists.newArrayList();
             List<String> mysqlSyncKeyVariables = getMysqlSyncKeyVariables(mysqlDbGroups, needSync);
-            Optional.ofNullable(mysqlSyncKeyVariables).ifPresent(list -> syncKeyVariables.addAll(list));
+            Optional.ofNullable(mysqlSyncKeyVariables).ifPresent(syncKeyVariables::addAll);
             List<String> clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(clickHouseDbGroups, needSync);
-            Optional.ofNullable(clickHouseSyncKeyVariables).ifPresent(list -> syncKeyVariables.addAll(list));
+            Optional.ofNullable(clickHouseSyncKeyVariables).ifPresent(syncKeyVariables::addAll);
             return syncKeyVariables;
         } finally {
             TraceManager.finishSpan(traceObject);
@@ -183,28 +183,27 @@ public final class ConfigUtil {
             //with no dbGroups, do not check the variables
             return list;
         }
-        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
+        Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
         List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
         getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync, dbInstanceList);
 
         boolean lowerCase = false;
         boolean isFirst = true;
-        int instanceIndex = 0;
         Set<String> firstGroup = new HashSet<>();
         Set<String> secondGroup = new HashSet<>();
         int minNodePacketSize = Integer.MAX_VALUE;
         int minVersion = VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion());
-        for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
-            String dataSourceName = entry.getKey();
+        for (Map.Entry<VariableMapKey, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
+            VariableMapKey variableMapKey = entry.getKey();
             Future<KeyVariables> future = entry.getValue();
             KeyVariables keyVariables = future.get();
             if (keyVariables != null) {
                 if (isFirst) {
                     lowerCase = keyVariables.isLowerCase();
                     isFirst = false;
-                    firstGroup.add(dataSourceName);
+                    firstGroup.add(variableMapKey.getDataSourceName());
                 } else if (keyVariables.isLowerCase() != lowerCase) {
-                    secondGroup.add(dataSourceName);
+                    secondGroup.add(variableMapKey.getDataSourceName());
                 }
                 minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                 Integer majorVersion = VersionUtil.getMajorVersionWithoutDefaultValue(keyVariables.getVersion());
@@ -213,10 +212,9 @@ public final class ConfigUtil {
                     majorVersion = 5;
                 }
                 minVersion = Math.min(minVersion, majorVersion);
-                PhysicalDbInstance instance = dbInstanceList.get(instanceIndex);
+                PhysicalDbInstance instance = variableMapKey.getDbInstance();
                 // The back_log value indicates how many requests can be stacked during this short time before MySQL momentarily stops answering new requests
                 int minCon = instance.getConfig().getMinCon();
-                instanceIndex++;
                 int backLog = keyVariables.getBackLog();
                 if (backLog < minCon) {
                     msg = "dbGroup[" + instance.getDbGroup().getGroupName() + "," + instance.getName() + "] the value of back_log may too small, current value is " + backLog + ", recommended value is " + minCon;
@@ -267,7 +265,7 @@ public final class ConfigUtil {
             //with no dbGroups, do not check the variables
             return list;
         }
-        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
+        Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
         List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
         getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync, dbInstanceList);
 
@@ -277,17 +275,17 @@ public final class ConfigUtil {
         Set<String> secondGroup = new HashSet<>();
         int minNodePacketSize = Integer.MAX_VALUE;
         int minVersion = VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion());
-        for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
-            String dataSourceName = entry.getKey();
+        for (Map.Entry<VariableMapKey, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
+            VariableMapKey variableMapKey = entry.getKey();
             Future<KeyVariables> future = entry.getValue();
             KeyVariables keyVariables = future.get();
             if (keyVariables != null) {
                 if (isFirst) {
                     lowerCase = keyVariables.isLowerCase();
                     isFirst = false;
-                    firstGroup.add(dataSourceName);
+                    firstGroup.add(variableMapKey.getDataSourceName());
                 } else if (keyVariables.isLowerCase() != lowerCase) {
-                    secondGroup.add(dataSourceName);
+                    secondGroup.add(variableMapKey.getDataSourceName());
                 }
                 minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                 Integer majorVersion = VersionUtil.getMajorVersionWithoutDefaultValue(keyVariables.getVersion());
@@ -334,7 +332,7 @@ public final class ConfigUtil {
     }
 
 
-    private static void getAndSyncKeyVariablesForDataSources(List<ChangeItem> changeItemList, Map<String, Future<KeyVariables>> keyVariablesTaskMap,
+    private static void getAndSyncKeyVariablesForDataSources(List<ChangeItem> changeItemList, Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap,
                                                              boolean needSync, List<PhysicalDbInstance> dbInstanceList) throws InterruptedException {
         ExecutorService service = Executors.newFixedThreadPool(changeItemList.size());
         for (ChangeItem changeItem : changeItemList) {
@@ -372,7 +370,7 @@ public final class ConfigUtil {
         }
     }
 
-    private static void getAndSyncKeyVariablesForDataSources(Map<String, PhysicalDbGroup> dbGroups, Map<String, Future<KeyVariables>> keyVariablesTaskMap,
+    private static void getAndSyncKeyVariablesForDataSources(Map<String, PhysicalDbGroup> dbGroups, Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap,
                                                              boolean needSync, List<PhysicalDbInstance> dbInstanceList) throws InterruptedException {
         ExecutorService service = Executors.newFixedThreadPool(dbGroups.size());
         for (Map.Entry<String, PhysicalDbGroup> entry : dbGroups.entrySet()) {
@@ -402,14 +400,45 @@ public final class ConfigUtil {
         }
     }
 
-    private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDbInstance ds, String hostName, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) {
-        String dataSourceName = genDataSourceKey(hostName, ds.getName());
+    private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDbInstance ds, String hostName, Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) {
+        VariableMapKey key = new VariableMapKey(genDataSourceKey(hostName, ds.getName()), ds);
         GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(ds, needSync);
         Future<KeyVariables> future = service.submit(task);
-        keyVariablesTaskMap.put(dataSourceName, future);
+        keyVariablesTaskMap.put(key, future);
     }
 
     private static String genDataSourceKey(String hostName, String dsName) {
         return hostName + ":" + dsName;
+    }
+
+    protected static class VariableMapKey {
+        private final String dataSourceName;
+        private final PhysicalDbInstance dbInstance;
+
+        protected VariableMapKey(String dataSourceName, PhysicalDbInstance dbInstance) {
+            this.dataSourceName = dataSourceName;
+            this.dbInstance = dbInstance;
+        }
+
+        protected String getDataSourceName() {
+            return dataSourceName;
+        }
+
+        protected PhysicalDbInstance getDbInstance() {
+            return dbInstance;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            VariableMapKey that = (VariableMapKey) o;
+            return dataSourceName.equals(that.dataSourceName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(dataSourceName);
+        }
     }
 }

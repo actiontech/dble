@@ -79,6 +79,10 @@ public final class ProtoHandlerResult {
             return this;
         }
 
+        public ProtoHandlerResultCode getCode() {
+            return code;
+        }
+
         public ProtoHandlerResultBuilder setPacketData(byte[] val) {
             this.packetData = val;
             return this;

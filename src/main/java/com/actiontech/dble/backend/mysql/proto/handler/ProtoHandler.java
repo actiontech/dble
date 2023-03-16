@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.backend.mysql.proto.handler;
 
+import com.actiontech.dble.util.exception.NotSslRecordException;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -12,6 +14,6 @@ import java.nio.ByteBuffer;
  */
 public interface ProtoHandler {
 
-    ProtoHandlerResult handle(ByteBuffer dataBuffer, int dataBufferOffset, boolean isSupportCompress);
+    ProtoHandlerResult handle(ByteBuffer dataBuffer, int dataBufferOffset, boolean isSupportCompress, boolean isContainSSLData) throws NotSslRecordException;
 
 }

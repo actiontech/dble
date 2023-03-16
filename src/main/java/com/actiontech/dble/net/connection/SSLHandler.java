@@ -22,8 +22,8 @@ import java.nio.channels.SocketChannel;
 
 public class SSLHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(SSLHandler.class);
-    private FrontendConnection con;
-    private NetworkChannel channel;
+    private final FrontendConnection con;
+    private final NetworkChannel channel;
 
     private volatile ByteBuffer decryptOut;
 
@@ -54,7 +54,7 @@ public class SSLHandler {
     /**
      * receive and process the SSL handshake protocol initiated by the client
      */
-    private void unwrapNonAppData(byte[] data) throws SSLException {
+    private void unwrapNonAppData(byte[] data) {
         ByteBuffer in = con.allocate(data.length);
         in.put(data);
         in.flip();
@@ -91,7 +91,7 @@ public class SSLHandler {
                 }
             }
         } catch (SSLException e) {
-            LOGGER.error("during the handshake, unwrap data exception: {}", e);
+            LOGGER.warn("during the handshake, unwrap data exception: ", e);
             con.close("during the handshake, unwrap data fail");
         } finally {
             con.recycle(in);
@@ -124,7 +124,7 @@ public class SSLHandler {
                 }
             }
         } catch (SSLException e) {
-            LOGGER.error("during the interaction, unwrap data exception: {}", e);
+            LOGGER.warn("during the interaction, unwrap data exception: ", e);
             con.close("during the interaction, unwrap data fail");
             throw e;
         } finally {
@@ -185,7 +185,7 @@ public class SSLHandler {
                 }
             }
         } catch (SSLException e) {
-            LOGGER.error("during the handshake, wrap data exception: {}", e);
+            LOGGER.warn("during the handshake, wrap data exception: ", e);
             con.close("during the handshake, wrap data fail");
             throw e;
         }
@@ -218,9 +218,11 @@ public class SSLHandler {
 
             return ByteBufferUtil.EMPTY_BYTE_BUFFER;
         } catch (SSLException e) {
-            LOGGER.error("during the interaction, wrap data exception: {}", e);
+            LOGGER.warn("during the interaction, wrap data exception: ", e);
             con.close("during the interaction, wrap data fail");
             throw e;
+        } finally {
+            con.recycle(appBuffer);
         }
     }
 
@@ -270,7 +272,7 @@ public class SSLHandler {
                 con.recycle(decryptOut);
 
         } catch (SSLException e) {
-            LOGGER.warn("SSL close failed, exception：{}", e);
+            LOGGER.warn("SSL close failed, exception：", e);
         }
     }
 

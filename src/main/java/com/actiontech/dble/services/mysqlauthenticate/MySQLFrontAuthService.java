@@ -170,7 +170,15 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
     private void handleAuthPacket(byte[] data) {
         AuthPacket auth = new AuthPacket();
         auth.read(data);
-
+        if (connection.isRequestSSL() == null) {
+            /*
+            ++++ Only need to be based on the first CLIENT_SSL value ++++
+            + Login request will be sent twice during ssl
+            + 1. before the client hello and does not contain account password and other information
+            + 2. encrypted after SSL authentication and contains account password and other information
+             */
+            connection.setRequestSSL(auth.getIsSSLRequest());
+        }
         if (auth.getIsSSLRequest())
             return;
 

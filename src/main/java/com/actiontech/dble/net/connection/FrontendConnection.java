@@ -7,13 +7,13 @@ package com.actiontech.dble.net.connection;
 
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.SSLProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
-import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResultCode;
 import com.actiontech.dble.btrace.provider.IODelayProvider;
 import com.actiontech.dble.buffer.BufferType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
-import com.actiontech.dble.net.service.*;
+import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.net.ssl.OpenSSLWrapper;
 import com.actiontech.dble.net.ssl.SSLWrapperRegistry;
 import com.actiontech.dble.services.BusinessService;
@@ -70,6 +70,29 @@ public class FrontendConnection extends AbstractConnection {
         this.isSupportSSL = SystemConfig.getInstance().isSupportSSL();
     }
 
+    @Override
+    protected void handle(ByteBuffer dataBuffer, boolean isContainSSLData) throws IOException {
+        if (this.isSupportSSL && isUseSSL()) {
+            //after ssl-client hello
+            handleSSLData(dataBuffer);
+        } else {
+            //ssl buffer -> bottomRead buffer
+            transferToReadBuffer(dataBuffer);
+            if (maybeUseSSL()) {
+                //ssl login request(non ssl)&client hello(ssl)
+                super.handle(getBottomReadBuffer(), true);
+            } else {
+                //no ssl
+                handleNonSSL(getBottomReadBuffer());
+            }
+        }
+    }
+
+    protected void handleNonSSL(ByteBuffer dataBuffer) throws IOException {
+        super.handle(dataBuffer, false);
+    }
+
+    @Override
     public void initSSLContext(int protocol) {
         if (sslHandler != null) {
             return;
@@ -94,27 +117,16 @@ public class FrontendConnection extends AbstractConnection {
             }
             sslHandler.handShake(data);
         } catch (SSLException e) {
-            LOGGER.error("SSL handshake failed, exception: {},", e);
+            LOGGER.warn("SSL handshake failed, exception: ", e);
             close("SSL handshake failed");
         } catch (IOException e) {
-            LOGGER.error("SSL initialization failed, exception: {},", e);
+            LOGGER.warn("SSL initialization failed, exception: ", e);
             close("SSL initialization failed");
-        }
-        return;
-    }
-
-    @Override
-    public void handle(ByteBuffer dataBuffer) throws IOException {
-        if (isSupportSSL && isUseSSL()) {
-            handleSSLData(dataBuffer);
-        } else {
-            transferToReadBuffer(dataBuffer);
-            parentHandle(getBottomReadBuffer());
         }
     }
 
     private void transferToReadBuffer(ByteBuffer dataBuffer) {
-        if (!isSupportSSL) return;
+        if (!isSupportSSL || !maybeUseSSL()) return;
         dataBuffer.flip();
         ByteBuffer readBuffer = findBottomReadBuffer();
         int len = readBuffer.position() + dataBuffer.limit();
@@ -125,10 +137,6 @@ public class FrontendConnection extends AbstractConnection {
         dataBuffer.clear();
     }
 
-    public void parentHandle(ByteBuffer buffer) throws IOException {
-        super.handle(buffer);
-    }
-
     public void handleSSLData(ByteBuffer dataBuffer) throws IOException {
         if (dataBuffer == null) {
             return;
@@ -137,7 +145,7 @@ public class FrontendConnection extends AbstractConnection {
         SSLProtoHandler proto = new SSLProtoHandler(this);
         boolean hasRemaining = true;
         while (hasRemaining) {
-            ProtoHandlerResult result = proto.handle(dataBuffer, offset, false);
+            ProtoHandlerResult result = proto.handle(dataBuffer, offset, false, true);
             switch (result.getCode()) {
                 case SSL_PROTO_PACKET:
                 case SSL_CLOSE_PACKET:
@@ -183,8 +191,7 @@ public class FrontendConnection extends AbstractConnection {
         // received large message in recent 30 seconds
         // then change to direct buffer for performance
         ByteBuffer localReadBuffer = netReadBuffer;
-        if (localReadBuffer != null && !localReadBuffer.isDirect() &&
-                lastLargeMessageTime < lastReadTime - 30 * 1000L) {  // used temp heap
+        if (localReadBuffer != null && !localReadBuffer.isDirect() && lastLargeMessageTime < lastReadTime - 30 * 1000L) {  // used temp heap
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + localReadBuffer.capacity());
             }
@@ -198,22 +205,10 @@ public class FrontendConnection extends AbstractConnection {
         }
     }
 
-    private void processSSLProto(byte[] packetData, ProtoHandlerResultCode code) {
-        AbstractService frontService = getService();
-        if (packetData != null) {
-            if (code == ProtoHandlerResultCode.SSL_PROTO_PACKET) {
-                pushServiceTask(new SSLProtoServerTask(packetData, frontService));
-            } else {
-                pushServiceTask(ServiceTaskFactory.getInstance(frontService).createForGracefulClose("ssl close", CloseType.READ));
-            }
-        }
-    }
-
     private void processSSLAppData(byte[] packetData) throws IOException {
-        if (packetData == null)
-            return;
+        if (packetData == null) return;
         sslHandler.unwrapAppData(packetData);
-        parentHandle(getBottomReadBuffer());
+        handleNonSSL(getBottomReadBuffer());
     }
 
     public void processSSLPacketNotBigEnough(ByteBuffer buffer, int offset, final int pkgLength) {
@@ -240,32 +235,33 @@ public class FrontendConnection extends AbstractConnection {
 
     @Override
     public void close(String reason) {
-        if (isUseSSL())
-            sslHandler.close();
+        if (isUseSSL()) sslHandler.close();
         super.close(reason);
     }
 
     @Override
     public synchronized void recycleReadBuffer() {
-        if (netReadBuffer != null) {
-            this.recycle(netReadBuffer);
+        recycleNetReadBuffer();
+        super.recycleReadBuffer();
+    }
+
+    private void recycleNetReadBuffer() {
+        if (this.netReadBuffer != null) {
+            this.recycle(this.netReadBuffer);
             this.netReadBuffer = null;
         }
-        super.recycleReadBuffer();
     }
 
     @Override
     public void startFlowControl(int currentWritingSize) {
-        if (!frontWriteFlowControlled && this.getService() instanceof BusinessService &&
-                currentWritingSize > FlowController.getFlowHighLevel()) {
+        if (!frontWriteFlowControlled && this.getService() instanceof BusinessService && currentWritingSize > FlowController.getFlowHighLevel()) {
             ((BusinessService) this.getService()).getSession().startFlowControl(currentWritingSize);
         }
     }
 
     @Override
     public void stopFlowControl(int currentWritingSize) {
-        if (this.getService() instanceof BusinessService &&
-                currentWritingSize <= FlowController.getFlowLowLevel()) {
+        if (this.getService() instanceof BusinessService && currentWritingSize <= FlowController.getFlowLowLevel()) {
             ((BusinessService) this.getService()).getSession().stopFlowControl(currentWritingSize);
         }
     }
@@ -273,10 +269,7 @@ public class FrontendConnection extends AbstractConnection {
     @Override
     public void cleanup(String reason) {
         if (isCleanUp.compareAndSet(false, true)) {
-            if (netReadBuffer != null) {
-                this.recycle(netReadBuffer);
-                this.netReadBuffer = null;
-            }
+            recycleNetReadBuffer();
             super.cleanup(reason);
             AbstractService service = getService();
             if (service instanceof FrontendService) {
@@ -293,17 +286,16 @@ public class FrontendConnection extends AbstractConnection {
 
     @Override
     public ByteBuffer wrap(ByteBuffer orgBuffer) throws SSLException {
-        if (!isUseSSL())
-            return orgBuffer;
+        if (!isUseSSL()) return orgBuffer;
         return sslHandler.wrapAppData(orgBuffer);
     }
 
     @Override
-    public void compactReadBuffer(ByteBuffer dataBuffer, int offset) throws IOException {
+    public void compactReadBuffer(ByteBuffer dataBuffer, int offset, boolean isSSL) throws IOException {
         if (dataBuffer == null) {
             return;
         }
-        if (isSupportSSL && SSLProtoHandler.isSSLPackage(dataBuffer, offset)) {
+        if (isSupportSSL && isSSL) {
             dataBuffer.flip();
             dataBuffer.position(offset);
             int len = netReadBuffer.position() + (dataBuffer.limit() - dataBuffer.position());
@@ -349,19 +341,21 @@ public class FrontendConnection extends AbstractConnection {
 
     @Override
     public ByteBuffer findReadBuffer() {
-        if (isSupportSSL) {
+        if (isSupportSSL && maybeUseSSL()) {
             if (this.netReadBuffer == null) {
                 netReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateBufferRecordBuilder().withType(BufferType.POOL));
             }
             return netReadBuffer;
         } else {
+            //only recycle this read buffer
+            recycleNetReadBuffer();
             return super.findReadBuffer();
         }
     }
 
     @Override
     ByteBuffer getReadBuffer() {
-        if (isSupportSSL) {
+        if (isSupportSSL && maybeUseSSL()) {
             return netReadBuffer;
         } else {
             return super.getReadBuffer();
@@ -395,10 +389,7 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     public String toString() {
-        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " +
-                localPort + " isManager = " + isManager() + " startupTime = " + startupTime + " skipCheck = " +
-                isSkipCheck() + " isFlowControl = " + isFrontWriteFlowControlled() + " onlyTcpConnect = " +
-                isOnlyFrontTcpConnected() + " ssl = " + (isUseSSL() ? sslName : "no") + "]";
+        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + " skipCheck = " + isSkipCheck() + " isFlowControl = " + isFrontWriteFlowControlled() + " onlyTcpConnect = " + isOnlyFrontTcpConnected() + " ssl = " + (isUseSSL() ? sslName : "no") + "]";
     }
 
     public String getSimple() {

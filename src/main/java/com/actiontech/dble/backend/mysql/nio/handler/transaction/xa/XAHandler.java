@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -29,7 +30,7 @@ public class XAHandler {
     private static final String XARECOVER_SQL = "XA RECOVER";
     private static final String KILL_SQL = "KILL CONNECTION ";
     private static final String[] MYSQL_RECOVER_COLS = new String[]{"formatID", "gtrid_length", "bqual_length", "data"};
-    private final Map<PhysicalDbInstance, List<Map<String, String>>> results = new HashMap<>(8);
+    private final Map<PhysicalDbInstance, List<Map<String, String>>> results = new ConcurrentHashMap<>(8);
     private final List<SQLJob> sqlJobs = new ArrayList<>();
     private final AtomicInteger count = new AtomicInteger();
     private final Lock lock;
@@ -64,7 +65,7 @@ public class XAHandler {
                 sqlJobs.add(sqlJob);
             } else {
                 LOGGER.warn("When prepare execute 'XA RECOVER' in {}, check it's isAlive is false!", pdi);
-                results.put(pdi, null);
+                results.put(pdi, new ArrayList<>());
             }
         }
     }
@@ -162,7 +163,7 @@ public class XAHandler {
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             if (!result.isSuccess()) {
                 LOGGER.warn("execute 'XA RECOVER' in {} error!", pdi);
-                results.put(pdi, null);
+                results.put(pdi, new ArrayList<>());
             } else {
                 isSuccess = true;
                 results.put(pdi, result.getResult());

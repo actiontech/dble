@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -25,7 +24,7 @@ public class XAHandler {
     private static final String XARECOVER_SQL = "XA RECOVER";
     private static final String KILL_SQL = "KILL CONNECTION ";
     private static final String[] MYSQL_RECOVER_COLS = new String[]{"formatID", "gtrid_length", "bqual_length", "data"};
-    private Map<PhysicalDbInstance, List<Map<String, String>>> results = new ConcurrentHashMap<>(8);
+    private Map<PhysicalDbInstance, List<Map<String, String>>> results = new HashMap<>(8);
     private List<SQLJob> sqlJobs = new ArrayList<>();
     private final AtomicInteger count = new AtomicInteger();
     private Lock lock;

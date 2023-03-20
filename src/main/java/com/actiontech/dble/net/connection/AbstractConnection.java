@@ -13,6 +13,7 @@ import com.actiontech.dble.btrace.provider.IODelayProvider;
 import com.actiontech.dble.buffer.BufferPoolRecord;
 import com.actiontech.dble.buffer.BufferType;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.DbleSocketOptions;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
@@ -429,6 +430,7 @@ public abstract class AbstractConnection implements Connection {
         channel.setOption(StandardSocketOptions.TCP_NODELAY, soNoDelay == 1);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+        DbleSocketOptions.defaultKeepAliveOptions(channel);
 
         this.setReadBufferChunk(soRcvBuf);
     }

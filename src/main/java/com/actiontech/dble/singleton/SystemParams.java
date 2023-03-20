@@ -176,6 +176,10 @@ public final class SystemParams {
 
         readOnlyParams.add(new ParamInfo("enableMemoryBufferMonitorRecordPool", sysConfig.getEnableMemoryBufferMonitorRecordPool() + "", "Whether record the connection pool memory if the memory buffer monitor is ON. the default value is 1(ON)."));
         readOnlyParams.add(new ParamInfo("queryForUpdateMaxRowsSize", sysConfig.getQueryForUpdateMaxRowsSize() + "", "The maximum number of rows in the select result set when update multi-table splitting is delivered. The default value is 20000"));
+
+        readOnlyParams.add(new ParamInfo("tcpKeepIdle", sysConfig.getTcpKeepIdle() + "", "TCP probes a connection that has been idle for some amount of time,unit is s, default value is 30s"));
+        readOnlyParams.add(new ParamInfo("tcpKeepInterval", sysConfig.getTcpKeepInterval() + "", "Keep-Alive retransmission interval time,unit is s,  default value is 10s"));
+        readOnlyParams.add(new ParamInfo("tcpKeepCount", sysConfig.getTcpKeepCount() + "", "Keep-Alive retransmission maximum limit, default value is 3"));
     }
 
     public List<ParamInfo> getVolatileParams() {

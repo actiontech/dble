@@ -261,6 +261,12 @@ public final class SystemConfig {
     private int enableMemoryBufferMonitor = 0;
     private int enableMemoryBufferMonitorRecordPool = 1;
 
+    //tcp
+    private int tcpKeepIdle = 30;
+    private int tcpKeepInterval = 10;
+    private int tcpKeepCount = 3;
+
+
     //maximum number of rows in select result set in multi-table update
     private long queryForUpdateMaxRowsSize = 20000;
 
@@ -1890,6 +1896,42 @@ public final class SystemConfig {
         }
     }
 
+    public int getTcpKeepIdle() {
+        return tcpKeepIdle;
+    }
+
+    public void setTcpKeepIdle(int tcpKeepIdle) {
+        if (tcpKeepIdle > 0) {
+            this.tcpKeepIdle = tcpKeepIdle;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "tcpKeepIdle", tcpKeepIdle, this.tcpKeepIdle));
+        }
+    }
+
+    public int getTcpKeepInterval() {
+        return tcpKeepInterval;
+    }
+
+    public void setTcpKeepInterval(int tcpKeepInterval) {
+        if (tcpKeepInterval > 0) {
+            this.tcpKeepInterval = tcpKeepInterval;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "tcpKeepInterval", tcpKeepInterval, this.tcpKeepInterval));
+        }
+    }
+
+    public int getTcpKeepCount() {
+        return tcpKeepCount;
+    }
+
+    public void setTcpKeepCount(int tcpKeepCount) {
+        if (tcpKeepCount > 0) {
+            this.tcpKeepCount = tcpKeepCount;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "tcpKeepCount", tcpKeepCount, this.tcpKeepCount));
+        }
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -2022,6 +2064,9 @@ public final class SystemConfig {
                 ", sqlDumpLogTimeBasedRotate=" + sqlDumpLogTimeBasedRotate +
                 ", sqlDumpLogDeleteFileAge='" + sqlDumpLogDeleteFileAge + '\'' +
                 ", queryForUpdateMaxRowsSize=" + queryForUpdateMaxRowsSize +
+                ", tcpKeepIdle=" + tcpKeepIdle +
+                ", tcpKeepInterval=" + tcpKeepInterval +
+                ", tcpKeepCount=" + tcpKeepCount +
                 "]";
     }
 

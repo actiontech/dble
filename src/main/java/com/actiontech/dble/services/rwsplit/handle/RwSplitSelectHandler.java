@@ -6,36 +6,19 @@
 package com.actiontech.dble.services.rwsplit.handle;
 
 import com.actiontech.dble.server.parser.RwSplitServerParseSelect;
-import com.actiontech.dble.server.response.SelectVariables;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 
 
-/**
- * @author mycat
- */
 public final class RwSplitSelectHandler {
     private RwSplitSelectHandler() {
     }
 
     public static void handle(String stmt, RWSplitService service, int offset) {
-        switch (RwSplitServerParseSelect.parse(stmt, offset)) {
-            case RwSplitServerParseSelect.SELECT_VAR_ALL:
-                SelectVariables.execute(service, stmt);
-                break;
-            default: {
-                int rs2 = RwSplitServerParseSelect.parseSpecial(stmt);
-                switch (rs2) {
-                    case RwSplitServerParseSelect.LOCK_READ:
-                        service.getSession2().execute(true, null, false, true);
-                        break;
-                    default:
-                        service.getSession2().execute(null, null, false, true);
-                        break;
-                }
-                break;
-            }
-
-
+        int rs2 = RwSplitServerParseSelect.parseSpecial(stmt);
+        if (rs2 == RwSplitServerParseSelect.LOCK_READ) {
+            service.getSession2().execute(true, null, false, true);
+        } else {
+            service.getSession2().execute(null, null, false, true);
         }
     }
 

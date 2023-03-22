@@ -6,6 +6,7 @@
 package com.actiontech.dble.config.model;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.converter.DBConverter;
@@ -209,6 +210,7 @@ public final class SystemConfig {
     private String traceSamplerParam = null;
 
     private String fakeMySQLVersion = "5.7.21";
+    private MysqlVersion mysqlVersion;
     private int enableRoutePenetration = 0;
     private String routePenetrationRules = "";
 
@@ -1671,8 +1673,14 @@ public final class SystemConfig {
     }
 
     @SuppressWarnings("unused")
-    public void setFakeMySQLVersion(String mysqlVersion) {
-        this.fakeMySQLVersion = mysqlVersion;
+    public void setFakeMySQLVersion(String version) {
+        this.fakeMySQLVersion = version;
+        if (this.fakeMySQLVersion == null) return;
+        this.mysqlVersion = VersionUtil.parseVersion(this.fakeMySQLVersion);
+    }
+
+    public MysqlVersion getMysqlVersion() {
+        return mysqlVersion;
     }
 
     public String getTraceEndPoint() {

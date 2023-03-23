@@ -180,6 +180,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     public void onCreateSuccess(BackendConnection conn) {
         conn.setDbInstance(instance);
         allConnections.add(conn);
+        LOGGER.info("connection create success: new connection:{}", conn);
         if (poolConfig.getTestOnCreate()) {
             ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler(conn, false, this);
             heartBeatHandler.ping(poolConfig.getConnectionHeartbeatTimeout());
@@ -216,6 +217,9 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
 
     @Override
     public void onHeartbeatSuccess(BackendConnection conn) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("connection testOnCreate success: connection:{}", conn);
+        }
         conn.lazySet(STATE_NOT_IN_USE);
         // spin until a thread takes it or none are waiting
         while (waiters.get() > 0 && conn.getState() == STATE_NOT_IN_USE && !handoffQueue.offer(conn)) {

@@ -144,7 +144,7 @@ public final class ReloadConfig {
                     }
                     if (!reloadResult) {
                         packetResult.setSuccess(false);
-                        packetResult.setErrorMsg("Reload config failure.The reason is reload interruputed by others,config should be reload");
+                        packetResult.setErrorMsg("Reload Failure.The reason is reload interruputed by others,config should be reload");
                         packetResult.setErrorCode(ErrorCode.ER_RELOAD_INTERRUPUTED);
                         return;
                     }
@@ -199,7 +199,7 @@ public final class ReloadConfig {
         try {
             if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, confStatus)) {
                 packetResult.setSuccess(false);
-                packetResult.setErrorMsg("Reload config failure.The reason is reload status error ,other client or cluster may in reload");
+                packetResult.setErrorMsg("Reload Failure.The reason is reload status error ,other client or cluster may in reload");
                 packetResult.setErrorCode(ErrorCode.ER_YES);
                 return;
             }
@@ -215,7 +215,7 @@ public final class ReloadConfig {
                 return;
             } else if (!reloadResult) {
                 packetResult.setSuccess(false);
-                packetResult.setErrorMsg("Reload config failure.The reason is reload interruputed by others,metadata should be reload");
+                packetResult.setErrorMsg("Reload Failure.The reason is reload interruputed by others,metadata should be reload");
                 packetResult.setErrorCode(ErrorCode.ER_RELOAD_INTERRUPUTED);
             }
         } finally {
@@ -226,7 +226,7 @@ public final class ReloadConfig {
 
 
     private static void writeErrorResult(ManagerService c, String errorMsg) {
-        String sb = "Reload config failure.The reason is " + errorMsg;
+        String sb = "Reload Failure.The reason is " + errorMsg;
         LOGGER.warn(sb);
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }

@@ -11,10 +11,10 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
@@ -140,10 +140,11 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             }
             GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(source, true);
             KeyVariables variables = task.call();
+            boolean versionMismatch = false;
             if (variables == null ||
                     variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames() ||
                     variables.getMaxPacketSize() < SystemConfig.getInstance().getMaxPacketSize() ||
-                    VersionUtil.getMajorVersion(variables.getVersion()) < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
+                    (versionMismatch = !ConfigUtil.checkMysqlVersion(variables.getVersion(), source, false))) {
                 String url = heartbeat.getSource().getConfig().getUrl();
                 Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", url);
                 String errMsg;
@@ -151,7 +152,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     errMsg = "GetAndSyncDbInstanceKeyVariables failed";
                 } else if (variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                     errMsg = "this dbInstance[=" + url + "]'s lower_case is wrong";
-                } else if (VersionUtil.getMajorVersion(variables.getVersion()) < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
+                } else if (versionMismatch) {
                     errMsg = "this dbInstance[=" + url + "]'s version[=" + variables.getVersion() + "] cannot be lower than the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "]";
                 } else {
                     errMsg = "this dbInstance[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + SystemConfig.getInstance().getMaxPacketSize();

@@ -215,13 +215,13 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     public void onCreateSuccess(PooledConnection conn) {
         conn.setPoolRelated(this);
         allConnections.add(conn);
+        LOGGER.info("connection create success: createByWaiter:{},new connection:{}", conn.getCreateByWaiter().get(), conn);
         if (poolConfig.getTestOnCreate()) {
             ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler((BackendConnection) conn, false, this);
             heartBeatHandler.ping(poolConfig.getConnectionHeartbeatTimeout());
             return;
         }
 
-        LOGGER.debug("connection create success: createByWaiter:{},new connection:{}", conn.getCreateByWaiter().get(), conn);
 
         conn.lazySet(STATE_NOT_IN_USE);
         // spin until a thread takes it or none are waiting
@@ -256,6 +256,9 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
 
     @Override
     public void onHeartbeatSuccess(PooledConnection conn) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("connection testOnCreate success: createByWaiter:{},connection:{}", conn.getCreateByWaiter().get(), conn);
+        }
         conn.lazySet(STATE_NOT_IN_USE);
         // spin until a thread takes it or none are waiting
         while (waiters.get() > 0 && conn.getState() == STATE_NOT_IN_USE && !handoffQueue.offer(conn)) {

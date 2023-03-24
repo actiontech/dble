@@ -491,9 +491,11 @@ public class NonBlockingSession extends Session {
             LOGGER.info(String.valueOf(shardingService) + rrs, e);
             if (null != executableHandler) {
                 if (executableHandler instanceof BaseDDLHandler) {
-                    ((BaseDDLHandler) executableHandler).specialHandling(false, e.getMessage());
+                    ((BaseDDLHandler) executableHandler).executeFail(e.getMessage());
+                    return;
+                } else {
+                    executableHandler.clearAfterFailExecute();
                 }
-                executableHandler.clearAfterFailExecute();
             }
             DDLTraceHelper.finish(shardingService);
             shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());

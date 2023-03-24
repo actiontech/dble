@@ -41,7 +41,6 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
             throw new IllegalArgumentException("routeNode is null!");
         }
         this.rrs = rrs;
-        unResponseRrns.addAll(Arrays.asList(rrs.getNodes()));
         this.autocommit = session.getShardingService().isAutocommit();
         TxnLogHelper.putTxnLog(session.getShardingService(), rrs);
     }
@@ -50,6 +49,7 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
         session.getShardingService().setLockTable(true);
         session.getTransactionManager().setXaTxEnabled(false, session.getShardingService());
         super.reset();
+        unResponseRrns.addAll(Arrays.asList(rrs.getNodes()));
         for (final RouteResultsetNode node : rrs.getNodes()) {
             BackendConnection conn = session.getTarget(node);
             if (session.tryExistsCon(conn, node)) {

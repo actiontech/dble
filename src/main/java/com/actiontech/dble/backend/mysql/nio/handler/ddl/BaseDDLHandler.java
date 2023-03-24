@@ -311,6 +311,21 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
         }
     }
 
+    public void executeFail(String errInfo) {
+        lock.lock();
+        try {
+            setErrPkg(errInfo, ErrorCode.ERR_HANDLE_DATA);
+            if (writeToClientFlag.compareAndSet(false, true)) {
+                specialHandling(false, this.getErrMsg());
+                clearAfterFailExecute();
+                this.err.setPacketId(session.getShardingService().nextPacketId());
+                handleEndPacket(this.err);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
     protected boolean checkIsAlreadyClosed(final RouteResultsetNode node) {
         lock.lock();
         try {
@@ -326,7 +341,8 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
     protected boolean decrementToZero(final RouteResultsetNode currNode, int currStatus0) {
         lock.lock();
         try {
-            nodeResponseStatus.put(currNode, currStatus0);
+            if (nodeResponseStatus.containsKey(currNode))
+                nodeResponseStatus.put(currNode, currStatus0);
             return nodeResponseStatus.values().stream().allMatch(status -> status > STATUS_INIT);
         } finally {
             lock.unlock();

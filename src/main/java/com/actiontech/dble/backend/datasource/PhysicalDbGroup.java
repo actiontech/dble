@@ -36,6 +36,7 @@ import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -440,29 +441,23 @@ public class PhysicalDbGroup {
         }
 
         if (localRead) {
-            PhysicalDbInstance selectInstance = localReadLoadBalancer.select(instances);
-            selectInstance.incrementReadCount();
-            if (selectInstance.isAlive()) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("select {}", selectInstance);
-                }
-                return selectInstance;
-            } else {
-                reportError(selectInstance);
-                return selectInstance;
-            }
+            return getPhysicalDbInstance(instances, localReadLoadBalancer);
         }
-        PhysicalDbInstance selectInstance = loadBalancer.select(instances);
+        return getPhysicalDbInstance(instances, loadBalancer);
+    }
+
+    @NotNull
+    private PhysicalDbInstance getPhysicalDbInstance(List<PhysicalDbInstance> instances, LoadBalancer pLoadBalancer) throws IOException {
+        PhysicalDbInstance selectInstance = pLoadBalancer.select(instances);
         selectInstance.incrementReadCount();
         if (selectInstance.isAlive()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select {}", selectInstance);
             }
-            return selectInstance;
         } else {
             reportError(selectInstance);
-            return selectInstance;
         }
+        return selectInstance;
     }
 
     private List<PhysicalDbInstance> getRWDbInstances(boolean includeWrite) {

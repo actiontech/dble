@@ -5,6 +5,7 @@
  */
 package com.actiontech.dble.server.parser;
 
+import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 
 import java.util.LinkedList;
@@ -18,6 +19,7 @@ public abstract class AbstractServerParse implements ServerParse {
 
     static final Pattern CALL_PATTERN = Pattern.compile("\\w*\\;\\s*\\s*(call)+\\s+\\w*\\s*", Pattern.CASE_INSENSITIVE);
     static final Pattern AUTOCOMMIT_PATTERN = Pattern.compile("^\\s*set\\s+(([a-zA-Z0-9]+\\s*=\\s*[a-zA-Z0-9]+)\\s*,)*\\s*autocommit\\s*=(\\s*(0|1|on|off))\\s*$", Pattern.CASE_INSENSITIVE);
+    protected ServerParseValidations serverParseValidations = new ServerParseValidations();
 
     @Override
     public boolean startWithHint(String stmt) {
@@ -72,22 +74,6 @@ public abstract class AbstractServerParse implements ServerParse {
         }
     }
 
-    public static int isSetAutocommitSql(String sql) {
-        Matcher matcher = AUTOCOMMIT_PATTERN.matcher(sql);
-        if (matcher.matches()) {
-            String value = matcher.group(4);
-            if (value != null) {
-                value = value.trim();
-                if (value.equals("1") || value.toLowerCase().equalsIgnoreCase("on")) {
-                    return 1;
-                } else if (value.equals("0") || value.toLowerCase().equalsIgnoreCase("off")) {
-                    return 0;
-                }
-            }
-        }
-        return -1;
-    }
-
     public static boolean isTCL(int sqlType) {
         switch (sqlType) {
             case ServerParse.BEGIN:
@@ -118,5 +104,212 @@ public abstract class AbstractServerParse implements ServerParse {
             default:
                 return false;
         }
+    }
+
+    protected int eCheck(String stmt, int offset) {
+        int sqlType = OTHER;
+        if (stmt.length() > offset + 1) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            if (c1 == 'X' || c1 == 'x') {
+                switch (c2) {
+                    case 'E':
+                    case 'e':
+                        sqlType = serverParseValidations.executeCheck(stmt, offset);
+                        break;
+                    case 'P':
+                    case 'p':
+                        sqlType = serverParseValidations.explainCheck(stmt, offset);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        return sqlType;
+    }
+
+    protected int lCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
+            char c1 = stmt.charAt(++offset);
+            if (c1 == 'o' || c1 == 'O') {
+                switch (stmt.charAt(++offset)) {
+                    case 'A':
+                    case 'a':
+                        return serverParseValidations.loadCheck(stmt, offset);
+                    case 'C':
+                    case 'c':
+                        return serverParseValidations.lockCheck(stmt, offset);
+                    default:
+                        return OTHER;
+                }
+            }
+        }
+        return OTHER;
+    }
+
+    //alter table/view/... and analyze
+    protected int aCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 1) {
+            switch (stmt.charAt(++offset)) {
+                case 'l':
+                case 'L':
+                    return serverParseValidations.alterCheck(stmt, offset);
+                case 'n':
+                case 'N':
+                    return serverParseValidations.analyzeCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    protected int orCheck(String stmt, int offset) {
+        int len = stmt.length();
+        if (len > ++offset) {
+            char c1 = stmt.charAt(offset);
+            if ((c1 == 'R' || c1 == 'r')) {
+                while (len > ++offset) {
+                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                        continue;
+                    }
+                    return replaceViewCheck(stmt, offset);
+                }
+            }
+        }
+        return DDL;
+    }
+
+    private int replaceViewCheck(String stmt, int offset) {
+        int len = stmt.length();
+        if (len > offset + 7) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'P' || c2 == 'p') && (c3 == 'L' || c3 == 'l') &&
+                    (c4 == 'A' || c4 == 'a') && (c5 == 'C' || c5 == 'c') && (c6 == 'E' || c6 == 'e')) {
+                while (len > ++offset) {
+                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                        continue;
+                    }
+                    return serverParseValidations.viewCheck(stmt, offset, true);
+                }
+            }
+        }
+        return DDL;
+    }
+
+    // KILL' '
+    protected int killCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "ILL ".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'I' || c1 == 'i') && (c2 == 'L' || c2 == 'l') &&
+                    (c3 == 'L' || c3 == 'l') &&
+                    (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+                while (stmt.length() > ++offset) {
+                    switch (stmt.charAt(offset)) {
+                        case ' ':
+                        case '\t':
+                        case '\r':
+                        case '\n':
+                            continue;
+                        case 'Q':
+                        case 'q':
+                            return serverParseValidations.killQueryCheck(stmt, offset);
+                        case 'c':
+                        case 'C':
+                            return serverParseValidations.killConnection(stmt, offset);
+                        default:
+                            return (offset << 8) | KILL;
+                    }
+                }
+                return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // DESCRIBE or desc or DELETE' ' or DEALLOCATE' '
+    protected int dCheck(String stmt, int offset) {
+        int sqlType = OTHER;
+        if (stmt.length() > offset + 1) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            if ((c1 == 'E' || c1 == 'e')) {
+                switch (c2) {
+                    case 'A':
+                    case 'a':
+                        sqlType = serverParseValidations.dealCheck(stmt, offset);
+                        break;
+                    case 'S':
+                    case 's':
+                        sqlType = serverParseValidations.descCheck(stmt, offset);
+                        break;
+                    case 'L':
+                    case 'l':
+                        sqlType = serverParseValidations.deleCheck(stmt, offset);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        return sqlType;
+    }
+
+    protected int repCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'A':
+                case 'a':
+                    return serverParseValidations.repair(stmt, offset);
+                case 'L':
+                case 'l':
+                    return serverParseValidations.replace(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    protected int seCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'L':
+                case 'l':
+                    return serverParseValidations.selectCheck(stmt, offset);
+                case 'T':
+                case 't':
+                    if (stmt.length() > ++offset) {
+                        //support QUERY like this
+                        //  /*!dble: sql=SELECT * FROM test where id=99 */set @pin=1;
+                        //  call p_test(@pin,@pout);
+                        //  select @pout;
+                        if (stmt.startsWith("/*!" + Versions.ANNOTATION_NAME) || stmt.startsWith("/*#" + Versions.ANNOTATION_NAME) || stmt.startsWith("/*" + Versions.ANNOTATION_NAME)) {
+                            Matcher matcher = CALL_PATTERN.matcher(stmt);
+                            if (matcher.find()) {
+                                return CALL;
+                            }
+                        }
+
+                        char c = stmt.charAt(offset);
+                        if (c == ' ' || c == '\r' || c == '\n' || c == '\t' || c == '/' || c == '#') {
+                            return (offset << 8) | SET;
+                        }
+                    }
+                    return OTHER;
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
     }
 }

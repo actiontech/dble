@@ -5,9 +5,15 @@
 
 package com.actiontech.dble.backend.mysql;
 
+import com.actiontech.dble.config.model.MysqlVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.Nullable;
 
 public final class VersionUtil {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(VersionUtil.class);
     private static final String VERSION_8 = "8.";
     private static final String VERSION_5 = "5.";
 
@@ -23,12 +29,11 @@ public final class VersionUtil {
         if (version == null) {
             return null;
         } else {
-            final int versionNumber = getMajorVersion(version);
-            if (versionNumber == 8) {
-                return TRANSACTION_ISOLATION;
-            } else {
-                return TX_ISOLATION;
-            }
+            MysqlVersion mysqlVersion = VersionUtil.parseVersion(version);
+            //refer to:com.mysql.jdbc.ConnectionImpl.getTransactionIsolation
+            boolean isMatch = (VersionUtil.versionMeetsMinimum(5, 7, 20, mysqlVersion) && !VersionUtil.versionMeetsMinimum(8, 0, 0, mysqlVersion)) ||
+                    VersionUtil.versionMeetsMinimum(8, 0, 3, mysqlVersion);
+            return isMatch ? TRANSACTION_ISOLATION : TX_ISOLATION;
         }
     }
 
@@ -59,5 +64,75 @@ public final class VersionUtil {
         final Integer versionNumber = VersionUtil.getMajorVersionWithoutDefaultValue(version);
         return versionNumber == 8;
     }
+
+    /**
+     * Does the version of the MySQL server we are connected to meet the given
+     * minimums?
+     */
+    public static boolean versionMeetsMinimum(int major, int minor, int subminor, MysqlVersion mysqlVersion) {
+        if (mysqlVersion.getServerMajorVersion() >= major) {
+            if (mysqlVersion.getServerMajorVersion() == major) {
+                if (mysqlVersion.getServerMinorVersion() >= minor) {
+                    if (mysqlVersion.getServerMinorVersion() == minor) {
+                        return mysqlVersion.getServerSubMinorVersion() >= subminor;
+                    }
+                    // newer than major.minor
+                    return true;
+                }
+                // older than major.minor
+                return false;
+            }
+            // newer than major
+            return true;
+        }
+        return false;
+    }
+
+    public static MysqlVersion parseVersion(String version) {
+        // Parse the server version into major/minor/subminor
+        int point = version.indexOf('.');
+
+        MysqlVersion mysqlVersion = new MysqlVersion();
+        if (point != -1) {
+            try {
+                mysqlVersion.setServerMajorVersion(Integer.parseInt(version.substring(0, point)));
+            } catch (NumberFormatException e) {
+                // ignore
+                LOGGER.warn("version[{}] format is wrong", version);
+            }
+
+            String remaining = version.substring(point + 1);
+            point = remaining.indexOf('.');
+
+            if (point != -1) {
+                try {
+                    mysqlVersion.setServerMinorVersion(Integer.parseInt(remaining.substring(0, point)));
+                } catch (NumberFormatException e) {
+                    // ignore
+                    LOGGER.warn("version[{}] format is wrong", version);
+                }
+
+                remaining = remaining.substring(point + 1);
+
+                int pos = 0;
+
+                while (pos < remaining.length()) {
+                    if ((remaining.charAt(pos) < '0') || (remaining.charAt(pos) > '9')) {
+                        break;
+                    }
+                    pos++;
+                }
+
+                try {
+                    mysqlVersion.setServerSubMinorVersion(Integer.parseInt(remaining.substring(0, pos)));
+                } catch (NumberFormatException e) {
+                    // ignore
+                    LOGGER.warn("version[{}] format is wrong", version);
+                }
+            }
+        }
+        return mysqlVersion;
+    }
+
 
 }

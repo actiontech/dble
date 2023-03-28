@@ -30,6 +30,7 @@ public class BackendConnection extends PooledConnection {
         super(channel, socketWR);
         this.instance = instance;
         DbInstanceConfig config = instance.getConfig();
+        this.connectionTimeout = config.getPoolConfig().getConnectionTimeout();
         this.host = config.getIp();
         this.port = config.getPort();
         this.lastTime = TimeUtil.currentTimeMillis();

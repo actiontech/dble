@@ -338,7 +338,7 @@ public abstract class AbstractConnection implements Connection {
             if (buffer != null) {
                 recycle(buffer);
             }
-            this.cleanup(null);
+            this.cleanup("it will not writeDirectly because connection has been closed.");
             return;
         }
 

@@ -262,7 +262,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                 sb.append(new Date().getTime());
             } else if (i == autoIncrement) {
                 if (checkSize > size) {
-                    long id = SequenceManager.getHandler().nextId(tableKey, service);
+                    long id = SequenceManager.nextId(tableKey, service);
                     sb.append(id);
                 } else {
                     String value = SQLUtils.toMySqlString(values.get(iValue++));

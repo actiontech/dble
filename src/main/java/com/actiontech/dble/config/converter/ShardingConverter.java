@@ -22,7 +22,6 @@ import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.ShardingNodeConfig;
@@ -30,7 +29,7 @@ import com.actiontech.dble.config.model.sharding.table.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.route.function.*;
-import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
+import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Lists;
@@ -469,11 +468,7 @@ public class ShardingConverter {
         }
 
         // add global sequence node when it is some dedicated servers */
-        if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL && sequenceJson != null) {
-            IncrSequenceMySQLHandler redundancy = new IncrSequenceMySQLHandler();
-            redundancy.loadByJson(false, sequenceJson);
-            allUseShardingNode.addAll(redundancy.getShardingNodes());
-        }
+        allUseShardingNode.addAll(SequenceManager.getShardingNodes(sequenceJson));
 
         //delete redundancy shardingNode
         Iterator<Map.Entry<String, com.actiontech.dble.backend.datasource.ShardingNode>> iterator = this.shardingNodeMap.entrySet().iterator();

@@ -25,7 +25,7 @@ public class ShardingValuesHandler extends DefaultValuesHandler {
         long incrementColumnVal = 0;
         if (context.getIncrementColumnIndex() != -1) {
             String tableKey = StringUtil.getFullName(context.getSchema(), context.getTable());
-            incrementColumnVal = SequenceManager.getHandler().nextId(tableKey, null);
+            incrementColumnVal = SequenceManager.nextId(tableKey, null);
         }
         context.getWriter().writeInsertHeader(shardingNode, new InsertQuery(insertQueryPos, valuePair, context.getIncrementColumnIndex(), incrementColumnVal));
     }

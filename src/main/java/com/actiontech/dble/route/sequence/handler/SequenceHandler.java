@@ -6,10 +6,12 @@
 package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.cluster.values.RawJson;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.services.FrontendService;
 
 import javax.annotation.Nullable;
 import java.sql.SQLNonTransientException;
+import java.util.Set;
 
 /**
  * @author <a href="http://www.micmiu.com">Michael</a>
@@ -18,11 +20,11 @@ import java.sql.SQLNonTransientException;
  */
 public interface SequenceHandler {
 
-    long nextId(String prefixName, @Nullable FrontendService frontendService) throws SQLNonTransientException;
+    void load(RawJson sequenceJson, Set<String> currentShardingNodes) throws ConfigException;
 
-    void load(boolean isLowerCaseTableNames);
-
-    default void loadByJson(boolean isLowerCaseTableNames, RawJson sequenceJson) {
+    default void tryLoad(RawJson sequenceJson, Set<String> currentShardingNodes) throws ConfigException {
     }
+
+    long nextId(String prefixName, @Nullable FrontendService frontendService) throws SQLNonTransientException;
 
 }

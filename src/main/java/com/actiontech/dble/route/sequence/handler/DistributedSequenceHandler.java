@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.sequence.handler;
 
 
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.services.FrontendService;
@@ -22,6 +23,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.sql.SQLNonTransientException;
 import java.util.List;
+import java.util.Set;
 
 /**
  * <p>
@@ -62,7 +64,7 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         return DistributedSequenceHandler.instance;
     }
 
-    public void load(boolean isLowerCaseTableNames) {
+    public void load(RawJson sequenceJson, Set<String> currentShardingNodes) {
         if (ClusterConfig.getInstance().isSequenceInstanceByZk()) {
             initializeZK();
             loadInstanceIdByZK();
@@ -71,6 +73,13 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         }
         this.ready = true;
         this.deadline = startTimeMilliseconds + (1L << 39);
+    }
+
+    public void tryLoad(RawJson sequenceJson, Set<String> currentShardingNodes) {
+        load(sequenceJson, currentShardingNodes);
+        if (client != null) {
+            client.close();
+        }
     }
 
     private void loadInstanceIdByConfig() {

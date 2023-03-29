@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLNonTransientException;
 import java.util.List;
 
 /**
@@ -29,7 +30,7 @@ import java.util.List;
 public class FetchMySQLSequenceHandler implements ResponseHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(FetchMySQLSequenceHandler.class);
 
-    public void execute(SequenceVal seqVal) {
+    public void execute(SequenceVal seqVal) throws SQLNonTransientException {
         ServerConfig conf = DbleServer.getInstance().getConfig();
         ShardingNode mysqlDN = conf.getShardingNodes().get(seqVal.shardingNode);
         try {
@@ -43,6 +44,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
                             seqVal.sql), this, seqVal);
         } catch (Exception e) {
             LOGGER.warn("get connection err: " + e);
+            throw new SQLNonTransientException(e.getMessage());
         }
 
     }

@@ -439,7 +439,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         int iValue = 0;
         for (int i = 0; i < colSize; i++) {
             if (i == autoIncrement) {
-                long id = SequenceManager.getHandler().nextId(tableKey, service);
+                long id = SequenceManager.nextId(tableKey, service);
                 sb.append(id);
             } else {
                 String value = SQLUtils.toMySqlString(values.get(iValue++));

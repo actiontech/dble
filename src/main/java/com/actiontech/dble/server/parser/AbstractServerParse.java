@@ -312,4 +312,9 @@ public abstract class AbstractServerParse implements ServerParse {
         }
         return OTHER;
     }
+
+    protected int prepareCheck(String stmt, int offset) {
+        if (serverParseValidations.isPrepare(stmt, offset)) return SCRIPT_PREPARE;
+        return OTHER;
+    }
 }

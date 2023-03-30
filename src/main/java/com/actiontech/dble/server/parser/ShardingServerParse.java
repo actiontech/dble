@@ -130,11 +130,6 @@ public class ShardingServerParse extends AbstractServerParse {
         return false;
     }
 
-    protected int prepareCheck(String stmt, int offset) {
-        if (serverParseValidations.isPrepare(stmt, offset)) return SCRIPT_PREPARE;
-        return OTHER;
-    }
-
     //create table/view/...
     private int createCheck(String stmt, int offset) {
         int len = stmt.length();

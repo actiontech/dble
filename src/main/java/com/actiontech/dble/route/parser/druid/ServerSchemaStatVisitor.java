@@ -355,7 +355,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     public boolean visit(SQLUnaryExpr x) {
         switch (x.getOperator()) {
             case Not:
-            // It doesn't match now it might match in the future，don't delete
+            // It doesn't match now it might match in the future,don't delete
             case NOT:
             case Compl:
                 return false;

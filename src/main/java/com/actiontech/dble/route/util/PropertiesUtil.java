@@ -30,10 +30,6 @@ public final class PropertiesUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PropertiesUtil.class);
 
-    public static Properties loadProps(String propsFile, boolean isLowerCaseTableNames) {
-        Properties props = loadProps(propsFile);
-        return handleLowerCase(props, isLowerCaseTableNames);
-    }
 
     public static Properties loadProps(String propsFile) {
         Properties props = new Properties();

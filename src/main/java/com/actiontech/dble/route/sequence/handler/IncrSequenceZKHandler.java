@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.sequence.handler;
 
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.converter.SequenceConverter;
@@ -23,10 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -53,8 +51,15 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     private ThreadLocal<InterProcessSemaphoreMutex> interProcessSemaphoreMutexThreadLocal = new ThreadLocal<>();
     private Properties props;
 
-    public void load(boolean isLowerCaseTableNames) {
-        this.props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_FILE_NAME, isLowerCaseTableNames);
+    public void load(RawJson sequenceJson, Set<String> currentShardingNodes) {
+        if (sequenceJson != null) {
+            // load cluster properties
+            SequenceConverter sequenceConverter = new SequenceConverter();
+            this.props = sequenceConverter.jsonToProperties(sequenceJson);
+        } else {
+            // load local properties
+            this.props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_FILE_NAME);
+        }
         String zkAddress = ClusterConfig.getInstance().getClusterIP();
         if (zkAddress == null) {
             throw new RuntimeException("please check ClusterIP is correct in config file \"cluster.cnf\" .");
@@ -66,19 +71,10 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         }
     }
 
-    @Override
-    public void loadByJson(boolean isLowerCaseTableNames, RawJson sequenceJson) {
-        SequenceConverter sequenceConverter = new SequenceConverter();
-        this.props = sequenceConverter.jsonToProperties(sequenceJson);
-        this.props = PropertiesUtil.handleLowerCase(this.props, isLowerCaseTableNames);
-        String zkAddress = ClusterConfig.getInstance().getClusterIP();
-        if (zkAddress == null) {
-            throw new RuntimeException("please check ClusterIP is correct in config file \"cluster.cnf\" .");
-        }
-        try {
-            initializeZK(this.props, zkAddress);
-        } catch (Exception e) {
-            LOGGER.warn("Error caught while initializing ZK:" + e.getCause());
+    public void tryLoad(RawJson sequenceJson, Set<String> currentShardingNodes) {
+        load(sequenceJson, currentShardingNodes);
+        if (client != null) {
+            client.close();
         }
     }
 
@@ -138,7 +134,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     }
 
     @Override
-    public Map<String, String> getParaValMap(String prefixName) {
+    public Object[] getParaValMap(String prefixName) {
         Map<String, Map<String, String>> tableParaValMap = tableParaValMapThreadLocal.get();
         if (tableParaValMap == null) {
             try {
@@ -148,7 +144,19 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             }
             tableParaValMap = tableParaValMapThreadLocal.get();
         }
-        return tableParaValMap.get(prefixName);
+        return matching(prefixName, tableParaValMap);
+    }
+
+    private Object[] matching(String key, Map<String, Map<String, String>> map) {
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            Optional<Map.Entry<String, Map<String, String>>> result = map.entrySet().stream().filter(m -> m.getKey().equalsIgnoreCase(key)).findFirst();
+            if (result.isPresent())
+                return new Object[]{result.get().getKey(), result.get().getValue()};
+        } else {
+            if (map.containsKey(key))
+                return new Object[]{key, map.get(key)};
+        }
+        return null;
     }
 
     @Override

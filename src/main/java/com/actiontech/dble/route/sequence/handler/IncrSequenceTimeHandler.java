@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.sequence.handler;
 
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.services.FrontendService;
@@ -12,13 +13,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLNonTransientException;
+import java.util.Set;
 
 public final class IncrSequenceTimeHandler implements SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceTimeHandler.class);
 
     private IdWorker workey;
 
-    public void load(boolean isLowerCaseTableNames) {
+    public void load(RawJson sequenceJson, Set<String> currentShardingNodes) {
         long startTimeMilliseconds = ClusterConfig.getInstance().sequenceStartTime();
         workey = new IdWorker(startTimeMilliseconds);
     }

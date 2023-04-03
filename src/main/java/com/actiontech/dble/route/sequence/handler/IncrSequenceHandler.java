@@ -28,7 +28,7 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
     public static final String KEY_MAX_NAME = ".MAXID"; // 10000
     public static final String KEY_CUR_NAME = ".CURID"; // 888
 
-    public abstract Map<String, String> getParaValMap(String prefixName);
+    public abstract Object[] getParaValMap(String prefixName);
 
     public abstract Boolean updateCurIDVal(String prefixName, Long val);
 
@@ -36,19 +36,21 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
 
     @Override
     public synchronized long nextId(String prefixName, @Nullable FrontendService frontendService) {
-        Map<String, String> paraMap = this.getParaValMap(prefixName);
-        if (null == paraMap) {
+        Object[] objects = this.getParaValMap(prefixName);
+        if (null == objects) {
             String msg = "can't find definition for sequence :" + prefixName;
             LOGGER.info(msg);
             throw new ConfigException(msg);
         }
-        long nextId = Long.parseLong(paraMap.get(prefixName + KEY_CUR_NAME)) + 1;
-        long maxId = Long.parseLong(paraMap.get(prefixName + KEY_MAX_NAME));
+        String prefixTable = (String) objects[0];
+        Map<String, String> paraMap = (Map<String, String>) objects[1];
+        long nextId = Long.parseLong(paraMap.get(prefixTable + KEY_CUR_NAME)) + 1;
+        long maxId = Long.parseLong(paraMap.get(prefixTable + KEY_MAX_NAME));
         if (nextId > maxId) {
-            fetchNextPeriod(prefixName);
-            return nextId(prefixName, frontendService);
+            fetchNextPeriod(prefixTable);
+            return nextId(prefixTable, frontendService);
         }
-        updateCurIDVal(prefixName, nextId);
+        updateCurIDVal(prefixTable, nextId);
         return nextId;
 
     }

@@ -245,7 +245,7 @@ public final class DbleServer {
         }
         SqlDumpLogHelper.init();
 
-        SequenceManager.init(ClusterConfig.getInstance().getSequenceHandlerType());
+        SequenceManager.init();
         LOGGER.info("===================================Sequence manager init finish===================================");
 
         LOGGER.info("==============================Pull metaData from MySQL start======================================");
@@ -451,12 +451,12 @@ public final class DbleServer {
     private void reviseSchemas() {
         if (systemVariables.isLowerCaseTableNames()) {
             config.reviseLowerCase();
-            config.loadSequence(DbleTempConfig.getInstance().getSequenceConfig());
             config.selfChecking0();
+            config.loadSequence(DbleTempConfig.getInstance().getSequenceConfig());
             ConfigUtil.setSchemasForPool(config.getDbGroups(), config.getShardingNodes());
         } else {
-            config.loadSequence(DbleTempConfig.getInstance().getSequenceConfig());
             config.selfChecking0();
+            config.loadSequence(DbleTempConfig.getInstance().getSequenceConfig());
         }
     }
 

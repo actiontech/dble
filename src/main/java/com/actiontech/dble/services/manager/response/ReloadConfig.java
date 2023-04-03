@@ -274,17 +274,18 @@ public final class ReloadConfig {
             recycleOldBackendConnections(forceAllReload, (loadAllMode & ManagerParseConfig.OPTF_MODE) != 0);
 
 
-            // lowerCase && load sequence
+            // lowerCase
             if (loader.isFullyConfigured()) {
                 if (newSystemVariables.isLowerCaseTableNames()) {
                     ReloadLogHelper.briefInfo("dbGroup's lowerCaseTableNames=1, lower the config properties ...");
                     newConfig.reviseLowerCase();
                 }
-                ReloadLogHelper.briefInfo("loadSequence ...");
-                newConfig.loadSequence(loader.getSequenceConfig());
                 ReloadLogHelper.briefInfo("selfChecking0 ...");
                 newConfig.selfChecking0();
             }
+            // load sequence
+            ReloadLogHelper.briefInfo("loadSequence ...");
+            newConfig.reloadSequence(loader.getSequenceConfig());
 
             Map<UserName, UserConfig> newUsers = newConfig.getUsers();
             Map<String, SchemaConfig> newSchemas = newConfig.getSchemas();

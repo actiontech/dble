@@ -50,6 +50,7 @@ public final class SystemParams {
             readOnlyParams.add(new ParamInfo("clusterIP", ClusterConfig.getInstance().getClusterIP(), "Dble cluster center address, If clusterMode is zk, it is a full address with port"));
             if (!ClusterConfig.getInstance().getClusterMode().equalsIgnoreCase(CONFIG_MODE_ZK)) {
                 readOnlyParams.add(new ParamInfo("clusterPort", ClusterConfig.getInstance().getClusterPort() == 0 ? "" : ClusterConfig.getInstance().getClusterPort() + "", "Dble cluster center address's port"));
+                readOnlyParams.add(new ParamInfo("grpcTimeout", ClusterConfig.getInstance().getGrpcTimeout() + "", "Under non-zk cluster configuration, the timeout period for calling the interface"));
             }
             readOnlyParams.add(new ParamInfo("rootPath", ClusterConfig.getInstance().getRootPath(), "Dble cluster center's root path, the default value is /dble"));
             readOnlyParams.add(new ParamInfo("clusterId", ClusterConfig.getInstance().getClusterId(), "Dble cluster Id"));

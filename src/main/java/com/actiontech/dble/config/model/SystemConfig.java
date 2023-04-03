@@ -1680,6 +1680,9 @@ public final class SystemConfig {
     }
 
     public MysqlVersion getMysqlVersion() {
+        if (this.mysqlVersion == null && this.fakeMySQLVersion != null) {
+            this.mysqlVersion = VersionUtil.parseVersion(this.fakeMySQLVersion);
+        }
         return mysqlVersion;
     }
 

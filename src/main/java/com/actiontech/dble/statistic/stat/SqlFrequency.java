@@ -57,6 +57,10 @@ public class SqlFrequency implements Comparable<SqlFrequency> {
         return avgTime;
     }
 
+    public long getAllExecuteTime() {
+        return allExecuteTime;
+    }
+
     public void setExecuteTime(long execTime) {
         if (execTime > this.maxTime) {
             this.maxTime = execTime;

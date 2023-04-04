@@ -942,10 +942,10 @@ public final class DbleServer {
             public void run() {
                 Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
                 for (UserStat userStat : statMap.values()) {
-                    userStat.getSqlLastStat().recycle();
-                    userStat.getSqlRecorder().recycle();
+                    //userStat.getSqlLastStat().recycle();
+                    //userStat.getSqlRecorder().recycle();
                     userStat.getSqlHigh().recycle();
-                    userStat.getSqlLargeRowStat().recycle();
+                    //userStat.getSqlLargeRowStat().recycle();
                 }
             }
         };

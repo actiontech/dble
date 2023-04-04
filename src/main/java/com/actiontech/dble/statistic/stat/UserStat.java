@@ -6,8 +6,6 @@
 package com.actiontech.dble.statistic.stat;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.server.parser.ServerParse;
-import com.actiontech.dble.statistic.SQLRecord;
 import com.actiontech.dble.statistic.SQLRecorder;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class UserStat {
 
-    private volatile int sqlSlowTime = DbleServer.getInstance().getConfig().getSystem().getSqlSlowTime();
+    //private volatile int sqlSlowTime = DbleServer.getInstance().getConfig().getSystem().getSqlSlowTime();
 
     private String user;
 
@@ -102,10 +100,10 @@ public class UserStat {
     }
 
 
-    public void setSlowTime(int time) {
-        this.sqlSlowTime = time;
-        this.sqlRecorder.clear();
-    }
+    //public void setSlowTime(int time) {
+    //    this.sqlSlowTime = time;
+    //    this.sqlRecorder.clear();
+    //}
 
     public void clearSql() {
         this.sqlLastStat.reset();
@@ -155,33 +153,33 @@ public class UserStat {
 
         //slow sql
         long executeTime = endTime - startTime;
-        if (executeTime >= sqlSlowTime) {
-            SQLRecord record = new SQLRecord();
-            record.setExecuteTime(executeTime);
-            record.setStatement(sql);
-            record.setStartTime(startTime);
-            this.sqlRecorder.add(record);
-        }
+        //if (executeTime >= sqlSlowTime) {
+        //    SQLRecord record = new SQLRecord();
+        //    record.setExecuteTime(executeTime);
+        //    record.setStatement(sql);
+        //    record.setStartTime(startTime);
+        //    this.sqlRecorder.add(record);
+        //}
 
         //sqlRwStat
-        this.sqlRwStat.setConcurrentMax(concurrentMax.get());
-        this.sqlRwStat.add(sqlType, sql, executeTime, netInBytes, netOutBytes, startTime, endTime);
+        //this.sqlRwStat.setConcurrentMax(concurrentMax.get());
+        //this.sqlRwStat.add(sqlType, sql, executeTime, netInBytes, netOutBytes, startTime, endTime);
 
         //sqlLastStatSQL
-        this.sqlLastStat.add(sql, executeTime, startTime, endTime);
+        //this.sqlLastStat.add(sql, executeTime, startTime, endTime);
 
         //sqlHighStat
         this.sqlHighStat.addSql(sql, executeTime, startTime, endTime);
 
         //sqlLargeStat large than 10000 rows
-        if (sqlType == ServerParse.SELECT && sqlRows > 10000) {
-            this.sqlLargeStat.add(sql, sqlRows, executeTime, startTime, endTime);
-        }
+        //if (sqlType == ServerParse.SELECT && sqlRows > 10000) {
+        //    this.sqlLargeStat.add(sql, sqlRows, executeTime, startTime, endTime);
+        //}
 
         //big size sql
-        if (resultSetSize >= DbleServer.getInstance().getConfig().getSystem().getMaxResultSet()) {
-            this.sqlResultSizeRecorder.addSql(sql, resultSetSize);
-        }
+        //if (resultSetSize >= DbleServer.getInstance().getConfig().getSystem().getMaxResultSet()) {
+        //    this.sqlResultSizeRecorder.addSql(sql, resultSetSize);
+        //}
 
         //after
         //-----------------------------------------------------

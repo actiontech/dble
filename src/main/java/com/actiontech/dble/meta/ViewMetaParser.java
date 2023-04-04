@@ -73,7 +73,6 @@ public class ViewMetaParser {
                     continue;
                 case '/':
                     offset = ParseUtil.comment(originalSql, offset);
-                    offset++;
                     break;
                 case 'a':
                     offset = offset + 5;

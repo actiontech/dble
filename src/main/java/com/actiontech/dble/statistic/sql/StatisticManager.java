@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class StatisticManager {
@@ -25,7 +26,7 @@ public final class StatisticManager {
     private static Map<String, StatisticDataHandler> statisticDataHandlers = new HashMap<>(8);
     private static StatisticListener statisticListener = StatisticListener.getInstance();
 
-    private static volatile LinkedList<UsageDataBlock> usageData = new LinkedList<>();
+    private static ConcurrentLinkedQueue<UsageDataBlock> usageData = new ConcurrentLinkedQueue<>();
     private boolean isStart = false;
     private Timer queueMonitor;
     private static final ReentrantReadWriteLock MONITO_RLOCK = new ReentrantReadWriteLock();
@@ -129,7 +130,7 @@ public final class StatisticManager {
         }
     }
 
-    public LinkedList<UsageDataBlock> getUsageData() {
+    public ConcurrentLinkedQueue<UsageDataBlock> getUsageData() {
         return usageData;
     }
 

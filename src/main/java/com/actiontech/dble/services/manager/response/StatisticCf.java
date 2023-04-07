@@ -428,7 +428,7 @@ public class StatisticCf {
         }
 
         public static void drop(ManagerService service) {
-            StatisticManager.getInstance().getUsageData().clear();
+            StatisticManager.getInstance().resetUsageData();
             service.writeOkPacket();
         }
 

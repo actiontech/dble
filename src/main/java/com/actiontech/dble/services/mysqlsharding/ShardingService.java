@@ -199,15 +199,23 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     @Override
     protected boolean beforeHandlingTask(@NotNull ServiceTask task) {
-        TraceManager.sessionStart(this, "sharding-server-start");
         if (task.getType() == ServiceTaskType.NORMAL) {
             final int packetType = ((NormalServiceTask) task).getPacketType();
             if (packetType == MySQLPacket.COM_STMT_PREPARE || packetType == MySQLPacket.COM_STMT_EXECUTE || packetType == MySQLPacket.COM_QUERY) {
                 StatisticListener.getInstance().record(this, r -> r.onFrontendSqlStart());
             }
         }
-        session.setRequestTime();
         return true;
+    }
+
+    @Override
+    protected void beforeInsertServiceTask(@NotNull ServiceTask task) {
+        super.beforeInsertServiceTask(task);
+        if (task.getType() == ServiceTaskType.CLOSE) {
+            return;
+        }
+        TraceManager.sessionStart(this, "sharding-server-start");
+        session.setRequestTime();
     }
 
     @Override

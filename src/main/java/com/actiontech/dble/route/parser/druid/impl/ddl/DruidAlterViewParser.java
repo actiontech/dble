@@ -31,7 +31,8 @@ public class DruidAlterViewParser extends DruidImplicitCommitParser {
     @Override
     public SchemaConfig doVisitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain) throws SQLException {
         String sql = rrs.getStatement();
-        vm = new ViewMeta(schema.getName(), sql, ProxyMeta.getInstance().getTmManager());
+        String schemaName = schema == null ? null : schema.getName();
+        vm = new ViewMeta(schemaName, sql, ProxyMeta.getInstance().getTmManager());
         vm.init();
         checkSchema(vm.getSchema());
         PlanNode oldViewNode = ProxyMeta.getInstance().getTmManager().getSyncView(vm.getSchema(), vm.getViewName());

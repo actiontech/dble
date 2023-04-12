@@ -120,7 +120,9 @@ public final class SchemaUtil {
         }
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             schemaInfo.table = schemaInfo.table.toLowerCase();
-            schemaInfo.schema = schemaInfo.schema.toLowerCase();
+            if (!schemaInfo.dual) {
+                schemaInfo.schema = schemaInfo.schema.toLowerCase();
+            }
         }
         if (!MYSQL_SYS_SCHEMA.contains(schemaInfo.schema.toUpperCase())) {
             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
@@ -209,6 +211,9 @@ public final class SchemaUtil {
             throws SQLException {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(source.getUser(), contextSchema, table);
         String currentSchema = schemaInfo.schema.toUpperCase();
+        if (schemaInfo.dual) {
+            return true;
+        }
         if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(currentSchema)) {
             schemas.add(currentSchema);
             return false;

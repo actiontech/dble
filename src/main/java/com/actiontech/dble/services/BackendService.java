@@ -172,10 +172,10 @@ public abstract class BackendService extends AbstractService {
             ErrorPacket errPkg = new ErrorPacket();
             errPkg.read(data);
             String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-            LOGGER.warn("drop the unprocessed error packet, reason:{},packet content:{},back service:{},", reason, errMsg, this);
+            LOGGER.warn("no handler process the execute packet err,sql error:{},back service:{},from reason:{}", errMsg, this, reason);
 
         } catch (RuntimeException e) {
-            LOGGER.info("error drop error-packet", e);
+            LOGGER.info("error handle error-packet", e);
         }
     }
 

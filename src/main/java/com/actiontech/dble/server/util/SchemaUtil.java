@@ -120,7 +120,9 @@ public final class SchemaUtil {
         }
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             schemaInfo.table = schemaInfo.table.toLowerCase();
-            schemaInfo.schema = schemaInfo.schema.toLowerCase();
+            if (!schemaInfo.dual) {
+                schemaInfo.schema = schemaInfo.schema.toLowerCase();
+            }
         }
         if (!MYSQL_SYS_SCHEMA.contains(schemaInfo.schema.toUpperCase())) {
             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
@@ -208,6 +210,9 @@ public final class SchemaUtil {
     private static boolean isNoSharding(ServerConnection source, SQLExprTableSource table, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr shardingNode)
             throws SQLException {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(source.getUser(), contextSchema, table);
+        if (schemaInfo.dual) {
+            return true;
+        }
         String currentSchema = schemaInfo.schema.toUpperCase();
         if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(currentSchema)) {
             schemas.add(currentSchema);

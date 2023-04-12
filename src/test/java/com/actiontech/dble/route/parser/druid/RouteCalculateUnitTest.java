@@ -34,7 +34,7 @@ public class RouteCalculateUnitTest {
 
     @Test
     public void testMergeColumnRoute3() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        HashSet<String> old = new HashSet<>();
+        HashSet<Object> old = new HashSet<>();
         old.add("1");
         old.add("2");
         ColumnRoute mergeItem = mockMerge(new ColumnRoute(old), new ColumnRoute("2"));
@@ -44,7 +44,7 @@ public class RouteCalculateUnitTest {
 
     @Test
     public void testMergeColumnRoute4() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        HashSet<String> old = new HashSet<>();
+        HashSet<Object> old = new HashSet<>();
         old.add("1");
         old.add("2");
         ColumnRoute mergeItem = mockMerge(new ColumnRoute(old), new ColumnRoute("3"));
@@ -54,10 +54,10 @@ public class RouteCalculateUnitTest {
 
     @Test
     public void testMergeColumnRoute5() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        HashSet<String> oldSet = new HashSet<>();
+        HashSet<Object> oldSet = new HashSet<>();
         oldSet.add("1");
         oldSet.add("2");
-        HashSet<String> newSet = new HashSet<>();
+        HashSet<Object> newSet = new HashSet<>();
         newSet.add("2");
         newSet.add("3");
         ColumnRoute mergeItem = mockMerge(new ColumnRoute(oldSet), new ColumnRoute(newSet));
@@ -67,11 +67,11 @@ public class RouteCalculateUnitTest {
 
     @Test
     public void testMergeColumnRoute6() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        HashSet<String> oldSet = new HashSet<>();
+        HashSet<Object> oldSet = new HashSet<>();
         oldSet.add("1");
         oldSet.add("2");
         oldSet.add("3");
-        HashSet<String> newSet = new HashSet<>();
+        HashSet<Object> newSet = new HashSet<>();
         newSet.add("2");
         newSet.add("3");
         newSet.add("4");
@@ -84,10 +84,10 @@ public class RouteCalculateUnitTest {
 
     @Test
     public void testMergeColumnRoute7() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        HashSet<String> oldSet = new HashSet<>();
+        HashSet<Object> oldSet = new HashSet<>();
         oldSet.add("1");
         oldSet.add("2");
-        HashSet<String> newSet = new HashSet<>();
+        HashSet<Object> newSet = new HashSet<>();
         newSet.add("3");
         newSet.add("4");
         ColumnRoute mergeItem = mockMerge(new ColumnRoute(oldSet), new ColumnRoute(newSet));
@@ -96,7 +96,7 @@ public class RouteCalculateUnitTest {
 
     @Test
     public void testMergeColumnRoute8() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        HashSet<String> newSet = new HashSet<>();
+        HashSet<Object> newSet = new HashSet<>();
         newSet.add("3");
         newSet.add("4");
         ColumnRoute mergeItem = mockMerge(new ColumnRoute("2"), new ColumnRoute(newSet));
@@ -106,7 +106,7 @@ public class RouteCalculateUnitTest {
 
     @Test
     public void testMergeColumnRoute9() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        HashSet<String> newSet = new HashSet<>();
+        HashSet<Object> newSet = new HashSet<>();
         newSet.add("2");
         newSet.add("4");
         ColumnRoute mergeItem = mockMerge(new ColumnRoute("2"), new ColumnRoute(newSet));

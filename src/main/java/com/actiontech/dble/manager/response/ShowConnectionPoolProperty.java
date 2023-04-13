@@ -39,7 +39,7 @@ public final class ShowConnectionPoolProperty {
         FIELDS[i] = PacketUtil.getField("DB_GROUP", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("DB_INSTANCE", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("DB_INSTANCE", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("PROPERTY", Fields.FIELD_TYPE_VAR_STRING);

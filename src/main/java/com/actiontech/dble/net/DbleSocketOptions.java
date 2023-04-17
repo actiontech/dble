@@ -31,7 +31,7 @@ public final class DbleSocketOptions {
      * @throws IOException
      * @since https://bugs.openjdk.org/browse/JDK-8194298
      */
-    public static void defaultKeepAliveOptions(NetworkChannel channel) throws IOException {
+    public static void setKeepAliveOptions(NetworkChannel channel) throws IOException {
         if (KEEP_ALIVE_OPT_SUPPORTED) {
             SystemConfig instance = SystemConfig.getInstance();
             int tcpKeepIdle = instance.getTcpKeepIdle();

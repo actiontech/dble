@@ -310,7 +310,7 @@ public final class DbleServer {
             return;
         }
         if (!DbleSocketOptions.isKeepAliveOPTSupported()) {
-            LOGGER.warn("current version is low, please upgrade OracleJDK to version {}, upgrade OpenJDK to version {}.", DbleSocketOptions.ORACLE_VERSION, DbleSocketOptions.OPEN_VERSION);
+            LOGGER.warn("current version is low and the tcpKeepIdle,tcpKeepInterval,tcpKeepCount parameter art not supported,please upgrade OracleJDK to version {}, upgrade OpenJDK to version {}.", DbleSocketOptions.ORACLE_VERSION, DbleSocketOptions.OPEN_VERSION);
         }
     }
 

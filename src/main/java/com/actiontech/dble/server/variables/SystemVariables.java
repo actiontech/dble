@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.server.variables;
 
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.HashMap;
@@ -207,8 +208,10 @@ public final class SystemVariables {
         sessionVariables.put("transaction_allow_batching", "0");
         sessionVariables.put("transaction_prealloc_size", "4096");
         sessionVariables.put("transaction_write_set_extraction", "0");
-        sessionVariables.put("tx_isolation", "REPEATABLE-READ"); //transaction-isolation
-        sessionVariables.put("tx_read_only", "0"); // OFF|0|false //transaction-read-only
+        sessionVariables.put(VersionUtil.TX_ISOLATION, "REPEATABLE-READ"); //transaction-isolation
+        sessionVariables.put(VersionUtil.TRANSACTION_ISOLATION, "REPEATABLE-READ"); //transaction-isolation
+        sessionVariables.put(VersionUtil.TX_READ_ONLY, "0"); // OFF|0|false //transaction-read-only
+        sessionVariables.put(VersionUtil.TRANSACTION_READ_ONLY, "0"); // OFF|0|false //transaction-read-only
         sessionVariables.put("unique_checks", "1"); // ON|1|TRUE
         sessionVariables.put("updatable_views_with_limit", "1"); // ON|1|TRUE
         sessionVariables.put("version_tokens_session", "NULL");

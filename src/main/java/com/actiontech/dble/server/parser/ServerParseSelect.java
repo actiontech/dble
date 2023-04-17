@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.server.parser;
 
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.route.parser.util.CharTypes;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 
@@ -23,10 +24,13 @@ public final class ServerParseSelect {
     public static final int IDENTITY = 5;
     public static final int VERSION = 6;
     public static final int SESSION_INCREMENT = 7;
-    public static final int SESSION_ISOLATION = 8;
+    public static final int SESSION_TX_ISOLATION = 8;
     public static final int SELECT_VAR_ALL = 9;
     public static final int SESSION_TX_READ_ONLY = 10;
     public static final int TRACE = 11;
+    public static final int CURRENT_USER = 12;
+    public static final int SESSION_TRANSACTION_ISOLATION = 13;
+    public static final int SESSION_TRANSACTION_READ_ONLY = 14;
 
     private static final char[] TRACE_STR = "TRACE".toCharArray();
     private static final char[] VERSION_COMMENT_STR = "VERSION_COMMENT".toCharArray();
@@ -93,15 +97,23 @@ public final class ServerParseSelect {
      */
     private static int sessionVarCheck(String stmt, int offset) {
         String s = stmt.substring(offset).toLowerCase();
-        if (s.startsWith("session.auto_increment_increment")) {
+        if (!s.startsWith("session.")) {
+            return OTHER;
+        }
+        s = s.substring(8);
+        if (s.startsWith("auto_increment_increment")) {
             if (s.contains("@@")) {
                 return SELECT_VAR_ALL;
             }
             return SESSION_INCREMENT;
-        } else if (s.startsWith("session.tx_isolation")) {
-            return SESSION_ISOLATION;
-        } else if (s.startsWith("session.tx_read_only")) {
+        } else if (s.startsWith(VersionUtil.TX_ISOLATION)) {
+            return SESSION_TX_ISOLATION;
+        } else if (s.startsWith(VersionUtil.TRANSACTION_ISOLATION)) {
+            return SESSION_TRANSACTION_ISOLATION;
+        } else if (s.startsWith(VersionUtil.TX_READ_ONLY)) {
             return SESSION_TX_READ_ONLY;
+        } else if (s.startsWith(VersionUtil.TRANSACTION_READ_ONLY)) {
+            return SESSION_TRANSACTION_READ_ONLY;
         } else {
             return OTHER;
         }

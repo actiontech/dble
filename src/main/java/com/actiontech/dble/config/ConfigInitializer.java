@@ -427,7 +427,7 @@ public class ConfigInitializer implements ProblemReporter {
         @Override
         public void run() {
             try {
-                boolean isConnected = ds.testConnection(schema);
+                boolean isConnected = ds.testConnection();
                 boolPtr.set(isConnected);
             } catch (IOException e) {
                 boolPtr.set(false);

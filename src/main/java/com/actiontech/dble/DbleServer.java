@@ -19,6 +19,7 @@ import com.actiontech.dble.log.general.GeneralLogProcessor;
 import com.actiontech.dble.log.sqldump.SqlDumpLogHelper;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.meta.ProxyMetaManager;
+import com.actiontech.dble.net.DbleSocketOptions;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketAcceptor;
 import com.actiontech.dble.net.SocketConnector;
@@ -295,8 +296,22 @@ public final class DbleServer {
         LOGGER.info("====================================CronScheduler started=========================================");
 
         CustomMySQLHa.getInstance().start();
+
+        LOGGER.info("===========================================CHECK JDK VERSION===================================");
+        checkJdkVersion();
+
         LOGGER.info("======================================ALL START INIT FINISH=======================================");
         startup = true;
+    }
+
+    private void checkJdkVersion() {
+        if (DbleSocketOptions.osName().contains("Windows")) {
+            LOGGER.warn("current system version does not support the tcpKeepIdle,tcpKeepInterval,tcpKeepCount parameter.");
+            return;
+        }
+        if (!DbleSocketOptions.isKeepAliveOPTSupported()) {
+            LOGGER.warn("current version is low and the tcpKeepIdle,tcpKeepInterval,tcpKeepCount parameter art not supported,please upgrade OracleJDK to version {}, upgrade OpenJDK to version {}.", DbleSocketOptions.ORACLE_VERSION, DbleSocketOptions.OPEN_VERSION);
+        }
     }
 
     private void initExecutor(int frontProcessorCount, int backendProcessorCount) {

@@ -33,7 +33,7 @@ public final class RouteResultset implements Serializable {
 
     private boolean needOptimizer;
     private int limitStart;
-    private boolean cacheAble;
+    private boolean sqlRouteCacheAble;
     // used to store table's ID->data nodes cache
     private String primaryKey;
     private boolean containsPrimaryFilter = false;
@@ -139,12 +139,12 @@ public final class RouteResultset implements Serializable {
     }
 
 
-    public boolean isCacheAble() {
-        return cacheAble;
+    public boolean isSqlRouteCacheAble() {
+        return sqlRouteCacheAble;
     }
 
-    public void setCacheAble(boolean cacheAble) {
-        this.cacheAble = cacheAble;
+    public void setSqlRouteCacheAble(boolean sqlRouteCacheAble) {
+        this.sqlRouteCacheAble = sqlRouteCacheAble;
     }
 
     public int getSqlType() {

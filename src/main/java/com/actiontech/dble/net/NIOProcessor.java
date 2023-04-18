@@ -187,6 +187,16 @@ public final class NIOProcessor {
                     it.remove();
                     continue;
                 }
+
+                long cost = System.currentTimeMillis() - c.getStartupTime();
+                if (!m.isAuthenticated()) {
+                    //when the connection creation time is greater than the connectionTimeout, it is a network timeout
+                    if (cost >= m.getConnectionTimeout()) {
+                        c.close("Create connection timed out");
+                        continue;
+                    }
+                }
+
                 if (m.getXaStatus() != null && m.getXaStatus() != TxState.TX_INITIALIZE_STATE) {
                     continue;
                 }

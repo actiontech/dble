@@ -112,6 +112,8 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
     private volatile BackEndCleaner recycler = null;
     private AtomicBoolean isCreateFail = new AtomicBoolean(false);
 
+    protected long connectionTimeout;
+
     public AtomicBoolean getIsCreateFail() {
         return isCreateFail;
     }
@@ -162,6 +164,7 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
         this.user = config.getUser();
         this.password = config.getPassword();
         this.fromSlaveDB = !config.isPrimary();
+        this.connectionTimeout = config.getPoolConfig().getConnectionTimeout();
         this.lastTime = TimeUtil.currentTimeMillis();
 
         this.autocommitSynced = autocommitSynced;
@@ -274,6 +277,10 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
 
     void setAuthenticated(boolean authenticated) {
         isAuthenticated = authenticated;
+    }
+
+    public boolean isAuthenticated() {
+        return isAuthenticated;
     }
 
     public String getPassword() {
@@ -1005,6 +1012,9 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
         return logResponse;
     }
 
+    public long getConnectionTimeout() {
+        return this.dbInstance != null ? this.dbInstance.getConfig().getPoolConfig().getConnectionTimeout() : connectionTimeout;
+    }
 
     private static class StatusSync {
         private final String schema;

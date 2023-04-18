@@ -2,6 +2,7 @@ package com.actiontech.dble.backend.pool;
 
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
+import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.net.factory.PooledConnectionFactory;
 
 import java.io.IOException;
@@ -31,9 +32,10 @@ public class PoolBase {
         }
     }
 
-    void newConnection(String schema, PooledConnectionListener listener) {
+    void newConnection(String schema, PooledConnectionListener listener, boolean createByWaiter) {
         try {
-            factory.make(instance, listener, schema);
+            PooledConnection pooledConnection = factory.make(instance, listener, schema);
+            pooledConnection.getCreateByWaiter().set(createByWaiter);
         } catch (IOException ioe) {
             listener.onCreateFail(null, ioe);
         }

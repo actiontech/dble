@@ -130,7 +130,7 @@ public final class ConditionUtil {
             schemaName = defaultSchema;
             tableName = tableFullName;
         }
-        return new Pair<String, String>(schemaName, tableName);
+        return new Pair<>(schemaName, tableName);
     }
 
     private static TableStat.Condition genNewCondition(String tableName, String columnName, String operator, List<Object> values) {

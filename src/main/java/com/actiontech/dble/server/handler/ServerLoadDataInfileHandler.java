@@ -317,11 +317,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             Pair<String, String> table = new Pair<>(schema.getName(), tableName);
 
             if (partitionColumnIndex != -1) {
-                String value;
                 if (lineList.length < partitionColumnIndex + 1) {
                     throw new RuntimeException("Partition column is empty in line '" + StringUtil.join(lineList, loadData.getLineTerminatedBy()) + "'");
-                } else {
-                    value = lineList[partitionColumnIndex];
                 }
                 RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
                 routeCalculateUnit.addShardingExpr(table, getPartitionColumn(), parseFieldString(lineList[partitionColumnIndex], loadData.getEnclose(), loadData.getEscape()));

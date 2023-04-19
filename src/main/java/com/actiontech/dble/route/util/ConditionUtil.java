@@ -94,7 +94,7 @@ public final class ConditionUtil {
 
         String operator = condition.getOperator();
         //execute only between ,in and = is
-        if (!operator.equals("between") && !operator.equals("=") && !operator.toLowerCase().equals("in") && !operator.equals("IS")) {
+        if (!operator.equalsIgnoreCase("between") && !operator.equals("=") && !operator.equalsIgnoreCase("in") && !operator.equalsIgnoreCase("IS")) {
             return null;
         }
         String partitionCol = tableConfig.getPartitionColumn();
@@ -253,12 +253,14 @@ public final class ConditionUtil {
                 String[] tableInfo = tableFullName.split("\\.");
                 Pair<String, String> table = new Pair<>(tableInfo[0], tableInfo[1]);
                 //execute only between ,in and =
-                if (operator.equals("between")) {
+                if (operator.equalsIgnoreCase("between")) {
                     RangeValue rv = new RangeValue(values.get(0), values.get(1), RangeValue.EE);
                     routeCalculateUnit.addShardingExpr(table, columnName, rv);
-                } else if (operator.equals("=") || operator.toLowerCase().equals("in")) {
+                } else if (operator.equals("=")) {
+                    routeCalculateUnit.addShardingExpr(table, columnName, values.get(0));
+                } else if (operator.equalsIgnoreCase("in")) {
                     routeCalculateUnit.addShardingExpr(table, columnName, values.toArray());
-                } else if (operator.equals("IS")) {
+                } else if (operator.equalsIgnoreCase("IS")) {
                     IsValue isValue = new IsValue(values.toArray());
                     routeCalculateUnit.addShardingExpr(table, columnName, isValue);
                 }

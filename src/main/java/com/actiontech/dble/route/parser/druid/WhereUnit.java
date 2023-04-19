@@ -128,4 +128,63 @@ public class WhereUnit {
     public List<WhereUnit> getSubWhereUnit() {
         return this.subWhereUnits;
     }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (Condition cond : outAndConditions) {
+            if (sb.length() > 0) {
+                sb.append(" and ");
+            }
+            sb.append("(");
+            sb.append(cond);
+            sb.append(")");
+        }
+        if (orConditionList.size() > 0) {
+            if (outAndConditions.size() > 0) {
+                sb.append(" and (");
+            }
+            int iOrCnt = 0;
+            for (List<Condition> or : orConditionList) {
+                if (iOrCnt > 0) {
+                    sb.append(" or ");
+                }
+                sb.append("(");
+                int jCnt = 0;
+                for (Condition innerOr : or) {
+                    if (jCnt > 0) {
+                        sb.append(" and ");
+                    }
+                    sb.append("(");
+                    sb.append(innerOr);
+                    sb.append(")");
+                    jCnt++;
+                }
+                sb.append(")");
+                iOrCnt++;
+            }
+            if (subWhereUnits.size() > 0) {
+                sb.append(" or ");
+                sb.append("(");
+                for (WhereUnit subWhereUnit : subWhereUnits) {
+                    sb.append(subWhereUnit);
+                }
+                sb.append(")");
+            }
+
+            if (outAndConditions.size() > 0) {
+                sb.append(" )");
+            }
+        } else if (subWhereUnits.size() > 0) {
+            if (outAndConditions.size() > 0) {
+                sb.append(" and ");
+            }
+            sb.append("(");
+            for (WhereUnit subWhereUnit : subWhereUnits) {
+                sb.append(subWhereUnit);
+            }
+            sb.append(")");
+        }
+
+        return sb.toString();
+    }
 }

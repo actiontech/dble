@@ -789,7 +789,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         ConditionUtil.extendConditionsFromRelations(conditionList, this.relationships);
         WhereUnit whereUnit = new WhereUnit();
         whereUnit.setFinishedParse(true);
-        whereUnit.setOrConditionList(Collections.singletonList(conditionList));
+        List<List<Condition>> retList = new ArrayList<>();
+        retList.add(conditionList);
+        whereUnit.setOrConditionList(retList);
         whereUnit.addOutRelationships(this.relationships);
         return whereUnit;
     }

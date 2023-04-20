@@ -75,13 +75,6 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         this.deadline = startTimeMilliseconds + (1L << 39);
     }
 
-    public void tryLoad(RawJson sequenceJson, Set<String> currentShardingNodes) {
-        load(sequenceJson, currentShardingNodes);
-        if (client != null) {
-            client.close();
-        }
-    }
-
     private void loadInstanceIdByConfig() {
         this.instanceId = SystemConfig.getInstance().getInstanceId();
         long maxInstanceId = ~(-1L << instanceIdBits);

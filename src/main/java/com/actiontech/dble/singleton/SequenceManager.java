@@ -8,9 +8,11 @@ package com.actiontech.dble.singleton;
 import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.util.ConfigException;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.services.FrontendService;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.sql.SQLNonTransientException;
@@ -67,6 +69,7 @@ public final class SequenceManager {
         switch (seqHandlerType) {
             case ClusterConfig.SEQUENCE_HANDLER_MYSQL:
             case ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT:
+                ReloadLogHelper.briefInfo("loadSequence ...");
                 INSTANCE.handler.load(sequenceJson, currentShardingNodes);
                 break;
             default:
@@ -74,11 +77,12 @@ public final class SequenceManager {
         }
     }
 
-    public static void tryLoad(RawJson sequenceJson, Set<String> currentShardingNodes) {
+    public static void tryLoad(RawJson sequenceJson, Set<String> currentShardingNodes, Logger logger) {
         int seqHandlerType = ClusterConfig.getInstance().getSequenceHandlerType();
         switch (seqHandlerType) {
             case ClusterConfig.SEQUENCE_HANDLER_MYSQL:
             case ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT:
+                logger.info("[dry-run] loadSequence ...");
                 SequenceHandler tmpHandler = newSequenceHandler(seqHandlerType);
                 tmpHandler.tryLoad(sequenceJson, currentShardingNodes);
                 break;

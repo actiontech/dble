@@ -138,7 +138,7 @@ public final class DryRun {
                         serverConfig.reviseLowerCase();
                     }
                     serverConfig.selfChecking0();
-                    serverConfig.tryLoadSequence(loader.getSequenceConfig());
+                    serverConfig.tryLoadSequence(loader.getSequenceConfig(), LOGGER);
 
                     Map<String, Set<String>> schemaMap = getExistSchemas(serverConfig);
                     //table exists check ,if the vars can not be touch ,the table check has no meaning

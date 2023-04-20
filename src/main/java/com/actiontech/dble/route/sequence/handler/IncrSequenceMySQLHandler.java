@@ -43,6 +43,10 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
         loadContext(props);
     }
 
+    public void tryLoad(RawJson sequenceJson, Set<String> currentShardingNodes) {
+        load(sequenceJson, currentShardingNodes);
+    }
+
     private void loadCheck(Properties props, Set<String> currentShardingNodes) {
         Set<String> noExistShardingNodes = new HashSet<>();
         props.entrySet().stream().forEach(entry -> {

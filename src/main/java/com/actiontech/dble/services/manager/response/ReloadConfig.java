@@ -284,7 +284,6 @@ public final class ReloadConfig {
                 newConfig.selfChecking0();
             }
             // load sequence
-            ReloadLogHelper.briefInfo("loadSequence ...");
             newConfig.reloadSequence(loader.getSequenceConfig());
 
             Map<UserName, UserConfig> newUsers = newConfig.getUsers();

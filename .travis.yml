@@ -1,5 +1,9 @@
 dist: bionic
 language: java
+addons:
+  apt:
+    packages:
+      - openjdk-8-jdk
 jdk:
   - oraclejdk8
 bundler_args: --retry 1

@@ -125,7 +125,7 @@ public final class DbleServer {
 
 
     public void startup() throws Exception {
-        LOGGER.info("===========================================DBLE SERVER STARTING===================================");
+        LOGGER.info("===========================================DBLE SERVER STARTING111111111111111111===================================");
         initServerConfig();
         this.startupTime = TimeUtil.currentTimeMillis();
         LOGGER.info("=========================================Config file read finish==================================");

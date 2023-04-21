@@ -1,11 +1,7 @@
-dist: bionic
+dist: xenial
 language: java
-addons:
-  apt:
-    packages:
-      - openjdk-8-jdk
 jdk:
-  - oraclejdk8
+  - openjdk8
 bundler_args: --retry 1
 # safelist
 branches:
@@ -26,5 +22,5 @@ deploy:
   on:
     repo: actiontech/dble
     tags: true
-    jdk: oraclejdk8
+    jdk: openjdk8
   draft: true

@@ -90,7 +90,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 if (ob != null) {
                     if (ob instanceof SQLQueryExpr || ob instanceof SQLBinaryOpExpr || ob instanceof SQLInSubQueryExpr) {
                         continue;
-                    } else if (ob instanceof MySqlUpdateStatement) {
+                    } else if (ob instanceof MySqlUpdateStatement || ob instanceof SQLUpdateSetItem) {
                         firstClassSubQueryList.add(subQuery);
                     } else if (ob instanceof MySqlDeleteStatement) {
                         firstClassSubQueryList.add(subQuery);

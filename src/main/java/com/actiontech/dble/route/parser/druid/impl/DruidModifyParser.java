@@ -287,12 +287,15 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * + all the table must be mulit-node global(different node has the same data)
      * + all the dataNodes has all the table involved
      */
-    Collection<String> checkForMultiNodeGlobal(UserName user, ServerSchemaStatVisitor visitor, GlobalTableConfig tc, SchemaConfig schema) throws SQLException {
+    Collection<String> checkForMultiNodeGlobal(UserName user, ServerSchemaStatVisitor visitor, BaseTableConfig tc, SchemaConfig schema) throws SQLException {
         //multi-Node global table
         List<String> mustContainList = tc.getShardingNodes();
         for (String sTable : visitor.getSelectTableList()) {
             SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(user, schema, sTable);
             BaseTableConfig stc = schemaInfox.getSchemaConfig().getTables().get(schemaInfox.getTable());
+            if (stc != null && stc == tc) {
+                continue;
+            }
             if (stc != null && stc instanceof GlobalTableConfig) {
                 if (!stc.getShardingNodes().containsAll(mustContainList)) {
                     throw new SQLNonTransientException(getErrorMsg());
@@ -550,20 +553,20 @@ abstract class DruidModifyParser extends DefaultDruidParser {
     }
 
 
-    void routeForModifySubQueryList(RouteResultset rrs, BaseTableConfig tc, ServerSchemaStatVisitor visitor, SchemaConfig schema, ShardingService service) throws SQLException {
+    void routeForModifySubQueryList(RouteResultset rrs, BaseTableConfig tc, ServerSchemaStatVisitor visitor, SchemaConfig tcSchema, ShardingService service, SchemaConfig defaultSchema) throws SQLException {
         changeSql(rrs);
-
+        boolean isGlobalTable = true;
         Collection<String> routeShardingNodes;
         if (tc == null || tc.getShardingNodes().size() == 1) {
             for (SQLSelect subSql : visitor.getFirstClassSubQueryList()) {
                 ServerSchemaStatVisitor subVisitor = new ServerSchemaStatVisitor();
                 acceptVisitor(subSql, subVisitor);
                 ctx.getTables().clear();
-                Map<String, String> tableAliasMap = getTableAliasMap(schema.getName(), subVisitor.getAliasMap());
-                ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(subVisitor.getAllWhereUnit(), tableAliasMap, schema.getName()));
+                Map<String, String> tableAliasMap = getTableAliasMap(defaultSchema.getName(), subVisitor.getAliasMap());
+                ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(subVisitor.getAllWhereUnit(), tableAliasMap, defaultSchema.getName()));
 
                 for (String selectTable : subVisitor.getSelectTableList()) {
-                    SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(service.getUser(), schema, selectTable);
+                    SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(service.getUser(), defaultSchema, selectTable);
                     if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), schemaInfox.getSchema(), schemaInfox.getTable(), ShardingPrivileges.CheckType.SELECT)) {
                         String msg = "The statement DML privilege check is not passed, sql:" + rrs.getSrcStatement().replaceAll("[\\t\\n\\r]", " ");
                         throw new SQLNonTransientException(msg);
@@ -571,19 +574,22 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                     rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfox.getSchema()));
                 }
 
-                checkForSingleNodeTable(visitor, tc == null ? schema.getDefaultSingleNode() : tc.getShardingNodes().get(0), rrs, service.getCharset().getClient());
+                checkForSingleNodeTable(visitor, tc == null ? tcSchema.getDefaultSingleNode() : tc.getShardingNodes().get(0), rrs, service.getCharset().getClient());
             }
             //set value for route result
-            routeShardingNodes = ImmutableList.of(tc == null ? schema.getDefaultSingleNode() : tc.getShardingNodes().get(0));
-        } else if (tc instanceof GlobalTableConfig) {
-            routeShardingNodes = checkForMultiNodeGlobal(service.getUser(), visitor, (GlobalTableConfig) tc, schema);
+            routeShardingNodes = ImmutableList.of(tc == null ? tcSchema.getDefaultSingleNode() : tc.getShardingNodes().get(0));
+        } else if (tc instanceof GlobalTableConfig || tc instanceof ShardingTableConfig) {
+            routeShardingNodes = checkForMultiNodeGlobal(service.getUser(), visitor, tc, defaultSchema);
+            if (tc instanceof ShardingTableConfig) {
+                isGlobalTable = false;
+            }
         } else {
             throw new SQLNonTransientException(getErrorMsg());
         }
         if (ctx.getTables().isEmpty()) {
-            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tc == null ? null : Sets.newHashSet(schema.getName() + "." + tc.getName()));
+            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, isGlobalTable, tc == null ? null : Sets.newHashSet(tcSchema.getName() + "." + tc.getName()));
         } else {
-            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, ctx.getTables());
+            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, isGlobalTable, ctx.getTables());
         }
         rrs.setFinishedRoute(true);
     }

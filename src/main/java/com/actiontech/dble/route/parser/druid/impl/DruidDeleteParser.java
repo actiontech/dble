@@ -92,13 +92,14 @@ public class DruidDeleteParser extends DruidModifyParser {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
+            SchemaConfig originSchema = schema;
             schema = schemaInfo.getSchemaConfig();
             BaseTableConfig tc = schema.getTables().get(schemaInfo.getTable());
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
+            super.visitorParse(originSchema, rrs, stmt, visitor, service, isExplain);
 
             if (visitor.getSubQueryList().size() > 0) {
-                routeForModifySubQueryList(rrs, tc, visitor, schema, service);
+                routeForModifySubQueryList(rrs, tc, visitor, schema, service, originSchema);
                 return schema;
             }
             String tableName = schemaInfo.getTable();

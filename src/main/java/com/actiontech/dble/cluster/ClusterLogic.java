@@ -804,6 +804,8 @@ public final class ClusterLogic {
             return true;
         }
 
+        LOGGER.info("online path is {}, online responseList is {}", path, responseList);
+
         boolean flag = true;
         for (Map.Entry<String, String> entry : expectedMap.entrySet()) {
             boolean found = false;
@@ -834,6 +836,7 @@ public final class ClusterLogic {
     }
 
     private static void checkOnline(Map<String, String> expectedMap, Map<String, String> currentMap) {
+        LOGGER.info("expected online Map is {}, current online Map is {}", expectedMap, currentMap);
         expectedMap.entrySet().removeIf(entry -> !currentMap.containsKey(entry.getKey()) ||
                 (currentMap.containsKey(entry.getKey()) && !currentMap.get(entry.getKey()).equals(entry.getValue())));
 

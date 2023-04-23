@@ -71,4 +71,14 @@ public class KvBean {
     public void setChangeType(String changeType) {
         this.changeType = changeType;
     }
+
+    @Override
+    public String toString() {
+        return "KvBean{" +
+                "key='" + key + '\'' +
+                ", value='" + value + '\'' +
+                ", changeType='" + changeType + '\'' +
+                ", index=" + index +
+                '}';
+    }
 }

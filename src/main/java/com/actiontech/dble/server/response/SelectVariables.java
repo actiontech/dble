@@ -6,6 +6,7 @@
 package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -127,7 +128,8 @@ public final class SelectVariables {
         VARIABLES.put("@@sql_mode", "STRICT_TRANS_TABLES");
         VARIABLES.put("@@system_time_zone", "CST");
         VARIABLES.put("@@time_zone", "SYSTEM");
-        VARIABLES.put("@@tx_isolation", "REPEATABLE-READ");
+        VARIABLES.put("@@" + VersionUtil.TRANSACTION_ISOLATION, "REPEATABLE-READ");
+        VARIABLES.put("@@" + VersionUtil.TX_ISOLATION, "REPEATABLE-READ");
         VARIABLES.put("@@wait_timeout", "172800");
         VARIABLES.put("@@session.auto_increment_increment", "1");
 
@@ -147,7 +149,8 @@ public final class SelectVariables {
         VARIABLES.put("sql_mode", "STRICT_TRANS_TABLES");
         VARIABLES.put("system_time_zone", "CST");
         VARIABLES.put("time_zone", "SYSTEM");
-        VARIABLES.put("tx_isolation", "REPEATABLE-READ");
+        VARIABLES.put(VersionUtil.TRANSACTION_ISOLATION, "REPEATABLE-READ");
+        VARIABLES.put(VersionUtil.TX_ISOLATION, "REPEATABLE-READ");
         VARIABLES.put("wait_timeout", "172800");
         VARIABLES.put("auto_increment_increment", "1");
     }

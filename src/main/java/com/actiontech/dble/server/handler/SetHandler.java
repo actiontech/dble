@@ -8,6 +8,7 @@ package com.actiontech.dble.server.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
@@ -292,7 +293,7 @@ public final class SetHandler {
         String value = parseStringValue(valueExpr);
         Integer txIsolation = getIsolationLevel(value);
         if (txIsolation == null) {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation' can't be set to the value of '" + value + "'");
+            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation|transaction_isolation' can't be set to the value of '" + value + "'");
             return false;
         }
         contextTask.add(new Pair<>(KeyType.TX_ISOLATION, new Pair<String, String>(String.valueOf(txIsolation), null)));
@@ -447,7 +448,7 @@ public final class SetHandler {
         String value = parseStringValue(valueExpr);
         Integer txIsolation = getIsolationLevel(value);
         if (txIsolation == null) {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation' can't be set to the value of '" + value + "'");
+            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation|transaction_isolation' can't be set to the value of '" + value + "'");
             return false;
         }
         c.setTxIsolation(txIsolation);
@@ -668,11 +669,11 @@ public final class SetHandler {
                 return KeyType.CHARACTER_SET_RESULTS;
             case "character_set_connection":
                 return KeyType.CHARACTER_SET_CONNECTION;
-            case "transaction_isolation":
-            case "tx_isolation":
+            case VersionUtil.TRANSACTION_ISOLATION:
+            case VersionUtil.TX_ISOLATION:
                 return KeyType.TX_ISOLATION;
-            case "transaction_read_only":
-            case "tx_read_only":
+            case VersionUtil.TRANSACTION_READ_ONLY:
+            case VersionUtil.TX_READ_ONLY:
                 return KeyType.TX_READ_ONLY;
             case "names":
                 return KeyType.NAMES;

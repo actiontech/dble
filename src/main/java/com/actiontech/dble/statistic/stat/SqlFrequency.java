@@ -57,6 +57,10 @@ public class SqlFrequency implements Comparable<SqlFrequency> {
         return avgTime;
     }
 
+    public long getAllExecuteTime() {
+        return allExecuteTime;
+    }
+
     public void setExecuteTime(long execTime) {
         if (execTime > this.maxTime) {
             this.maxTime = execTime;
@@ -76,7 +80,9 @@ public class SqlFrequency implements Comparable<SqlFrequency> {
 
     @Override
     public int compareTo(SqlFrequency o) {
-        long para = o.count.get() - count.get();
+        //long para = o.count.get() - count.get();
+        // use lastTime for UserSqlHighStat.sqlFrequencySortedSet
+        long para = 0L;
         long para2 = o.lastTime - lastTime;
         return para == 0L ? (int) (para2 == 0L ? o.allExecuteTime - allExecuteTime : para2) : (int) para;
     }

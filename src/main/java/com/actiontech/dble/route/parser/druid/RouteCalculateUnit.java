@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.parser.druid;
 
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.sqlengine.mpp.IsValue;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
@@ -23,14 +24,14 @@ import java.util.Set;
  * @copyright wonhigh.cn
  */
 public class RouteCalculateUnit {
-    private Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = new LinkedHashMap<>();
+    private Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = new LinkedHashMap<>();
 
-    public Map<String, Map<String, Set<ColumnRoutePair>>> getTablesAndConditions() {
+    public Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> getTablesAndConditions() {
         return tablesAndConditions;
     }
 
-    public void addShardingExpr(String tableName, String columnName, Object value) {
-        Map<String, Set<ColumnRoutePair>> tableColumnsMap = tablesAndConditions.get(tableName);
+    public void addShardingExpr(Pair<String, String> table, String columnName, Object value) {
+        Map<String, Set<ColumnRoutePair>> tableColumnsMap = tablesAndConditions.get(table);
 
         if (value == null) {
             // where a=null
@@ -39,7 +40,7 @@ public class RouteCalculateUnit {
 
         if (tableColumnsMap == null) {
             tableColumnsMap = new LinkedHashMap<>();
-            tablesAndConditions.put(tableName, tableColumnsMap);
+            tablesAndConditions.put(table, tableColumnsMap);
         }
 
         String upperColName = columnName.toUpperCase();
@@ -47,7 +48,7 @@ public class RouteCalculateUnit {
 
         if (columnValues == null) {
             columnValues = new LinkedHashSet<>();
-            tablesAndConditions.get(tableName).put(upperColName, columnValues);
+            tablesAndConditions.get(table).put(upperColName, columnValues);
         }
 
         if (value instanceof Object[]) {
@@ -70,5 +71,29 @@ public class RouteCalculateUnit {
         tablesAndConditions.clear();
     }
 
-
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> entry : tablesAndConditions.entrySet()) {
+            Pair<String, String> table = entry.getKey();
+            String schemaName = table.getKey();
+            String tableName = table.getValue();
+            Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
+            for (Map.Entry<String, Set<ColumnRoutePair>> columns : columnsMap.entrySet()) {
+                String columnName = columns.getKey();
+                Set<ColumnRoutePair> values = columns.getValue();
+                for (ColumnRoutePair pair : values) {
+                    if (pair.colValue != null) {
+                        sb.append("{").append("schema:").append(schemaName).append(",table:").append(tableName);
+                        sb.append(",column:").append(columnName).append(",value:").append(pair.colValue).append("},");
+                    } else if (pair.rangeValue != null) {
+                        sb.append("{").append("schema:").append(schemaName).append(",table:").append(tableName);
+                        sb.append(",column:").append(columnName).append(",value between:").append(pair.rangeValue.getBeginValue());
+                        sb.append("~").append(pair.rangeValue.getEndValue()).append("},");
+                    }
+                }
+            }
+        }
+        return sb.toString();
+    }
 }

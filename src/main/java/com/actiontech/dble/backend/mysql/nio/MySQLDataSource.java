@@ -27,8 +27,6 @@ import java.nio.charset.StandardCharsets;
 public class MySQLDataSource extends PhysicalDatasource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLDataSource.class);
-
-
     private final MySQLConnectionFactory factory;
 
     public MySQLDataSource(DBHostConfig config, DataHostConfig hostConfig,
@@ -80,7 +78,7 @@ public class MySQLDataSource extends PhysicalDatasource {
     }
 
     @Override
-    public boolean testConnection(String schema) throws IOException {
+    public boolean testConnection() throws IOException {
 
         boolean isConnected = true;
         Socket socket = null;
@@ -112,12 +110,13 @@ public class MySQLDataSource extends PhysicalDatasource {
             handshake.read(bin1);
 
             String authPluginName = new String(handshake.getAuthPluginName());
+            this.setDsVersion(new String(handshake.getServerVersion()));
             byte[] authPluginData = null;
             if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
                 /**
                  * Phase 2: client to MySQL. Send auth packet.
                  */
-                startAuthPacket(out, handshake, PasswordAuthPlugin.passwd(this.getConfig().getPassword(), handshake), schema, authPluginName);
+                startAuthPacket(out, handshake, PasswordAuthPlugin.passwd(this.getConfig().getPassword(), handshake), authPluginName);
                 /**
                  * Phase 3: MySQL to client. send OK/ERROR packet.
                  */
@@ -165,7 +164,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                  * Phase 2: client to MySQL. Send auth packet.
                  */
                 try {
-                    startAuthPacket(out, handshake, PasswordAuthPlugin.passwdSha256(this.getConfig().getPassword(), handshake), schema, authPluginName);
+                    startAuthPacket(out, handshake, PasswordAuthPlugin.passwdSha256(this.getConfig().getPassword(), handshake), authPluginName);
 
                     BinaryPacket bin2 = new BinaryPacket();
                     bin2.read(in);
@@ -207,7 +206,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                             break;
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("connect the schema:" + schema + " failed");
+                    LOGGER.warn("testConnection failed");
                     isConnected = false;
                 }
             } else {
@@ -238,16 +237,16 @@ public class MySQLDataSource extends PhysicalDatasource {
     }
 
 
-    public void startAuthPacket(OutputStream out, HandshakeV10Packet handshake, byte[] passwordSented, String schema, String authPluginName) {
+    public void startAuthPacket(OutputStream out, HandshakeV10Packet handshake, byte[] passwordSented, String authPluginName) {
         AuthPacket authPacket = new AuthPacket();
         authPacket.setPacketId(1);
-        authPacket.setClientFlags(getClientFlagSha(schema != null));
+        authPacket.setClientFlags(getClientFlagSha(false));
         authPacket.setMaxPacketSize(1024 * 1024 * 16);
         authPacket.setCharsetIndex(handshake.getServerCharsetIndex() & 0xff);
         authPacket.setUser(this.getConfig().getUser());
         try {
             authPacket.setPassword(passwordSented);
-            authPacket.setDatabase(schema);
+            authPacket.setDatabase(null);
             authPacket.setAuthPlugin(authPluginName);
             authPacket.writeWithKey(out);
             out.flush();

@@ -16,6 +16,7 @@ import com.actiontech.dble.statistic.stat.SqlFrequency;
 import com.actiontech.dble.statistic.stat.UserStat;
 import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
 import com.actiontech.dble.util.FormatUtil;
+import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
@@ -32,7 +33,7 @@ public final class ShowSQLHigh {
     private ShowSQLHigh() {
     }
 
-    private static final int FIELD_COUNT = 9;
+    private static final int FIELD_COUNT = 11;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -51,6 +52,8 @@ public final class ShowSQLHigh {
         FIELDS[i] = PacketUtil.getField("FREQUENCY", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
 
+        FIELDS[i] = PacketUtil.getField("TOTAL_TIME", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("AVG_TIME", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("MAX_TIME", Fields.FIELD_TYPE_LONGLONG);
@@ -64,6 +67,9 @@ public final class ShowSQLHigh {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("SQL", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("digest", Fields.FIELD_TYPE_INT24);
         FIELDS[i++].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
@@ -95,8 +101,8 @@ public final class ShowSQLHigh {
                 for (SqlFrequency sqlFrequency : list) {
                     if (sqlFrequency != null) {
                         RowDataPacket row = getRow(i, user, sqlFrequency.getSql(), sqlFrequency.getCount(),
-                                sqlFrequency.getAvgTime(), sqlFrequency.getMaxTime(), sqlFrequency.getMinTime(),
-                                sqlFrequency.getExecuteTime(), sqlFrequency.getLastTime(), c.getCharset().getResults());
+                                sqlFrequency.getAllExecuteTime(), sqlFrequency.getAvgTime(), sqlFrequency.getMaxTime(), sqlFrequency.getMinTime(),
+                                sqlFrequency.getExecuteTime(), sqlFrequency.getLastTime(), c.getCharset().getResults(), sqlFrequency.getSql().hashCode());
                         row.setPacketId(++packetId);
                         buffer = row.write(buffer, c, true);
                         i++;
@@ -114,18 +120,20 @@ public final class ShowSQLHigh {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(int i, String user, String sql, long count, long avgTime, long maxTime,
-                                        long minTime, long executeTime, long lastTime, String charset) {
+    private static RowDataPacket getRow(int i, String user, String sql, long count, long allExecuteTime, long avgTime, long maxTime,
+                                        long minTime, long executeTime, long lastTime, String charset, int hashcode) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(i));
         row.add(StringUtil.encode(user, charset));
         row.add(LongUtil.toBytes(count));
+        row.add(LongUtil.toBytes(allExecuteTime));
         row.add(LongUtil.toBytes(avgTime));
         row.add(LongUtil.toBytes(maxTime));
         row.add(LongUtil.toBytes(minTime));
         row.add(LongUtil.toBytes(executeTime));
         row.add(StringUtil.encode(FormatUtil.formatDate(lastTime), charset));
         row.add(StringUtil.encode(sql, charset));
+        row.add(IntegerUtil.toBytes(hashcode));
         return row;
     }
 

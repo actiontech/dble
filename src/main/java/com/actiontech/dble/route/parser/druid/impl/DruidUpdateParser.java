@@ -14,6 +14,7 @@ import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.util.GlobalTableUtil;
@@ -97,11 +98,11 @@ public class DruidUpdateParser extends DefaultDruidParser {
 
             confirmChildColumnNotUpdated(update, schema, tableName);
 
-            if (schema.getTables().get(tableName).isGlobalTable() && ctx.getRouteCalculateUnit().getTablesAndConditions().size() > 1) {
+            if (schema.getTables().get(tableName).isGlobalTable() && ctx.getTables().size() > 1) {
                 throw new SQLNonTransientException("global table is not supported in multi table related update " + tableName);
             }
             if (ctx.getTables().size() == 0) {
-                ctx.addTable(schemaInfo.getTable());
+                ctx.addTable(new Pair<>(schema.getName(), tableName));
             }
         }
         return schema;
@@ -261,7 +262,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
                         LOGGER.info(msg);
                         throw new SQLNonTransientException(msg);
                     }
-                    rrs.setCacheAble(true);
+                    rrs.setSqlRouteCacheAble(true);
                 }
             }
         }

@@ -19,8 +19,8 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RequestFilePacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -37,14 +37,15 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,7 +54,6 @@ import java.util.regex.Pattern;
  * CHARACTER SET 'gbk' in load data sql  the charset need ', otherwise the druid will error
  */
 public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ServerLoadDataInfileHandler.class);
     //innodb limit of columns per table, https://dev.mysql.com/doc/refman/8.0/en/column-count-limit.html
     private static final int DEFAULT_MAX_COLUMNS = 1017;
     private ServerConnection serverConnection;
@@ -299,7 +299,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
     }
 
-    private RouteResultset tryDirectRoute(String strSql, String[] lineList) {
+    private RouteResultset tryDirectRoute(String strSql, String[] lineList) throws SQLException {
         RouteResultset rrs = new RouteResultset(strSql, ServerParse.INSERT);
         rrs.setLoadData(true);
         if (tableConfig != null && tableConfig.isGlobalTable()) {
@@ -314,56 +314,27 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             rrs.setNodes(rrsNodes);
             return rrs;
         } else {
-            DruidShardingParseInfo ctx = new DruidShardingParseInfo();
-            ctx.addTable(tableName);
+            Pair<String, String> table = new Pair<>(schema.getName(), tableName);
 
             if (partitionColumnIndex != -1) {
-                String value;
                 if (lineList.length < partitionColumnIndex + 1) {
                     throw new RuntimeException("Partition column is empty in line '" + StringUtil.join(lineList, loadData.getLineTerminatedBy()) + "'");
-                } else {
-                    value = lineList[partitionColumnIndex];
                 }
                 RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
-                routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(),
-                        parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
-                ctx.addRouteCalculateUnit(routeCalculateUnit);
-            }
-
-            try {
-                SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
-                if (ctx.getRouteCalculateUnits().size() > 0) {
-                    for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-                        RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, false, tableId2DataNodeCache, null);
-                        if (rrsTmp != null) {
-                            Collections.addAll(nodeSet, rrsTmp.getNodes());
-                        }
-                    }
-                } else {
-                    RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, null, rrs, false, tableId2DataNodeCache, null);
-                    if (rrsTmp != null) {
-                        Collections.addAll(nodeSet, rrsTmp.getNodes());
-                    }
+                routeCalculateUnit.addShardingExpr(table, getPartitionColumn(), parseFieldString(lineList[partitionColumnIndex], loadData.getEnclose(), loadData.getEscape()));
+                return RouterUtil.tryRouteForOneTable(schema, routeCalculateUnit, tableName, rrs, false, tableId2DataNodeCache, null);
+            } else {
+                String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
+                if (noShardingNode != null) {
+                    return RouterUtil.routeToSingleNode(rrs, noShardingNode);
                 }
-
-                RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
-                int i = 0;
-                for (RouteResultsetNode aNodeSet : nodeSet) {
-                    nodes[i] = aNodeSet;
-                    i++;
-                }
-
-                rrs.setNodes(nodes);
-                return rrs;
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+                return RouterUtil.tryRouteForOneTable(schema, new RouteCalculateUnit(), tableName, rrs, false, tableId2DataNodeCache, null);
             }
         }
-
     }
 
 
-    private void parseOneLine(String[] line, boolean toFile) throws Exception {
+    private void parseOneLine(String[] line) throws Exception {
         if (loadData.getEnclose() != null && loadData.getEnclose().charAt(0) > 0x0020) {
             for (int i = 0; i < line.length; i++) {
                 line[i] = line[i].trim();
@@ -396,7 +367,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     data.getData().add(jLine);
                 }
 
-                if (toFile && data.getData().size() > systemConfig.getMaxRowSizeToFile()) {
+                if (data.getData().size() > systemConfig.getMaxRowSizeToFile()) {
                     //avoid OOM
                     saveDataToFile(data, name);
                 }
@@ -473,7 +444,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         rrs.setLoadData(true);
         rrs.setStatement(srcStatement);
         rrs.setFinishedRoute(true);
-        rrs.setGlobalTable(tableConfig == null ? false : this.tableConfig.isGlobalTable());
+        rrs.setGlobalTable(tableConfig != null && this.tableConfig.isGlobalTable());
         int size = routeMap.size();
         RouteResultsetNode[] routeResultsetNodes = new RouteResultsetNode[size];
         int index = 0;
@@ -502,7 +473,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private String parseFieldString(String value, String enclose, String escape) {
         //avoid null point execption
         if (value == null) {
-            return value;
+            return null;
         }
 
         //if the value is cover by enclose char and enclose char is not null, clear the enclose char.
@@ -597,7 +568,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             CsvParser parser = new CsvParser(settings);
             try {
                 parser.beginParsing(new StringReader(content));
-                String[] row = null;
+                String[] row;
 
                 int ignoreNumber = 0;
                 if (statement.getIgnoreLinesNumber() != null && !"".equals(statement.getIgnoreLinesNumber().toString())) {
@@ -609,7 +580,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                             continue;
                         }
                         try {
-                            parseOneLine(row, true);
+                            parseOneLine(row);
                         } catch (Exception e) {
                             clear();
                             serverConnection.writeErrMessage(++packId, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
@@ -656,7 +627,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             fileInputStream = new FileInputStream(file);
             reader = new InputStreamReader(fileInputStream, encode);
             parser.beginParsing(reader);
-            String[] row = null;
+            String[] row;
 
             int ignoreNumber = 0;
             if (statement.getIgnoreLinesNumber() != null && !"".equals(statement.getIgnoreLinesNumber().toString())) {
@@ -669,7 +640,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                         continue;
                     }
                     try {
-                        parseOneLine(row, true);
+                        parseOneLine(row);
                     } catch (Exception e) {
                         clear();
                         serverConnection.writeErrMessage(++packetID, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
@@ -715,8 +686,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     /**
      * check if the sql is contain the partition. If the sql contain the partition word then stopped.
      *
-     * @param strSql
-     * @throws Exception
      */
     private boolean checkPartition(String strSql) {
         Pattern p = Pattern.compile("PARTITION\\s{0,}([\\s\\S]*)", Pattern.CASE_INSENSITIVE);
@@ -728,8 +697,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     /**
      * use a Regular Expression to replace the "IGNORE    1234 LINES" to the " "
      *
-     * @param strSql
-     * @return
      */
     private String ignoreLinesDelete(String strSql) {
         Pattern p = Pattern.compile("IGNORE\\s{0,}\\d{0,}\\s{0,}LINES", Pattern.CASE_INSENSITIVE);
@@ -799,8 +766,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     /**
      * deleteFile and its children
      *
-     * @param dirPath
-     * @throws Exception
      */
     private static void deleteFile(String dirPath) {
         File fileDirToDel = new File(dirPath);
@@ -815,7 +780,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         if (fileList != null) {
             for (File file : fileList) {
                 if (file.isFile() && file.exists()) {
-                    boolean delete = file.delete();
+                    file.delete();
                 } else if (file.isDirectory()) {
                     deleteFile(file.getAbsolutePath());
                     file.delete();

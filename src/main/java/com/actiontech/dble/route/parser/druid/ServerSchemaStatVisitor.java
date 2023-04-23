@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.parser.druid;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.route.util.ConditionUtil;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
@@ -17,6 +18,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
+import com.alibaba.druid.stat.TableStat;
 import com.alibaba.druid.stat.TableStat.Column;
 import com.alibaba.druid.stat.TableStat.Condition;
 import com.alibaba.druid.stat.TableStat.Relationship;
@@ -33,12 +35,12 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private String notSupportMsg = null;
     private boolean hasOrCondition = false;
     private List<WhereUnit> whereUnits = new CopyOnWriteArrayList<>();
-    private List<WhereUnit> storedWhereUnits = new CopyOnWriteArrayList<>();
     private boolean notInWhere = false;
     private List<SQLSelect> subQueryList = new ArrayList<>();
     private Map<String, String> aliasMap = new LinkedHashMap<>();
     private List<String> selectTableList = new ArrayList<>();
     private String currentTable;
+    private boolean firstSelectBlock = true;
 
     private void reset() {
         this.relationships.clear();
@@ -53,10 +55,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     public String getNotSupportMsg() {
         return notSupportMsg;
-    }
-
-    public boolean hasOrCondition() {
-        return hasOrCondition;
     }
 
     @Override
@@ -333,12 +331,17 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLSelectQueryBlock x) {
+        if (firstSelectBlock) {
+            firstSelectBlock = false;
+        } else {
+            whereUnits.addAll(getAllWhereUnit());
+            this.relationships.clear();
+            this.conditions.clear();
+            this.hasOrCondition = false;
+        }
         return true;
     }
 
-    @Override
-    public void endVisit(SQLSelectQueryBlock x) {
-    }
 
     @Override
     public void endVisit(SQLSelect x) {
@@ -452,7 +455,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             return new Column(table, column);
         }
 
-        return new Column("UNKNOWN", column);
+        return null;
     }
 
     private Column getColumnByExpr(SQLPropertyExpr expr) {
@@ -482,9 +485,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     /**
      * get table name of field in between expr
      *
-     * @param betweenExpr
-     * @param column
-     * @return
      */
     private String getOwnerTableName(SQLBetweenExpr betweenExpr, String column) {
         if (aliasMap.size() == 1) { //only has 1 table
@@ -525,35 +525,11 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     /**
-     * splitConditions
-     */
-    private List<List<Condition>> splitConditions() {
-        //pre deal with condition and whereUnits
-        reBuildWhereUnits();
-
-        this.storedWhereUnits.addAll(whereUnits);
-
-        //split according to or expr
-        for (WhereUnit whereUnit : whereUnits) {
-            splitUntilNoOr(whereUnit);
-        }
-        loopFindSubOrCondition(storedWhereUnits);
-
-
-        for (WhereUnit whereUnit : storedWhereUnits) {
-            this.resetCondtionsFromWhereUnit(whereUnit);
-        }
-
-        return mergedConditions();
-    }
-
-    /**
      * Loop all the splitedExprList and try to accept them again
      * if the Expr in splitedExprList is still  a OR-Expr just deal with it
      * <p>
      * This function only recursively all child splitedExpr and make them split again
      *
-     * @param whereUnitList
      */
     private void loopFindSubOrCondition(List<WhereUnit> whereUnitList) {
         List<WhereUnit> subWhereUnits = new ArrayList<>();
@@ -611,7 +587,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * so when there has limit in mtest.id the xtest.id can also get the limit
      * P.S.:Only order insensitive operator can be optimize,like = or <=>
      *
-     * @param relationships
      */
     private void relationMerge(Set<Relationship> relationships) {
         HashSet<Relationship> loopReSet = new HashSet<>();
@@ -627,9 +602,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                     if (tempSet.size() == 2) {
                         Relationship rs1 = new Relationship(tempSet.get(0), tempSet.get(1), inv.getOperator());
                         Relationship rs2 = new Relationship(tempSet.get(1), tempSet.get(0), inv.getOperator());
-                        if (relationships.contains(rs1) || relationships.contains(rs2)) {
-                            continue;
-                        } else {
+                        if (!relationships.contains(rs1) && !relationships.contains(rs2)) {
                             relationships.add(rs1);
                         }
                     }
@@ -646,8 +619,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * when the result size is 2,we can know that there is 3 columns in  2 relationships
      * and the derivative relationship may be needed
      *
-     * @param tempSet
-     * @param tmp
      */
     private void addAndCheckDuplicate(List<Column> tempSet, Column tmp) {
         if (tempSet.contains(tmp)) {
@@ -663,107 +634,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return hasOrCondition;
     }
 
-    private List<List<Condition>> mergedConditions() {
-        if (storedWhereUnits.size() == 0) {
-            return new ArrayList<>();
-        }
-
-        for (WhereUnit whereUnit : storedWhereUnits) {
-            mergeSubConditionWithOuterCondition(whereUnit);
-        }
-
-        return getMergedConditionList(storedWhereUnits);
-
-    }
-
-    /**
-     * mergeSubConditionWithOuterCondition
-     * Only subWhereUnit will be deal
-     *
-     * @param whereUnit
-     */
-    private void mergeSubConditionWithOuterCondition(WhereUnit whereUnit) {
-        if (whereUnit.getSubWhereUnit().size() > 0) {
-            for (WhereUnit sub : whereUnit.getSubWhereUnit()) {
-                mergeSubConditionWithOuterCondition(sub);
-            }
-
-            if (whereUnit.getSubWhereUnit().size() > 1) {
-                List<List<Condition>> mergedConditionList = getMergedConditionList(whereUnit.getSubWhereUnit());
-                if (whereUnit.getOutConditions().size() > 0) {
-                    for (List<Condition> aMergedConditionList : mergedConditionList) {
-                        aMergedConditionList.addAll(whereUnit.getOutConditions());
-                    }
-                }
-                if (whereUnit.getOutRelationships().size() > 0) {
-                    for (List<Condition> aMergedConditionList : mergedConditionList) {
-                        extendConditionsFromRelations(aMergedConditionList, whereUnit.getOutRelationships());
-                    }
-                }
-                whereUnit.getConditionList().addAll(mergedConditionList);
-            } else if (whereUnit.getSubWhereUnit().size() == 1) {
-                List<List<Condition>> subConditionList = whereUnit.getSubWhereUnit().get(0).getConditionList();
-                if (whereUnit.getOutConditions().size() > 0 && subConditionList.size() > 0) {
-                    for (List<Condition> aSubConditionList : subConditionList) {
-                        aSubConditionList.addAll(whereUnit.getOutConditions());
-                    }
-                }
-                if (whereUnit.getOutRelationships().size() > 0 && subConditionList.size() > 0) {
-                    for (List<Condition> aSubConditionList : subConditionList) {
-                        extendConditionsFromRelations(aSubConditionList, whereUnit.getOutRelationships());
-                    }
-                }
-                whereUnit.getConditionList().addAll(subConditionList);
-            }
-        } else {
-            //do nothing
-        }
-    }
-
-    /**
-     * merge WhereUnit's condition
-     *
-     * @return
-     */
-    private List<List<Condition>> getMergedConditionList(List<WhereUnit> whereUnitList) {
-        List<List<Condition>> mergedConditionList = new ArrayList<>();
-        if (whereUnitList.size() == 0) {
-            return mergedConditionList;
-        }
-        mergedConditionList.addAll(whereUnitList.get(0).getConditionList());
-
-        for (int i = 1; i < whereUnitList.size(); i++) {
-            mergedConditionList = merge(mergedConditionList, whereUnitList.get(i).getConditionList());
-        }
-        return mergedConditionList;
-    }
-
-    /**
-     * Merge 2 list
-     *
-     * @param list1
-     * @param list2
-     * @return
-     */
-    private List<List<Condition>> merge(List<List<Condition>> list1, List<List<Condition>> list2) {
-        if (list1.size() == 0) {
-            return list2;
-        } else if (list2.size() == 0) {
-            return list1;
-        }
-
-        List<List<Condition>> retList = new ArrayList<>();
-        for (List<Condition> aList1 : list1) {
-            for (List<Condition> aList2 : list2) {
-                List<Condition> listTmp = new ArrayList<>();
-                listTmp.addAll(aList1);
-                listTmp.addAll(aList2);
-                retList.add(listTmp);
-            }
-        }
-        return retList;
-    }
-
     public List<String> getSelectTableList() {
         return selectTableList;
     }
@@ -774,9 +644,8 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * exp (conditionA OR conditionB) into conditionList{conditionA,conditionB}
      * so the conditionA,conditionB can be group with outer conditions
      *
-     * @param whereUnit
      */
-    private void resetCondtionsFromWhereUnit(WhereUnit whereUnit) {
+    private void resetConditionsFromWhereUnit(WhereUnit whereUnit) {
         List<List<Condition>> retList = new ArrayList<>();
         List<Condition> outSideCondition = new ArrayList<>();
         outSideCondition.addAll(conditions);
@@ -792,22 +661,21 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             Set<Relationship> relations = new HashSet<>();
             relations.addAll(getRelationships());
             relations.addAll(outSideRelationship);
-            extendConditionsFromRelations(conds, relations);
+            ConditionUtil.extendConditionsFromRelations(conds, relations);
             retList.add(conds);
             this.conditions.clear();
             this.relationships.clear();
         }
-        whereUnit.setConditionList(retList);
+        whereUnit.setOrConditionList(retList);
 
         for (WhereUnit subWhere : whereUnit.getSubWhereUnit()) {
-            resetCondtionsFromWhereUnit(subWhere);
+            resetConditionsFromWhereUnit(subWhere);
         }
     }
 
     /**
      * split on conditions into whereUnit..splitedExprList
      *
-     * @param whereUnit
      */
     private void splitUntilNoOr(WhereUnit whereUnit) {
         if (whereUnit.isFinishedParse()) {
@@ -818,7 +686,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             }
         } else {
             SQLBinaryOpExpr expr = whereUnit.getCanSplitExpr();
-            if (expr.getOperator() == SQLBinaryOperator.BooleanOr) {
+            if (expr == null) {
+                whereUnit.setFinishedParse(true);
+            } else if (expr.getOperator() == SQLBinaryOperator.BooleanOr) {
                 addExprNotFalse(whereUnit, expr.getRight());
                 if (expr.getLeft() instanceof SQLBinaryOpExpr) {
                     whereUnit.setCanSplitExpr((SQLBinaryOpExpr) expr.getLeft());
@@ -871,47 +741,65 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return currentTable;
     }
 
-    private void extendConditionsFromRelations(List<Condition> conds, Set<Relationship> relations) {
-        List<Condition> newConds = new ArrayList<>();
-        Iterator<Condition> iterator = conds.iterator();
-        while (iterator.hasNext()) {
-            Condition condition = iterator.next();
-            if (condition.getValues().size() == 0) {
-                iterator.remove();
-                continue;
-            }
-            if (!condition.getOperator().equals("=") && !condition.getOperator().equals("<=>")) {
-                continue;
-            }
-            Column column = condition.getColumn();
-            for (Relationship relation : relations) {
-                if (!condition.getOperator().equalsIgnoreCase(relation.getOperator())) {
-                    continue;
-                }
-                if (column.equals(relation.getLeft())) {
-                    Condition cond = new Condition(relation.getRight(), condition.getOperator());
-                    cond.getValues().addAll(condition.getValues());
-                    newConds.add(cond);
-                } else if (column.equals(relation.getRight())) {
-                    Condition cond = new Condition(relation.getLeft(), condition.getOperator());
-                    cond.getValues().addAll(condition.getValues());
-                    newConds.add(cond);
+    private static void mergeOuterRelations(WhereUnit whereUnit) {
+        if (whereUnit.getSubWhereUnit().size() > 0) {
+            for (WhereUnit sub : whereUnit.getSubWhereUnit()) {
+                mergeOuterRelations(sub);
+                if (whereUnit.getOutRelationships().size() > 0) {
+                    for (List<TableStat.Condition> subConditionList : sub.getOrConditionList()) {
+                        ConditionUtil.extendConditionsFromRelations(subConditionList, whereUnit.getOutRelationships());
+                    }
                 }
             }
         }
-        conds.addAll(newConds);
     }
 
-    public List<List<Condition>> getConditionList() {
-        if (this.hasOrCondition()) {
-            return this.splitConditions();
+    public List<WhereUnit> getAllWhereUnit() {
+        List<WhereUnit> storedWhereUnits = new ArrayList<>();
+        if (this.hasOrCondition) {
+            //pre deal with condition and whereUnits
+            reBuildWhereUnits();
+            storedWhereUnits.addAll(whereUnits);
+
+            //split according to or expr
+            for (WhereUnit whereUnit : whereUnits) {
+                splitUntilNoOr(whereUnit);
+            }
+            whereUnits.clear();
+            loopFindSubOrCondition(storedWhereUnits);
+
+            for (WhereUnit whereUnit : storedWhereUnits) {
+                this.resetConditionsFromWhereUnit(whereUnit);
+            }
         } else {
-            List<Condition> conds = this.getConditions();
-            Set<Relationship> relations = getRelationships();
-            extendConditionsFromRelations(conds, relations);
-            List<List<Condition>> result = new ArrayList<>();
-            result.add(conds);
-            return result;
+            storedWhereUnits.addAll(whereUnits);
+            whereUnits.clear();
+            WhereUnit whereUnit = generateWhereUnit();
+            if (whereUnit != null) {
+                storedWhereUnits.add(whereUnit);
+            }
         }
+
+        for (WhereUnit whereUnit : storedWhereUnits) {
+            mergeOuterRelations(whereUnit);
+        }
+
+        return storedWhereUnits;
+    }
+
+    private WhereUnit generateWhereUnit() {
+        List<Condition> conditionList = new ArrayList<>();
+        conditionList.addAll(this.getConditions());
+        ConditionUtil.extendConditionsFromRelations(conditionList, this.relationships);
+        if (conditionList.size() == 0 && this.relationships.size() == 0) {
+            return null;
+        }
+        WhereUnit whereUnit = new WhereUnit();
+        whereUnit.setFinishedParse(true);
+        List<List<Condition>> retList = new ArrayList<>();
+        retList.add(conditionList);
+        whereUnit.setOrConditionList(retList);
+        whereUnit.addOutRelationships(this.relationships);
+        return whereUnit;
     }
 }

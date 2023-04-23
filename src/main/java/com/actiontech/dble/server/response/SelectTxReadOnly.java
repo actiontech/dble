@@ -28,19 +28,12 @@ public final class SelectTxReadOnly {
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
-    static {
-        int i = 0;
-        byte packetId = 0;
-
-
-    }
-
-    public static void response(ServerConnection c) {
+    public static void response(ServerConnection c, String column) {
 
         byte packetId = setCurrentPacket(c);
 
         HEADER.setPacketId(++packetId);
-        FIELDS[0] = PacketUtil.getField("@@session.tx_read_only", Fields.FIELD_TYPE_LONG);
+        FIELDS[0] = PacketUtil.getField(column, Fields.FIELD_TYPE_LONG);
         FIELDS[0].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
 

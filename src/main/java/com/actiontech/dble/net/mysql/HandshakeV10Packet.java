@@ -58,24 +58,24 @@ public class HandshakeV10Packet extends MySQLPacket {
     public static final byte[] NATIVE_PASSWORD_PLUGIN = "mysql_native_password".getBytes();
     public static final byte[] CACHING_SHA2_PASSWORD_PLUGIN = "caching_sha2_password".getBytes();
 
-
     private byte protocolVersion;
     private byte[] serverVersion;
     private long threadId;
     private byte[] seed; // auth-plugin-data-part-1
-
-
-
-    public byte[] getAuthPluginName() {
-        return authPluginName;
-    }
-
 
     private int serverCapabilities;
     private byte serverCharsetIndex;
     private int serverStatus;
     private byte[] restOfScrambleBuff; // auth-plugin-data-part-2
     private byte[] authPluginName = NATIVE_PASSWORD_PLUGIN;
+
+    public byte[] getAuthPluginName() {
+        return authPluginName;
+    }
+
+    public byte[] getServerVersion() {
+        return serverVersion;
+    }
 
     public void write(FrontendConnection c) {
         ByteBuffer buffer = c.allocate();

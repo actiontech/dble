@@ -208,7 +208,7 @@ public final class ExplainHandler {
                 return null;
             } else {
                 StringBuilder s = new StringBuilder();
-                LOGGER.info(s.append(c).append(stmt).toString() + " error:" + e);
+                LOGGER.warn(s.append(c).append(stmt).toString() + " error:", e);
                 String msg = e.getMessage();
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
                 return null;

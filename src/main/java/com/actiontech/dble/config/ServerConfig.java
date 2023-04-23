@@ -795,8 +795,8 @@ public class ServerConfig {
         SequenceManager.load(sequenceJson, this.getShardingNodes().keySet());
     }
 
-    public void tryLoadSequence(RawJson sequenceJson) {
-        SequenceManager.tryLoad(sequenceJson, this.getShardingNodes().keySet());
+    public void tryLoadSequence(RawJson sequenceJson, Logger logger) {
+        SequenceManager.tryLoad(sequenceJson, this.getShardingNodes().keySet(), logger);
     }
 
     public void selfChecking0() throws ConfigException {

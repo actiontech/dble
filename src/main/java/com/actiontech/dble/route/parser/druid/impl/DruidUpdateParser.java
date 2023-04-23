@@ -80,16 +80,17 @@ public class DruidUpdateParser extends DruidModifyParser {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
+            SchemaConfig originSchema = schema;
             schema = schemaInfo.getSchemaConfig();
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
+            super.visitorParse(originSchema, rrs, stmt, visitor, service, isExplain);
 
             String tableName = schemaInfo.getTable();
             BaseTableConfig tc = schema.getTables().get(tableName);
             String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
 
             if (visitor.getFirstClassSubQueryList().size() > 0) {
-                routeForModifySubQueryList(rrs, tc, visitor, schema, service);
+                routeForModifySubQueryList(rrs, tc, visitor, originSchema, service);
                 return schema;
             } else if (noShardingNode != null) {
                 RouterUtil.routeToSingleNode(rrs, noShardingNode);

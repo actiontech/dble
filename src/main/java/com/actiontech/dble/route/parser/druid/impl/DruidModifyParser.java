@@ -551,7 +551,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
 
     void routeForModifySubQueryList(RouteResultset rrs, BaseTableConfig tc, ServerSchemaStatVisitor visitor, SchemaConfig schema, ShardingService service) throws SQLException {
         changeSql(rrs);
-
+        boolean isGlobalTable = true;
         Collection<String> routeShardingNodes;
         if (tc == null || tc.getShardingNodes().size() == 1) {
             for (SQLSelect subSql : visitor.getFirstClassSubQueryList()) {
@@ -576,11 +576,14 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             routeShardingNodes = ImmutableList.of(tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
         } else if (tc instanceof GlobalTableConfig || tc instanceof ShardingTableConfig) {
             routeShardingNodes = checkForMultiNodeGlobal(service.getUser(), visitor, tc, schema);
+            if (tc instanceof ShardingTableConfig) {
+                isGlobalTable = false;
+            }
         } else {
             throw new SQLNonTransientException(getErrorMsg());
         }
 
-        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
+        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, isGlobalTable);
         rrs.setFinishedRoute(true);
     }
 

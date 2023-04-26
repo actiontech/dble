@@ -12,6 +12,7 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
@@ -22,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Optional;
 
 public final class DbleBackendConnections extends ManagerBaseTable {
     public DbleBackendConnections() {
@@ -137,7 +137,11 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         row.put("schema", c.getSchema() == null ? "NULL" : c.getSchema());
 
         MySQLResponseService service = c.getBackendService();
-        Optional.ofNullable(service.getSession()).ifPresent(session -> row.put("session_conn_id", session.getSource().getId() + ""));
+        com.actiontech.dble.server.NonBlockingSession session = service.getSession();
+        if (session != null) {
+            FrontendConnection source = session.getSource();
+            row.put("session_conn_id", source != null ? source.getId() + "" : "");
+        }
         row.put("conn_estab_time", ((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000) + "");
         ByteBuffer bb = c.getReadBuffer();
         row.put("conn_recv_buffer", (bb == null ? 0 : bb.capacity()) + "");

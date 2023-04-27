@@ -102,7 +102,7 @@ public class DruidDeleteParser extends DruidModifyParser {
             super.visitorParse(originSchema, rrs, stmt, visitor, service, isExplain);
 
             if (visitor.getSubQueryList().size() > 0) {
-                routeForModifySubQueryList(rrs, tc, visitor, originSchema, service);
+                routeForModifySubQueryList(rrs, tc, visitor, schema, service, originSchema);
                 return schema;
             }
             String tableName = schemaInfo.getTable();

@@ -102,7 +102,7 @@ public class DruidUpdateParser extends DruidModifyParser {
             String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
 
             if (visitor.getSubQueryList().size() > 0) {
-                routeForModifySubQueryList(rrs, tc, visitor, originSchema, service);
+                routeForModifySubQueryList(rrs, tc, visitor, schema, service, originSchema);
                 return schema;
             } else if (noShardingNode != null) {
                 RouterUtil.routeToSingleNode(rrs, noShardingNode, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));

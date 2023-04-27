@@ -27,18 +27,18 @@ public final class SequenceManager {
                 if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().useZkMode()) {
                     INSTANCE.handler = new DistributedSequenceHandler();
                 } else {
-                    throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType + " for no-zk clusetr");
+                    throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType + " for no-zk cluster");
                 }
                 break;
             case ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT:
                 if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().useZkMode()) {
                     INSTANCE.handler = new IncrSequenceZKHandler();
                 } else {
-                    throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType + " for no-zk clusetr");
+                    throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType + " for no-zk cluster");
                 }
                 break;
             default:
-                throw new java.lang.IllegalArgumentException("Invalid sequnce handler type " + seqHandlerType);
+                throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType);
         }
     }
 

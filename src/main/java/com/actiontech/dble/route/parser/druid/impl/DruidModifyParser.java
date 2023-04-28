@@ -298,6 +298,9 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         for (String sTable : visitor.getSelectTableList()) {
             SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(user, schema, sTable);
             BaseTableConfig stc = schemaInfox.getSchemaConfig().getTables().get(schemaInfox.getTable());
+            if (stc != null && stc == tc) {
+                continue;
+            }
             if (stc != null && stc instanceof GlobalTableConfig) {
                 if (!stc.getShardingNodes().containsAll(mustContainList)) {
                     throw new SQLNonTransientException(getErrorMsg());

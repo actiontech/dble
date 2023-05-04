@@ -97,6 +97,9 @@ public class ManagerBaseSelectHandler extends BaseDMLHandler {
         LinkedHashSet<Item> realSelectItem = new LinkedHashSet<>(tableNode.getColumnsSelected().size());
         for (Item select : tableNode.getColumnsSelected()) {
             realSelectItem.addAll(getBaseItem(select, true));
+            if (select.getAlias() != null && !select.getAlias().equals(select.getItemName())) {
+                needSendMaker = true;
+            }
         }
         for (Order orderItem : tableNode.getOrderBys()) {
             int size = realSelectItem.size();

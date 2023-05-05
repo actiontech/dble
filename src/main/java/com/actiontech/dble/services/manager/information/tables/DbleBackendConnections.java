@@ -6,7 +6,6 @@ package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.heartbeat.HeartbeatSQLJob;
-import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.ReadTimeStatusInstance;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.ColumnMeta;
@@ -137,9 +136,8 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         row.put("schema", c.getSchema() == null ? "NULL" : c.getSchema());
 
         MySQLResponseService service = c.getBackendService();
-        com.actiontech.dble.server.NonBlockingSession session = service.getSession();
-        if (session != null) {
-            FrontendConnection source = session.getSource();
+        if (service != null && service.getSession() != null) {
+            FrontendConnection source = service.getSession().getSource();
             row.put("session_conn_id", source != null ? source.getId() + "" : "");
         }
         row.put("conn_estab_time", ((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000) + "");
@@ -147,9 +145,8 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         row.put("conn_recv_buffer", (bb == null ? 0 : bb.capacity()) + "");
         row.put("conn_send_task_queue", c.getWriteQueue().size() + "");
 
-        RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
-        if (rrn != null) {
-            String sql = rrn.getStatement();
+        if (service != null && service.getAttachment() != null) {
+            String sql = ((RouteResultsetNode) service.getAttachment()).getStatement();
             if (sql.length() > 1024) {
                 row.put("sql", sql.substring(0, 1024).replaceAll("[\n\t]", " "));
             } else {
@@ -164,8 +161,9 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         row.put("conn_net_out", c.getNetOutBytes() + "");
 
         if (c.getState() == PooledConnection.INITIAL) {
-            ResponseHandler handler = service.getResponseHandler();
-            row.put("used_for_heartbeat", handler instanceof HeartbeatSQLJob ? "true" : "false");
+            if (service != null && service.getResponseHandler() != null) {
+                row.put("used_for_heartbeat", service.getResponseHandler() instanceof HeartbeatSQLJob ? "true" : "false");
+            }
             row.put("borrowed_from_pool", "false");
         } else {
             row.put("used_for_heartbeat", "false");
@@ -173,10 +171,12 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         }
         row.put("state", stateStr(c.getState()));
         row.put("conn_closing", c.isClosed() ? "true" : "false");
-        if (service.getXaStatus() != null) {
+        if (service != null && service.getXaStatus() != null) {
             row.put("xa_status", service.getXaStatus().toString());
         }
-        row.put("in_transaction", !service.isAutocommit() + "");
+        if (service != null) {
+            row.put("in_transaction", !service.isAutocommit() + "");
+        }
         return row;
     }
 

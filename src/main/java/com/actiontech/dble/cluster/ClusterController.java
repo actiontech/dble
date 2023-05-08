@@ -73,6 +73,10 @@ public final class ClusterController {
             if (Strings.isNullOrEmpty(clusterConfig.getRootPath())) {
                 StartProblemReporter.getInstance().addError("rootPath need to set in cluster.cnf when clusterEnable is true");
             }
+            int grpcTimeout = clusterConfig.getGrpcTimeout();
+            if (grpcTimeout < 1) {
+                StartProblemReporter.getInstance().addError("grpcTimeout should be greater than 1");
+            }
         }
     }
 

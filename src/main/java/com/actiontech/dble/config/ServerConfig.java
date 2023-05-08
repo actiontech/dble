@@ -477,7 +477,7 @@ public class ServerConfig {
         return sb.toString();
     }
 
-    public void reviseLowerCase(RawJson sequenceJson) {
+    public void reviseLowerCase() {
 
         //user sharding
         for (UserConfig uc : users.values()) {
@@ -519,21 +519,18 @@ public class ServerConfig {
 
             erRelations = newErMap;
         }
-        loadSequence(sequenceJson);
-        selfChecking0();
-
     }
 
-    private void loadSequence() {
-        SequenceManager.load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
+    public void reloadSequence(RawJson sequenceJson) {
+        SequenceManager.reload(sequenceJson);
     }
 
     public void loadSequence(RawJson sequenceJson) {
-        if (sequenceJson == null) {
-            loadSequence();
-        } else {
-            SequenceManager.load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames(), sequenceJson);
-        }
+        SequenceManager.load(sequenceJson);
+    }
+
+    public void tryLoadSequence(RawJson sequenceJson) {
+        SequenceManager.tryLoad(sequenceJson);
     }
 
     public void selfChecking0() throws ConfigException {

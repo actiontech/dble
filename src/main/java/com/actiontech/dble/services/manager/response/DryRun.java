@@ -126,11 +126,11 @@ public final class DryRun {
         } else {
             try {
                 if (newSystemVariables.isLowerCaseTableNames()) {
-                    serverConfig.reviseLowerCase(loader.getSequenceConfig());
-                } else {
-                    serverConfig.loadSequence(loader.getSequenceConfig());
-                    serverConfig.selfChecking0();
+                    serverConfig.reviseLowerCase();
                 }
+                serverConfig.tryLoadSequence(loader.getSequenceConfig());
+                serverConfig.selfChecking0();
+
                 Map<String, Set<String>> schemaMap = getExistSchemas(serverConfig);
                 //table exists check ,if the vars can not be touch ,the table check has no meaning
                 tableExistsCheck(list, serverConfig, newSystemVariables.isLowerCaseTableNames(), schemaMap);

@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.sequence.handler;
 
 
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.services.FrontendService;
@@ -62,7 +63,8 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         return DistributedSequenceHandler.instance;
     }
 
-    public void load(boolean isLowerCaseTableNames) {
+    @Override
+    public void load(RawJson sequenceJson, boolean isLowerCaseTableNames) {
         if (ClusterConfig.getInstance().isSequenceInstanceByZk()) {
             initializeZK();
             loadInstanceIdByZK();

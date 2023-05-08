@@ -281,7 +281,7 @@ public final class ReloadConfig {
                     newConfig.reviseLowerCase();
                 }
                 ReloadLogHelper.briefInfo("loadSequence ...");
-                newConfig.loadSequence(loader.getSequenceConfig());
+                newConfig.reloadSequence(loader.getSequenceConfig());
                 ReloadLogHelper.briefInfo("selfChecking0 ...");
                 newConfig.selfChecking0();
             }

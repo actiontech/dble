@@ -137,7 +137,7 @@ public final class DryRun {
                     if (newSystemVariables.isLowerCaseTableNames()) {
                         serverConfig.reviseLowerCase();
                     }
-                    serverConfig.loadSequence(loader.getSequenceConfig());
+                    serverConfig.tryLoadSequence(loader.getSequenceConfig());
                     serverConfig.selfChecking0();
 
                     Map<String, Set<String>> schemaMap = getExistSchemas(serverConfig);

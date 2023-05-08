@@ -245,7 +245,7 @@ public final class DbleServer {
         }
         SqlDumpLogHelper.init();
 
-        SequenceManager.init(ClusterConfig.getInstance().getSequenceHandlerType());
+        SequenceManager.init();
         LOGGER.info("===================================Sequence manager init finish===================================");
 
         LOGGER.info("==============================Pull metaData from MySQL start======================================");

@@ -787,16 +787,16 @@ public class ServerConfig {
         }
     }
 
-    private void loadSequence() {
-        SequenceManager.load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
+    public void reloadSequence(RawJson sequenceJson) {
+        SequenceManager.reload(sequenceJson);
     }
 
     public void loadSequence(RawJson sequenceJson) {
-        if (sequenceJson == null) {
-            loadSequence();
-        } else {
-            SequenceManager.load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames(), sequenceJson);
-        }
+        SequenceManager.load(sequenceJson);
+    }
+
+    public void tryLoadSequence(RawJson sequenceJson) {
+        SequenceManager.tryLoad(sequenceJson);
     }
 
     public void selfChecking0() throws ConfigException {

@@ -239,7 +239,7 @@ public final class DbleServer {
             generalLogProcessor.start();
         }
 
-        SequenceManager.init(ClusterConfig.getInstance().getSequenceHandlerType());
+        SequenceManager.init();
         LOGGER.info("===================================Sequence manager init finish===================================");
 
 
@@ -445,7 +445,9 @@ public final class DbleServer {
 
     private void reviseSchemas() {
         if (systemVariables.isLowerCaseTableNames()) {
-            config.reviseLowerCase(DbleTempConfig.getInstance().getSequenceConfig());
+            config.reviseLowerCase();
+            config.loadSequence(DbleTempConfig.getInstance().getSequenceConfig());
+            config.selfChecking0();
             ConfigUtil.setSchemasForPool(config.getDbGroups(), config.getShardingNodes());
         } else {
             config.loadSequence(DbleTempConfig.getInstance().getSequenceConfig());

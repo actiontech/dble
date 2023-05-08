@@ -51,8 +51,16 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     private Properties props;
 
     @Override
-    public synchronized void load(boolean isLowerCaseTableNames) {
-        this.props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_FILE_NAME, isLowerCaseTableNames);
+    public synchronized void load(RawJson sequenceJson, boolean isLowerCaseTableNames) {
+        if (sequenceJson != null) {
+            // load cluster properties
+            SequenceConverter sequenceConverter = new SequenceConverter();
+            this.props = sequenceConverter.jsonToProperties(sequenceJson);
+            this.props = PropertiesUtil.handleLowerCase(this.props, isLowerCaseTableNames);
+        } else {
+            // load local properties
+            this.props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_FILE_NAME, isLowerCaseTableNames);
+        }
         String zkAddress = ClusterConfig.getInstance().getClusterIP();
         if (zkAddress == null) {
             throw new RuntimeException("please check ClusterIP is correct in config file \"cluster.cnf\" .");
@@ -65,18 +73,10 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     }
 
     @Override
-    public void loadByJson(boolean isLowerCaseTableNames, RawJson sequenceJson) {
-        SequenceConverter sequenceConverter = new SequenceConverter();
-        this.props = sequenceConverter.jsonToProperties(sequenceJson);
-        this.props = PropertiesUtil.handleLowerCase(this.props, isLowerCaseTableNames);
-        String zkAddress = ClusterConfig.getInstance().getClusterIP();
-        if (zkAddress == null) {
-            throw new RuntimeException("please check ClusterIP is correct in config file \"cluster.cnf\" .");
-        }
-        try {
-            initializeZK(this.props, zkAddress);
-        } catch (Exception e) {
-            LOGGER.warn("Error caught while initializing ZK:" + e.getCause());
+    public void tryLoad(RawJson sequenceJson, boolean isLowerCaseTableNames) {
+        load(sequenceJson, isLowerCaseTableNames);
+        if (client != null) {
+            client.close();
         }
     }
 

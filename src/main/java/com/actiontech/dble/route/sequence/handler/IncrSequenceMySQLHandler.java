@@ -14,7 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLNonTransientException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class IncrSequenceMySQLHandler implements SequenceHandler {
@@ -23,48 +26,43 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     protected static final String ERR_SEQ_RESULT = "-999999999,null";
     protected static final Map<String, String> LATEST_ERRORS = new ConcurrentHashMap<>();
     private final FetchMySQLSequenceHandler mysqlSeqFetcher = new FetchMySQLSequenceHandler();
-    private static Set<String> shardingNodes = new HashSet<>();
 
-    public void load(boolean isLowerCaseTableNames) {
-        // load sequence properties
-        Properties props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_DB_FILE_NAME, isLowerCaseTableNames);
-        removeDesertedSequenceVals(props);
-        putNewSequenceVals(props);
+    @Override
+    public void load(RawJson sequenceJson, boolean isLowerCaseTableNames) {
+        Properties props;
+        if (sequenceJson != null) {
+            // load cluster properties
+            SequenceConverter sequenceConverter = new SequenceConverter();
+            props = sequenceConverter.jsonToProperties(sequenceJson);
+            props = PropertiesUtil.handleLowerCase(props, isLowerCaseTableNames);
+        } else {
+            // load sequence properties
+            props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_DB_FILE_NAME, isLowerCaseTableNames);
+        }
+        loadContext(props);
     }
 
     @Override
-    public void loadByJson(boolean isLowerCaseTableNames, RawJson sequenceJson) {
-        SequenceConverter sequenceConverter = new SequenceConverter();
-        Properties props = sequenceConverter.jsonToProperties(sequenceJson);
-        props = PropertiesUtil.handleLowerCase(props, isLowerCaseTableNames);
-        removeDesertedSequenceVals(props);
-        putNewSequenceVals(props);
+    public void tryLoad(RawJson sequenceJson, boolean isLowerCaseTableNames) {
+        load(sequenceJson, isLowerCaseTableNames);
     }
 
-    public Set<String> getShardingNodes() {
-        return shardingNodes;
-    }
-
-    private void removeDesertedSequenceVals(Properties props) {
-        Iterator<Map.Entry<String, SequenceVal>> i = seqValueMap.entrySet().iterator();
-        while (i.hasNext()) {
-            Map.Entry<String, SequenceVal> entry = i.next();
-            if (!props.containsKey(entry.getKey())) {
-                i.remove();
-            }
-        }
-    }
-
-    private void putNewSequenceVals(Properties props) {
-        for (Map.Entry<Object, Object> entry : props.entrySet()) {
+    public void loadContext(Properties props) {
+        seqValueMap.clear();
+        props.entrySet().stream().forEach(entry -> {
             String seqName = (String) entry.getKey();
             String shardingNode = (String) entry.getValue();
-            SequenceVal value = seqValueMap.putIfAbsent(seqName, new SequenceVal(seqName, shardingNode));
-            if (value != null) {
-                value.shardingNode = shardingNode;
-            }
-            shardingNodes.add(shardingNode);
-        }
+            seqValueMap.putIfAbsent(seqName, new SequenceVal(seqName, shardingNode));
+        });
+    }
+
+    public static Set<String> getShardingNodes(RawJson sequenceJson) {
+        Set<String> shardingNodes = new HashSet<>();
+        Properties propsTmp = (new SequenceConverter()).jsonToProperties(sequenceJson);
+        propsTmp.entrySet().stream().forEach(entry -> {
+            shardingNodes.add((String) entry.getValue());
+        });
+        return shardingNodes;
     }
 
     /**

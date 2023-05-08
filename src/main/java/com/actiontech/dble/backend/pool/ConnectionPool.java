@@ -304,10 +304,6 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         return allConnections.size();
     }
 
-    public boolean isFromSlave() {
-        return !config.isPrimary();
-    }
-
     public void close(final PooledConnection conn) {
         if (remove(conn)) {
             final int tc = totalConnections.decrementAndGet();

@@ -56,11 +56,11 @@ public final class HintDbInstanceHandler {
                 getDbInstances(true).stream().
                 filter(dbInstance -> StringUtil.equals(dbInstance.getConfig().getUrl().trim(), dbInstanceUrl.trim())).
                 collect(Collectors.toSet());
-        Optional<PhysicalDbInstance> slaveInstance = dbInstanceSet.stream().filter(instance -> !instance.getConfig().isPrimary()).findFirst();
+        Optional<PhysicalDbInstance> slaveInstance = dbInstanceSet.stream().filter(instance -> instance.isReadInstance()).findFirst();
         if (slaveInstance.isPresent()) {
             return slaveInstance.get();
         } else {
-            Optional<PhysicalDbInstance> masterInstance = dbInstanceSet.stream().filter(instance -> instance.getConfig().isPrimary()).findFirst();
+            Optional<PhysicalDbInstance> masterInstance = dbInstanceSet.stream().filter(instance -> !instance.isReadInstance()).findFirst();
             return masterInstance.orElse(null);
         }
     }

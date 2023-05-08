@@ -238,6 +238,10 @@ public class BackendConnection extends PooledConnection {
         return instance;
     }
 
+    public boolean isFromSlaveDB() {
+        return instance.isReadInstance();
+    }
+
     @Override
     public String toString() { // show all
         return "BackendConnection[id = " + id + " host = " + host + " port = " + port + " localPort = " + localPort + " mysqlId = " + threadId + " db config = " + instance + (bindFront != null ? ", currentBindFrontend = " + bindFront : "") + "]";

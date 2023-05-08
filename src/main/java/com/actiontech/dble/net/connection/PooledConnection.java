@@ -104,10 +104,6 @@ public abstract class PooledConnection extends AbstractConnection {
         this.poolRelated = poolRelated;
     }
 
-    public boolean isFromSlaveDB() {
-        return poolRelated.isFromSlave();
-    }
-
     public String getOldSchema() {
         return oldSchema;
     }

@@ -229,6 +229,10 @@ public class BackendConnection extends PooledConnection {
         return instance;
     }
 
+    public boolean isFromSlaveDB() {
+        return instance.isReadInstance();
+    }
+
     public long getConnectionTimeout() {
         return getPoolRelated() != null ? getPoolRelated().getConnectionTimeout() : connectionTimeout;
     }

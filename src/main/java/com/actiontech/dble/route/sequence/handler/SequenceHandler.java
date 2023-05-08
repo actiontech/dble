@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.route.sequence.handler;
 
+import com.actiontech.dble.config.util.ConfigException;
+
 import java.sql.SQLNonTransientException;
 
 /**
@@ -16,9 +18,9 @@ public interface SequenceHandler {
 
     long nextId(String prefixName) throws SQLNonTransientException;
 
-    void load(boolean isLowerCaseTableNames);
-
-    default void loadByJson(boolean isLowerCaseTableNames, String sequenceJson) {
+    default void tryLoad(String sequenceJson, boolean isLowerCaseTableNames) throws ConfigException {
     }
+
+    void load(String sequenceJson, boolean isLowerCaseTableNames);
 
 }

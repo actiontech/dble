@@ -13,7 +13,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
@@ -23,17 +22,19 @@ import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncIn
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.PlanUtil;
-import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
 
 class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     private JoinNode node;
 
-    JoinNodeHandlerBuilder(NonBlockingSession session, JoinNode node, HandlerBuilder hBuilder, boolean isExplain) {
+    protected JoinNodeHandlerBuilder(NonBlockingSession session, JoinNode node, HandlerBuilder hBuilder, boolean isExplain) {
         super(session, node, hBuilder, isExplain);
         this.node = node;
     }
@@ -56,28 +57,19 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
             MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
             String sql = null;
-            Map<String, String> mapTableToSimple = new HashMap<>();
             if (node.getAst() != null && node.getParent() == null) { // it's root
                 pdVisitor.visit();
                 sql = pdVisitor.getSql().toString();
-                mapTableToSimple = pdVisitor.getMapTableToSimple();
             }
-            SchemaConfig schemaConfig;
-            String schemaName = this.session.getSource().getSchema();
-            if (schemaName != null) {
-                schemaConfig = schemaConfigMap.get(schemaName);
-            } else {
-                schemaConfig = schemaConfigMap.entrySet().iterator().next().getValue(); //random schemaConfig
-            }
-            RouteResultset rrs;
+            RouteResultsetNode[] rrssArray;
             // maybe some node is view
             if (sql == null) {
-                rrs = mergeBuilder.construct(schemaConfig);
+                rrssArray = mergeBuilder.construct().getNodes();
             } else {
-                rrs = mergeBuilder.constructByStatement(sql, mapTableToSimple, node.getAst(), schemaConfig);
+                rrssArray = mergeBuilder.constructByStatement(sql, node.getAst()).getNodes();
             }
             this.needCommon = mergeBuilder.getNeedCommonFlag();
-            buildMergeHandler(node, rrs.getNodes());
+            buildMergeHandler(node, rrssArray);
         } catch (Exception e) {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "join node mergebuild exception! Error:" + e.getMessage(), e);
         }
@@ -193,8 +185,11 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     /**
      * generate filter for big table according to tmp(small) table's result
      *
+     * @param tnBig
+     * @param keyToPass
+     * @param valueSet
      */
-    private void buildNestFilters(PlanNode tnBig, Item keyToPass, Set<String> valueSet, int maxPartSize) {
+    protected void buildNestFilters(PlanNode tnBig, Item keyToPass, Set<String> valueSet, int maxPartSize) {
         List<Item> strategyFilters = tnBig.getNestLoopFilters();
         List<Item> partList = null;
         Item keyInBig = PlanUtil.pushDownItem(node, keyToPass);
@@ -202,8 +197,9 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
         for (String value : valueSet) {
             if (partList == null)
                 partList = new ArrayList<>();
-            if (value != null) {
-                // is null will never join
+            if (value == null) { // is null will never join
+                continue;
+            } else {
                 partList.add(new ItemString(value));
                 if (++partSize >= maxPartSize) {
                     List<Item> argList = new ArrayList<>();

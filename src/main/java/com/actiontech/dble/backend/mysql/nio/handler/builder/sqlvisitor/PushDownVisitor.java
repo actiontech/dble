@@ -112,7 +112,6 @@ public class PushDownVisitor extends MysqlVisitor {
         PlanNode left = join.getLeftNode();
         MysqlVisitor leftVisitor = new GlobalVisitor(left, false);
         leftVisitor.visit();
-        mapTableToSimple.putAll(leftVisitor.getMapTableToSimple());
         replaceableSqlBuilder.append(leftVisitor.getSql());
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
         if (join.getLeftOuter() && join.getRightOuter()) {
@@ -128,7 +127,6 @@ public class PushDownVisitor extends MysqlVisitor {
         PlanNode right = join.getRightNode();
         MysqlVisitor rightVisitor = new GlobalVisitor(right, false);
         rightVisitor.visit();
-        mapTableToSimple.putAll(rightVisitor.getMapTableToSimple());
         replaceableSqlBuilder.append(rightVisitor.getSql());
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
         StringBuilder joinOnFilterStr = getJoinOn(join, leftVisitor, rightVisitor);
@@ -193,7 +191,7 @@ public class PushDownVisitor extends MysqlVisitor {
         return joinOnFilterStr;
     }
 
-    private void buildWhere(JoinNode planNode, Item leftFilter, Item rightFilter) {
+    protected void buildWhere(JoinNode planNode, Item leftFilter, Item rightFilter) {
         if (!visited)
             replaceableSqlBuilder.getCurrentElement().setRepString(replaceableWhere);
         StringBuilder whereBuilder = new StringBuilder();
@@ -223,7 +221,7 @@ public class PushDownVisitor extends MysqlVisitor {
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
     }
 
-    private void buildSelect(PlanNode query) {
+    protected void buildSelect(PlanNode query) {
         sqlBuilder.append("select ");
         if (query.isDistinct()) {
             sqlBuilder.append("DISTINCT ");
@@ -238,12 +236,13 @@ public class PushDownVisitor extends MysqlVisitor {
                 continue;
             if ((col.type().equals(Item.ItemType.FUNC_ITEM) || col.type().equals(Item.ItemType.COND_ITEM)) && col.isWithSumFunc())
                 continue;
-            final String colName = visitPushDownNameSel(col);
-            if (StringUtils.isEmpty(colName))// it's null when duplicate column
+            String pdName = visitPushDownNameSel(col);
+            if (StringUtils.isEmpty(pdName))// it's null when duplicate column
                 continue;
             if (col.type().equals(Item.ItemType.SUM_FUNC_ITEM)) {
                 ItemSum funCol = (ItemSum) col;
                 String funName = funCol.funcName().toUpperCase();
+                String colName = pdName;
                 ItemSum.SumFuncType i = funCol.sumType();
                 if (i == ItemSum.SumFuncType.AVG_FUNC) {
                     String colNameSum = colName.replace(funName + "(", "SUM(");
@@ -253,7 +252,7 @@ public class PushDownVisitor extends MysqlVisitor {
                     sqlBuilder.append(colNameSum).append(",").append(colNameCount).append(",");
                     continue;
                 } else if (i == ItemSum.SumFuncType.STD_FUNC || i == ItemSum.SumFuncType.VARIANCE_FUNC) {
-                    String toReplace;
+                    String toReplace = "";
                     if (i == ItemSum.SumFuncType.STD_FUNC) {
                         toReplace = "(STDDEV_SAMP\\()|(STDDEV_POP\\()|(STDDEV\\()|(STD\\()";
                     } else {
@@ -269,13 +268,13 @@ public class PushDownVisitor extends MysqlVisitor {
                     continue;
                 }
             }
-            sqlBuilder.append(colName);
+            sqlBuilder.append(pdName);
             sqlBuilder.append(",");
         }
         sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
     }
 
-    private void buildGroupBy(PlanNode query) {
+    protected void buildGroupBy(PlanNode query) {
         if (nodeHasGroupBy(query)) {
             // push down group by
             if (!existUnPushDownGroup) {
@@ -317,7 +316,7 @@ public class PushDownVisitor extends MysqlVisitor {
         }
     }
 
-    private void buildOrderBy(PlanNode query) {
+    protected void buildOrderBy(PlanNode query) {
         /* if group by exists,it must merge as "group by"'s order,so don't push down order */
         boolean realPush = query.getGroupBys().isEmpty();
         if (query.getOrderBys().size() > 0) {
@@ -344,7 +343,7 @@ public class PushDownVisitor extends MysqlVisitor {
         }
     }
 
-    private void buildLimit(PlanNode query, StringBuilder sb) {
+    protected void buildLimit(PlanNode query, StringBuilder sb) {
         /* both group by and limit are exist, don't push down limit */
         if (query.getGroupBys().isEmpty() && !existUnPushDownGroup) {
             if (query.getLimitFrom() != -1 && query.getLimitTo() != -1) {
@@ -356,13 +355,13 @@ public class PushDownVisitor extends MysqlVisitor {
 
     /* -------------------------- help method ------------------------ */
 
-    private static boolean nodeHasGroupBy(PlanNode node) {
+    public static boolean nodeHasGroupBy(PlanNode node) {
         return (node.getSumFuncs().size() > 0 || node.getGroupBys().size() > 0);
     }
 
     @Override
     protected String visitPushDownNameSel(Item item) {
-        String orgPushDownName;
+        String orgPushDownName = null;
         if (item.isWithSubQuery()) {
             Item tmpItem = PlanUtil.rebuildSubQueryItem(item);
             orgPushDownName = tmpItem.getItemName();
@@ -409,7 +408,7 @@ public class PushDownVisitor extends MysqlVisitor {
             return orgPushDownName + " as `" + pushAlias + "`";
     }
 
-    private void buildForUpdate(TableNode query, StringBuilder sb) {
+    protected void buildForUpdate(TableNode query, StringBuilder sb) {
         if (query.getAst() != null) {
             SQLSelectQuery queryblock = query.getAst().getSelect().getQuery();
             if (queryblock instanceof MySqlSelectQueryBlock) {

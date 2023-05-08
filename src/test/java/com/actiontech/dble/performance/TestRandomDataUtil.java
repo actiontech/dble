@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.performance;
 
-import org.junit.Assert;
+import junit.framework.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;

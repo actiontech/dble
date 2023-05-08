@@ -11,7 +11,7 @@ import com.actiontech.dble.config.loader.SchemaLoader;
 import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import org.junit.Assert;
+import junit.framework.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 

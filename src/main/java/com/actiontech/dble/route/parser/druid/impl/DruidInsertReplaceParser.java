@@ -7,11 +7,6 @@ package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
-import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.net.ConnectionException;
-import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
@@ -32,7 +27,7 @@ import java.util.Set;
 import static com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 
 abstract class DruidInsertReplaceParser extends DefaultDruidParser {
-    static RouteResultset routeByERParentKey(RouteResultset rrs, TableConfig tc, String joinKeyVal, SchemaInfo schemaInfo)
+    protected static RouteResultset routeByERParentKey(RouteResultset rrs, TableConfig tc, String joinKeyVal, SchemaInfo schemaInfo)
             throws SQLNonTransientException {
         if (tc.getDirectRouteTC() != null) {
             Set<ColumnRoutePair> parentColVal = new HashSet<>(1);
@@ -56,8 +51,10 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
     /**
      * check if the column is not null and the
      *
+     * @param columnValue
+     * @throws SQLNonTransientException
      */
-    static void checkDefaultValues(String columnValue, TableConfig tableConfig, String schema, String partitionColumn) throws SQLNonTransientException {
+    public static void checkDefaultValues(String columnValue, TableConfig tableConfig, String schema, String partitionColumn) throws SQLNonTransientException {
 
         if (columnValue == null || "null".equalsIgnoreCase(columnValue)) {
             StructureMeta.TableMeta meta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema, tableConfig.getName());
@@ -73,7 +70,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         }
     }
 
-    static String shardingValueToSting(SQLExpr valueExpr) throws SQLNonTransientException {
+    protected static String shardingValueToSting(SQLExpr valueExpr) throws SQLNonTransientException {
         String shardingValue = null;
         if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr intExpr = (SQLIntegerExpr) valueExpr;
@@ -106,7 +103,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         return idxGlobal;
     }
 
-    int getIncrementKeyIndex(SchemaInfo schemaInfo, String incrementColumn) throws SQLNonTransientException {
+    protected int getIncrementKeyIndex(SchemaInfo schemaInfo, String incrementColumn) throws SQLNonTransientException {
         if (incrementColumn == null) {
             throw new SQLNonTransientException("please make sure the primaryKey's config is not null in schemal.xml");
         }
@@ -139,7 +136,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         return primaryKeyIndex;
     }
 
-    int getTableColumns(SchemaInfo schemaInfo, List<SQLExpr> columnExprList)
+    protected int getTableColumns(SchemaInfo schemaInfo, List<SQLExpr> columnExprList)
             throws SQLNonTransientException {
         if (columnExprList == null || columnExprList.size() == 0) {
             StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
@@ -154,7 +151,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         }
     }
 
-    int getShardingColIndex(SchemaInfo schemaInfo, List<SQLExpr> columnExprList, String partitionColumn) throws SQLNonTransientException {
+    protected int getShardingColIndex(SchemaInfo schemaInfo, List<SQLExpr> columnExprList, String partitionColumn) throws SQLNonTransientException {
         int shardingColIndex = -1;
         if (columnExprList == null || columnExprList.size() == 0) {
             StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
@@ -175,34 +172,4 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         return shardingColIndex;
     }
 
-
-    void fetchChildTableToRoute(TableConfig tc, String joinKeyVal, ServerConnection sc, SchemaConfig schema, String sql, RouteResultset rrs) {
-        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-            //get child result will be blocked, so use ComplexQueryExecutor
-            @Override
-            public void run() {
-                // route by sql query root parent's data node
-                String findRootTBSql = tc.getLocateRTableKeySql() + joinKeyVal;
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
-                }
-                FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, sc.getSession2());
-                try {
-                    String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getDataNodes());
-                    if (dn == null) {
-                        sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "can't find (root) parent sharding node for sql:" + sql);
-                        return;
-                    }
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("found partition node for child table to insert " + dn + " sql :" + sql);
-                    }
-                    RouterUtil.routeToSingleNode(rrs, dn);
-                    sc.getSession2().execute(rrs);
-                } catch (ConnectionException e) {
-                    sc.setTxInterrupt(e.toString());
-                    sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
-                }
-            }
-        });
-    }
 }

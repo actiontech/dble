@@ -14,7 +14,7 @@ import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import org.junit.Assert;
+import junit.framework.Assert;
 import junit.framework.TestCase;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -56,7 +56,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         RouteResultset rrs = routeStrategy.route(schema, -1, sql,
 				null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals("detail_dn15", rrs.getNodes()[0].getName());
         Assert.assertEquals(
@@ -75,7 +75,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         schema = schemaMap.get("cndb");
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals("detail_dn15", rrs.getNodes()[0].getName());
         Assert.assertEquals(
@@ -86,7 +86,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         schema = schemaMap.get("cndb");
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals("offer_dn12", rrs.getNodes()[0].getName());
         Assert.assertEquals(
@@ -116,27 +116,27 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         schema = schemaMap.get("TESTDB");
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         // query of global table only route to one datanode
         sql = "insert into company (id,name,level) values(111,'company1',3)";
         schema = schemaMap.get("TESTDB");
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(3, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
 
         // update of global table route to every datanode defined
         sql = "update company set name=name+aaa";
         schema = schemaMap.get("TESTDB");
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(3, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
 
         // delete of global table route to every datanode defined
         sql = "delete from company where id = 1";
         schema = schemaMap.get("TESTDB");
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(3, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
 
         // company is global table ,will route to differnt tables
         schema = schemaMap.get("TESTDB");
@@ -144,7 +144,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         Set<String> nodeSet = new HashSet<String>();
         for (int i = 0; i < 10; i++) {
             rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-            Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+            Assert.assertEquals(false, rrs.isCacheAble());
             Assert.assertEquals(1, rrs.getNodes().length);
             nodeSet.add(rrs.getNodes()[0].getName());
 
@@ -162,7 +162,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         schema = schemaMap.get("TESTDB");
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
 
     }
 
@@ -173,7 +173,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         RouteResultset rrs = routeStrategy.route(schema, -1, sql,
 				null, cachePool);
         Assert.assertEquals(2, rrs.getNodes().length);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         Assert.assertEquals(10, rrs.getLimitSize());
         Assert.assertEquals("dn1", rrs.getNodes()[0].getName());
         Assert.assertEquals("dn2", rrs.getNodes()[1].getName());
@@ -189,7 +189,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         RouteResultset rrs = routeStrategy.route(schema, -1, sql,
 				null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1, rrs.getLimitSize());
         Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
@@ -197,21 +197,21 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "select * from employee where id=89";
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(2, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1, rrs.getLimitSize());
 
         // update cache ID found
         sql = "update employee  set name='aaa' where id=88";
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
         // delete cache ID found
         sql = "delete from  employee  where id=88";
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
     }
@@ -331,7 +331,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         String sql = "select * from independent where member='abc'";
         RouteResultset rrs = routeStrategy.route(schema, 1, sql, null,
                 cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 128);
         IndexedNodeNameAsserter nameAsserter = new IndexedNodeNameAsserter(
                 "independent_dn", 0, 128);
@@ -351,7 +351,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "select * from cndb.independent A  where a.member='abc'";
         schema = schemaMap.get("cndb");
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         nodeMap = getNodeMap(rrs, 128);
         nameAsserter = new IndexedNodeNameAsserter("independent_dn", 0, 128);
         nameAsserter.assertRouteNodeNames(nodeMap.keySet());
@@ -373,12 +373,12 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         RouteResultset rrs = routeStrategy.route(schema, 1, sql, null,
                 cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals("dn1", rrs.getNodes()[0].getName());
 
         sql = "insert into orders (id,name,customer_id) values(1,'testonly',2000001)";
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(1, rrs.getNodes().length);
         Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
@@ -397,7 +397,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         // route by parent rule ,update sql
         sql = "update orders set id=1 ,name='aaa' where customer_id=2000001";
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
         // route by parent rule but can't find datanode
@@ -413,7 +413,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         // route by parent rule ,select sql
         sql = "select * from orders  where customer_id=2000001";
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
         // route by parent rule ,delete sql
@@ -438,7 +438,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "select * from cndb.offer where (offer_id, group_id ) In (123,234)";
         schema = schemaMap.get("cndb");
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(128, rrs.getNodes().length);
         for (int i = 0; i < 128; i++) {
@@ -450,7 +450,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "SELECT * FROM offer WHERE FALSE OR offer_id = 123 AND member_id = 123 OR member_id = 123 AND member_id = 234 OR member_id = 123 AND member_id = 345 OR member_id = 123 AND member_id = 456 OR offer_id = 234 AND group_id = 123 OR offer_id = 234 AND group_id = 234 OR offer_id = 234 AND group_id = 345 OR offer_id = 234 AND group_id = 456 OR offer_id = 345 AND group_id = 123 OR offer_id = 345 AND group_id = 234 OR offer_id = 345 AND group_id = 345 OR offer_id = 345 AND group_id = 456 OR offer_id = 456 AND group_id = 123 OR offer_id = 456 AND group_id = 234 OR offer_id = 456 AND group_id = 345 OR offer_id = 456 AND group_id = 456";
         schema = schemaMap.get("cndb");
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         getNodeMap(rrs, 128);
 
         sql = "select * from  offer where false"
@@ -460,7 +460,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
                 + " or offer_id=123 and group_id=456  ";
         schema = schemaMap.get("cndb");
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
 
     }
@@ -473,7 +473,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
 
         sql = "select * from orders";
         rrs = routeStrategy.route(schema, ServerParse.SELECT, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 2);
         NodeNameAsserter nameAsserter = new NodeNameAsserter("dn2",
                 "dn1");
@@ -487,7 +487,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
 
         sql = "select * from goods";
         rrs = routeStrategy.route(schema, ServerParse.SELECT, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(1, rrs.getNodes().length);
         Assert.assertEquals(schema.getDefaultMaxLimit(), rrs.getLimitSize());
         //		Assert.assertEquals("select * from goods", rrs.getNodes()[0].getStatement());
@@ -498,7 +498,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
 
         sql = "select * from goods limit 2 ,3";
         rrs = routeStrategy.route(schema, ServerParse.SELECT, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(1, rrs.getNodes().length);
         //		Assert.assertEquals(-1, rrs.getLimitSize());
         Assert.assertEquals("select * from goods limit 2 ,3", rrs.getNodes()[0].getStatement());
@@ -506,7 +506,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
 
         sql = "select * from notpartionTable limit 2 ,3";
         rrs = routeStrategy.route(schema, ServerParse.SELECT, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         Assert.assertEquals(1, rrs.getNodes().length);
         Assert.assertEquals(3, rrs.getLimitSize());
         Assert.assertEquals("select * from notpartionTable limit 2 ,3", rrs.getNodes()[0].getStatement());
@@ -522,7 +522,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         //SQL span multi datanode 
         sql = "select * from orders limit 2,3";
         rrs = routeStrategy.route(schema, ServerParse.SELECT, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 2);
         NodeNameAsserter nameAsserter = new NodeNameAsserter("dn2",
                 "dn1");
@@ -538,7 +538,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         //SQL  not span multi datanode
         sql = "select * from customer where id=10000 limit 2,3";
         rrs = routeStrategy.route(schema, ServerParse.SELECT, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         nodeMap = getNodeMap(rrs, 1);
         nameAsserter = new NodeNameAsserter("dn1");
         nameAsserter.assertRouteNodeNames(nodeMap.keySet());
@@ -557,7 +557,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "select count(*) from (select * from(select * from offer_detail where offer_id='123' or offer_id='234' limit 88)offer  where offer.member_id='abc' limit 60) w "
                 + " where w.member_id ='pavarotti17' limit 99";
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         // Assert.assertEquals(88L, rrs.getLimitSize());
         // Assert.assertEquals(RouteResultset.SUM_FLAG, rrs.getFlag());
         Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 2);
@@ -568,7 +568,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "select count(*) from (select * from(select max(id) from offer_detail where offer_id='123' or offer_id='234' limit 88)offer  where offer.member_id='abc' limit 60) w "
                 + " where w.member_id ='pavarotti17' limit 99";
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         nodeMap = getNodeMap(rrs, 2);
         nameAsserter = new NodeNameAsserter("detail_dn29", "detail_dn15");
         nameAsserter.assertRouteNodeNames(nodeMap.keySet());
@@ -576,7 +576,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "select * from (select * from(select max(id) from offer_detail where offer_id='123' or offer_id='234' limit 88)offer  where offer.member_id='abc' limit 60) w "
                 + " where w.member_id ='pavarotti17' limit 99";
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         nodeMap = getNodeMap(rrs, 2);
         nameAsserter = new NodeNameAsserter("detail_dn29", "detail_dn15");
         nameAsserter.assertRouteNodeNames(nodeMap.keySet());
@@ -584,7 +584,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "select * from (select count(*) from(select * from offer_detail where offer_id='123' or offer_id='234' limit 88)offer  where offer.member_id='abc' limit 60) w "
                 + " where w.member_id ='pavarotti17' limit 99";
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(true, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(true, rrs.isCacheAble());
         // Assert.assertEquals(88L, rrs.getLimitSize());
         // Assert.assertEquals(RouteResultset.SUM_FLAG, rrs.getFlag());
         nodeMap = getNodeMap(rrs, 2);
@@ -599,7 +599,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         String sql = " desc offer";
         RouteResultset rrs = routeStrategy.route(schema, ServerParse.DESCRIBE, sql, null,
                 cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node
@@ -608,7 +608,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
 
         sql = "desc cndb.offer";
         rrs = routeStrategy.route(schema, ServerParse.DESCRIBE, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node
@@ -617,7 +617,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
 
         sql = "desc cndb.offer col1";
         rrs = routeStrategy.route(schema, ServerParse.DESCRIBE, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node
@@ -627,7 +627,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "SHOW FULL COLUMNS FROM  offer  IN db_name WHERE true";
         rrs = routeStrategy.route(schema, ServerParse.SHOW, sql, null,
                 cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node
@@ -639,7 +639,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         rrs = routeStrategy.route(schema, ServerParse.SHOW, sql, null,
                 cachePool);
         Assert.assertEquals(-1L, rrs.getLimitSize());
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node
         // Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
@@ -651,13 +651,13 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         rrs = routeStrategy.route(schema, ServerParse.SHOW, sql, null,
                 cachePool);
         Assert.assertEquals(-1L, rrs.getLimitSize());
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals("SHOW FULL TABLES WHERE Table_type != 'VIEW'", rrs.getNodes()[0].getStatement());
 
         sql = "SHOW INDEX  IN offer FROM  db_name";
         rrs = routeStrategy.route(schema, ServerParse.SHOW, sql, null,
                 cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node
@@ -668,7 +668,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "SHOW TABLES from db_name like 'solo'";
         rrs = routeStrategy.route(schema, ServerParse.SHOW, sql, null,
                 cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 3);
         NodeNameAsserter nameAsserter = new NodeNameAsserter("detail_dn0",
@@ -688,7 +688,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "SHOW TABLES in db_name ";
         rrs = routeStrategy.route(schema, ServerParse.SHOW, sql, null,
                 cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         nodeMap = getNodeMap(rrs, 3);
         nameAsserter = new NodeNameAsserter("detail_dn0", "offer_dn0",
@@ -706,7 +706,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         sql = "SHOW TABLeS ";
         rrs = routeStrategy.route(schema, ServerParse.SHOW, sql, null,
                 cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         nodeMap = getNodeMap(rrs, 3);
         nameAsserter = new NodeNameAsserter("offer_dn0", "detail_dn0",
@@ -751,21 +751,21 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         String sql = "select * from offer where offer_id=1";
         RouteResultset rrs = routeStrategy.route(schema, 1, sql, null,
                 cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals("cndb_dn", rrs.getNodes()[0].getName());
         Assert.assertEquals(sql, rrs.getNodes()[0].getStatement());
         sql = "select * from ignoreSchemaTest.offer1 where ignoreSchemaTest.offer1.offer_id=1";
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals("select * from offer1 where offer1.offer_id=1",
                 rrs.getNodes()[0].getStatement());
         sql = "select * from ignoreSchemaTest2.offer where ignoreSchemaTest2.offer.offer_id=1";
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(sql, rrs.getNodes()[0].getStatement(), sql);
         sql = "select * from ignoreSchemaTest2.offer a,offer b  where ignoreSchemaTest2.offer.offer_id=1";
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(
                 "select * from ignoreSchemaTest2.offer a,offer b  where ignoreSchemaTest2.offer.offer_id=1",
                 rrs.getNodes()[0].getStatement());
@@ -781,7 +781,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         schema = schemaMap.get("dubbo2");
         sql = "SHOW TABLES from db_name like 'solo'";
         rrs = routeStrategy.route(schema, 9, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         Assert.assertEquals("dn1", rrs.getNodes()[0].getName());
@@ -791,7 +791,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         schema = schemaMap.get("dubbo");
         sql = "SHOW TABLES from db_name like 'solo'";
         rrs = routeStrategy.route(schema, 9, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         Assert.assertEquals("dubbo_dn", rrs.getNodes()[0].getName());
@@ -801,7 +801,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
 
         sql = "desc cndb.offer";
         rrs = routeStrategy.route(schema, 1, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         Assert.assertEquals("dubbo_dn", rrs.getNodes()[0].getName());
@@ -810,7 +810,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         schema = schemaMap.get("cndb");
         sql = "SHOW fulL TaBLES from db_name like 'solo'";
         rrs = routeStrategy.route(schema, 9, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 3);
         NodeNameAsserter nameAsserter = new NodeNameAsserter("detail_dn0",
                 "offer_dn0", "independent_dn0");
@@ -888,7 +888,7 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         rrs = routeStrategy.route(schema, 1, sql, null,
                 cachePool);
         Assert.assertEquals(2, rrs.getNodes().length);
-        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
+        Assert.assertEquals(false, rrs.isCacheAble());
         Assert.assertEquals("dn1", rrs.getNodes()[0].getName());
         Assert.assertEquals("dn2", rrs.getNodes()[1].getName());
         String node1Sql = formatSql("insert into employee (id,name,sharding_id) values(1,'testonly',10000)");

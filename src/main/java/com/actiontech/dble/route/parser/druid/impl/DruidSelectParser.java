@@ -21,7 +21,6 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.handler.MysqlSystemSchemaHandler;
@@ -132,6 +131,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         if (noShardingNode != null) {
             //route to singleNode
             RouterUtil.routeToSingleNode(rrs, noShardingNode);
+            return;
         } else {
             //route for configured table
             TableConfig tc = schema.getTables().get(schemaInfo.getTable());
@@ -152,7 +152,6 @@ public class DruidSelectParser extends DefaultDruidParser {
                     }
                 }
             }
-
             if (nodeSet.size() == 0) {
                 String msg = " find no Route:" + rrs.getStatement();
                 LOGGER.info(msg);
@@ -199,9 +198,10 @@ public class DruidSelectParser extends DefaultDruidParser {
         RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
     }
 
-    private void tryRouteToOneNode(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
+
+    private SchemaConfig tryRouteToOneNode(SchemaConfig schema, RouteResultset rrs, ServerConnection sc, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
         Set<String> schemaList = new HashSet<>();
-        String dataNode = RouterUtil.tryRouteTablesToOneNode(rrs, ctx, schemaList, tableSize, true);
+        String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs, schema, ctx, schemaList, tableSize, true);
         if (dataNode != null) {
             String sql = rrs.getStatement();
             for (String toRemoveSchemaName : schemaList) {
@@ -213,6 +213,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setNeedOptimizer(true);
             rrs.setSqlStatement(selectStmt);
         }
+        return schema;
     }
 
 
@@ -482,8 +483,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setFinishedExecute(true);
             return schema;
         } else {
-            tryRouteToOneNode(rrs, selectStmt, tableSize);
-            return schema;
+            return tryRouteToOneNode(schema, rrs, sc, selectStmt, tableSize);
         }
     }
 
@@ -505,14 +505,14 @@ public class DruidSelectParser extends DefaultDruidParser {
             int limitStart = 0;
             int limitSize = sqlSchema.getDefaultMaxLimit();
 
-            Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> allConditions = getAllConditions();
+            Map<String, Map<String, Set<ColumnRoutePair>>> allConditions = getAllConditions();
             boolean isNeedAddLimit = isNeedAddLimit(sqlSchema, rrs, mysqlSelectQuery, allConditions);
             if (isNeedAddLimit) {
                 SQLLimit limit = new SQLLimit();
                 limit.setRowCount(new SQLIntegerExpr(limitSize));
                 mysqlSelectQuery.setLimit(limit);
                 rrs.setLimitSize(limitSize);
-                String sql = RouterUtil.removeSchema(statementToString(stmt), sqlSchema.getName());
+                String sql = getSql(rrs, stmt, isNeedAddLimit, sqlSchema.getName());
                 rrs.changeNodeSqlAfterAddLimit(sql, 0, limitSize);
             }
             SQLLimit limit = mysqlSelectQuery.getLimit();
@@ -545,53 +545,102 @@ public class DruidSelectParser extends DefaultDruidParser {
                     }
 
                     mysqlSelectQuery.setLimit(changedLimit);
-                    String sql = RouterUtil.removeSchema(statementToString(stmt), sqlSchema.getName());
+                    String sql = getSql(rrs, stmt, isNeedAddLimit, sqlSchema.getName());
                     rrs.changeNodeSqlAfterAddLimit(sql, 0, limitStart + limitSize);
                 } else {
                     rrs.changeNodeSqlAfterAddLimit(rrs.getStatement(), rrs.getLimitStart(), rrs.getLimitSize());
                 }
             }
-            rrs.setSqlRouteCacheAble(isNeedSqlRouteCache(sqlSchema));
+            rrs.setCacheAble(isNeedCache(sqlSchema));
         }
 
     }
+
+    private void tryRouteSingleTable(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool)
+            throws SQLException {
+        if (rrs.isFinishedRoute()) {
+            return;
+        }
+        SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
+        String table = ctx.getTables().get(0);
+        String noShardingNode = RouterUtil.isNoSharding(schema, table);
+        if (noShardingNode != null) {
+            RouterUtil.routeToSingleNode(rrs, noShardingNode);
+            return;
+        }
+        for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
+            RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, table, rrs, true, cachePool, null);
+            if (rrsTmp != null && rrsTmp.getNodes() != null) {
+                Collections.addAll(nodeSet, rrsTmp.getNodes());
+                if (rrsTmp.isGlobalTable()) {
+                    break;
+                }
+            }
+        }
+        if (nodeSet.size() == 0) {
+            String msg = " find no Route:" + rrs.getStatement();
+            LOGGER.info(msg);
+            throw new SQLNonTransientException(msg);
+        }
+
+        RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
+        int i = 0;
+        for (RouteResultsetNode aNodeSet : nodeSet) {
+            nodes[i] = aNodeSet;
+            i++;
+        }
+
+        rrs.setNodes(nodes);
+        rrs.setFinishedRoute(true);
+    }
+
     /**
      * getAllConditions
      */
-    private Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> getAllConditions() {
-        Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> map = new HashMap<>();
+    private Map<String, Map<String, Set<ColumnRoutePair>>> getAllConditions() {
+        Map<String, Map<String, Set<ColumnRoutePair>>> map = new HashMap<>();
         for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
             if (unit != null && unit.getTablesAndConditions() != null) {
                 map.putAll(unit.getTablesAndConditions());
             }
         }
+
         return map;
     }
 
 
-    private boolean isNeedChangeLimit(RouteResultset rrs) {
-        return rrs.getNodes() != null && rrs.getNodes().length > 1;
+    protected String getSql(RouteResultset rrs, SQLStatement stmt, boolean isNeedAddLimit, String schema) {
+        if ((isNeedChangeLimit(rrs) || isNeedAddLimit)) {
+            return RouterUtil.removeSchema(statementToString(stmt), schema);
+        }
+        return rrs.getStatement();
     }
 
-    private boolean isNeedSqlRouteCache(SchemaConfig schema) {
+
+    private boolean isNeedChangeLimit(RouteResultset rrs) {
+        if (rrs.getNodes() == null) {
+            return false;
+        } else {
+            return rrs.getNodes().length > 1;
+        }
+    }
+
+    private boolean isNeedCache(SchemaConfig schema) {
         if (ctx.getTables() == null || ctx.getTables().size() == 0) {
             return false;
         }
-        Pair<String, String> table = ctx.getTables().get(0);
-        String tableName = table.getValue();
-        TableConfig tc = schema.getTables().get(tableName);
+        TableConfig tc = schema.getTables().get(ctx.getTables().get(0));
         if (tc == null || (ctx.getTables().size() == 1 && tc.isGlobalTable())) {
             return false;
         } else {
             //single table
             if (ctx.getTables().size() == 1) {
-                String cacheKey = schema.getTables().get(tableName).getPrimaryKey();
-                for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-                    if (unit.getTablesAndConditions().get(table) != null &&
-                            unit.getTablesAndConditions().get(table).get(cacheKey) != null &&
-                            tc.getDataNodes().size() > 1) {
-                        return false;
-                    }
+                String tableName = ctx.getTables().get(0);
+                String primaryKey = schema.getTables().get(tableName).getPrimaryKey();
+                if (ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName) != null &&
+                        ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName).get(primaryKey) != null &&
+                        tc.getDataNodes().size() > 1) { //primaryKey condition
+                    return false;
                 }
             }
             return true;
@@ -614,8 +663,15 @@ public class DruidSelectParser extends DefaultDruidParser {
         mysqlSelectQuery.setLimit(limit);
     }
 
+    /**
+     * @param schema
+     * @param rrs
+     * @param mysqlSelectQuery
+     * @param allConditions
+     * @return
+     */
     private boolean isNeedAddLimit(SchemaConfig schema, RouteResultset rrs,
-                                   MySqlSelectQueryBlock mysqlSelectQuery, Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> allConditions) {
+                                   MySqlSelectQueryBlock mysqlSelectQuery, Map<String, Map<String, Set<ColumnRoutePair>>> allConditions) {
         if (rrs.getLimitSize() > -1) {
             return false;
         } else if (schema.getDefaultMaxLimit() == -1) {
@@ -627,8 +683,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 // single table and has primary key , need not limit because of only one row
                 return false;
             }
-            Pair<String, String> table = ctx.getTables().get(0);
-            String tableName = table.getValue();
+            String tableName = ctx.getTables().get(0);
             TableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig == null) {
                 return schema.getDefaultMaxLimit() > -1; // get schema's configure
@@ -645,7 +700,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
             String primaryKey = schema.getTables().get(tableName).getPrimaryKey();
             // no condition
-            return allConditions.get(table) == null || allConditions.get(table).get(primaryKey) == null;
+            return allConditions.get(tableName) == null || allConditions.get(tableName).get(primaryKey) == null;
         } else { // no table or multi-table
             return false;
         }

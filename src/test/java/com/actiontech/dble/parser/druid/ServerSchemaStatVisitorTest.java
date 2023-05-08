@@ -6,14 +6,14 @@
 package com.actiontech.dble.parser.druid;
 
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
-import com.actiontech.dble.route.parser.druid.WhereUnit;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.stat.TableStat.Condition;
-import org.junit.Assert;
+import junit.framework.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,28 +32,32 @@ public class ServerSchemaStatVisitorTest {
         String sql = "select id from travelrecord "
                 + " where id = 1 and ( fee=3 or days=5 or (traveldate = '2015-05-04 00:00:07.375' "
                 + " and (user_id=2 or fee=days or fee = 0))) and id=2";
-        List<WhereUnit> whereUnits = getAllWhereUnit(sql);
-        WhereUnit whereUnit = whereUnits.get(0);
-        List<Condition> list1 = whereUnit.getOutAndConditions();
+        List<List<Condition>> list = getConditionList(sql);
+        Assert.assertEquals(list.size(), 5);
+        Assert.assertEquals(list.get(0).size(), 2);
+        Assert.assertEquals(list.get(1).size(), 2);
+        Assert.assertEquals(list.get(2).size(), 3);
+        Assert.assertEquals(list.get(3).size(), 2);
+        Assert.assertEquals(list.get(4).size(), 3);
 
-        Assert.assertEquals(list1.get(0).toString(), "travelrecord.id = (1, 2)");
+        Assert.assertEquals(list.get(0).get(0).toString(), "travelrecord.days = 5");
+        Assert.assertEquals(list.get(0).get(1).toString(), "travelrecord.id = (1, 2)");
 
-        WhereUnit childWhereUnits = whereUnit.getSubWhereUnit().get(0);
-        List<List<Condition>> childList = childWhereUnits.getOrConditionList();
+        Assert.assertEquals(list.get(1).get(0).toString(), "travelrecord.fee = 3");
+        Assert.assertEquals(list.get(1).get(1).toString(), "travelrecord.id = (1, 2)");
 
-        Assert.assertEquals(childList.get(0).get(0).toString(), "travelrecord.days = 5");
-        Assert.assertEquals(childList.get(1).get(0).toString(), "travelrecord.fee = 3");
+        Assert.assertEquals(list.get(2).get(0).toString(), "travelrecord.fee = 0");
+        Assert.assertEquals(list.get(2).get(1).toString(), "travelrecord.traveldate = 2015-05-04 00:00:07.375");
+        Assert.assertEquals(list.get(2).get(2).toString(), "travelrecord.id = (1, 2)");
 
-        WhereUnit child2WhereUnits = childWhereUnits.getSubWhereUnit().get(0);
-        List<Condition> child2 = child2WhereUnits.getOutAndConditions();
-        Assert.assertEquals(child2.get(0).toString(), "travelrecord.traveldate = 2015-05-04 00:00:07.375");
+        Assert.assertEquals(list.get(3).get(0).toString(), "travelrecord.traveldate = 2015-05-04 00:00:07.375");
+        Assert.assertEquals(list.get(3).get(1).toString(), "travelrecord.id = (1, 2)");
 
-        WhereUnit child3WhereUnits = child2WhereUnits.getSubWhereUnit().get(0);
-        List<List<Condition>> child3List = child3WhereUnits.getOrConditionList();
-        Assert.assertEquals(child3List.get(0).get(0).toString(), "travelrecord.fee = 0");
-        Assert.assertEquals(child3List.get(1).size(), 0);
-        Assert.assertEquals(child3List.get(2).get(0).toString(), "travelrecord.user_id = 2");
+        Assert.assertEquals(list.get(4).get(0).toString(), "travelrecord.user_id = 2");
+        Assert.assertEquals(list.get(4).get(1).toString(), "travelrecord.traveldate = 2015-05-04 00:00:07.375");
+        Assert.assertEquals(list.get(4).get(2).toString(), "travelrecord.id = (1, 2)");
 
+        System.out.println(list.size());
     }
 
     /**
@@ -63,18 +67,22 @@ public class ServerSchemaStatVisitorTest {
     public void test2() {
         String sql = "select id from travelrecord "
                 + " where id = 1 and ( fee=3 or days=5 or name = 'zhangsan')";
-        List<WhereUnit> whereUnits = getAllWhereUnit(sql);
-        WhereUnit whereUnit = whereUnits.get(0);
-        List<Condition> list1 = whereUnit.getOutAndConditions();
-        Assert.assertEquals(list1.get(0).toString(), "travelrecord.id = 1");
+        List<List<Condition>> list = getConditionList(sql);
 
-        WhereUnit childWhereUnits = whereUnit.getSubWhereUnit().get(0);
-        List<List<Condition>> childList = childWhereUnits.getOrConditionList();
+        Assert.assertEquals(list.size(), 3);
+        Assert.assertEquals(list.get(0).size(), 2);
+        Assert.assertEquals(list.get(1).size(), 2);
+        Assert.assertEquals(list.get(2).size(), 2);
 
-        Assert.assertEquals(childList.get(0).get(0).toString(), "travelrecord.name = zhangsan");
-        Assert.assertEquals(childList.get(1).get(0).toString(), "travelrecord.days = 5");
-        Assert.assertEquals(childList.get(2).get(0).toString(), "travelrecord.fee = 3");
 
+        Assert.assertEquals(list.get(0).get(0).toString(), "travelrecord.name = zhangsan");
+        Assert.assertEquals(list.get(0).get(1).toString(), "travelrecord.id = 1");
+
+        Assert.assertEquals(list.get(1).get(0).toString(), "travelrecord.days = 5");
+        Assert.assertEquals(list.get(1).get(1).toString(), "travelrecord.id = 1");
+
+        Assert.assertEquals(list.get(2).get(0).toString(), "travelrecord.fee = 3");
+        Assert.assertEquals(list.get(2).get(1).toString(), "travelrecord.id = 1");
     }
 
     /**
@@ -84,8 +92,8 @@ public class ServerSchemaStatVisitorTest {
     public void test3() {
         String sql = "select id from travelrecord "
                 + " where id = 1 and fee=3 or days=5 or name = 'zhangsan'";
-        List<WhereUnit> whereUnits = getAllWhereUnit(sql);
-        List<List<Condition>> list = whereUnits.get(0).getOrConditionList();
+        List<List<Condition>> list = getConditionList(sql);
+
         Assert.assertEquals(list.size(), 3);
 
         Assert.assertEquals(list.get(0).size(), 1);
@@ -100,16 +108,18 @@ public class ServerSchemaStatVisitorTest {
         Assert.assertEquals(list.get(2).get(1).toString(), "travelrecord.fee = 3");
     }
 
-    private List<WhereUnit> getAllWhereUnit(String sql) {
-        SQLStatementParser parser = new MySqlStatementParser(sql);
+    private List<List<Condition>> getConditionList(String sql) {
+        SQLStatementParser parser = null;
+        parser = new MySqlStatementParser(sql);
 
-        ServerSchemaStatVisitor visitor;
+        ServerSchemaStatVisitor visitor = null;
+        SQLStatement statement = null;
         //throw exception
         try {
-            SQLStatement statement = parser.parseStatement();
+            statement = parser.parseStatement();
             visitor = new ServerSchemaStatVisitor();
             statement.accept(visitor);
-            return visitor.getAllWhereUnit();
+            return visitor.getConditionList();
         } catch (Exception e) {
             e.printStackTrace();
         }

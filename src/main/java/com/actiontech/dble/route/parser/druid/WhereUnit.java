@@ -52,11 +52,11 @@ public class WhereUnit {
 
     private List<SQLExpr> splitedExprList = new ArrayList<>();
 
-    private List<List<Condition>> orConditionList = new ArrayList<>();
+    private List<List<Condition>> conditionList = new ArrayList<>();
     /**
      * whereExpris not contains all where condition,consider outConditions
      */
-    private List<Condition> outAndConditions = new ArrayList<>();
+    private List<Condition> outConditions = new ArrayList<>();
 
     private Set<Relationship> outRelationships = new HashSet<>();
 
@@ -65,12 +65,12 @@ public class WhereUnit {
 
     private boolean finishedParse = false;
 
-    public List<Condition> getOutAndConditions() {
-        return outAndConditions;
+    public List<Condition> getOutConditions() {
+        return outConditions;
     }
 
     public void addOutConditions(List<Condition> conditions) {
-        this.outAndConditions.addAll(conditions);
+        this.outConditions.addAll(conditions);
     }
 
     public Set<Relationship> getOutRelationships() {
@@ -113,12 +113,12 @@ public class WhereUnit {
         this.splitedExprList.add(splitedExpr);
     }
 
-    public List<List<Condition>> getOrConditionList() {
-        return orConditionList;
+    public List<List<Condition>> getConditionList() {
+        return conditionList;
     }
 
-    public void setOrConditionList(List<List<Condition>> orConditionList) {
-        this.orConditionList = orConditionList;
+    public void setConditionList(List<List<Condition>> conditionList) {
+        this.conditionList = conditionList;
     }
 
     public void addSubWhereUnit(WhereUnit whereUnit) {
@@ -127,64 +127,5 @@ public class WhereUnit {
 
     public List<WhereUnit> getSubWhereUnit() {
         return this.subWhereUnits;
-    }
-
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        for (Condition cond : outAndConditions) {
-            if (sb.length() > 0) {
-                sb.append(" and ");
-            }
-            sb.append("(");
-            sb.append(cond);
-            sb.append(")");
-        }
-        if (orConditionList.size() > 0) {
-            if (outAndConditions.size() > 0) {
-                sb.append(" and (");
-            }
-            int iOrCnt = 0;
-            for (List<Condition> or : orConditionList) {
-                if (iOrCnt > 0) {
-                    sb.append(" or ");
-                }
-                sb.append("(");
-                int jCnt = 0;
-                for (Condition innerOr : or) {
-                    if (jCnt > 0) {
-                        sb.append(" and ");
-                    }
-                    sb.append("(");
-                    sb.append(innerOr);
-                    sb.append(")");
-                    jCnt++;
-                }
-                sb.append(")");
-                iOrCnt++;
-            }
-            if (subWhereUnits.size() > 0) {
-                sb.append(" or ");
-                sb.append("(");
-                for (WhereUnit subWhereUnit : subWhereUnits) {
-                    sb.append(subWhereUnit);
-                }
-                sb.append(")");
-            }
-
-            if (outAndConditions.size() > 0) {
-                sb.append(" )");
-            }
-        } else if (subWhereUnits.size() > 0) {
-            if (outAndConditions.size() > 0) {
-                sb.append(" and ");
-            }
-            sb.append("(");
-            for (WhereUnit subWhereUnit : subWhereUnits) {
-                sb.append(subWhereUnit);
-            }
-            sb.append(")");
-        }
-
-        return sb.toString();
     }
 }

@@ -1,7 +1,11 @@
 package com.actiontech.dble.singleton;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.route.sequence.handler.*;
+import com.google.common.collect.Sets;
+
+import java.util.Set;
 
 /**
  * Created by szf on 2019/9/19.
@@ -14,46 +18,78 @@ public final class SequenceManager {
 
     }
 
-    public static void init(int seqHandlerType) {
+    public static void init() {
+        int seqHandlerType = ClusterConfig.getInstance().getSequenceHandlerType();
+        INSTANCE.handler = newSequenceHandler(seqHandlerType);
+    }
+
+    private static SequenceHandler newSequenceHandler(int seqHandlerType) {
         switch (seqHandlerType) {
             case ClusterConfig.SEQUENCE_HANDLER_MYSQL:
-                INSTANCE.handler = new IncrSequenceMySQLHandler();
-                break;
+                return new IncrSequenceMySQLHandler();
             case ClusterConfig.SEQUENCE_HANDLER_LOCAL_TIME:
-                INSTANCE.handler = new IncrSequenceTimeHandler();
-                break;
+                return new IncrSequenceTimeHandler();
             case ClusterConfig.SEQUENCE_HANDLER_ZK_DISTRIBUTED:
                 if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().useZkMode()) {
-                    INSTANCE.handler = new DistributedSequenceHandler();
+                    return new DistributedSequenceHandler();
                 } else {
                     throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType + " for no-zk cluster");
                 }
-                break;
             case ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT:
                 if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().useZkMode()) {
-                    INSTANCE.handler = new IncrSequenceZKHandler();
+                    return new IncrSequenceZKHandler();
                 } else {
                     throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType + " for no-zk cluster");
                 }
-                break;
             default:
                 throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType);
         }
     }
 
-    public static void load(boolean lowerCaseTableNames) {
-        INSTANCE.handler.load(lowerCaseTableNames);
+    public static void load(String sequenceJson) {
+        if (INSTANCE.handler == null)
+            return;
+        INSTANCE.handler.load(sequenceJson, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
     }
 
-    public static void load(boolean lowerCaseTableNames, String sequenceJson) {
-        INSTANCE.handler.loadByJson(lowerCaseTableNames, sequenceJson);
+    public static void reload(String sequenceJson) {
+        if (INSTANCE.handler == null)
+            return;
+        int seqHandlerType = ClusterConfig.getInstance().getSequenceHandlerType();
+        switch (seqHandlerType) {
+            case ClusterConfig.SEQUENCE_HANDLER_MYSQL:
+            case ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT:
+                INSTANCE.handler.load(sequenceJson, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
+                break;
+            default:
+                break;
+        }
     }
 
+    public static void tryLoad(String sequenceJson) {
+        int seqHandlerType = ClusterConfig.getInstance().getSequenceHandlerType();
+        switch (seqHandlerType) {
+            case ClusterConfig.SEQUENCE_HANDLER_MYSQL:
+            case ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT:
+                SequenceHandler tmpHandler = newSequenceHandler(seqHandlerType);
+                tmpHandler.tryLoad(sequenceJson, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
+                break;
+            default:
+                break;
+        }
+    }
     public static SequenceManager getInstance() {
         return INSTANCE;
     }
 
     public static SequenceHandler getHandler() {
         return INSTANCE.handler;
+    }
+
+    public static Set<String> getShardingNodes(String sequenceJson) {
+        if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL && sequenceJson != null) {
+            return IncrSequenceMySQLHandler.getShardingNodes(sequenceJson);
+        }
+        return Sets.newHashSet();
     }
 }

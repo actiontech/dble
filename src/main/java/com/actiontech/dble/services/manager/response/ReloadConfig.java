@@ -322,12 +322,11 @@ public final class ReloadConfig {
             if (loader.isFullyConfigured()) {
                 if (newSystemVariables.isLowerCaseTableNames()) {
                     ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
-                    serverConfig.reviseLowerCase(loader.getSequenceConfig());
+                    serverConfig.reviseLowerCase();
                     ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
-                } else {
-                    serverConfig.loadSequence(loader.getSequenceConfig());
-                    serverConfig.selfChecking0();
                 }
+                serverConfig.reloadSequence(loader.getSequenceConfig());
+                serverConfig.selfChecking0();
             }
             checkTestConnIfNeed(loadAllMode, loader);
 
@@ -433,12 +432,11 @@ public final class ReloadConfig {
             if (loader.isFullyConfigured()) {
                 if (newSystemVariables.isLowerCaseTableNames()) {
                     ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
-                    serverConfig.reviseLowerCase(loader.getSequenceConfig());
+                    serverConfig.reviseLowerCase();
                     ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
-                } else {
-                    serverConfig.loadSequence(loader.getSequenceConfig());
-                    serverConfig.selfChecking0();
                 }
+                serverConfig.reloadSequence(loader.getSequenceConfig());
+                serverConfig.selfChecking0();
             }
             checkTestConnIfNeed(loadAllMode, loader);
 

@@ -60,7 +60,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
          * debug mode and load data ,no cache
          */
         if (LOGGER.isDebugEnabled() && origSQL.startsWith(LoadData.LOAD_DATA_HINT)) {
-            rrs.setSqlRouteCacheAble(false);
+            rrs.setCacheAble(false);
         }
 
         if (sqlType == ServerParse.CALL) {

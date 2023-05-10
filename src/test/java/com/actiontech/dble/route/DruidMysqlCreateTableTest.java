@@ -21,7 +21,7 @@ import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import org.junit.Assert;
+import junit.framework.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 

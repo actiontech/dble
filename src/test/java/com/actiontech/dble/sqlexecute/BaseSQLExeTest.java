@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.sqlexecute;
 
-import org.junit.Assert;
+import junit.framework.Assert;
 
 import java.sql.*;
 

@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.util;
 
-import org.junit.Assert;
+import junit.framework.Assert;
 import org.junit.Test;
 
 /**

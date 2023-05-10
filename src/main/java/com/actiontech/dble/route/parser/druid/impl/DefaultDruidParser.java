@@ -13,18 +13,18 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
-import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
-import com.actiontech.dble.route.parser.util.Pair;
-import com.actiontech.dble.route.util.ConditionUtil;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.sqlengine.mpp.IsValue;
+import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+import com.alibaba.druid.stat.TableStat.Condition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +39,7 @@ import java.util.*;
  */
 public class DefaultDruidParser implements DruidParser {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DefaultDruidParser.class);
-    DruidShardingParseInfo ctx;
+    protected DruidShardingParseInfo ctx;
 
 
     public DefaultDruidParser() {
@@ -66,77 +66,118 @@ public class DefaultDruidParser implements DruidParser {
     }
 
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schemaConfig, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
             throws SQLException {
         stmt.accept(visitor);
         if (visitor.getNotSupportMsg() != null) {
             throw new SQLNonTransientException(visitor.getNotSupportMsg());
         }
-        String schemaName = null;
-        if (schemaConfig != null) {
-            schemaName = schemaConfig.getName();
-        }
-        Map<String, String> tableAliasMap = getTableAliasMap(schemaName, visitor.getAliasMap());
-        ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(visitor.getAllWhereUnit(), tableAliasMap, schemaName));
-
-        return schemaConfig;
+        Map<String, String> tableAliasMap = getTableAliasMap(visitor.getAliasMap());
+        ctx.setRouteCalculateUnits(this.buildRouteCalculateUnits(tableAliasMap, visitor.getConditionList()));
+        return schema;
     }
 
-    private Map<String, String> getTableAliasMap(String defaultSchemaName, Map<String, String> originTableAliasMap) {
+    private Map<String, String> getTableAliasMap(Map<String, String> originTableAliasMap) {
         if (originTableAliasMap == null) {
             return null;
         }
-
-        Map<String, String> tableAliasMap = new HashMap<>(originTableAliasMap);
+        Map<String, String> tableAliasMap = new HashMap<>();
+        tableAliasMap.putAll(originTableAliasMap);
         for (Map.Entry<String, String> entry : originTableAliasMap.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
-            // fixme: not strict
-            if (key != null && key.startsWith("`")) {
-                tableAliasMap.put(key.replaceAll("`", ""), value);
-            }
-        }
-
-        Iterator<Map.Entry<String, String>> iterator = tableAliasMap.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, String> next = iterator.next();
-            String keySchemaName = defaultSchemaName;
-            String valueSchemaName = defaultSchemaName;
-            String key = next.getKey();
-            String value = next.getValue();
-            if ("subquery".equalsIgnoreCase(value)) {
-                iterator.remove();
-                continue;
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                if (key != null) {
+                    key = key.toLowerCase();
+                }
+                if (value != null) {
+                    value = value.toLowerCase();
+                }
             }
             if (key != null) {
                 int pos = key.indexOf(".");
                 if (pos > 0) {
-                    keySchemaName = key.substring(0, pos);
                     key = key.substring(pos + 1);
                 }
             }
             if (value != null) {
                 int pos = value.indexOf(".");
                 if (pos > 0) {
-                    valueSchemaName = value.substring(0, pos);
                     value = value.substring(pos + 1);
                 }
             }
-            if (key != null && keySchemaName != null) {
-                keySchemaName = StringUtil.removeBackQuote(keySchemaName);
-                key = StringUtil.removeBackQuote(key);
-                // remove database in database.table
-                if (key.equals(value) && keySchemaName.equals(valueSchemaName)) {
-                    Pair<String, String> tmpTable = new Pair<>(keySchemaName, key);
-                    if (!ctx.getTables().contains(tmpTable)) {
-                        ctx.addTable(tmpTable);
-                    }
+            if (key != null && key.charAt(0) == '`') {
+                key = key.substring(1, key.length() - 1);
+            }
+            if (value != null && value.charAt(0) == '`') {
+                value = value.substring(1, value.length() - 1);
+            }
+            // remove database in database.table
+            if (key != null) {
+                boolean needAddTable = false;
+                if (key.equals(value)) {
+                    needAddTable = true;
+                }
+                if (needAddTable) {
+                    ctx.addTable(key);
                 }
                 tableAliasMap.put(key, value);
             }
         }
         ctx.setTableAliasMap(tableAliasMap);
         return tableAliasMap;
+    }
+
+    private List<RouteCalculateUnit> buildRouteCalculateUnits(Map<String, String> tableAliasMap, List<List<Condition>> conditionList) {
+        List<RouteCalculateUnit> retList = new ArrayList<>();
+        //find partition column in condition
+        for (List<Condition> aConditionList : conditionList) {
+            RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
+            for (Condition condition : aConditionList) {
+                List<Object> values = condition.getValues();
+                if (values.size() == 0) {
+                    continue;
+                }
+                if (checkConditionValues(values)) {
+                    String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());
+                    String tableName = StringUtil.removeBackQuote(condition.getColumn().getTable());
+                    if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                        tableName = tableName.toLowerCase();
+                    }
+                    if (tableAliasMap != null && tableAliasMap.get(tableName) == null) {
+                        //ignore subQuery's alias
+                        continue;
+                    }
+                    if (tableAliasMap != null && tableAliasMap.get(tableName) != null &&
+                            !tableAliasMap.get(tableName).equals(tableName)) {
+                        tableName = tableAliasMap.get(tableName);
+                    }
+                    String operator = condition.getOperator();
+
+                    //execute only between ,in and =
+                    if (operator.equals("between")) {
+                        RangeValue rv = new RangeValue(values.get(0), values.get(1), RangeValue.EE);
+                        routeCalculateUnit.addShardingExpr(tableName, columnName, rv);
+                    } else if (operator.equals("=") || operator.toLowerCase().equals("in")) {
+                        routeCalculateUnit.addShardingExpr(tableName, columnName, values.toArray());
+                    } else if (operator.equals("IS")) {
+                        IsValue isValue = new IsValue(values.toArray());
+                        routeCalculateUnit.addShardingExpr(tableName, columnName, isValue);
+                    }
+                }
+            }
+            retList.add(routeCalculateUnit);
+        }
+        return retList;
+    }
+
+    private boolean checkConditionValues(List<Object> values) {
+        for (Object value : values) {
+            if (value != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public DruidShardingParseInfo getCtx() {
@@ -187,33 +228,5 @@ public class DefaultDruidParser implements DruidParser {
         visitor.setShardingSupport(false);
         statement.accept(visitor);
         return buf.toString();
-    }
-
-
-    /*
-     * delete / update sharding table with limit route
-     * if the update/delete with limit route to more than one sharding-table throw a new Execption
-     *
-     */
-    void updateAndDeleteLimitRoute(RouteResultset rrs, String tableName, SchemaConfig schema) throws SQLException {
-        SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
-        for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-            RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tableName, rrs, false, DbleServer.getInstance().getRouterService().getTableId2DataNodeCache(), null);
-            if (rrsTmp != null && rrsTmp.getNodes() != null) {
-                Collections.addAll(nodeSet, rrsTmp.getNodes());
-            }
-        }
-        if (nodeSet.size() > 1) {
-            throw new SQLNonTransientException("delete/update sharding table with a limit route to multiNode not support");
-        } else {
-            RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
-            int i = 0;
-            for (RouteResultsetNode aNodeSet : nodeSet) {
-                nodes[i] = aNodeSet;
-                i++;
-            }
-            rrs.setNodes(nodes);
-            rrs.setFinishedRoute(true);
-        }
     }
 }

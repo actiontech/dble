@@ -14,7 +14,6 @@ import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DruidSingleUnitSelectParser;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -30,7 +29,7 @@ public class MergeBuilder {
     private boolean needCommonFlag;
     private PlanNode node;
     private NonBlockingSession session;
-    private Map<String, SchemaConfig> schemaConfigMap = new HashMap<>();
+    protected Map<String, SchemaConfig> schemaConfigMap = new HashMap<>();
     private PushDownVisitor pdVisitor;
 
     MergeBuilder(NonBlockingSession session, PlanNode node, boolean needCommon, PushDownVisitor pdVisitor) {
@@ -47,34 +46,33 @@ public class MergeBuilder {
      * @return RouteResultset
      * @throws SQLException SQLException
      */
-    public RouteResultset construct(SchemaConfig schemaConfig) throws SQLException {
+    public RouteResultset construct() throws SQLException {
         pdVisitor.visit();
-        return constructByQuery(pdVisitor.getSql().toString(), pdVisitor.getMapTableToSimple(), schemaConfig);
+        String sql = pdVisitor.getSql().toString();
+        return constructByQuery(sql);
     }
 
-    private RouteResultset constructByQuery(String sql, Map<String, String> mapTableToSimple, SchemaConfig schemaConfig) throws SQLException {
+    public RouteResultset constructByQuery(String sql) throws SQLException {
         SQLStatementParser parser = new MySqlStatementParser(sql);
         SQLSelectStatement select = (SQLSelectStatement) parser.parseStatement();
-        return constructByStatement(sql, mapTableToSimple, select, schemaConfig);
+        return constructByStatement(sql, select);
     }
 
-    RouteResultset constructByStatement(String sql, Map<String, String> mapTableToSimple, SQLSelectStatement select, SchemaConfig schemaConfig) throws SQLException {
+    public RouteResultset constructByStatement(String sql, SQLSelectStatement select) throws SQLException {
+        ServerSchemaStatVisitor visitor = new ServerSchemaStatVisitor();
+        DruidSingleUnitSelectParser druidParser = new DruidSingleUnitSelectParser();
+
         RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);
-        String pushDownSQL = rrs.getStatement();
-        for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
-            pushDownSQL = pushDownSQL.replace(tableToSimple.getKey(), tableToSimple.getValue());
-        }
-        rrs.setStatement(pushDownSQL);
         LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
-        Map<Pair<String, String>, SchemaConfig> tableConfigMap = new HashMap<>();
+        Map<String, SchemaConfig> tableConfigMap = new HashMap<>();
         for (TableNode tn : node.getReferedTableNodes()) {
             if (schemaConfigMap.get(tn.getSchema()) != null) {
-                tableConfigMap.put(new Pair<>(tn.getSchema(), tn.getTableName()), schemaConfigMap.get(tn.getSchema()));
+                tableConfigMap.put(tn.getTableName(), schemaConfigMap.get(tn.getSchema()));
             }
         }
-        DruidSingleUnitSelectParser druidParser = new DruidSingleUnitSelectParser();
         druidParser.setSchemaMap(tableConfigMap);
-        return RouterUtil.routeFromParserComplex(schemaConfig, druidParser, tableConfigMap, rrs, select, sql, pool, new ServerSchemaStatVisitor(), session.getSource(), node);
+        return RouterUtil.routeFromParserComplex(druidParser, tableConfigMap, rrs, select, sql, pool, visitor, session.getSource(), node);
+
     }
 
     /* -------------------- getter/setter -------------------- */

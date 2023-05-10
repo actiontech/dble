@@ -5,8 +5,6 @@
 
 package com.actiontech.dble.route.parser.druid;
 
-import com.actiontech.dble.route.parser.util.Pair;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,10 +19,10 @@ public class DruidShardingParseInfo {
 
     private List<RouteCalculateUnit> routeCalculateUnits = new ArrayList<>();
 
-    private List<Pair<String, String>> tables = new ArrayList<>();
+    private List<String> tables = new ArrayList<>();
 
     /**
-     * key table alias, value table real name;
+     * key table alias, value talbe realname;
      */
     private Map<String, String> tableAliasMap = new LinkedHashMap<>();
 
@@ -36,14 +34,17 @@ public class DruidShardingParseInfo {
         this.tableAliasMap = tableAliasMap;
     }
 
-    public List<Pair<String, String>> getTables() {
+    public List<String> getTables() {
         return tables;
     }
 
-    public void addTable(Pair<String, String> table) {
-        this.tables.add(table);
+    public void addTable(String tableName) {
+        this.tables.add(tableName);
     }
 
+    public RouteCalculateUnit getRouteCalculateUnit() {
+        return routeCalculateUnits.get(0);
+    }
 
     public List<RouteCalculateUnit> getRouteCalculateUnits() {
         return routeCalculateUnits;
@@ -57,11 +58,12 @@ public class DruidShardingParseInfo {
         this.routeCalculateUnits.add(routeCalculateUnit);
     }
 
-    public void clearRouteCalculateUnit() {
+
+    public void clear() {
         for (RouteCalculateUnit unit : routeCalculateUnits) {
             unit.clear();
         }
-        routeCalculateUnits.clear();
     }
+
 
 }

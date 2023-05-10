@@ -69,7 +69,7 @@ For more information, please visit the [official website](https://opensource.act
 
 ## Documentation
 + [简体中文](https://actiontech.github.io/dble-docs-cn/)
-+ [文档PDF下载](https://github.com/actiontech/dble-docs-cn/tree/pdf/dble-manual.pdf)  或者[github镜像站下载](https://hub.fastgit.org/actiontech/dble-docs-cn/tree/pdf/dble-manual.pdf)
++ 最新PDF版本请去[文档PDF下载](https://github.com/actiontech/dble-docs-cn/releases/download/3.22.11.0%2Ftag/dble-manual-3.22.11.0.pdf)  或者[github镜像站下载](https://hub.fastgit.org/actiontech/dble-docs-cn/releases/download/3.22.11.0%2Ftag/dble-manual-3.22.11.0.pdf) 或者去[文档中心](https://actiontech.github.io/dble-docs-cn/)选择合适的版本下载
 + [中文公开课](https://opensource.actionsky.com/dble-lessons/)
 + English(Comming soon)
 

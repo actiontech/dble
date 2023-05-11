@@ -89,6 +89,7 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
             if (current == this)
                 break;
             current.terminate();
+            session.trace(t -> t.setBackendTerminateByComplex(this));
             current = current.getNextHandler();
         }
     }
@@ -99,5 +100,9 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 
     public void setDependencies(Set<String> dependencies) {
         this.dependencies = dependencies;
+    }
+
+    public int getReachedConCount() {
+        return reachedConCount;
     }
 }

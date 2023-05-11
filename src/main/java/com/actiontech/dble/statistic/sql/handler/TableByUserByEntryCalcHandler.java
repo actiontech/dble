@@ -12,6 +12,7 @@ import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
 import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
+import com.actiontech.dble.util.CollectionUtil;
 
 import java.util.*;
 
@@ -43,48 +44,60 @@ public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
         synchronized (records) {
             if (entry instanceof StatisticFrontendSqlEntry) {
                 StatisticFrontendSqlEntry fEntry = ((StatisticFrontendSqlEntry) entry);
-                Set<String> tableSet = new HashSet<>(ManagerTableUtil.getTables(fEntry.getSchema(), fEntry.getSql()));
-                if (tableSet.isEmpty()) {
-                    // dual, no table
-                    toRecord("null", fEntry);
-                } else {
-                    for (String t : tableSet) {
-                        toRecord(t, fEntry);
+                int sqlType = fEntry.getSqlType();
+                if (sqlType == 4 || sqlType == 11 || sqlType == 3 || sqlType == 7) {
+                    List<String> tableList = new ArrayList<>(fEntry.getTables());
+                    if (CollectionUtil.isEmpty(tableList) ||
+                            (tableList.size() > 1 && tableList.size() != tableList.stream().distinct().count())) {
+                        tableList = ManagerTableUtil.getTables(fEntry.getSchema(), fEntry.getSql());
+                    }
+                    if (tableList.isEmpty()) {
+                        // dual, no table
+                        toRecord("null", fEntry, sqlType);
+                    } else {
+                        if (sqlType != 7 && tableList.size() > 1) {
+                            toRecord(tableList.get(0), fEntry, sqlType);
+                        } else {
+                            Set<String> tableSet = new HashSet<>();
+                            tableSet.addAll(tableList);
+                            for (String t : tableSet) {
+                                toRecord(t, fEntry, sqlType);
+                            }
+                        }
+
                     }
                 }
             }
         }
     }
 
-    private void toRecord(String table, StatisticFrontendSqlEntry fEntry) {
-        if (fEntry.getSqlType() == 4 || fEntry.getSqlType() == 11 || fEntry.getSqlType() == 3 || fEntry.getSqlType() == 7) {
-            String key = fEntry.getFrontend().getUserId() + "-" + fEntry.getFrontend().getUser() + "-" + table;
-            Record currRecord = records.get(key);
-            boolean isNew = currRecord == null;
-            if (isNew) {
-                checkEliminate();
-                currRecord = new Record(fEntry.getFrontend().getUserId(), fEntry.getFrontend(), table);
-            }
-            switch (fEntry.getSqlType()) {
-                case ServerParse.INSERT:
-                    currRecord.addInsert(fEntry.getRows(), fEntry.getDuration());
-                    break;
-                case ServerParse.UPDATE:
-                    currRecord.addUpdate(fEntry.getRows(), fEntry.getDuration());
-                    break;
-                case ServerParse.DELETE:
-                    currRecord.addDelete(fEntry.getRows(), fEntry.getDuration());
-                    break;
-                case ServerParse.SELECT:
-                    currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
-                    break;
-                default:
-                    // ignore
-                    break;
-            }
-            if (isNew) {
-                records.put(key, currRecord);
-            }
+    private void toRecord(String table, StatisticFrontendSqlEntry fEntry, int sqlType) {
+        String key = (new StringBuilder().append(fEntry.getFrontend().getUserId()).append("-").append(fEntry.getFrontend().getUser()).append("-").append(table)).toString();
+        Record currRecord = records.get(key);
+        boolean isNew = currRecord == null;
+        if (isNew) {
+            checkEliminate();
+            currRecord = new Record(fEntry.getFrontend().getUserId(), fEntry.getFrontend(), table);
+        }
+        switch (sqlType) {
+            case ServerParse.INSERT:
+                currRecord.addInsert(fEntry.getRows(), fEntry.getDuration());
+                break;
+            case ServerParse.UPDATE:
+                currRecord.addUpdate(fEntry.getRows(), fEntry.getDuration());
+                break;
+            case ServerParse.DELETE:
+                currRecord.addDelete(fEntry.getRows(), fEntry.getDuration());
+                break;
+            case ServerParse.SELECT:
+                currRecord.addSelect(fEntry.getExaminedRows(), fEntry.getRows(), fEntry.getDuration());
+                break;
+            default:
+                // ignore
+                break;
+        }
+        if (isNew) {
+            records.put(key, currRecord);
         }
     }
 

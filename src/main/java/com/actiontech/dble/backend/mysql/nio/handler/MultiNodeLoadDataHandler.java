@@ -30,8 +30,6 @@ import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.stat.QueryResult;
-import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.Strings;
@@ -49,6 +47,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.LongAdder;
 
 import static com.actiontech.dble.net.mysql.StatusFlags.SERVER_STATUS_CURSOR_EXISTS;
 
@@ -62,8 +61,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     private long affectedRows;
     long selectRows;
     protected List<MySQLResponseService> errConnection;
-    private long netOutBytes;
-    private long resultSize;
+    private LongAdder netOutBytes = new LongAdder();
+    private LongAdder resultSize = new LongAdder();
     protected ErrorPacket err;
     protected int fieldCount = 0;
     volatile boolean fieldsReturned;
@@ -100,8 +99,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     protected void reset() {
         super.reset();
         connRrns.clear();
-        this.netOutBytes = 0;
-        this.resultSize = 0;
+        this.netOutBytes.reset();
+        this.resultSize.reset();
         dnSet.clear();
         packet = null;
         errorCount = 0;
@@ -382,7 +381,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     public void okResponse(byte[] data, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
-        this.netOutBytes += data.length;
+        this.netOutBytes.add(data.length);
         if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
             return;
         }
@@ -392,8 +391,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         }
         if (executeResponse) {
             pauseTime((MySQLResponseService) service);
-            this.resultSize += data.length;
-            session.setBackendResponseEndTime((MySQLResponseService) service);
+            this.resultSize.add(data.length);
+            session.trace(t -> t.setBackendResponseEndTime((MySQLResponseService) service));
             ShardingService shardingService = session.getShardingService();
             OkPacket ok = new OkPacket();
             ok.read(data);
@@ -446,7 +445,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                         shardingService.getLoadDataInfileHandler().clear();
                         shardingService.getLoadDataInfileHandler().cleanLoadDataFile();
                         transformOkPackage(ok, shardingService);
-                        doSqlStat();
+                        session.trace(t -> t.doSqlStat(ok.getAffectedRows(), netOutBytes.intValue(), resultSize.intValue()));
                         deleteErrorFile();
                         handleEndPacket(ok, AutoTxOperation.COMMIT, true);
                         cleanBuffer();
@@ -463,11 +462,11 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketList, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
-        this.netOutBytes += header.length;
+        this.netOutBytes.add(header.length);
         for (byte[] field : fields) {
-            this.netOutBytes += field.length;
+            this.netOutBytes.add(field.length);
         }
-        this.netOutBytes += eof.length;
+        this.netOutBytes.add(eof.length);
         if (fieldsReturned) {
             return;
         }
@@ -484,11 +483,11 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             if (byteBuffer == null && ServerParse.LOAD_DATA_INFILE_SQL == rrs.getSqlType()) {
                 byteBuffer = session.getSource().allocate();
             }
-            this.resultSize += header.length;
+            this.resultSize.add(header.length);
             for (byte[] field : fields) {
-                this.resultSize += field.length;
+                this.resultSize.add(field.length);
             }
-            this.resultSize += eof.length;
+            this.resultSize.add(eof.length);
             fieldsReturned = true;
             executeFieldEof(header, fields, eof);
         } catch (Exception e) {
@@ -661,22 +660,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         }
     }
 
-    void doSqlStat() {
-        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
-            long netInBytes = 0;
-            if (rrs != null && rrs.getStatement() != null) {
-                netInBytes += rrs.getStatement().getBytes().length;
-            }
-            assert rrs != null;
-            QueryResult queryResult = new QueryResult(session.getShardingService().getUser(), rrs.getSqlType(),
-                    rrs.getStatement(), selectRows, netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), resultSize);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("try to record sql:" + rrs.getStatement());
-            }
-            QueryResultDispatcher.dispatchQuery(queryResult);
-        }
-    }
-
     void handleDataProcessException(Exception e) {
         if (!errorResponse.get()) {
             this.error = e.toString();
@@ -712,7 +695,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             TransactionHandler handler = new AutoCommitHandler(session, curPacket, rrs.getNodes(), errConnection);
             if (txOperation == AutoTxOperation.COMMIT) {
                 session.checkBackupStatus();
-                session.setBeginCommitTime();
+                session.trace(t -> t.setBeginCommitTime());
                 handler.commit();
             } else {
                 service.getLoadDataInfileHandler().clearFile(LoadDataBatch.getInstance().getSuccessFileNames());

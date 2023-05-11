@@ -19,7 +19,6 @@ public final class TsQueriesCounter {
     private static final TsQueriesCounter INSTANCE = new TsQueriesCounter();
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private long hisQueriesCount;
-    private long hisTransCount;
 
     private TsQueriesCounter() {
 
@@ -27,25 +26,21 @@ public final class TsQueriesCounter {
 
     public CalculateResult calculate() {
         long queries = 0;
-        long transactions = 0;
         lock.readLock().lock();
         try {
             for (IOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                 for (FrontendConnection fc : processor.getFrontends().values()) {
                     if (!fc.isManager() && fc.getService() instanceof BusinessService) {
                         long query = ((BusinessService) (fc.getService())).getQueriesCounter();
-                        long transaction = ((BusinessService) (fc.getService())).getTransactionsCounter();
                         queries += query > 0 ? query : 0;
-                        transactions += transaction > 0 ? transaction : transaction;
                     }
                 }
             }
             queries += hisQueriesCount;
-            transactions += hisTransCount;
         } finally {
             lock.readLock().unlock();
         }
-        return new CalculateResult(queries, transactions);
+        return new CalculateResult(queries, TransactionCounter.getCurrentTransactionCount());
     }
 
     public void addToHistory(BusinessService service) {
@@ -53,7 +48,6 @@ public final class TsQueriesCounter {
         try {
             if (service.getQueriesCounter() > 0) {
                 hisQueriesCount += service.getQueriesCounter();
-                hisTransCount += service.getTransactionsCounter();
                 service.resetCounter();
             }
         } finally {

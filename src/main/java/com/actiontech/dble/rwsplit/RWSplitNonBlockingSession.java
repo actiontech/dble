@@ -28,7 +28,7 @@ import com.actiontech.dble.services.rwsplit.RWSplitMultiHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.services.rwsplit.handle.PSHandler;
 import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
-import com.actiontech.dble.statistic.sql.StatisticListener;
+import com.actiontech.dble.statistic.trace.RwTrackProbe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +53,7 @@ public class RWSplitNonBlockingSession extends Session {
 
     public RWSplitNonBlockingSession(RWSplitService service) {
         this.rwSplitService = service;
+        this.trackProbe = new RwTrackProbe(this);
     }
 
     @Override
@@ -200,7 +201,7 @@ public class RWSplitNonBlockingSession extends Session {
             if ((originPacket != null && originPacket.length > 4 && originPacket[4] == MySQLPacket.COM_STMT_EXECUTE)) {
                 long statementId = ByteUtil.readUB4(originPacket, 5);
                 PreparedStatementHolder holder = rwSplitService.getPrepareStatement(statementId);
-                StatisticListener.getInstance().record(rwSplitService, r -> r.onFrontendSetSql(getService().getSchema(), holder.getPrepareSql()));
+                trace(t -> t.setQuery(holder.getPrepareSql(), holder.getSqlType()));
                 if (holder.isMustMaster() && conn.getInstance().isReadInstance()) {
                     holder.setExecuteOrigin(originPacket);
                     PSHandler psHandler = new PSHandler(rwSplitService, holder);
@@ -224,6 +225,7 @@ public class RWSplitNonBlockingSession extends Session {
 
     /**
      * jdbc compatible pre-delivery statements
+     *
      * @param master
      * @param originPacket
      * @param callback
@@ -406,6 +408,10 @@ public class RWSplitNonBlockingSession extends Session {
 
     public void resetMultiStatementStatus() {
         // not deal
+    }
+
+    public RWSplitMultiHandler getMultiQueryHandler() {
+        return multiQueryHandler;
     }
 
     public boolean generalNextStatement(String sql) {

@@ -53,7 +53,6 @@ public final class ParameterMapping {
         ON_OFF_SET.add("autocommit");
         ON_OFF_SET.add("checkTableConsistency");
         ON_OFF_SET.add("recordTxn");
-        ON_OFF_SET.add("useSqlStat");
         ON_OFF_SET.add("frontSocketNoDelay");
         ON_OFF_SET.add("backSocketNoDelay");
         ON_OFF_SET.add("enableGeneralLog");
@@ -61,6 +60,7 @@ public final class ParameterMapping {
         ON_OFF_SET.add("enableRoutePenetration");
         ON_OFF_SET.add("enableAlert");
         ON_OFF_SET.add("enableStatistic");
+        ON_OFF_SET.add("enableStatisticAnalysis");
         ON_OFF_SET.add("enableSessionActiveRatioStat");
         ON_OFF_SET.add("enableConnectionAssociateThread");
         ON_OFF_SET.add("enableAsyncRelease");

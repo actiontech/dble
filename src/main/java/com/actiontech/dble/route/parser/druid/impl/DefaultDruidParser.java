@@ -24,6 +24,7 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
@@ -59,6 +60,9 @@ public class DefaultDruidParser implements DruidParser {
             tryRouteToApNode(schema, rrs, stmt, service);
         }
         changeSql(schema, rrs, stmt);
+        if (!CollectionUtil.isEmpty(ctx.getTables())) {
+            service.getSession2().trace(t -> t.addTable(ctx.getTables()));
+        }
         return schema;
     }
 

@@ -22,8 +22,8 @@ import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.TransactionOperate;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLFrontAuthService;
 import com.actiontech.dble.singleton.FlowController;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.statistic.stat.FrontActiveRatioStat;
+import com.actiontech.dble.statistic.trace.AbstractTrackProbe;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -169,10 +169,10 @@ public abstract class AbstractConnection implements Connection {
 
     private void closeImmediatelyInner(String reason) {
         if (isClosed.compareAndSet(false, true)) {
-            if (service instanceof BusinessService)
+            if (service instanceof BusinessService) {
                 ((BusinessService) service).controlTx(TransactionOperate.QUIT);
-            StatisticListener.getInstance().record(service, r -> r.onExit(reason));
-            StatisticListener.getInstance().remove(service);
+                AbstractTrackProbe.trace(service, t -> t.setExit());
+            }
             FrontActiveRatioStat.getInstance().remove(this);
             closeSocket();
             if (isOnlyFrontTcpConnected() && (reason.contains("Connection reset by peer") || reason.contains("stream closed") || reason.contains("Broken pipe"))) {

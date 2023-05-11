@@ -120,15 +120,6 @@
 # used for temp table persistence of cursor, setting for read-buffer size.
 #-DheapTableBufferChunkSize=32768
 
-#  sql statistics
-#  1 means use SQL statistics, 0 means not
--DuseSqlStat=1
--DbufferUsagePercent=80
--DclearBigSQLResultSetMapMs=600000
--DsqlRecordCount=10
--DmaxResultSet=524288
-
-
 #  transaction log
 #  1 enable record the transaction log, 0 disable ,the unit of transactionRotateSize is M
 -DrecordTxn=0
@@ -198,13 +189,15 @@
 
 #  if enable statistic sql
 -DenableStatistic=0
+-DenableStatisticAnalysis=0
 -DassociateTablesByEntryByUserTableSize=1024
 -DfrontendByBackendByEntryByUserTableSize=1024
 -DtableByUserByEntryTableSize=1024
 #  processing queue size must not be less than 1 and must be a power of 2
 -DstatisticQueueSize=4096
--DsamplingRate=0
+-DsamplingRate=100
 -DsqlLogTableSize=1024
+-DmaxResultSet=524288
 
 -DinSubQueryTransformToJoin=false
 #For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms

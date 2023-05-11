@@ -20,8 +20,6 @@ import com.actiontech.dble.services.rwsplit.handle.RwSplitSelectHandler;
 import com.actiontech.dble.services.rwsplit.handle.ScriptPrepareHandler;
 import com.actiontech.dble.services.rwsplit.handle.TempTableHandler;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.sql.StatisticListener;
-import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,10 +40,10 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
         try {
             session.getService().queryCount();
             session.getService().setExecuteSql(sql);
-            StatisticListener.getInstance().record(session, r -> r.onFrontendSetSql(session.getService().getSchema(), sql));
             DbleHintParser.HintInfo hintInfo = DbleHintParser.parseRW(sql);
             int rs = serverParse.parse(sql);
             int sqlType = rs & 0xff;
+            session.trace(t -> t.setQuery(sql, sqlType));
             if (hintInfo != null) {
                 session.executeHint(hintInfo, sqlType, sql, null);
                 session.getService().controlTx(TransactionOperate.QUERY);
@@ -105,12 +103,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         TempTableHandler.handleDrop(sql, session.getService(), rs >>> 8);
                         break;
                     case RwSplitServerParse.XA_START:
-                        session.execute(true, (isSuccess, resp, rwSplitService) -> {
-                            if (isSuccess) {
-                                String xaId = StringUtil.removeAllApostrophe(rwSplitService.getExecuteSql().substring(rs >>> 8).trim());
-                                StatisticListener.getInstance().record(rwSplitService, r -> r.onXaStart(xaId));
-                            }
-                        });
+                        session.execute(true, null);
                         break;
                     case RwSplitServerParse.XA_COMMIT:
                     case RwSplitServerParse.XA_ROLLBACK:

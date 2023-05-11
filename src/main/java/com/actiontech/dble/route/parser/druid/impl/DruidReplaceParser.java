@@ -63,6 +63,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         //No sharding table check
         schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
+        service.getSession2().trace(t -> t.addTable(Collections.singletonList(new Pair<>(schemaInfo.getSchema(), tableName))));
         if (parserNoSharding(service, schemaName, schemaInfo, rrs, replace)) {
             return schema;
         }

@@ -53,9 +53,17 @@ public class DbleThreadUsage extends ManagerBaseTable {
             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
             String[] usedPercent = e.getValue().getUsedPercent();
             map.put(COLUMN_THREAD_NAME, e.getKey());
-            map.put(COLUMN_LAST_QUARTER_MIN, null != usedPercent && usedPercent.length > 0 ? usedPercent[0] : null);
-            map.put(COLUMN_LAST_MINUTE, null != usedPercent && usedPercent.length > 1 ? usedPercent[1] : null);
-            map.put(COLUMN_LAST_FIVE_MINUTE, null != usedPercent && usedPercent.length > 2 ? usedPercent[2] : null);
+            String quarterMin = null;
+            String minute = null;
+            String fiveMinute = null;
+            if (null != usedPercent) {
+                quarterMin = usedPercent.length > 0 ? usedPercent[0] : null;
+                minute = usedPercent.length > 1 ? usedPercent[1] : null;
+                fiveMinute = usedPercent.length > 2 ? usedPercent[2] : null;
+            }
+            map.put(COLUMN_LAST_QUARTER_MIN, quarterMin);
+            map.put(COLUMN_LAST_MINUTE, minute);
+            map.put(COLUMN_LAST_FIVE_MINUTE, fiveMinute);
             return map;
         }).collect(Collectors.toList());
     }

@@ -47,7 +47,6 @@ public abstract class BusinessService<T extends UserConfig> extends TransactionS
 
     public void resetCounter() {
         queriesCounter.set(Long.MIN_VALUE);
-        resetTxId();
     }
 
     public void executeContextSetTask(MysqlVariable[] contextTask) {

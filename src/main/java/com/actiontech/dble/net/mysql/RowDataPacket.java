@@ -13,7 +13,7 @@ import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.singleton.BufferPoolManager;
-import com.actiontech.dble.statistic.sql.StatisticListener;
+import com.actiontech.dble.statistic.trace.AbstractTrackProbe;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -91,7 +91,7 @@ public class RowDataPacket extends MySQLPacket {
     @Override
     public ByteBuffer write(ByteBuffer bb, AbstractService service,
                             boolean writeSocketIfFull) {
-        StatisticListener.getInstance().record(service, r -> r.onFrontendAddRows());
+        AbstractTrackProbe.trace(service, r -> r.setFrontendAddRows());
         int size = calcPacketSize();
         int totalSize = size + PACKET_HEADER_SIZE;
         boolean isBigPackage = size >= MySQLPacket.MAX_PACKET_SIZE;

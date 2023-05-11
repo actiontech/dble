@@ -3,9 +3,9 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.statistic.stat;
+package com.actiontech.dble.statistic.sql.analyzer;
 
-import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.AbstractServerParse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,17 +46,12 @@ public class TableStat implements Comparable<TableStat> {
         this.lastExecuteTime = 0;
     }
 
-    public void update(int sqlType, String sql, long startTime, long endTime, List<String> relationTables) {
-
-        //RECORD RW
-        switch (sqlType) {
-            case ServerParse.SELECT:
+    public void update(AbstractServerParse.BusinessType businessType, long endTime, List<String> relationTables) {
+        switch (businessType) {
+            case R:
                 this.rCount.incrementAndGet();
                 break;
-            case ServerParse.UPDATE:
-            case ServerParse.INSERT:
-            case ServerParse.DELETE:
-            case ServerParse.REPLACE:
+            case W:
                 this.wCount.incrementAndGet();
                 break;
             default:

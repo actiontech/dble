@@ -2076,8 +2076,6 @@ public final class ManagerParseShow {
             switch (stmt.charAt(offset)) {
                 case '.':
                     return show2SqlDotCheck(stmt, offset);
-                case ' ':
-                    return show2SqlBlankCheck(stmt, offset);
                 default:
                     if (ParseUtil.isErrorTail(offset, stmt)) {
                         return OTHER;
@@ -2155,20 +2153,7 @@ public final class ManagerParseShow {
         if (stmt.length() > offset + "OW".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'W' || c2 == 'w')) {
-
-                while (stmt.length() > ++offset) {
-                    switch (stmt.charAt(offset)) {
-                        case ' ':
-                            continue;
-                        default:
-                            if (!isBoolean(stmt.substring(offset).trim())) {
-                                return OTHER;
-                            }
-                            return (offset << 8) | SQL_SLOW;
-                    }
-                }
-
+            if (stmt.length() == offset + 1 && (c1 == 'O' || c1 == 'o') && (c2 == 'W' || c2 == 'w')) {
                 return SQL_SLOW;
             }
         }
@@ -2177,13 +2162,12 @@ public final class ManagerParseShow {
 
     // SHOW @@SQL.HIGH
     private static int show2SqlHCheck(String stmt, int offset) {
-
         if (stmt.length() > offset + "IGH".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            if ((c1 == 'I' || c1 == 'i') && (c2 == 'G' || c2 == 'g') && (c3 == 'H' || c3 == 'h')) {
-                return boolTailCheck(stmt, offset, SQL_HIGH);
+            if (stmt.length() == offset + 1 && (c1 == 'I' || c1 == 'i') && (c2 == 'G' || c2 == 'g') && (c3 == 'H' || c3 == 'h')) {
+                return SQL_HIGH;
             }
         }
         return OTHER;
@@ -2191,7 +2175,6 @@ public final class ManagerParseShow {
 
     // SHOW @@SQL.RESULTSET
     private static int show2SqlRCheck(String stmt, int offset) {
-
         if (stmt.length() > offset + "ESULTSET".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -2201,10 +2184,10 @@ public final class ManagerParseShow {
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') && (c3 == 'U' || c3 == 'u') &&
+            if (stmt.length() == offset + 1 && (c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') && (c3 == 'U' || c3 == 'u') &&
                     (c4 == 'l' || c4 == 'L') && (c5 == 'T' || c5 == 't') && (c6 == 'S' || c6 == 's') &&
                     (c7 == 'E' || c7 == 'e') && (c8 == 'T' || c8 == 't')) {
-                return boolTailCheck(stmt, offset, SQL_RESULTSET);
+                return SQL_RESULTSET;
             }
         }
         return OTHER;
@@ -2212,14 +2195,13 @@ public final class ManagerParseShow {
 
     // SHOW @@SQL.LARGE
     private static int show2SqlLCheck(String stmt, int offset) {
-
         if (stmt.length() > offset + "ARGE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'R' || c2 == 'r') && (c3 == 'G' || c3 == 'g') && (c4 == 'E' || c4 == 'e')) {
-                return boolTailCheck(stmt, offset, SQL_LARGE);
+            if (stmt.length() == offset + 1 && (c1 == 'A' || c1 == 'a') && (c2 == 'R' || c2 == 'r') && (c3 == 'G' || c3 == 'g') && (c4 == 'E' || c4 == 'e')) {
+                return SQL_LARGE;
             }
         }
         return OTHER;

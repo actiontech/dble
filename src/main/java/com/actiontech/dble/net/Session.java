@@ -11,25 +11,43 @@ import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.ParseUtil;
+import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
+import com.actiontech.dble.statistic.trace.AbstractTrackProbe;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 public abstract class Session {
 
     protected final AtomicBoolean isMultiStatement = new AtomicBoolean(false);
     protected volatile String remainingSql = null;
+    protected AbstractTrackProbe trackProbe;
+    private volatile FrontendInfo traceFrontendInfo;
 
     /**
      * get frontend conn
      */
     public abstract FrontendConnection getSource();
 
-    public void setHandlerStart(DMLResponseHandler handler) {
+    public void trace(Consumer<AbstractTrackProbe> consumer) {
+        if (trackProbe != null) {
+            consumer.accept(trackProbe);
+        }
+    }
 
+    public FrontendInfo getTraceFrontendInfo() {
+        if (traceFrontendInfo == null) {
+            traceFrontendInfo = new FrontendInfo(this.getSource().getFrontEndService());
+        }
+        return traceFrontendInfo;
+    }
+
+    public void setHandlerStart(DMLResponseHandler handler) {
+        trace(t -> t.setHandlerStart(handler));
     }
 
     public void setHandlerEnd(DMLResponseHandler handler) {
-
+        trace(t -> t.setHandlerEnd(handler));
     }
 
     public void onQueryError(byte[] message) {
@@ -50,9 +68,6 @@ public abstract class Session {
 
     public void setRouteResultToTrace(RouteResultsetNode[] nodes) {
 
-    }
-
-    public void allBackendConnReceive() {
     }
 
     public abstract void startFlowControl(int currentWritingSize);
@@ -99,5 +114,9 @@ public abstract class Session {
 
     public void setRemainingSql(String remainingSql) {
         this.remainingSql = remainingSql;
+    }
+
+    public void setTrackProbe(AbstractTrackProbe trackProbe) {
+        this.trackProbe = trackProbe;
     }
 }

@@ -91,7 +91,7 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
             }
             startEasyMerge();
             if (++reachedConCount == route.length) {
-                session.allBackendConnReceive();
+                session.trace(t -> t.allBackendConnReceive());
             }
         } finally {
             lock.unlock();

@@ -113,16 +113,6 @@
 -DbufferPoolPageSize=2097152
 #-DmappedFileSize=2097152
 
-
-#  sql statistics
-#  1 means use SQL statistics, 0 means not
--DuseSqlStat=1
-#-DbufferUsagePercent=80
--DclearBigSQLResultSetMapMs=600000
-#-DsqlRecordCount=10
-#-DmaxResultSet=524288
-
-
 #  transaction log
 #  1 enable record the transaction log, 0 disable ,the unit of transactionRotateSize is M
 -DrecordTxn=0

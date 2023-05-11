@@ -7,12 +7,11 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.statistic.stat.UserSqlRWStat;
-import com.actiontech.dble.statistic.stat.UserStat;
-import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
+import com.actiontech.dble.statistic.sql.analyzer.UserSqlRWStat;
+import com.actiontech.dble.statistic.sql.analyzer.UserStat;
+import com.actiontech.dble.statistic.sql.analyzer.UserStatAbstractAnalyzer;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -102,7 +101,7 @@ public final class ShowSQLSumUser {
         byte packetId = EOF.getPacketId();
         int i = 0;
 
-        Map<UserName, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+        Map<String, UserStat> statMap = UserStatAbstractAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
             i++;
             RowDataPacket row = getRow(userStat, i, service.getCharset().getResults());
@@ -112,7 +111,7 @@ public final class ShowSQLSumUser {
         }
 
         if (isClear) {
-            UserStatAnalyzer.getInstance().reset();
+            UserStatAbstractAnalyzer.getInstance().reset();
         }
 
         // write last eof
@@ -131,14 +130,13 @@ public final class ShowSQLSumUser {
             return row;
         }
 
-        UserName user = userStat.getUser();
         UserSqlRWStat rwStat = userStat.getRWStat();
         long r = rwStat.getRCount();
         long w = rwStat.getWCount();
         String rStr = decimalFormat.format(1.0D * r / (r + w));
         int max = rwStat.getConcurrentMax();
 
-        row.add(StringUtil.encode(user.getFullName(), charset));
+        row.add(StringUtil.encode(userStat.getFrontendInfo().getUser(), charset));
         row.add(LongUtil.toBytes(r));
         row.add(LongUtil.toBytes(w));
         row.add(StringUtil.encode(String.valueOf(rStr), charset));

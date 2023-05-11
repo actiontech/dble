@@ -182,7 +182,9 @@ public final class DbleServer {
             SlowQueryLog.getInstance().setEnableSlowLog(true);
         }
 
-        if (SystemConfig.getInstance().getEnableStatistic() == 1 || SystemConfig.getInstance().getSamplingRate() > 0) {
+        if (SystemConfig.getInstance().getEnableStatistic() == 1 ||
+                SystemConfig.getInstance().getSamplingRate() > 0 ||
+                SystemConfig.getInstance().getEnableStatisticAnalysis() == 1) {
             StatisticManager.getInstance().start();
         }
 

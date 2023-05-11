@@ -30,8 +30,6 @@ import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.stat.QueryResult;
-import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.Strings;
@@ -393,7 +391,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         if (executeResponse) {
             pauseTime((MySQLResponseService) service);
             this.resultSize += data.length;
-            session.setBackendResponseEndTime((MySQLResponseService) service);
+            session.trace(t -> t.setBackendResponseEndTime((MySQLResponseService) service));
             ShardingService shardingService = session.getShardingService();
             OkPacket ok = new OkPacket();
             ok.read(data);
@@ -446,7 +444,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                         shardingService.getLoadDataInfileHandler().clear();
                         shardingService.getLoadDataInfileHandler().cleanLoadDataFile();
                         transformOkPackage(ok, shardingService);
-                        doSqlStat();
+                        session.trace(t -> t.doSqlStat(ok.getAffectedRows(), netOutBytes, resultSize));
                         deleteErrorFile();
                         handleEndPacket(ok, AutoTxOperation.COMMIT, true);
                         cleanBuffer();
@@ -661,22 +659,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         }
     }
 
-    void doSqlStat() {
-        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
-            long netInBytes = 0;
-            if (rrs != null && rrs.getStatement() != null) {
-                netInBytes += rrs.getStatement().getBytes().length;
-            }
-            assert rrs != null;
-            QueryResult queryResult = new QueryResult(session.getShardingService().getUser(), rrs.getSqlType(),
-                    rrs.getStatement(), selectRows, netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), resultSize);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("try to record sql:" + rrs.getStatement());
-            }
-            QueryResultDispatcher.dispatchQuery(queryResult);
-        }
-    }
-
     void handleDataProcessException(Exception e) {
         if (!errorResponse.get()) {
             this.error = e.toString();
@@ -712,7 +694,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             TransactionHandler handler = new AutoCommitHandler(session, curPacket, rrs.getNodes(), errConnection);
             if (txOperation == AutoTxOperation.COMMIT) {
                 session.checkBackupStatus();
-                session.setBeginCommitTime();
+                session.trace(t -> t.setBeginCommitTime());
                 handler.commit();
             } else {
                 service.getLoadDataInfileHandler().clearFile(LoadDataBatch.getInstance().getSuccessFileNames());

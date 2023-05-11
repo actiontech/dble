@@ -60,7 +60,7 @@ public abstract class XAStage implements TransactionStage {
             return;
         }
 
-        if (this instanceof XACommitStage) session.setFinishedCommitTime();
+        if (this instanceof XACommitStage) session.trace(t -> t.setFinishedCommitTime());
         if (isSuccess && xaHandler.getTransactionCallback() != null) {
             xaHandler.getTransactionCallback().callback();
         }

@@ -6,15 +6,14 @@
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.backend.mysql.nio.handler.ExecutableHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.ddl.ImplicitlyCommitCallback;
 import com.actiontech.dble.backend.mysql.nio.handler.ddl.DDLHandlerBuilder;
+import com.actiontech.dble.backend.mysql.nio.handler.ddl.ImplicitlyCommitCallback;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.services.TransactionOperate;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 
@@ -93,12 +92,6 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
      * @param service
      */
     public void implicitlyCommitAfterUpdateTxState(ShardingService service) {
-        if (service.isInTransaction()) {
-            StatisticListener.getInstance().record(service, r -> r.onTxEnd());
-            if (!service.isAutocommit()) {
-                StatisticListener.getInstance().record(service, r -> r.onTxStartByImplicitly());
-            }
-        }
         service.controlTx(TransactionOperate.IMPLICITLY_COMMIT);
     }
 }

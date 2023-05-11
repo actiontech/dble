@@ -7,7 +7,7 @@ package com.actiontech.dble.log.slow;
 
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.trace.TraceResult;
+import com.actiontech.dble.statistic.trace.TraceResult;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

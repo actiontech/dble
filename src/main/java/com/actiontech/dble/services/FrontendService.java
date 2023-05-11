@@ -28,7 +28,6 @@ import com.actiontech.dble.services.manager.handler.ClusterManageHandler;
 import com.actiontech.dble.singleton.ConnectionSerializableLock;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.DelayService;
 import com.actiontech.dble.util.DelayServiceControl;
 import com.actiontech.dble.util.StringUtil;
@@ -333,7 +332,6 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     }
 
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
-        StatisticListener.getInstance().record(this, r -> r.onFrontendSqlClose());
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);
         err.setErrNo(vendorCode);

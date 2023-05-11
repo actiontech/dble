@@ -3,9 +3,9 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.statistic.stat;
+package com.actiontech.dble.statistic.sql.analyzer;
 
-import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.AbstractServerParse;
 
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
@@ -23,11 +23,6 @@ public class UserSqlRWStat {
      */
     private AtomicLong rCount = new AtomicLong(0L);
     private AtomicLong wCount = new AtomicLong(0L);
-
-    /**
-     * QPS
-     */
-    private int qps = 0;
 
     /**
      * Net In/Out
@@ -78,16 +73,12 @@ public class UserSqlRWStat {
         this.executeHistogram.reset();
     }
 
-    public void add(int sqlType, String sql, long executeTime, long netIn, long netOut, long startTime, long endTime) {
-        switch (sqlType) {
-            case ServerParse.SELECT:
-            case ServerParse.SHOW:
+    public void add(int sqlType, long executeTime, long netIn, long netOut, long endTime) {
+        switch (AbstractServerParse.getBusinessType(sqlType)) {
+            case R:
                 this.rCount.incrementAndGet();
                 break;
-            case ServerParse.UPDATE:
-            case ServerParse.INSERT:
-            case ServerParse.DELETE:
-            case ServerParse.REPLACE:
+            case W:
                 this.wCount.incrementAndGet();
                 break;
             default:
@@ -143,18 +134,6 @@ public class UserSqlRWStat {
 
     public int getConcurrentMax() {
         return concurrentMax;
-    }
-
-    public void setConcurrentMax(int concurrentMax) {
-        this.concurrentMax = concurrentMax;
-    }
-
-    public int getQps() {
-        return qps;
-    }
-
-    public void setQps(int qps) {
-        this.qps = qps;
     }
 
     public long getRCount() {

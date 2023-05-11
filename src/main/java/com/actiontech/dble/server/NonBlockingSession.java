@@ -8,24 +8,22 @@ package com.actiontech.dble.server;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.handler.*;
-import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.ddl.BaseDDLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ddl.MultiNodeDdlPrepareHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionCallback;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandlerManager;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.btrace.provider.ComplexQueryProvider;
-import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.meta.DDLProxyMetaManager;
 import com.actiontech.dble.net.Session;
+import com.actiontech.dble.statistic.trace.TraceResult;
+import com.actiontech.dble.statistic.trace.TrackProbe;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
@@ -42,16 +40,12 @@ import com.actiontech.dble.route.parser.druid.impl.DruidUpdateParser;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
-import com.actiontech.dble.server.trace.TraceResult;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceHelper;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.sql.StatisticListener;
-import com.actiontech.dble.statistic.stat.QueryTimeCost;
-import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
 import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
@@ -67,12 +61,9 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Consumer;
 
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_MULTIPLE;
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_SINGLE;
@@ -83,8 +74,6 @@ import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_SINGLE;
 public class NonBlockingSession extends Session {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingSession.class);
-
-    private long queryStartTime = 0;
     private final ShardingService shardingService;
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
 
@@ -104,16 +93,9 @@ public class NonBlockingSession extends Session {
     private final MemSizeController joinBufferMC;
     private final MemSizeController orderBufferMC;
     private final MemSizeController otherBufferMC;
-    private QueryTimeCost queryTimeCost;
-    private CostTimeProvider provider;
-    private ComplexQueryProvider xprovider;
-    private volatile boolean timeCost = false;
-    private final AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
     private volatile boolean traceEnable = false;
-    private final TraceResult traceResult = new TraceResult();
     private volatile RouteResultset complexRrs = null;
-    private volatile SessionStage sessionStage = SessionStage.Init;
 
     private volatile long rowCountCurrentSQL = -1;
     private volatile long rowCountLastSQL = 0;
@@ -131,229 +113,16 @@ public class NonBlockingSession extends Session {
         if (SystemConfig.getInstance().getUseSerializableMode() == 1) {
             transactionManager.setXaTxEnabled(true, service);
         }
+        trackProbe = new TrackProbe(this);
     }
 
     public void setOutputHandler(OutputHandler outputHandler) {
         this.outputHandler = outputHandler;
     }
 
-    private void sqlTracking(Consumer<TraceResult> consumer) {
-        try {
-            if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
-                Optional.ofNullable(traceResult).ifPresent(consumer);
-            }
-        } catch (Exception e) {
-            // Should not affect the main task
-            LOGGER.warn("sqlTracking occurred: {}", e);
-        }
-    }
-
-    public void setRequestTime() {
-        sessionStage = SessionStage.Read_SQL;
-        sqlTracking(t -> t.setRequestTime());
-
-        if (SystemConfig.getInstance().getUseCostTimeStat() == 0) {
-            return;
-        }
-        timeCost = false;
-        if (ThreadLocalRandom.current().nextInt(100) >= SystemConfig.getInstance().getCostSamplePercent()) {
-            return;
-        }
-        timeCost = true;
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("clear");
-        }
-        queryTimeCost = new QueryTimeCost();
-        provider = new CostTimeProvider();
-        xprovider = new ComplexQueryProvider();
-        provider.beginRequest(shardingService.getConnection().getId());
-
-        long requestTime = System.nanoTime();
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("frontend connection setRequestTime:" + requestTime);
-        }
-        queryTimeCost.setRequestTime(requestTime);
-    }
-
-    public void startProcess() {
-        sessionStage = SessionStage.Parse_SQL;
-        sqlTracking(t -> t.startProcess());
-
-        if (!timeCost) {
-            return;
-        }
-        provider.startProcess(shardingService.getConnection().getId());
-    }
-
-    public void endParse() {
-        sessionStage = SessionStage.Route_Calculation;
-        sqlTracking(t -> t.endParse());
-
-        if (!timeCost) {
-            return;
-        }
-        provider.endParse(shardingService.getConnection().getId());
-    }
-
-    public void endRoute(RouteResultset rrs) {
-        sessionStage = SessionStage.Prepare_to_Push;
-        sqlTracking(t -> t.endRoute());
-
-        if (!timeCost) {
-            return;
-        }
-        provider.endRoute(shardingService.getConnection().getId());
-        queryTimeCost.setCount(rrs.getNodes() == null ? 0 : rrs.getNodes().length);
-    }
-
-    public void endComplexRoute() {
-        if (!timeCost) {
-            return;
-        }
-        xprovider.endRoute(shardingService.getConnection().getId());
-    }
-
-    public void endComplexExecute() {
-        if (!timeCost) {
-            return;
-        }
-        xprovider.endComplexExecute(shardingService.getConnection().getId());
-    }
-
-    public void readyToDeliver() {
-        if (!timeCost) {
-            return;
-        }
-        provider.readyToDeliver(shardingService.getConnection().getId());
-    }
-
-    public void setPreExecuteEnd(TraceResult.SqlTraceType type) {
-        sessionStage = SessionStage.Execute_SQL;
-        sqlTracking(t -> t.setPreExecuteEnd(type));
-    }
-
-    public long getRowCount() {
-        return rowCountLastSQL;
-    }
-
-    public void setSubQuery() {
-        sqlTracking(t -> t.setSubQuery());
-    }
-
-    public void setBackendRequestTime(MySQLResponseService service) {
-        StatisticListener.getInstance().record(this, r -> r.onBackendSqlStart(service));
-        if (!timeCost) {
-            return;
-        }
-        long backendID = service.getConnection().getId();
-        QueryTimeCost backendCost = new QueryTimeCost();
-        long requestTime = System.nanoTime();
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("backend connection[" + backendID + "] setRequestTime:" + requestTime);
-        }
-        backendCost.setRequestTime(requestTime);
-        queryTimeCost.getBackEndTimeCosts().put(backendID, backendCost);
-    }
-
-    public void setBackendResponseTime(MySQLResponseService service) {
-        sessionStage = SessionStage.Fetching_Result;
-        // Optional.ofNullable(StatisticListener2.getInstance().getRecorder(this, r ->r.onBackendSqlFirstEnd(service));
-        long responseTime = System.nanoTime();
-        sqlTracking(t -> t.setBackendResponseTime(service, responseTime));
-
-        if (!timeCost) {
-            return;
-        }
-        QueryTimeCost backCost = queryTimeCost.getBackEndTimeCosts().get(service.getConnection().getId());
-        if (backCost != null && backCost.getResponseTime().compareAndSet(0, responseTime)) {
-            if (queryTimeCost.getFirstBackConRes().compareAndSet(false, true)) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("backend connection[" + service.getConnection().getId() + "] setResponseTime:" + responseTime);
-                }
-                provider.resFromBack(this.shardingService.getConnection().getId());
-                firstBackConRes.set(false);
-            }
-            long index = queryTimeCost.getBackendReserveCount().decrementAndGet();
-            if (index >= 0 && ((index % 10 == 0) || index < 10)) {
-                provider.resLastBack(this.shardingService.getConnection().getId(), queryTimeCost.getBackendSize() - index);
-            }
-        }
-    }
-
-    public void startExecuteBackend() {
-        if (!timeCost) {
-            return;
-        }
-        if (firstBackConRes.compareAndSet(false, true)) {
-            provider.startExecuteBackend(shardingService.getConnection().getId());
-        }
-        long index = queryTimeCost.getBackendExecuteCount().decrementAndGet();
-        if (index >= 0 && ((index % 10 == 0) || index < 10)) {
-            provider.execLastBack(shardingService.getConnection().getId(), queryTimeCost.getBackendSize() - index);
-        }
-    }
-
-    public void allBackendConnReceive() {
-        if (!timeCost) {
-            return;
-        }
-        provider.allBackendConnReceive(shardingService.getConnection().getId());
-    }
-
-    public void setResponseTime(boolean isSuccess) {
-        sessionStage = SessionStage.Finished;
-
-        sqlTracking(t -> t.setResponseTime(shardingService, isSuccess));
-
-        if (!timeCost) {
-            return;
-        }
-        long responseTime = System.nanoTime();
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("setResponseTime:" + responseTime);
-        }
-        queryTimeCost.getResponseTime().set(responseTime);
-        provider.beginResponse(shardingService.getConnection().getId());
-        QueryTimeCostContainer.getInstance().add(queryTimeCost);
-    }
-
-    public void setBackendResponseEndTime(MySQLResponseService service) {
-        sessionStage = SessionStage.First_Node_Fetched_Result;
-        StatisticListener.getInstance().record(this, r -> r.onBackendSqlEnd(service));
-        sqlTracking(t -> t.setBackendResponseEndTime(service));
-
-        if (!timeCost) {
-            return;
-        }
-        if (queryTimeCost.getFirstBackConEof().compareAndSet(false, true)) {
-            xprovider.firstComplexEof(this.shardingService.getConnection().getId());
-        }
-    }
-
-    public void setBeginCommitTime() {
-        sessionStage = SessionStage.Distributed_Transaction_Commit;
-        sqlTracking(t -> t.setAdtCommitBegin());
-    }
-
-    public void setFinishedCommitTime() {
-        sqlTracking(t -> t.setAdtCommitEnd());
-    }
-
-    public void setHandlerStart(DMLResponseHandler handler) {
-        sqlTracking(t -> t.addToRecordStartMap(handler));
-    }
-
-    public void setHandlerEnd(DMLResponseHandler handler) {
-        if (handler.getNextHandler() != null) {
-            DMLResponseHandler next = handler.getNextHandler();
-            sessionStage = SessionStage.changeFromHandlerType(next.type());
-        }
-        sqlTracking(t -> t.addToRecordEndMap(handler));
-    }
-
     public List<String[]> genTraceResult() {
         if (traceEnable) {
-            return traceResult.genShowTraceResult();
+            return ((TrackProbe) trackProbe).traceResult.genShowTraceResult();
         } else {
             return null;
         }
@@ -361,7 +130,7 @@ public class NonBlockingSession extends Session {
 
     public List<String[]> genRunningSQLStage() {
         if (SlowQueryLog.getInstance().isEnableSlowLog()) {
-            TraceResult tmpResult = traceResult.clone();
+            TraceResult tmpResult = ((TrackProbe) trackProbe).traceResult.clone();
             return tmpResult.genRunningSQLStage();
         } else {
             return null;
@@ -393,7 +162,7 @@ public class NonBlockingSession extends Session {
     }
 
     public SessionStage getSessionStage() {
-        return sessionStage;
+        return ((TrackProbe) trackProbe).getSessionStage();
     }
 
     public void execute(RouteResultset rrs) {
@@ -454,7 +223,7 @@ public class NonBlockingSession extends Session {
 
     public void setRouteResultToTrace(RouteResultsetNode[] nodes) {
         if (SlowQueryLog.getInstance().isEnableSlowLog()) {
-            traceResult.setShardingNodes(nodes);
+            ((TrackProbe) trackProbe).traceResult.setShardingNodes(nodes);
         }
     }
 
@@ -471,7 +240,7 @@ public class NonBlockingSession extends Session {
 
                 if (rrs.getNodes().length == 1) {
                     executableHandler = rrs.getImplicitlyCommitHandler();
-                    setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
+                    trace(t -> t.setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY));
                 } else {
                     /*
                      * here, just a try! The sync is the superfluous, because there are heartbeats  at every backend node.
@@ -481,11 +250,12 @@ public class NonBlockingSession extends Session {
                     if (executableHandler instanceof MultiNodeDdlPrepareHandler) {
                         checkBackupStatus();
                     }
-                    setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY);
+                    trace(t -> t.setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY));
                 }
 
-                setTraceSimpleHandler((ResponseHandler) executableHandler);
-                readyToDeliver();
+                ExecutableHandler finalExecutableHandler = executableHandler;
+                trace(t -> t.setTraceSimpleHandler((ResponseHandler) finalExecutableHandler));
+                trace(t -> t.readyToDeliver());
                 ClusterDelayProvider.delayDdLToDeliver();
                 executableHandler.execute();
                 discard = true;
@@ -515,21 +285,21 @@ public class NonBlockingSession extends Session {
         try {
             if (rrs.getNodes().length == 1 && !rrs.isEnableLoadDataFlag()) {
                 executableHandler = new SingleNodeHandler(rrs, this);
-                setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
+                trace(t -> t.setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY));
             } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {
                 executableHandler = new MultiNodeSelectHandler(rrs, this);
-                setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_GROUP);
+                trace(t -> t.setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_GROUP));
             } else if (ServerParse.LOAD_DATA_INFILE_SQL == rrs.getSqlType() && LoadDataBatch.getInstance().isEnableBatchLoadData()) {
                 executableHandler = new MultiNodeLoadDataHandler(rrs, this);
-                setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_GROUP);
+                trace(t -> t.setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_GROUP));
             } else {
                 executableHandler = new MultiNodeQueryHandler(rrs, this);
-                setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY);
+                trace(t -> t.setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY));
             }
 
-            setTraceSimpleHandler((ResponseHandler) executableHandler);
-
-            readyToDeliver();
+            ExecutableHandler finalExecutableHandler = executableHandler;
+            trace(t -> t.setTraceSimpleHandler((ResponseHandler) finalExecutableHandler));
+            trace(t -> t.readyToDeliver());
 
             try {
                 executableHandler.execute();
@@ -546,10 +316,6 @@ public class NonBlockingSession extends Session {
             }
             TraceManager.finishSpan(traceObject);
         }
-    }
-
-    public void setTraceBuilder(BaseHandlerBuilder baseBuilder) {
-        sqlTracking(t -> t.setBuilder(baseBuilder));
     }
 
     private void executeMultiResultSet(RouteResultset rrs, PlanNode node) {
@@ -605,9 +371,9 @@ public class NonBlockingSession extends Session {
                     return;
                 }
             }
-            setPreExecuteEnd(TraceResult.SqlTraceType.COMPLEX_QUERY);
+            trace(t -> t.setPreExecuteEnd(TraceResult.SqlTraceType.COMPLEX_QUERY));
             if (PlanUtil.containsSubQuery(node)) {
-                setSubQuery();
+                trace(t -> t.setSubQuery());
                 final PlanNode finalNode = node;
                 //sub Query build will be blocked, so use ComplexQueryExecutor
                 DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
@@ -647,9 +413,9 @@ public class NonBlockingSession extends Session {
                     return;
                 }
             }
-            setPreExecuteEnd(TraceResult.SqlTraceType.COMPLEX_MODIFY);
+            trace(t -> t.setPreExecuteEnd(TraceResult.SqlTraceType.COMPLEX_MODIFY));
             if (PlanUtil.containsSubQuery(node)) {
-                setSubQuery();
+                trace(t -> t.setSubQuery());
                 final PlanNode finalNode = node;
                 //sub Query build will be blocked, so use ComplexQueryExecutor
                 DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
@@ -936,7 +702,6 @@ public class NonBlockingSession extends Session {
         return transactionManager.getSessionXaID();
     }
 
-
     public MySQLResponseService freshConn(BackendConnection errConn, ResponseHandler queryHandler) {
         for (final RouteResultsetNode node : this.getTargetKeys()) {
             final BackendConnection mysqlCon = this.getTarget(node);
@@ -965,7 +730,6 @@ public class NonBlockingSession extends Session {
         return errConn.getBackendService();
     }
 
-
     public void rowCountRolling() {
         rowCountLastSQL = rowCountCurrentSQL;
         rowCountCurrentSQL = -1;
@@ -973,6 +737,10 @@ public class NonBlockingSession extends Session {
 
     public void setRowCount(long rowCount) {
         this.rowCountCurrentSQL = rowCount;
+    }
+
+    public long getRowCount() {
+        return rowCountLastSQL;
     }
 
     public MemSizeController getJoinBufferMC() {
@@ -991,25 +759,12 @@ public class NonBlockingSession extends Session {
         return shardingService.getPacketId();
     }
 
-    public long getQueryStartTime() {
-        return queryStartTime;
-    }
-
-    public void setQueryStartTime(long queryStartTime) {
-        this.queryStartTime = queryStartTime;
-    }
-
-
-    public boolean isTrace() {
+    public boolean isTraceEnable() {
         return traceEnable;
     }
 
-    public void setTrace(boolean enable) {
+    public void setTraceEnable(boolean enable) {
         traceEnable = enable;
-    }
-
-    public void setTraceSimpleHandler(ResponseHandler simpleHandler) {
-        sqlTracking(t -> t.setSimpleHandler(simpleHandler));
     }
 
     public RouteResultset getComplexRrs() {

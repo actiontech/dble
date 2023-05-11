@@ -35,11 +35,12 @@ public class SqlLog extends ManagerBaseTable {
     private static final String COLUMN_SOURCE_PORT = "source_port";
     private static final String COLUMN_ROWS = "rows";
     private static final String COLUMN_EXAMINED_ROWS = "examined_rows";
+    private static final String COLUMN_RESULT_SIZE = "result_size";
     private static final String COLUMN_START_TIME = "start_time";
     private static final String COLUMN_DURATION = "duration";
 
     public SqlLog() {
-        super(TABLE_NAME, 12);
+        super(TABLE_NAME, 13);
         useTruncate();
     }
 
@@ -77,6 +78,9 @@ public class SqlLog extends ManagerBaseTable {
 
         columns.put(COLUMN_EXAMINED_ROWS, new ColumnMeta(COLUMN_EXAMINED_ROWS, "int(11)", false));
         columnsType.put(COLUMN_EXAMINED_ROWS, Fields.FIELD_TYPE_LONG);
+
+        columns.put(COLUMN_RESULT_SIZE, new ColumnMeta(COLUMN_RESULT_SIZE, "int(11)", false));
+        columnsType.put(COLUMN_RESULT_SIZE, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_START_TIME, new ColumnMeta(COLUMN_START_TIME, "timestamp", false));
         columnsType.put(COLUMN_START_TIME, Fields.FIELD_TYPE_TIMESTAMP);
@@ -116,6 +120,7 @@ public class SqlLog extends ManagerBaseTable {
             map.put(COLUMN_SOURCE_PORT, sqlRecord.getSourcePort() + "");
             map.put(COLUMN_ROWS, sqlRecord.getRows() + "");
             map.put(COLUMN_EXAMINED_ROWS, sqlRecord.getExaminedRows() + "");
+            map.put(COLUMN_RESULT_SIZE, sqlRecord.getResultSize() + "");
             map.put(COLUMN_DURATION, sqlRecord.getDuration() + "");
             map.put(COLUMN_START_TIME, FORMATTER.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(sqlRecord.getStartTime()), ZoneId.systemDefault())));
             list.add(map);

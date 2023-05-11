@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
+import com.actiontech.dble.statistic.trace.RwTrackProbe;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
@@ -51,6 +52,7 @@ public class RWSplitNonBlockingSession extends Session {
 
     public RWSplitNonBlockingSession(RWSplitService service) {
         this.rwSplitService = service;
+        this.trackProbe = new RwTrackProbe(this);
     }
 
     @Override
@@ -198,6 +200,7 @@ public class RWSplitNonBlockingSession extends Session {
             if ((originPacket != null && originPacket.length > 4 && originPacket[4] == MySQLPacket.COM_STMT_EXECUTE)) {
                 long statementId = ByteUtil.readUB4(originPacket, 5);
                 PreparedStatementHolder holder = rwSplitService.getPrepareStatement(statementId);
+                trace(t -> t.setQuery(holder.getPrepareSql()));
                 if (holder.isMustMaster() && conn.getInstance().isReadInstance()) {
                     holder.setExecuteOrigin(originPacket);
                     PSHandler psHandler = new PSHandler(rwSplitService, holder);
@@ -371,6 +374,10 @@ public class RWSplitNonBlockingSession extends Session {
 
     public void resetMultiStatementStatus() {
         // not deal
+    }
+
+    public RWSplitMultiHandler getMultiQueryHandler() {
+        return multiQueryHandler;
     }
 
     public boolean generalNextStatement(String sql) {

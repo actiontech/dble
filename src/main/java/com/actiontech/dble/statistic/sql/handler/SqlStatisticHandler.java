@@ -11,7 +11,6 @@ import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
 import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
-import com.actiontech.dble.statistic.sql.entry.StatisticTxEntry;
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 
@@ -35,29 +34,15 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         }
 
         StatisticEntry entry = statisticEvent.getEntry();
-        if (entry instanceof StatisticTxEntry) {
-            StatisticTxEntry txEntry = (StatisticTxEntry) entry;
-            if (sampleDecisions.get((int) (txEntry.getTxId() % 100))) {
-                if (null == txRecords.get(txEntry.getTxId())) {
-                    if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
-                        txRecords.pollFirstEntry();
-                    }
-                    txRecords.put(txEntry.getTxId(), new TxRecord(txEntry));
-                } else {
-                    txRecords.get(txEntry.getTxId()).addSqls(txEntry.getEntryList());
-                }
-            }
-        } else if (entry instanceof StatisticFrontendSqlEntry) {
+        if (entry instanceof StatisticFrontendSqlEntry) {
             StatisticFrontendSqlEntry frontendSqlEntry = (StatisticFrontendSqlEntry) entry;
-            if (!frontendSqlEntry.isNeedToTx()) {
-                return;
-            }
             if (sampleDecisions.get((int) (frontendSqlEntry.getTxId() % 100))) {
                 if (null == txRecords.get(frontendSqlEntry.getTxId())) {
                     if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
                         txRecords.pollFirstEntry();
                     }
                     txRecords.put(frontendSqlEntry.getTxId(), new TxRecord(frontendSqlEntry));
+                    checkEliminate();
                 } else {
                     txRecords.get(frontendSqlEntry.getTxId()).getSqls().add(new SQLRecord(frontendSqlEntry));
                 }
@@ -123,24 +108,6 @@ public class SqlStatisticHandler implements StatisticDataHandler {
             this.sqls.add(new SQLRecord(frontendSqlEntry));
         }
 
-        TxRecord(StatisticTxEntry txEntry) {
-            this.startTime = txEntry.getStartTimeMs();
-            this.info = txEntry.getFrontend();
-            this.duration = txEntry.getDuration();
-            final List<StatisticFrontendSqlEntry> entryList = txEntry.getEntryList();
-            this.sqls = new ArrayList<>();
-            for (StatisticFrontendSqlEntry sql : entryList) {
-                this.sqls.add(new SQLRecord(sql));
-            }
-        }
-
-        public void addSqls(final List<StatisticFrontendSqlEntry> entryList) {
-            if (this.sqls == null) return;
-            for (StatisticFrontendSqlEntry sql : entryList) {
-                this.sqls.add(new SQLRecord(sql));
-            }
-        }
-
         public long getStartTime() {
             return startTime;
         }
@@ -176,6 +143,8 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
         private long rows;
         private long examinedRows;
+
+        private long resultSize;
         // ns
         private long duration;
         private long startTime;
@@ -204,9 +173,10 @@ public class SqlStatisticHandler implements StatisticDataHandler {
             // time
             this.startTime = entry.getStartTimeMs();
             this.duration = entry.getDuration();
+            this.resultSize = entry.getResultSize();
             // rows
             this.rows = entry.getRows();
-            this.examinedRows = entry.getExaminedRows().longValue();
+            this.examinedRows = entry.getExaminedRows();
         }
 
         public long getSqlId() {
@@ -259,6 +229,10 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
         public String getSqlDigest() {
             return sqlDigest;
+        }
+
+        public long getResultSize() {
+            return resultSize;
         }
     }
 

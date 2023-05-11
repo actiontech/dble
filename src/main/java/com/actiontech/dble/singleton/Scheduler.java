@@ -9,18 +9,15 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
-import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.PooledConnection;
-import com.actiontech.dble.statistic.stat.*;
+import com.actiontech.dble.statistic.stat.FrontActiveRatioStat;
+import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -55,11 +52,6 @@ public final class Scheduler {
         scheduledExecutor.scheduleAtFixedRate(oldDbInstanceClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
         scheduledExecutor.scheduleWithFixedDelay(xaSessionCheck(), 0L, SystemConfig.getInstance().getXaSessionCheckPeriod(), TimeUnit.MILLISECONDS);
         scheduledExecutor.scheduleWithFixedDelay(xaLogClean(), 0L, SystemConfig.getInstance().getXaLogCleanPeriod(), TimeUnit.MILLISECONDS);
-        scheduledExecutor.scheduleWithFixedDelay(resultSetMapClear(), 0L, SystemConfig.getInstance().getClearBigSQLResultSetMapMs(), TimeUnit.MILLISECONDS);
-        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
-            //sql record detail timing clean
-            scheduledExecutor.scheduleWithFixedDelay(recycleSqlStat(), 0L, DEFAULT_SQL_STAT_RECYCLE_PERIOD, TimeUnit.MILLISECONDS);
-        }
         scheduledExecutor.scheduleAtFixedRate(threadStatRenew(), 0L, 1, TimeUnit.SECONDS);
         if (FrontActiveRatioStat.getInstance().isEnable()) {
             scheduledExecutor.scheduleWithFixedDelay(compressionsActiveStat(), 0L, FrontActiveRatioStat.INTERVAL, TimeUnit.MILLISECONDS);
@@ -176,55 +168,6 @@ public final class Scheduler {
                         XAStateLog.cleanCompleteRecoveryLog();
                     }
                 });
-            }
-        };
-    }
-
-
-    /**
-     * clean up the data in UserStatAnalyzer
-     */
-    private Runnable resultSetMapClear() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    BufferPool pool = BufferPoolManager.getBufferPool();
-                    long bufferSize = pool.size();
-                    long bufferCapacity = pool.capacity();
-                    long bufferUsagePercent = (bufferCapacity - bufferSize) * 100 / bufferCapacity;
-                    if (bufferUsagePercent < SystemConfig.getInstance().getBufferUsagePercent()) {
-                        Map<UserName, UserStat> map = UserStatAnalyzer.getInstance().getUserStatMap();
-                        Set<UserName> userSet = DbleServer.getInstance().getConfig().getUsers().keySet();
-                        for (UserName user : userSet) {
-                            UserStat userStat = map.get(user);
-                            if (userStat != null) {
-                                SqlResultSizeRecorder recorder = userStat.getSqlResultSizeRecorder();
-                                recorder.clearSqlResultSet();
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.info("resultSetMapClear err ", e);
-                }
-            }
-
-        };
-    }
-
-
-    //clean up the old data in SqlStat
-    private Runnable recycleSqlStat() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                Map<UserName, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
-                for (UserStat userStat : statMap.values()) {
-                    userStat.getSqlLastStat().recycle();
-                    userStat.getSqlRecorder().recycle();
-                    userStat.getSqlHigh().recycle();
-                    userStat.getSqlLargeRowStat().recycle();
-                }
             }
         };
     }

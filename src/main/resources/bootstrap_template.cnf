@@ -197,12 +197,13 @@
 
 #  if enable statistic sql
 -DenableStatistic=0
+-DenableStatisticAnalysis=0
 -DassociateTablesByEntryByUserTableSize=1024
 -DfrontendByBackendByEntryByUserTableSize=1024
 -DtableByUserByEntryTableSize=1024
 #  processing queue size must not be less than 1 and must be a power of 2
 -DstatisticQueueSize=4096
--DsamplingRate=0
+-DsamplingRate=100
 -DsqlLogTableSize=1024
 
 -DinSubQueryTransformToJoin=false

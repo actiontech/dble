@@ -9,13 +9,13 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AuthResultInfo;
+import com.actiontech.dble.singleton.TransactionCounter;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class TransactionService<T extends UserConfig> extends FrontendService<T> {
 
-    private final AtomicLong txId = new AtomicLong(0);
+    private volatile long txId = 0;
     private volatile boolean txStarted = false;
     // private volatile boolean autocommit = false; // in VariablesService
 
@@ -90,11 +90,8 @@ public abstract class TransactionService<T extends UserConfig> extends FrontendS
     }
 
     public long txIdCount() {
-        return txId.incrementAndGet();
-    }
-
-    public void resetTxId() {
-        txId.set(0);
+        txId = TransactionCounter.txIdGlobalCount();
+        return txId;
     }
 
     // ========================= get/set
@@ -103,8 +100,9 @@ public abstract class TransactionService<T extends UserConfig> extends FrontendS
     }
 
     public long getTxId() {
-        return txId.get();
+        return txId;
     }
+
 
     public boolean isTxStart() {
         return txStarted;

@@ -215,6 +215,7 @@ public final class SystemConfig {
     private String routePenetrationRules = "";
 
     private int enableStatistic = 0;
+    private int enableStatisticAnalysis = 0;
     private int associateTablesByEntryByUserTableSize = 1024;
     private int frontendByBackendByEntryByUserTableSize = 1024;
     private int tableByUserByEntryTableSize = 1024;
@@ -224,7 +225,7 @@ public final class SystemConfig {
     private int enableConnectionAssociateThread = 1;
 
     // sampling
-    private int samplingRate = 0;
+    private int samplingRate = 100;
     private int sqlLogTableSize = 1024;
 
     //use inSubQueryTransformToJoin
@@ -430,6 +431,20 @@ public final class SystemConfig {
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "enableStatistic", enableStatistic, this.enableStatistic));
         }
+    }
+
+    public int getEnableStatisticAnalysis() {
+        return enableStatisticAnalysis;
+    }
+
+    @SuppressWarnings("unused")
+    public void setEnableStatisticAnalysis(int enableStatisticAnalysis) {
+        if (enableStatisticAnalysis >= 0 && enableStatisticAnalysis <= 1) {
+            this.enableStatisticAnalysis = enableStatisticAnalysis;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableStatisticAnalysis", enableStatisticAnalysis, this.enableStatisticAnalysis));
+        }
+
     }
 
     public int getAssociateTablesByEntryByUserTableSize() {

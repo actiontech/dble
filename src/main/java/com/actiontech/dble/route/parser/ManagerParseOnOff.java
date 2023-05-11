@@ -23,6 +23,7 @@ public final class ManagerParseOnOff {
     public static final int LOAD_DATA_BATCH = 7;
     public static final int SQLDUMP_SQL = 8;
     public static final int MEMORY_BUFFER_MONITOR = 9;
+    public static final int STATISTIC_ANALYSIS = 10;
 
 
     public static int parse(String stmt, int offset) {
@@ -135,7 +136,13 @@ public final class ManagerParseOnOff {
 
     // enable/disable @@STATISTIC
     private static int stCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 7) {
+        if (stmt.length() > offset + 15) {
+            String prefix = stmt.substring(offset).toUpperCase();
+            if (prefix.startsWith("TATISTICANALYSIS") && (stmt.length() == offset + 16 || ParseUtil.isEOF(stmt, offset + 16))) {
+                return STATISTIC_ANALYSIS;
+            }
+        } else if (stmt.length() > offset + 7) {
+
             String prefix = stmt.substring(offset).toUpperCase();
             if (prefix.startsWith("TATISTIC") && (stmt.length() == offset + 8 || ParseUtil.isEOF(stmt, offset + 8))) {
                 return STATISTIC;

@@ -12,12 +12,12 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * for select and dml response packet
@@ -42,15 +42,15 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     public void ok(byte[] data) {
         if (status == INITIAL) {
             if (service.getSession() != null) {
-                service.getSession().startExecuteBackend();
+                service.getSession().trace(t -> t.startExecuteBackend());
             }
             ResponseHandler respHand = service.getResponseHandler();
             if (respHand != null) {
-                if (service.getSession() != null) {
+                Optional.ofNullable(service.getOriginSession()).ifPresent(p -> {
                     OkPacket ok = new OkPacket();
                     ok.read(data);
-                    StatisticListener.getInstance().record(service.getSession(), r -> r.onBackendSqlSetRows(service, ok.getAffectedRows()));
-                }
+                    p.trace(t -> t.setBackendSqlSetRows(service, ok.getAffectedRows()));
+                });
                 respHand.okResponse(data, service);
             }
         } else if (status == FIELD) {
@@ -67,7 +67,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         beforeError();
 
         if (respHand != null) {
-            StatisticListener.getInstance().record(service.getSession(), r -> r.onBackendSqlEnd(service));
+            Optional.ofNullable(service.getOriginSession()).ifPresent(p -> p.trace(t -> t.setBackendResponseEndTime(service)));
             IODelayProvider.beforeErrorResponse(service);
             respHand.errorResponse(data, service);
         } else {
@@ -89,7 +89,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
 
     protected void beforeError() {
         if (service.getSession() != null) {
-            service.getSession().startExecuteBackend();
+            service.getSession().trace(t -> t.startExecuteBackend());
         }
         service.releaseSignal();
         status = INITIAL;
@@ -112,7 +112,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     public void data(byte[] data) {
         if (status == INITIAL) {
             if (service.getSession() != null) {
-                service.getSession().startExecuteBackend();
+                service.getSession().trace(t -> t.startExecuteBackend());
             }
             status = FIELD;
             header = data;
@@ -127,7 +127,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     protected void closeNoHandler() {
         if (!service.getConnection().isClosed()) {
             LOGGER.info("no handler bind in this service " + service);
-            StatisticListener.getInstance().record(service.getSession(), r -> r.onBackendSqlEnd(service));
+            Optional.ofNullable(service.getOriginSession()).ifPresent(p -> p.trace(t -> t.setBackendResponseEndTime(service)));
             service.getConnection().close("no handler");
         }
     }
@@ -146,9 +146,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         //LOGGER.info("get into rowing data " + data.length);
         ResponseHandler respHand = service.getResponseHandler();
         if (respHand != null) {
-            if (service.getSession() != null) {
-                StatisticListener.getInstance().record(service.getSession(), r -> r.onBackendSqlAddRows(service));
-            }
+            Optional.ofNullable(service.getOriginSession()).ifPresent(p -> p.trace(t -> t.setBackendSqlAddRows(service)));
             respHand.rowResponse(data, null, false, service);
         } else {
             closeNoHandler();
@@ -156,8 +154,8 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     }
 
     private void handleRowEofPacket(byte[] data) {
-        if (service.getSession() != null && !service.isTesting() && service.getLogResponse().compareAndSet(false, true)) {
-            service.getSession().setBackendResponseEndTime(this.service);
+        if (service.getOriginSession() != null && !service.isTesting() && service.getLogResponse().compareAndSet(false, true)) {
+            service.getOriginSession().trace(t -> t.setBackendResponseEndTime(this.service));
         }
         service.getLogResponse().set(false);
         ResponseHandler respHand = service.getResponseHandler();

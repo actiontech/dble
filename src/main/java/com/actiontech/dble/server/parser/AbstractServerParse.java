@@ -21,6 +21,10 @@ public abstract class AbstractServerParse implements ServerParse {
     static final Pattern AUTOCOMMIT_PATTERN = Pattern.compile("^\\s*set\\s+(([a-zA-Z0-9]+\\s*=\\s*[a-zA-Z0-9]+)\\s*,)*\\s*autocommit\\s*=(\\s*(0|1|on|off))\\s*$", Pattern.CASE_INSENSITIVE);
     protected ServerParseValidations serverParseValidations = new ServerParseValidations();
 
+    public enum BusinessType {
+        R, W, OTHER
+    }
+
     @Override
     public boolean startWithHint(String stmt) {
         int length = stmt.length();
@@ -103,6 +107,29 @@ public abstract class AbstractServerParse implements ServerParse {
                 return true;
             default:
                 return false;
+        }
+    }
+
+    public static BusinessType getBusinessType(int sqlType) {
+        switch (sqlType) {
+            case ServerParse.SELECT:
+            case ServerParse.SHOW:
+            case ServerParse.EXPLAIN:
+            case ServerParse.DESCRIBE:
+                return BusinessType.R;
+            case ServerParse.UPDATE:
+            case ServerParse.INSERT:
+            case ServerParse.DELETE:
+            case ServerParse.REPLACE:
+            case ServerParse.DDL:
+            case ServerParse.ALTER_VIEW:
+            case ServerParse.CREATE_DATABASE:
+            case ServerParse.CREATE_VIEW:
+            case ServerParse.DROP_VIEW:
+            case ServerParse.DROP_TABLE:
+                return BusinessType.W;
+            default:
+                return BusinessType.OTHER;
         }
     }
 

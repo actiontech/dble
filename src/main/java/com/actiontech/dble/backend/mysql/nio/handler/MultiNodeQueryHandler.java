@@ -27,7 +27,6 @@ import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
@@ -303,7 +302,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (executeResponse) {
             pauseTime((MySQLResponseService) service);
             this.resultSize += data.length;
-            session.setBackendResponseEndTime((MySQLResponseService) service);
+            session.trace(t -> t.setBackendResponseEndTime((MySQLResponseService) service));
             ShardingService shardingService = session.getShardingService();
             OkPacket ok = new OkPacket();
             ok.read(data);
@@ -345,7 +344,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     ok.setInsertId(insertId);
                     shardingService.setLastInsertId(insertId);
                 }
-                QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
+                session.trace(t -> t.doSqlStat(ok.getAffectedRows(), netOutBytes, resultSize));
                 if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
                     return;
                 }
@@ -588,7 +587,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("last packet id:" + (byte) session.getShardingService().getPacketId().get());
         }
-        QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
+        session.trace(t -> t.doSqlStat(selectRows, netOutBytes, resultSize));
         eofRowPacket.write(byteBuffer, source);
     }
 
@@ -690,7 +689,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             TransactionHandler handler = new AutoCommitHandler(session, packet, rrs.getNodes(), errConnection);
             if (txOperation == AutoTxOperation.COMMIT) {
                 session.checkBackupStatus();
-                session.setBeginCommitTime();
+                session.trace(t -> t.setBeginCommitTime());
                 handler.commit();
             } else {
                 handler.rollback();

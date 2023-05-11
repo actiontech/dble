@@ -63,7 +63,7 @@ public class MySQLShardingSQLHandler {
                 service.executeException(e, sql);
                 return;
             }
-            service.getSession2().endRoute(rrs);
+            service.getSession2().trace(t -> t.endRoute(rrs));
             service.getSession2().execute(rrs);
         } finally {
             TraceManager.finishSpan(traceObject);

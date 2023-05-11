@@ -234,7 +234,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                             flushDataToFile();
                         }
                         ClusterDelayProvider.delayBeforeLoadData();
-                        service.getSession2().endParse();
+                        service.getSession2().trace(t -> t.endParse());
                         service.getSession2().execute(rrs);
                     }
                 }
@@ -795,7 +795,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             Optional.ofNullable(rrs).ifPresent(routeResultSet -> flushDataToFile());
         }
         if (rrs != null) {
-            service.getSession2().endParse();
+            service.getSession2().trace(t -> t.endParse());
             service.getSession2().execute(rrs);
         }
     }

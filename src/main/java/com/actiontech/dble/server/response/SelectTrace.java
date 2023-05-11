@@ -36,7 +36,7 @@ public final class SelectTrace {
         buffer = EOF.write(buffer, service, true);
 
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(service.getSession2().isTrace() ? "1".getBytes() : "0".getBytes());
+        row.add(service.getSession2().isTraceEnable() ? "1".getBytes() : "0".getBytes());
         row.setPacketId(service.nextPacketId());
         buffer = row.write(buffer, service, true);
         EOFRowPacket lastEof = new EOFRowPacket();

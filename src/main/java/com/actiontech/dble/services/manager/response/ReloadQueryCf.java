@@ -8,7 +8,7 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.statistic.stat.QueryConditionAnalyzer;
+import com.actiontech.dble.statistic.sql.analyzer.QueryConditionAnalyzer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

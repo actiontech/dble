@@ -35,6 +35,9 @@ public final class DisableHandler {
             case ManagerParseOnOff.STATISTIC:
                 StatisticCf.OnOff.execute(service, false);
                 break;
+            case ManagerParseOnOff.STATISTIC_ANALYSIS:
+                StatisticCf.AnalysisOnOff.execute(service, false);
+                break;
             case ManagerParseOnOff.LOAD_DATA_BATCH:
                 OnOffLoadDataBatch.execute(service, false);
                 break;

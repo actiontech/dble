@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler.Abst
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler.XAHandler;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,10 +44,8 @@ public class TransactionHandlerManager {
         if (xaTXEnabled && this.xaTxId == null) {
             LOGGER.info("XA Transaction enabled ,con " + service.getConnection());
             xaTxId = DbleServer.getInstance().genXaTxId();
-            StatisticListener.getInstance().record(service, r -> r.onXaStart(xaTxId));
         } else if (!xaTXEnabled && this.xaTxId != null) {
             LOGGER.info("XA Transaction disabled ,con " + service.getConnection());
-            StatisticListener.getInstance().record(service, r -> r.onXaStop());
             xaTxId = null;
         }
     }

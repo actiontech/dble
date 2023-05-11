@@ -3,9 +3,9 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.statistic.stat;
+package com.actiontech.dble.statistic.sql.analyzer;
 
-import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author zhuam
  */
-public final class TableStatAnalyzer implements QueryResultListener {
+public final class TableStatAnalyzer implements AbstractAnalyzer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TableStatAnalyzer.class);
 
@@ -46,38 +46,22 @@ public final class TableStatAnalyzer implements QueryResultListener {
     }
 
     @Override
-    public void onQueryResult(QueryResult queryResult) {
+    public void toAnalyzing(StatisticFrontendSqlEntry fEntry) {
+        String masterTable = null;
+        List<String> relationTables = new ArrayList<>();
+        List<String> tables = sqlParser.parseTableNames(fEntry.getSql());
+        for (int i = 0; i < tables.size(); i++) {
+            String table = tables.get(i);
+            if (i == 0) {
+                masterTable = table;
+            } else {
+                relationTables.add(table);
+            }
+        }
 
-        int sqlType = queryResult.getSqlType();
-        String sql = queryResult.getSql();
-        switch (sqlType) {
-            case ServerParse.SELECT:
-            case ServerParse.UPDATE:
-            case ServerParse.INSERT:
-            case ServerParse.DELETE:
-            case ServerParse.REPLACE:
-
-                String masterTable = null;
-                List<String> relationTables = new ArrayList<>();
-
-                List<String> tables = sqlParser.parseTableNames(sql);
-                for (int i = 0; i < tables.size(); i++) {
-                    String table = tables.get(i);
-                    if (i == 0) {
-                        masterTable = table;
-                    } else {
-                        relationTables.add(table);
-                    }
-                }
-
-                if (masterTable != null) {
-                    TableStat tableStat = getTableStat(masterTable);
-                    tableStat.update(sqlType, sql, queryResult.getStartTime(), queryResult.getEndTime(), relationTables);
-                }
-                break;
-            default:
-                break;
-
+        if (masterTable != null) {
+            TableStat tableStat = getTableStat(masterTable);
+            tableStat.update(fEntry.getSqlType(), fEntry.getEndTimeMs(), relationTables);
         }
     }
 
@@ -98,12 +82,6 @@ public final class TableStatAnalyzer implements QueryResultListener {
             }
         }
         return userStat;
-    }
-
-    public Map<String, TableStat> getTableStatMap() {
-        Map<String, TableStat> map = new LinkedHashMap<>(tableStatMap.size());
-        map.putAll(tableStatMap);
-        return map;
     }
 
     public List<TableStat> getTableStats(boolean isClear) {

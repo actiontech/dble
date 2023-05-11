@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
@@ -16,10 +15,7 @@ import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.RequestScope;
-import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.statistic.stat.QueryResult;
-import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -204,28 +200,12 @@ public class OutputHandler extends BaseDMLHandler {
             }
             eofPacket.setPacketId(serverSession.getShardingService().nextPacketId());
             this.netOutBytes += eofPacket.calcPacketSize();
-            doSqlStat();
+            serverSession.trace(t -> t.doSqlStat(selectRows, netOutBytes, netOutBytes));
             HandlerTool.terminateHandlerTree(this);
             serverSession.setHandlerEnd(this);
             eofPacket.write(buffer, shardingService);
         } finally {
             lock.unlock();
-        }
-    }
-
-    private void doSqlStat() {
-        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
-            long netInBytes = 0;
-            String sql = serverSession.getShardingService().getExecuteSql();
-            if (sql != null) {
-                netInBytes += sql.getBytes().length;
-                QueryResult queryResult = new QueryResult(serverSession.getShardingService().getUser(), ServerParse.SELECT,
-                        sql, selectRows, netInBytes, netOutBytes, serverSession.getQueryStartTime(), System.currentTimeMillis(), netOutBytes);
-                if (logger.isDebugEnabled()) {
-                    logger.debug("try to record sql:" + sql);
-                }
-                QueryResultDispatcher.dispatchQuery(queryResult);
-            }
         }
     }
 

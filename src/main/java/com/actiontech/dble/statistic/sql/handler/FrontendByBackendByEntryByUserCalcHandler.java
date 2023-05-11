@@ -8,13 +8,15 @@ package com.actiontech.dble.statistic.sql.handler;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.statistic.sql.StatisticEvent;
 import com.actiontech.dble.statistic.sql.StatisticManager;
+import com.actiontech.dble.statistic.sql.entry.BackendInfo;
 import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
 import com.actiontech.dble.statistic.sql.entry.StatisticBackendSqlEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
-import com.actiontech.dble.statistic.sql.entry.StatisticTxEntry;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataHandler {
 
@@ -42,36 +44,7 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
 
     public void handle(StatisticEntry entry) {
         synchronized (records) {
-            if (entry instanceof StatisticTxEntry) {
-                Set<String> keys = new HashSet<>();
-                ((StatisticTxEntry) entry).getEntryList().
-                        stream().
-                        flatMap(k -> k.getBackendSqlEntrys().values().stream()).
-                        collect(Collectors.toList()).
-                        stream().
-                        forEach(v -> {
-                            String key = v.getKey();
-                            keys.add(key);
-                            Record currRecord;
-                            boolean isNew = false;
-                            if (isNew = ((currRecord = records.get(key)) == null)) {
-                                checkEliminate();
-                                currRecord = new Record(entry.getFrontend().getUserId(), entry.getFrontend(), v.getBackend());
-                            }
-                            if (v.getAllEndTime() != 0) {
-                                currRecord.addTxRows(v.getRows());
-                            }
-                            if (isNew) {
-                                records.put(key, currRecord);
-                            }
-                        });
-                keys.stream().forEach(k -> {
-                    Record currRecord = records.get(k);
-                    if (currRecord != null) {
-                        currRecord.addTx(entry.getDuration());
-                    }
-                });
-            } else if (entry instanceof StatisticBackendSqlEntry) {
+            if (entry instanceof StatisticBackendSqlEntry) {
                 StatisticBackendSqlEntry backendSqlEntry = (StatisticBackendSqlEntry) entry;
                 String key = backendSqlEntry.getKey();
                 Record currRecord = records.get(key);
@@ -79,10 +52,6 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                 if (isNew) {
                     checkEliminate();
                     currRecord = new Record(entry.getFrontend().getUserId(), entry.getFrontend(), backendSqlEntry.getBackend());
-                }
-                if (backendSqlEntry.isNeedToTx()) {
-                    currRecord.addTxRows(backendSqlEntry.getRows());
-                    currRecord.addTx(entry.getDuration());
                 }
                 if (backendSqlEntry.getSqlType() == 4 || backendSqlEntry.getSqlType() == 11 || backendSqlEntry.getSqlType() == 3 || backendSqlEntry.getSqlType() == 7) {
                     switch (backendSqlEntry.getSqlType()) {
@@ -102,6 +71,11 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                             // ignore
                             break;
                     }
+                    currRecord.addTxRows(backendSqlEntry.getRows());
+                    currRecord.addTx(entry.getDuration());
+                }
+                if (backendSqlEntry.isNeedToTx()) {
+                    currRecord.incrementTx();
                 }
                 if (isNew) {
                     records.put(key, currRecord);
@@ -127,7 +101,7 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
     public static class Record {
         int entry;
         FrontendInfo frontend;
-        StatisticEntry.BackendInfo backend;
+        BackendInfo backend;
 
         int txCount = 0;
         long txRows = 0L;
@@ -151,21 +125,18 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
 
         long lastUpdateTime = 0L;
 
-        public Record(int entry, FrontendInfo frontend, StatisticEntry.BackendInfo backend) {
+        public Record(int entry, FrontendInfo frontend, BackendInfo backend) {
             this.entry = entry;
             this.frontend = frontend;
             this.backend = backend;
         }
 
-        public void addTx(long row, long time) {
+        public void incrementTx() {
             txCount += 1;
-            txRows += row;
-            txTime += time;
             lastUpdateTime = System.currentTimeMillis();
         }
 
         public void addTx(long time) {
-            txCount += 1;
             txTime += time;
             lastUpdateTime = System.currentTimeMillis();
         }
@@ -210,7 +181,7 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
             return frontend;
         }
 
-        public StatisticEntry.BackendInfo getBackend() {
+        public BackendInfo getBackend() {
             return backend;
         }
 
@@ -226,7 +197,7 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
             this.frontend = frontend;
         }
 
-        public void setBackend(StatisticEntry.BackendInfo backend) {
+        public void setBackend(BackendInfo backend) {
             this.backend = backend;
         }
 

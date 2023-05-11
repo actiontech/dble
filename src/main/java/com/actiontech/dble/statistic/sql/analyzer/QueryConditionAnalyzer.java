@@ -3,10 +3,11 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.statistic.stat;
+package com.actiontech.dble.statistic.sql.analyzer;
 
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.stat.TableStat.Condition;
@@ -39,7 +40,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author zhuam
  */
-public final class QueryConditionAnalyzer implements QueryResultListener {
+public final class QueryConditionAnalyzer implements AbstractAnalyzer {
     private static final long MAX_QUERY_MAP_SIZE = 100000;
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryConditionAnalyzer.class);
 
@@ -63,11 +64,9 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
 
 
     @Override
-    public void onQueryResult(QueryResult queryResult) {
-        int sqlType = queryResult.getSqlType();
-        String sql = queryResult.getSql();
-        if (sqlType == ServerParse.SELECT) {
-            List<Object> values = sqlParser.parseConditionValues(sql, this.tableName, this.columnName);
+    public void toAnalyzing(StatisticFrontendSqlEntry fEntry) {
+        if (fEntry.getSqlType() == ServerParse.SELECT) {
+            List<Object> values = sqlParser.parseConditionValues(fEntry.getSql(), this.tableName, this.columnName);
             if (values != null) {
                 if (this.map.size() < MAX_QUERY_MAP_SIZE) {
                     for (Object value : values) {

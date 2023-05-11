@@ -120,17 +120,17 @@ public class HandlerBuilder {
                     }
                 }
             }
-            session.endComplexRoute();
+            session.trace(t -> t.endComplexRoute());
 
             RouteResultsetNode routeSingleNode = getTryRouteSingleNode(builder, isHaveHintPlan2Inner);
             if (routeSingleNode != null)
                 return routeSingleNode;
 
             HandlerBuilder.startHandler(fh);
-            session.endComplexExecute();
+            session.trace(t -> t.endComplexExecute());
             long endTime = System.nanoTime();
             LOGGER.debug("HandlerBuilder.build cost:" + (endTime - startTime));
-            session.setTraceBuilder(builder);
+            session.trace(t -> t.setTraceBuilder(builder));
         } finally {
             TraceManager.finishSpan(session.getShardingService(), traceObject);
         }

@@ -13,7 +13,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.util.RouteResultCopy;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
-import com.actiontech.dble.server.trace.TraceResult;
+import com.actiontech.dble.statistic.trace.TraceResult;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceHelper;
@@ -81,8 +81,8 @@ public class MultiNodeDdlPrepareHandler extends BaseDDLHandler {
             } else {
                 finishedTest = true;
                 if (writeToClientFlag.compareAndSet(false, true)) {
-                    session.setTraceSimpleHandler(nextHandler);
-                    session.setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY);
+                    session.trace(t -> t.setTraceSimpleHandler(nextHandler));
+                    session.trace(t -> t.setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY));
                     if (session.isKilled()) {
                         String errInfo = "Query was interrupted";
                         setErrPkg(errInfo, ErrorCode.ER_QUERY_INTERRUPTED);

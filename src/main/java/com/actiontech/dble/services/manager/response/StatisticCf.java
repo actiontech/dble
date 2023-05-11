@@ -69,6 +69,34 @@ public class StatisticCf {
         }
     }
 
+    public static class AnalysisOnOff {
+        public AnalysisOnOff() {
+        }
+
+        public static void execute(ManagerService service, boolean isOn) {
+            LOCK.writeLock().lock();
+            try {
+                StatisticProvider.onOffStatistic();
+                String onOffStatus = isOn ? "enable" : "disable";
+                try {
+                    WriteDynamicBootstrap.getInstance().changeValue("enableStatisticAnalysis", isOn ? "1" : "0");
+                } catch (Exception ex) {
+                    LOGGER.warn("rollback enableStatisticAnalysis failed, exception：", ex);
+                    service.writeErrMessage(ErrorCode.ER_YES, onOffStatus + " enableStatisticAnalysis failed");
+                    return;
+                }
+                StatisticManager.getInstance().setEnableAnalysis(isOn);
+                OkPacket ok = new OkPacket();
+                ok.setPacketId(1);
+                ok.setAffectedRows(1);
+                ok.setServerStatus(2);
+                ok.write(service.getConnection());
+            } finally {
+                LOCK.writeLock().unlock();
+            }
+        }
+    }
+
     public static class SamplingSwitch {
         public SamplingSwitch() {
         }
@@ -270,6 +298,12 @@ public class StatisticCf {
                 row1.add(StringUtil.encode(StatisticManager.getInstance().isEnable() ? "ON" : "OFF", service.getCharset().getResults()));
                 row1.setPacketId(++packetId);
                 buffer = row1.write(buffer, service, true);
+
+                RowDataPacket row8 = new RowDataPacket(FIELD_COUNT);
+                row8.add(StringUtil.encode("statisticAnalysis", service.getCharset().getResults()));
+                row8.add(StringUtil.encode(StatisticManager.getInstance().isEnableAnalysis() ? "ON" : "OFF", service.getCharset().getResults()));
+                row8.setPacketId(++packetId);
+                buffer = row8.write(buffer, service, true);
 
                 RowDataPacket row2 = new RowDataPacket(FIELD_COUNT);
                 row2.add(StringUtil.encode("associateTablesByEntryByUserTableSize", service.getCharset().getResults()));

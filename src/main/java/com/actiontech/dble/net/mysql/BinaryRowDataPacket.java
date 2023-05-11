@@ -11,7 +11,6 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.WriteFlags;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.ByteUtil;
 import com.actiontech.dble.util.DateUtil;
 import org.slf4j.Logger;
@@ -232,7 +231,6 @@ public class BinaryRowDataPacket extends MySQLPacket {
     @Override
     public ByteBuffer write(ByteBuffer bb, AbstractService service,
                             boolean writeSocketIfFull) {
-        StatisticListener.getInstance().record(service, r -> r.onFrontendAddRows());
         int size = calcPacketSize();
         int totalSize = size + PACKET_HEADER_SIZE;
         boolean isBigPackage = size >= MySQLPacket.MAX_PACKET_SIZE;

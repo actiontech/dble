@@ -26,14 +26,8 @@ public final class ReloadHandler {
             case ManagerParseReload.CONFIG:
                 ReloadConfig.execute(service, stmt, rs >>> SHIFT);
                 break;
-            case ManagerParseReload.USER_STAT:
-                ReloadUserStat.execute(service);
-                break;
             case ManagerParseReload.SAMPLING_RATE:
                 StatisticCf.SamplingSwitch.execute(service, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
-                break;
-            case ManagerParseReload.SQL_SLOW:
-                ReloadSqlSlowTime.execute(service, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
                 break;
             case ManagerParseReload.SLOW_QUERY_TIME:
                 ReloadSlowQueryTime.execute(service, ParseUtil.getSQLId(stmt, rs >>> SHIFT));

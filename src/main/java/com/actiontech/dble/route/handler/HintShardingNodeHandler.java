@@ -47,7 +47,7 @@ public final class HintShardingNodeHandler {
             throw new SQLNonTransientException(msg);
         }
 
-        service.getSession2().endParse();
+        service.getSession2().trace(t -> t.endParse());
         return rrs;
     }
 

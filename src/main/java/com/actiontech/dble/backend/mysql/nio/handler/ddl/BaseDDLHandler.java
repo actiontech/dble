@@ -24,7 +24,6 @@ import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceHelper;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.StringUtil;
 import org.apache.curator.shaded.com.google.common.collect.Maps;
 import org.apache.logging.log4j.util.Strings;
@@ -230,7 +229,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
 
         if (executeResponse) {
             this.resultSize += data.length;
-            session.setBackendResponseEndTime(responseService);
+            session.trace(t -> t.setBackendResponseEndTime(responseService));
             final RouteResultsetNode node = (RouteResultsetNode) responseService.getAttachment();
             final ShardingService shardingService = session.getShardingService();
             lock.lock();
@@ -264,7 +263,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
                             err0.setMessage(StringUtil.encode(msg, shardingService.getCharset().getResults()));
                             packet = err0;
                         }
-                        QueryResultDispatcher.doSqlStat(rrs, session, 0, netOutBytes, resultSize);
+                        session.trace(t -> t.doSqlStat(0, netOutBytes, resultSize));
                         handleEndPacket(packet);
                     }
                 }

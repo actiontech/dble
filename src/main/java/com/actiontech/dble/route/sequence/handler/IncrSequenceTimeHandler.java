@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.sequence.handler;
 
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.services.FrontendService;
@@ -18,7 +19,8 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
 
     private IdWorker workey;
 
-    public void load(boolean isLowerCaseTableNames) {
+    @Override
+    public void load(RawJson sequenceJson, boolean isLowerCaseTableNames) {
         long startTimeMilliseconds = ClusterConfig.getInstance().sequenceStartTime();
         workey = new IdWorker(startTimeMilliseconds);
     }
@@ -31,9 +33,9 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
 
     /**
      * @author sw
-     *         <p>
-     *         Now:
-     *         64 bit ID 30 (millisecond high 30 )+10(instance_ID)+12(autoincrement)+12 (millisecond low 12)
+     * <p>
+     * Now:
+     * 64 bit ID 30 (millisecond high 30 )+10(instance_ID)+12(autoincrement)+12 (millisecond low 12)
      */
     static class IdWorker {
         private static final long TIMESTAMP_LOW_BITS = 12L;

@@ -18,6 +18,7 @@ import com.actiontech.dble.config.model.MysqlVersion;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.services.manager.response.ChangeItem;
 import com.actiontech.dble.services.manager.response.ChangeItemType;
 import com.actiontech.dble.services.manager.response.ChangeType;
@@ -471,9 +472,12 @@ public final class ConfigUtil {
                 PhysicalDbGroup dbGroup = shardingNode.getDbGroup();
                 checkDbGroupVersion(dbGroup);
             } else if (changeItem.getItemType() == ChangeItemType.USERNAME) {
-                RwSplitUserConfig rwSplitUserConfig = (RwSplitUserConfig) newConfigLoader.getUsers().get(item);
-                PhysicalDbGroup dbGroup = newConfigLoader.getDbGroups().get(rwSplitUserConfig.getDbGroup());
-                checkDbGroupVersion(dbGroup);
+                UserConfig userConfig = newConfigLoader.getUsers().get(item);
+                if (userConfig instanceof RwSplitUserConfig) {
+                    RwSplitUserConfig rwSplitUserConfig = (RwSplitUserConfig) userConfig;
+                    PhysicalDbGroup dbGroup = newConfigLoader.getDbGroups().get(rwSplitUserConfig.getDbGroup());
+                    checkDbGroupVersion(dbGroup);
+                }
             }
         }
     }

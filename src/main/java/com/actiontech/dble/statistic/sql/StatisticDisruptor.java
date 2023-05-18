@@ -27,7 +27,7 @@ public class StatisticDisruptor {
         eventFactory = EVENTFACTORY;
         translator = TRANSLATOR;
         disruptor = new Disruptor<>(eventFactory, ringBufferSize, new ThreadFactoryBuilder().setNameFormat("STATISTIC-%d").build(), ProducerType.MULTI, new LiteBlockingWaitStrategy());
-        disruptor.handleEventsWith(dataHandler);
+        disruptor.handleEventsWith(dataHandler).then(new EventClearingEventHandler());
         disruptor.setDefaultExceptionHandler(new StatisticExceptionHandler());
         disruptor.start();
     }
@@ -86,6 +86,14 @@ public class StatisticDisruptor {
         @Override
         public void handleOnShutdownException(Throwable ex) {
             LOGGER.error("Exception during onShutdown for statistic's disruptor ,exception：", ex);
+        }
+    }
+
+    public static final class EventClearingEventHandler implements EventHandler<StatisticEvent> {
+
+        @Override
+        public void onEvent(StatisticEvent event, long sequence, boolean endOfBatch) throws Exception {
+            event.setEntry(null);
         }
     }
 }

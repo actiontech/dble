@@ -370,11 +370,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         lock.lock();
         try {
-            if (isFail()) {
-                cleanBuffer();
-                return;
-            }
-            if (session.closed()) {
+            if (session.closed() || session.isKilled()) {
                 cleanBuffer();
                 return;
             }

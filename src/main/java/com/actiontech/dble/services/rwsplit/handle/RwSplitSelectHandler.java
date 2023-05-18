@@ -6,7 +6,6 @@
 package com.actiontech.dble.services.rwsplit.handle;
 
 import com.actiontech.dble.server.parser.RwSplitServerParseSelect;
-import com.actiontech.dble.server.response.SelectVariables;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 
 
@@ -20,7 +19,7 @@ public final class RwSplitSelectHandler {
     public static void handle(String stmt, RWSplitService service, int offset) {
         switch (RwSplitServerParseSelect.parse(stmt, offset)) {
             case RwSplitServerParseSelect.SELECT_VAR_ALL:
-                SelectVariables.execute(service, stmt);
+                service.getSession2().selectCompatibilityVariables(true, null, null, false, false);
                 break;
             default: {
                 int rs2 = RwSplitServerParseSelect.parseSpecial(stmt);

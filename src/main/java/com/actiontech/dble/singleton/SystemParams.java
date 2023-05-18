@@ -115,11 +115,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("bufferPoolPageSize", sysConfig.getBufferPoolPageSize() + "B", "The page size of memory bufferPool. The max direct memory used for allocating"));
         readOnlyParams.add(new ParamInfo("bufferPoolPageNumber", sysConfig.getBufferPoolPageNumber() + "", "The page number of memory bufferPool. The All bufferPool size is PageNumber * PageSize"));
         readOnlyParams.add(new ParamInfo("mappedFileSize", sysConfig.getMappedFileSize() + "B", "The Memory linked file size,when complex query resultSet is too large the Memory will be turned to file temporary"));
-        readOnlyParams.add(new ParamInfo("useSqlStat", sysConfig.getUseSqlStat() + "", "Whether the SQL statistics function is enable or not. The default value is 1.(Abandoned)"));
-        readOnlyParams.add(new ParamInfo("sqlRecordCount", sysConfig.getSqlRecordCount() + "", "The slow SQL statistics limit,if the slow SQL record is large than the size, the record will be clear. The default value is 10"));
         readOnlyParams.add(new ParamInfo("maxResultSet", sysConfig.getMaxResultSet() + "B", "The large resultSet SQL standard. The default value is 524288B(means 512*1024)"));
-        readOnlyParams.add(new ParamInfo("bufferUsagePercent", sysConfig.getBufferUsagePercent() + "%", "Large result set cleanup trigger percentage. The default value is 80.(Abandoned)"));
-        readOnlyParams.add(new ParamInfo("clearBigSQLResultSetMapMs", sysConfig.getClearBigSQLResultSetMapMs() + "ms", "The period for clear the large resultSet SQL statistics. The default value is 6000000ms.(Abandoned)"));
         readOnlyParams.add(new ParamInfo("frontSocketSoRcvbuf", sysConfig.getFrontSocketSoRcvbuf() + "B", "The buffer size of frontend receive socket. The default value is 1048576B(means 1024*1024)"));
         readOnlyParams.add(new ParamInfo("frontSocketSoSndbuf", sysConfig.getFrontSocketSoSndbuf() + "B", "The buffer size of frontend send socket. The default value is 4194304B(means 1024*1024*4)"));
         readOnlyParams.add(new ParamInfo("frontSocketNoDelay", sysConfig.getFrontSocketNoDelay() + "", "The frontend nagle is disabled. The default value is 1"));

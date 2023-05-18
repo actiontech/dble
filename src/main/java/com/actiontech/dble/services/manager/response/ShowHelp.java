@@ -158,8 +158,6 @@ public final class ShowHelp {
         HELPS.put("reload @@config", "Reload basic config from file");
         HELPS.put("reload @@config_all", "Reload all config from file");
         HELPS.put("reload @@metadata [where schema=? [and table=?] | where table in ('schema1.table1',...)]", "Reload metadata of tables or specified table");
-        HELPS.put("reload @@sqlslow=", "Set Slow SQL Time(ms)");
-        HELPS.put("reload @@user_stat", "Reset show @@sql  @@sql.sum @@sql.slow");
         HELPS.put("reload @@query_cf[=table&column]", "Reset show @@sql.condition");
         HELPS.put("release @@reload_metadata", "Release reload process , unlock the config meta lock");
         HELPS.put("reload @@load_data.num=?", "Set the value of maxRowSizeToFile");
@@ -239,7 +237,9 @@ public final class ShowHelp {
 
         HELPS.put("show @@statistic", "Turn off statistic information");
         HELPS.put("enable @@statistic", "Turn on statistic sql");
-        HELPS.put("disable @@statistic", "Turn off statistic sql");
+        HELPS.put("enable @@enableStatisticAnalysis", "Turn on statistic analysis sql('show @@sql.sum.user/table' or 'show @@sql.condition')");
+        HELPS.put("disable @@statistic", "Turn off statistic analysis sql('show @@sql.sum.user/table' or 'show @@sql.condition')");
+        HELPS.put("disable @@enableStatisticAnalysis", "Turn off statisticAnalysis sql");
         HELPS.put("reload @@statistic_table_size = ? [where table='?' | where table in (dble_information.tableA,...)]", "Statistic table size");
         HELPS.put("reload @@samplingRate=?", "Reset the samplingRate size");
         HELPS.put("show @@statistic_queue.usage", "Show the queue usage");

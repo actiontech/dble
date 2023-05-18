@@ -190,7 +190,7 @@ public class TrackProbe extends AbstractTrackProbe {
             }
         } catch (Exception e) {
             // Should not affect the main task
-            LOGGER.warn("sqlTracking occurred: {}", e);
+            LOGGER.warn("sqlTracking occurred ", e);
         }
     }
 
@@ -201,7 +201,7 @@ public class TrackProbe extends AbstractTrackProbe {
             }
         } catch (Exception e) {
             // Should not affect the main task
-            LOGGER.warn("sqlCosting occurred: {}", e);
+            LOGGER.warn("sqlCosting occurred ", e);
         }
     }
 

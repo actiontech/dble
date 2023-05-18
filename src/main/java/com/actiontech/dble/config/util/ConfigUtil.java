@@ -18,6 +18,7 @@ import com.actiontech.dble.config.model.MysqlVersion;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.services.manager.response.ChangeItem;
 import com.actiontech.dble.services.manager.response.ChangeItemType;
 import com.actiontech.dble.services.manager.response.ChangeType;
@@ -261,7 +262,7 @@ public final class ConfigUtil {
             //sharding or analysis
             boolean isMatch = majorVersion >= VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion());
             if (!isMatch && isThrowException) {
-                throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend " + type + " node,pls check the backend " + type + " node.");
+                throw new ConfigException("this dbInstance[=" + instance.getConfig().getUrl() + "]'s version[=" + version + "] cannot be lower than the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "],pls check the backend " + type + " node.");
             }
             return isMatch;
         }
@@ -443,8 +444,8 @@ public final class ConfigUtil {
 
     public static void checkDbleAndMysqlVersion(List<ChangeItem> changeItemList, ConfigInitializer newConfigLoader) {
         List<ChangeItem> needCheckVersionList = changeItemList.stream()
-                //add dbInstance or add dbGroup or add shardingNode or (update dbInstance and need testConn) or (update rwSplitUser and affectEntryDbGroup=true) or update shardingNode
-                .filter(changeItem -> ((changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE || changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP || changeItem.getItemType() == ChangeItemType.SHARDING_NODE) && changeItem.getType() == ChangeType.ADD) ||
+                //add dbInstance/dbGroup/rwSplitUser/shardingNode or (update dbInstance and need testConn) or (update rwSplitUser and affectEntryDbGroup=true) or update shardingNode
+                .filter(changeItem -> (changeItem.getType() == ChangeType.ADD) ||
                         (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectTestConn()) ||
                         (changeItem.getItemType() == ChangeItemType.USERNAME && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectEntryDbGroup()) ||
                         (changeItem.getItemType() == ChangeItemType.SHARDING_NODE && changeItem.getType() == ChangeType.UPDATE))
@@ -470,10 +471,13 @@ public final class ConfigUtil {
                 ShardingNode shardingNode = (ShardingNode) item;
                 PhysicalDbGroup dbGroup = shardingNode.getDbGroup();
                 checkDbGroupVersion(dbGroup);
-            } else if (changeItem.getItemType() == ChangeItemType.USERNAME && changeItem.isAffectEntryDbGroup()) {
-                RwSplitUserConfig rwSplitUserConfig = (RwSplitUserConfig) newConfigLoader.getUsers().get(item);
-                PhysicalDbGroup dbGroup = newConfigLoader.getDbGroups().get(rwSplitUserConfig.getDbGroup());
-                checkDbGroupVersion(dbGroup);
+            } else if (changeItem.getItemType() == ChangeItemType.USERNAME) {
+                UserConfig userConfig = newConfigLoader.getUsers().get(item);
+                if (userConfig instanceof RwSplitUserConfig) {
+                    RwSplitUserConfig rwSplitUserConfig = (RwSplitUserConfig) userConfig;
+                    PhysicalDbGroup dbGroup = newConfigLoader.getDbGroups().get(rwSplitUserConfig.getDbGroup());
+                    checkDbGroupVersion(dbGroup);
+                }
             }
         }
     }

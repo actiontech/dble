@@ -163,7 +163,6 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
         this.port = config.getPort();
         this.user = config.getUser();
         this.password = config.getPassword();
-        this.fromSlaveDB = !config.isPrimary();
         this.connectionTimeout = config.getPoolConfig().getConnectionTimeout();
         this.lastTime = TimeUtil.currentTimeMillis();
 

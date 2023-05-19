@@ -106,23 +106,20 @@ public class StatisticCf {
                 service.writeErrMessage(ErrorCode.ER_YES, "value of samplingRate is incorrect, the value is integer between 0 and 100.");
                 return;
             }
-
-            try {
-                WriteDynamicBootstrap.getInstance().changeValue("samplingRate", samplingRate + "");
-            } catch (Exception ex) {
-                LOGGER.warn("write samplingRate error", ex);
-                service.writeErrMessage(ErrorCode.ER_YES, "fail to reload samplingRate");
-                return;
-            }
-
             LOCK.writeLock().lock();
             try {
+                try {
+                    WriteDynamicBootstrap.getInstance().changeValue("samplingRate", samplingRate + "");
+                } catch (Exception ex) {
+                    LOGGER.warn("write samplingRate error", ex);
+                    service.writeErrMessage(ErrorCode.ER_YES, "fail to reload samplingRate");
+                    return;
+                }
                 StatisticManager.getInstance().setSamplingRate(samplingRate);
+                service.writeOkPacket();
             } finally {
                 LOCK.writeLock().unlock();
             }
-
-            service.writeOkPacket();
         }
     }
 
@@ -483,7 +480,7 @@ public class StatisticCf {
             public void run() {
                 StatisticManager.getInstance().
                         getUsageData().add(new UsageDataBlock(DateUtil.parseStr(System.currentTimeMillis(), DateUtil.DEFAULT_DATE_PATTERN),
-                                DF.format(1 - (StatisticManager.getInstance().getDisruptorRemaining() / queueSize))));
+                        DF.format(1 - (StatisticManager.getInstance().getDisruptorRemaining() / queueSize))));
                 count += interval;
                 if (count > observe) {
                     StatisticManager.getInstance().cancelMonitoring();

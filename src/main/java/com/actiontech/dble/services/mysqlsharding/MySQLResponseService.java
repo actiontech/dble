@@ -272,9 +272,7 @@ public class MySQLResponseService extends BackendService {
         try {
             if (synSQL == null) {
                 // not need syn connection
-                if (getOriginSession() != null) {
-                    getOriginSession().trace(t -> t.setBackendRequestTime(this));
-                }
+                Optional.ofNullable(getOriginSession()).ifPresent(p -> p.trace(t -> t.setBackendRequestTime(this)));
                 sendQueryCmd(sql, clientCharset);
                 return;
             }

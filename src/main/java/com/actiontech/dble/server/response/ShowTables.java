@@ -110,7 +110,7 @@ public final class ShowTables {
         }
         RouterUtil.routeToSingleNode(rrs, node, null);
         ShowTablesHandler showTablesHandler = new ShowTablesHandler(rrs, shardingService.getSession2(), info);
-        shardingService.getSession2().trace(t -> t.setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY));
+        shardingService.getSession2().trace(t -> t.setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY));
         showTablesHandler.execute();
     }
 

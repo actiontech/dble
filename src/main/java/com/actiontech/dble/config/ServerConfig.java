@@ -160,6 +160,7 @@ public class ServerConfig {
     }
 
     public void getAndSyncKeyVariables() throws Exception {
+        ConfigUtil.checkDbleAndMysqlVersion(confInitNew.getDbGroups());
         ConfigUtil.getAndSyncKeyVariables(confInitNew.getDbGroups(), true);
         DbleServer.getInstance().getConfig().setLowerCase(DbleTempConfig.getInstance().isLowerCase());
     }

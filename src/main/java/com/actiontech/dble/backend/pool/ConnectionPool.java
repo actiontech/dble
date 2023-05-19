@@ -81,9 +81,10 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         try {
             ConnectionPoolProvider.getConnGetFrenshLocekAfter();
             ConnectionPoolProvider.borrowDirectlyConnectionBefore();
-            int waiting = waiters.get();
             for (PooledConnection conn : allConnections) {
                 if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                    final int waiting = waiterNum;
+                    ConnectionPoolProvider.getWaiterCountAfter();
                     if (waiting > 0 && conn.getCreateByWaiter().compareAndSet(true, false)) {
                         ConnectionPoolProvider.newConnectionBorrowDirectly();
                         newPooledEntry(schema, waiting, true);
@@ -103,12 +104,12 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             freshLock.readLock().lock();
         }
         try {
-            final int waiting = waiterNum;
             ConnectionPoolProvider.getConnGetFrenshLocekAfter();
             ConnectionPoolProvider.borrowConnectionBefore();
             for (PooledConnection conn : allConnections) {
                 if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
                     // If we may have stolen another waiter's connection, request another bag add.
+                    final int waiting = waiterNum;
                     if (waiting > 0 && conn.getCreateByWaiter().compareAndSet(true, false)) {
                         ConnectionPoolProvider.newConnectionBorrow0();
                         newPooledEntry(schema, waiting, true);

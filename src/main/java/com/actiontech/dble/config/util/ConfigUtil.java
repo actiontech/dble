@@ -10,12 +10,15 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.VersionUtil;
+import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.MysqlVersion;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.type.DataBaseType;
+import com.actiontech.dble.config.model.user.RwSplitUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.services.manager.response.ChangeItem;
 import com.actiontech.dble.services.manager.response.ChangeItemType;
 import com.actiontech.dble.services.manager.response.ChangeType;
@@ -98,7 +101,7 @@ public final class ConfigUtil {
                             changeItem.getType() == ChangeType.ADD) ||
                             (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectTestConn()))
                     .collect(Collectors.toList());
-            if (changeItemList.size() == 0 || needCheckItemList == null || needCheckItemList.isEmpty()) {
+            if (changeItemList.size() == 0 || needCheckItemList.isEmpty()) {
                 //with no dbGroups, do not check the variables
                 return null;
             }
@@ -120,10 +123,6 @@ public final class ConfigUtil {
                         diffGroup.add(variableMapKey.getDataSourceName());
                     }
                     minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
-
-                    PhysicalDbInstance instance = variableMapKey.getDbInstance();
-                    //check mysql version
-                    checkMysqlVersion(keyVariables.getVersion(), instance, true);
                 }
             }
             if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
@@ -207,8 +206,6 @@ public final class ConfigUtil {
                 }
                 minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                 PhysicalDbInstance instance = variableMapKey.getDbInstance();
-                //check mysql version
-                checkMysqlVersion(keyVariables.getVersion(), instance, true);
 
                 // The back_log value indicates how many requests can be stacked during this short time before MySQL momentarily stops answering new requests
                 int minCon = instance.getConfig().getMinCon();
@@ -261,13 +258,16 @@ public final class ConfigUtil {
         if (!instance.getDbGroup().isRwSplitUseless()) {
             //rw-split
             return checkVersionWithRwSplit(version, instance, isThrowException, type);
-        } else {
+        } else if (!instance.getDbGroup().isShardingUseless() || !instance.getDbGroup().isAnalysisUseless()) {
+            //sharding or analysis
             boolean isMatch = majorVersion >= VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion());
             if (!isMatch && isThrowException) {
-                throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend " + type + " node,pls check the backend " + type + " node.");
+                throw new ConfigException("this dbInstance[=" + instance.getConfig().getUrl() + "]'s version[=" + version + "] cannot be lower than the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "],pls check the backend " + type + " node.");
             }
             return isMatch;
         }
+        //not referenced
+        return true;
     }
 
     /**
@@ -328,10 +328,6 @@ public final class ConfigUtil {
                     secondGroup.add(variableMapKey.getDataSourceName());
                 }
                 minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
-
-                PhysicalDbInstance instance = variableMapKey.getDbInstance();
-                //check mysql version
-                checkMysqlVersion(keyVariables.getVersion(), instance, true);
             }
         }
         if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
@@ -444,6 +440,65 @@ public final class ConfigUtil {
 
     private static String genDataSourceKey(String hostName, String dsName) {
         return hostName + ":" + dsName;
+    }
+
+    public static void checkDbleAndMysqlVersion(List<ChangeItem> changeItemList, ConfigInitializer newConfigLoader) {
+        List<ChangeItem> needCheckVersionList = changeItemList.stream()
+                //add dbInstance/dbGroup/rwSplitUser/shardingNode or (update dbInstance and need testConn) or (update rwSplitUser and affectEntryDbGroup=true) or update shardingNode
+                .filter(changeItem -> (changeItem.getType() == ChangeType.ADD) ||
+                        (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectTestConn()) ||
+                        (changeItem.getItemType() == ChangeItemType.USERNAME && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectEntryDbGroup()) ||
+                        (changeItem.getItemType() == ChangeItemType.SHARDING_NODE && changeItem.getType() == ChangeType.UPDATE))
+                .collect(Collectors.toList());
+
+        if (changeItemList.size() == 0 || needCheckVersionList.isEmpty()) {
+            //with no item, do not check the version
+            return;
+        }
+        for (ChangeItem changeItem : needCheckVersionList) {
+            Object item = changeItem.getItem();
+            if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE) {
+                PhysicalDbInstance ds = (PhysicalDbInstance) item;
+                if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
+                    continue;
+                }
+                //check mysql version
+                checkMysqlVersion(ds.getDsVersion(), ds, true);
+            } else if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP) {
+                PhysicalDbGroup dbGroup = (PhysicalDbGroup) item;
+                checkDbGroupVersion(dbGroup);
+            } else if (changeItem.getItemType() == ChangeItemType.SHARDING_NODE) {
+                ShardingNode shardingNode = (ShardingNode) item;
+                PhysicalDbGroup dbGroup = shardingNode.getDbGroup();
+                checkDbGroupVersion(dbGroup);
+            } else if (changeItem.getItemType() == ChangeItemType.USERNAME) {
+                UserConfig userConfig = newConfigLoader.getUsers().get(item);
+                if (userConfig instanceof RwSplitUserConfig) {
+                    RwSplitUserConfig rwSplitUserConfig = (RwSplitUserConfig) userConfig;
+                    PhysicalDbGroup dbGroup = newConfigLoader.getDbGroups().get(rwSplitUserConfig.getDbGroup());
+                    checkDbGroupVersion(dbGroup);
+                }
+            }
+        }
+    }
+
+    public static void checkDbleAndMysqlVersion(Map<String, PhysicalDbGroup> newDbGroups) {
+        if (newDbGroups.isEmpty()) {
+            return;
+        }
+        for (PhysicalDbGroup dbGroup : newDbGroups.values()) {
+            checkDbGroupVersion(dbGroup);
+        }
+    }
+
+    public static void checkDbGroupVersion(PhysicalDbGroup dbGroup) {
+        for (PhysicalDbInstance ds : dbGroup.getAllDbInstanceMap().values()) {
+            if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
+                continue;
+            }
+            //check mysql version
+            checkMysqlVersion(ds.getDsVersion(), ds, true);
+        }
     }
 
     protected static class VariableMapKey {

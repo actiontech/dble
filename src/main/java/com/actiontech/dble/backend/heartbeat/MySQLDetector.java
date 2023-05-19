@@ -153,7 +153,12 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                 } else if (variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                     errMsg = "this dbInstance[=" + url + "]'s lower_case is wrong";
                 } else if (versionMismatch) {
-                    errMsg = "this dbInstance[=" + url + "]'s version[=" + variables.getVersion() + "] cannot be lower than the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "]";
+                    if (!source.getDbGroup().isRwSplitUseless()) {
+                        //rw-split
+                        errMsg = "the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] and " + source.getDbGroupConfig().instanceDatabaseType().toString() + "[" + source.getConfig().getUrl() + "] version[=" + variables.getVersion() + "] not match, Please check the version.";
+                    } else {
+                        errMsg = "this dbInstance[=" + url + "]'s version[=" + variables.getVersion() + "] cannot be lower than the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "],pls check the backend " + source.getDbGroupConfig().instanceDatabaseType() + " node.";
+                    }
                 } else {
                     errMsg = "this dbInstance[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + SystemConfig.getInstance().getMaxPacketSize();
                 }

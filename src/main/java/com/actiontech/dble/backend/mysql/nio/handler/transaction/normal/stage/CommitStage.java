@@ -74,6 +74,7 @@ public class CommitStage extends Stage implements TransactionStage {
         if (transactionCallback != null)
             transactionCallback.callback();
 
+        session.getTransactionManager().getNormalTransactionHandler().clearResources();
         if (isFail) {
             if (sendData != null) {
                 sendData.write(session.getSource());
@@ -90,6 +91,7 @@ public class CommitStage extends Stage implements TransactionStage {
     }
 
     private void syncNext(boolean isFail, String errMsg, MySQLPacket sendData) {
+        session.getTransactionManager().getNormalTransactionHandler().clearResources();
         if (isFail) {
             session.getShardingService().setPacketId(0);
             if (sendData != null) {

@@ -37,7 +37,7 @@ public class RollbackStage implements TransactionStage {
         }
 
         session.setResponseTime(false);
-
+        session.getTransactionManager().getNormalTransactionHandler().clearResources();
         LOGGER.info("GET INTO THE NET LEVEL AND THE RESULT IS " + isFail);
         if (isFail) {
             if (sendData != null) {

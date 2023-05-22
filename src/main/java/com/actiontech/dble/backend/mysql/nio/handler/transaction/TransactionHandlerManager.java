@@ -76,6 +76,10 @@ public class TransactionHandlerManager {
         }
     }
 
+    public NormalTransactionHandler getNormalTransactionHandler() {
+        return (NormalTransactionHandler) normalHandler;
+    }
+
     public void commit(TransactionCallback callback) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("{} execute commit(), current {}", session.getShardingService().toString2(), session);

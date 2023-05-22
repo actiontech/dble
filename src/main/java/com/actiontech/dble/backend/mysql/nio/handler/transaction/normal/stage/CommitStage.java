@@ -69,6 +69,7 @@ public class CommitStage extends Stage implements TransactionStage {
     }
 
     private void asyncNext(boolean isFail, String errMsg, MySQLPacket sendData) {
+        session.getTransactionManager().getNormalTransactionHandler().clearResources();
         if (isFail) {
             session.setFinishedCommitTime();
             if (sendData != null) {
@@ -90,6 +91,7 @@ public class CommitStage extends Stage implements TransactionStage {
     }
 
     private void syncNext(boolean isFail, String errMsg, MySQLPacket sendData) {
+        session.getTransactionManager().getNormalTransactionHandler().clearResources();
         if (isFail) {
             session.getShardingService().setPacketId(0);
             if (sendData != null) {

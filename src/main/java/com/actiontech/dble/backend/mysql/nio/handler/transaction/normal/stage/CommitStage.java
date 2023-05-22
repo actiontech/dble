@@ -36,7 +36,7 @@ public class CommitStage implements TransactionStage {
         if (session.closed()) {
             return null;
         }
-
+        session.getTransactionManager().getNormalTransactionHandler().clearResources();
         if (isFail) {
             session.setFinishedCommitTime();
             session.setResponseTime(false);

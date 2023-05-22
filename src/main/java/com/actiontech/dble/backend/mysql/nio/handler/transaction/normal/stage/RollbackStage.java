@@ -31,7 +31,7 @@ public class RollbackStage implements TransactionStage {
         if (session.closed()) {
             return null;
         }
-
+        session.getTransactionManager().getNormalTransactionHandler().clearResources();
         session.setResponseTime(false);
         if (isFail) {
             session.getSource().write(sendData);

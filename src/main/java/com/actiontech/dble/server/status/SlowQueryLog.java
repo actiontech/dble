@@ -7,7 +7,6 @@ package com.actiontech.dble.server.status;
 
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.slow.SlowQueryLogProcessor;
-
 import com.actiontech.dble.server.trace.TraceResult;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import org.slf4j.Logger;
@@ -71,6 +70,10 @@ public final class SlowQueryLog {
 
     public void setFlushPeriod(int flushPeriod) {
         this.flushPeriod = flushPeriod;
+        if (this.enableSlowLog && processor != null) {
+            processor.cancelFlushLogTask();
+            processor.initFlushLogTask();
+        }
     }
 
     public int getFlushSize() {

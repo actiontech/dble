@@ -6,10 +6,10 @@
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.status.SlowQueryLog;
+import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +22,7 @@ public final class ReloadSlowQueryFlushPeriod {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSlowQueryFlushPeriod.class);
 
     public static void execute(ManagerService service, int time) {
-        if (time < 0) {
+        if (time <= 0) {
             service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the commend is not correct");
             return;
         }

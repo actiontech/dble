@@ -17,7 +17,7 @@ public final class ShowSQLLarge {
     }
 
     public static void execute(ManagerService service) {
-        String sql = "select user as USER, rows as ROWS, start_time as START_TIME, duration as EXECUTE_TIME, sql_stmt as SQL from sql_log where sql_type='Select' and rows > 10000;";
+        String sql = "select user as USER, rows as ROWS, start_time as START_TIME, duration as EXECUTE_TIME, sql_stmt as SQL from dble_information.sql_log where sql_type='Select' and rows > 10000;";
         (new ManagerSelectHandler()).execute(service, sql);
     }
 }

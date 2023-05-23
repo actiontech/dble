@@ -19,7 +19,7 @@ public final class ShowSQL {
     }
 
     public static void execute(ManagerService service) {
-        String sql = "select sql_id as ID, user as USER, start_time as START_TIME, duration as EXECUTE_TIME, sql_stmt as SQL from sql_log order by start_time desc";
+        String sql = "select sql_id as ID, user as USER, start_time as START_TIME, duration as EXECUTE_TIME, sql_stmt as SQL from dble_information.sql_log order by start_time desc";
         (new ManagerSelectHandler()).execute(service, sql);
     }
 }

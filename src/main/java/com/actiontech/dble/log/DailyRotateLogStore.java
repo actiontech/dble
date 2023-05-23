@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.log;
 
+import com.actiontech.dble.btrace.provider.GeneralProvider;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -148,6 +150,7 @@ public class DailyRotateLogStore {
         force(false);
         close();
 
+        GeneralProvider.afterSlowLogClose();
         File file;
         file = new File(fileName);
         file.renameTo(target);

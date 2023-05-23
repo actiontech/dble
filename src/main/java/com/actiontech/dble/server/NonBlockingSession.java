@@ -318,7 +318,7 @@ public class NonBlockingSession extends Session {
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             responseTime = System.nanoTime();
             traceResult.setVeryEnd(responseTime);
-            if (isSuccess) {
+            if (isSuccess && SlowQueryLog.getInstance().isEnableSlowLog()) {
                 SlowQueryLog.getInstance().putSlowQueryLog(this.shardingService, (TraceResult) traceResult.clone());
             }
         }

@@ -20,7 +20,7 @@ public final class ShowSQLSlow {
 
     public static void execute(ManagerService service) {
         long slowTime = (long) SlowQueryLog.getInstance().getSlowTime() * 1000000;
-        String sql = "select user as USER, start_time as START_TIME, duration as EXECUTE_TIME, sql_stmt as SQL from sql_log where duration >= " + slowTime + " order by start_time";
+        String sql = "select user as USER, start_time as START_TIME, duration as EXECUTE_TIME, sql_stmt as SQL from dble_information.sql_log where duration >= " + slowTime + " order by start_time";
         (new ManagerSelectHandler()).execute(service, sql);
     }
 

@@ -18,9 +18,9 @@ public final class ShowSqlResultSet {
     }
 
     public static void execute(ManagerService service) {
-        String sql = "select sql_id as ID, user as USER, t2.FREQUENCY, sql_stmt as SQL, result_size as RESULT_SIZE from sql_log t1" +
+        String sql = "select sql_id as ID, user as USER, t2.FREQUENCY, sql_stmt as SQL, result_size as RESULT_SIZE from dble_information.sql_log t1" +
                 " inner join (" +
-                " select max(sql_id) as maxId, count(0) as FREQUENCY from sql_log group by sql_digest having result_size >= " + SystemConfig.getInstance().getMaxResultSet() + " order by maxId" +
+                " select max(sql_id) as maxId, count(0) as FREQUENCY from dble_information.sql_log group by sql_digest having result_size >= " + SystemConfig.getInstance().getMaxResultSet() + " order by maxId" +
                 " ) t2" +
                 " on  t1.sql_id = t2.maxId";
         (new ManagerSelectHandler()).execute(service, sql);

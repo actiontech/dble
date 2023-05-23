@@ -5,20 +5,21 @@
 
 package com.actiontech.dble.backend.pool;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 final class EvictionTimer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(EvictionTimer.class);
 
     /**
      * Executor instance
      */
     private static ScheduledThreadPoolExecutor executor; //@GuardedBy("EvictionTimer.class")
-
+    private static ConcurrentLinkedQueue aliveEvictor = new ConcurrentLinkedQueue();
     /**
      * Prevents instantiation
      */
@@ -26,6 +27,9 @@ final class EvictionTimer {
         // Hide the default constructor
     }
 
+    public static ConcurrentLinkedQueue getAliveEvictor() {
+        return aliveEvictor;
+    }
 
     /**
      * @since 2.4.3
@@ -73,8 +77,9 @@ final class EvictionTimer {
         if (evictor != null) {
             evictor.cancel();
         }
-        if (executor != null && executor.getQueue().isEmpty()) {
+        if (executor != null && aliveEvictor.isEmpty()) {
             executor.shutdown();
+            LOGGER.info("EvictionTimer executor shutdown");
             try {
                 executor.awaitTermination(timeout, unit);
             } catch (final InterruptedException e) {

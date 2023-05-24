@@ -69,6 +69,10 @@ public class TransactionHandlerManager {
         }
     }
 
+    public NormalTransactionHandler getNormalTransactionHandler() {
+        return (NormalTransactionHandler) normalHandler;
+    }
+
     public void commit() {
         if (xaTxId != null) {
             xaHandler.commit();

@@ -141,6 +141,10 @@ public final class StatisticManager {
         usageData.clear();
     }
 
+    public boolean mainSwitch() {
+        return enable || samplingRate > 0 || enableAnalysis;
+    }
+
     public boolean isEnable() {
         return enable;
     }

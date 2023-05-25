@@ -22,7 +22,7 @@ public class RwTrackProbe extends AbstractTrackProbe {
     }
 
     public void setRequestTime() {
-        isTrace = StatisticManager.getInstance().isEnable();
+        isTrace = StatisticManager.getInstance().mainSwitch();
         sqlTracking(t -> t.setRequestTime(System.nanoTime(), System.currentTimeMillis()));
     }
 

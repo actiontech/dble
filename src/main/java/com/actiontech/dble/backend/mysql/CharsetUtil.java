@@ -195,7 +195,7 @@ public final class CharsetUtil {
         INDEX_TO_COLLATION[182] = new CollationInfo("utf32_unicode_520_ci", "utf32", 182, false);
         INDEX_TO_COLLATION[160] = new CollationInfo("utf32_unicode_ci", "utf32", 160, false);
         INDEX_TO_COLLATION[183] = new CollationInfo("utf32_vietnamese_ci", "utf32", 183, false);
-        INDEX_TO_COLLATION[255] = new CollationInfo("utf8mb4_0900_ai_ci", "utf8mb4", 255, SystemConfig.getInstance().getFakeMySQLVersion().startsWith("8")); //8.0 add
+        INDEX_TO_COLLATION[255] = new CollationInfo("utf8mb4_0900_ai_ci", "utf8mb4", 255, VersionUtil.versionMeetsMinimum(8, 0, 3, SystemConfig.getInstance().getMysqlVersion())); //>=8.0.3
         INDEX_TO_COLLATION[305] = new CollationInfo("utf8mb4_0900_as_ci", "utf8mb4", 305, false); //8.0 add
         INDEX_TO_COLLATION[278] = new CollationInfo("utf8mb4_0900_as_cs", "utf8mb4", 278, false); //8.0 add
         INDEX_TO_COLLATION[46] = new CollationInfo("utf8mb4_bin", "utf8mb4", 46, false);
@@ -218,7 +218,7 @@ public final class CharsetUtil {
         INDEX_TO_COLLATION[293] = new CollationInfo("utf8mb4_es_trad_0900_as_cs", "utf8mb4", 293, false);  //8.0 add
         INDEX_TO_COLLATION[262] = new CollationInfo("utf8mb4_et_0900_ai_ci", "utf8mb4", 262, false); //8.0 add
         INDEX_TO_COLLATION[285] = new CollationInfo("utf8mb4_et_0900_as_cs", "utf8mb4", 285, false); //8.0 add
-        INDEX_TO_COLLATION[45] = new CollationInfo("utf8mb4_general_ci", "utf8mb4", 45, SystemConfig.getInstance().getFakeMySQLVersion().startsWith("5"));
+        INDEX_TO_COLLATION[45] = new CollationInfo("utf8mb4_general_ci", "utf8mb4", 45, !VersionUtil.versionMeetsMinimum(8, 0, 3, SystemConfig.getInstance().getMysqlVersion())); //<8.0.3
         INDEX_TO_COLLATION[244] = new CollationInfo("utf8mb4_german2_ci", "utf8mb4", 244, false);
         INDEX_TO_COLLATION[275] = new CollationInfo("utf8mb4_hr_0900_ai_ci", "utf8mb4", 275, false); //8.0 add
         INDEX_TO_COLLATION[298] = new CollationInfo("utf8mb4_hr_0900_as_cs", "utf8mb4", 298, false); //8.0 add

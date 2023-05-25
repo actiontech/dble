@@ -538,6 +538,8 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
 
                 // Try to maintain minimum connections
                 fillPool();
+            } catch (Throwable t) {
+                LOGGER.warn("Evictor.run happen Throwable: ", t);
             } finally {
                 // Restore the previous CCL
                 Thread.currentThread().setContextClassLoader(savedClassLoader);
@@ -551,6 +553,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
          */
         void setScheduledFuture(final ScheduledFuture<?> scheduledFuture) {
             this.scheduledFuture = scheduledFuture;
+            EvictionTimer.getAliveEvictor().add(scheduledFuture);
         }
 
         /**
@@ -558,6 +561,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
          */
         void cancel() {
             scheduledFuture.cancel(false);
+            EvictionTimer.getAliveEvictor().remove(scheduledFuture);
         }
     }
 }

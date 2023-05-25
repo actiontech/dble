@@ -39,7 +39,7 @@ public class TrackProbe extends AbstractTrackProbe {
     public void setRequestTime() {
         sessionStage = SessionStage.Read_SQL;
         long requestTime = System.nanoTime();
-        isTrace = currentSession.isTraceEnable() || SlowQueryLog.getInstance().isEnableSlowLog() || StatisticManager.getInstance().isEnable();
+        isTrace = currentSession.isTraceEnable() || SlowQueryLog.getInstance().isEnableSlowLog() || StatisticManager.getInstance().mainSwitch();
         sqlTracking(t -> t.setRequestTime(requestTime, System.currentTimeMillis()));
         timeCost = (SystemConfig.getInstance().getUseCostTimeStat() != 0) && !(ThreadLocalRandom.current().nextInt(100) >= SystemConfig.getInstance().getCostSamplePercent());
         sqlCosting(c -> c.setRequestTime(requestTime));

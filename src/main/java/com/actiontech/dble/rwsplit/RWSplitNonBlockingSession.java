@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.ByteUtil;
+import com.actiontech.dble.backend.mysql.nio.handler.RwSplitSelectVariablesHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
@@ -217,6 +218,38 @@ public class RWSplitNonBlockingSession extends Session {
             return true;
         }
         return writeStatistical;
+    }
+
+    /**
+     * jdbc compatible pre-delivery statements
+     * @param master
+     * @param originPacket
+     * @param callback
+     * @param writeStatistical
+     * @param localRead
+     */
+    public void selectCompatibilityVariables(Boolean master, byte[] originPacket, Callback callback, boolean writeStatistical, boolean localRead) {
+        try {
+            RWSplitHandler handler = getRwSplitSelectVariablesHandler(originPacket != null ? originPacket : getService().getExecuteSqlBytes(), callback);
+            if (handler == null) return;
+            getConnection(handler, master, isWriteStatistical(writeStatistical), localRead);
+        } catch (SQLSyntaxErrorException | IOException se) {
+            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
+        }
+    }
+
+    @Nullable
+    private RWSplitHandler getRwSplitSelectVariablesHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException, IOException {
+        if (conn != null && !conn.isClosed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("select bind conn[id={}]", conn.getId());
+            }
+            RWSplitHandler handler = new RwSplitSelectVariablesHandler(rwSplitService, true, originPacket, callback);
+            checkDest(!conn.getInstance().isReadInstance());
+            handler.execute(conn);
+            return null;
+        }
+        return new RwSplitSelectVariablesHandler(rwSplitService, true, originPacket, callback);
     }
 
     private Boolean canRunOnMaster(Boolean master) {

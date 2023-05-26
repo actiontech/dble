@@ -58,7 +58,6 @@ public class TraceResult implements Cloneable {
     protected String sql;
     protected String schema;
     protected long sqlRows = 0;
-    protected volatile long examinedRows;
     protected long netOutBytes;
     protected long resultSize;
     protected TraceResult previous = null;
@@ -176,7 +175,6 @@ public class TraceResult implements Cloneable {
                 BackendRoute ar = find.get();
                 ar.setFinished(time);
                 ar.setAutocommit(service.isAutocommit());
-                examinedRows += ar.getRow().get();
                 StatisticBackendSqlEntry bEntry = new StatisticBackendSqlEntry(
                         frontendInfo,
                         new BackendInfo(service.getConnection(), node.getName()),
@@ -219,6 +217,7 @@ public class TraceResult implements Cloneable {
             this.requestEnd = time;
             this.requestEndMs = timeMs;
             if (this.isCompletedV1() && isSuccess) {
+                long examinedRows = backendRouteList.stream().filter(f -> f.finished != 0).mapToLong(m -> m.getRow().get()).sum();
                 StatisticFrontendSqlEntry f = new StatisticFrontendSqlEntry(frontendInfo, requestStart, requestStartMs,
                         schema, sql, currentSession.getShardingService().getTxId(), examinedRows, sqlRows,
                         netOutBytes, resultSize, requestEnd, requestEndMs);
@@ -306,7 +305,6 @@ public class TraceResult implements Cloneable {
         sql = null;
         schema = null;
         sqlRows = 0;
-        examinedRows = 0;
         netOutBytes = 0;
         resultSize = 0;
         type = null;

@@ -57,7 +57,7 @@ public class TraceResult implements Cloneable {
 
     protected String sql;
     protected String schema;
-    protected long sqlRows;
+    protected long sqlRows = 0;
     protected volatile long examinedRows;
     protected long netOutBytes;
     protected long resultSize;
@@ -200,8 +200,16 @@ public class TraceResult implements Cloneable {
         }
     }
 
+    public void setFrontendAddRows() {
+        this.sqlRows += 1;
+    }
+
+    public void setFrontendSetRows(long rows) {
+        this.sqlRows = rows;
+    }
+
     public void setSqlStat(long sqlRows0, long netOutBytes0, long resultSize0) {
-        this.sqlRows = sqlRows0;
+        //this.sqlRows = sqlRows0;
         this.netOutBytes = netOutBytes0;
         this.resultSize = resultSize0;
     }

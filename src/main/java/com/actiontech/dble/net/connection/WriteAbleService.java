@@ -11,8 +11,7 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlag;
 import com.actiontech.dble.services.TransactionService;
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.services.rwsplit.RWSplitService;
+import com.actiontech.dble.statistic.trace.AbstractTrackProbe;
 
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
@@ -55,11 +54,7 @@ public interface WriteAbleService {
                 this instanceof TransactionService) {
             TransactionService service = ((TransactionService) this);
             service.redressControlTx();
-            if (service instanceof ShardingService) {
-                ((ShardingService) service).getSession2().trace(t -> t.setResponseTime((resultFlag == ResultFlag.OK || resultFlag == ResultFlag.EOF_ROW)));
-            } else if (service instanceof RWSplitService) {
-                ((RWSplitService) service).getSession2().trace(t -> t.setResponseTime((resultFlag == ResultFlag.OK || resultFlag == ResultFlag.EOF_ROW)));
-            }
+            AbstractTrackProbe.trace(service, t -> t.setResponseTime((resultFlag == ResultFlag.OK || resultFlag == ResultFlag.EOF_ROW)));
         }
     }
 

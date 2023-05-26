@@ -17,7 +17,7 @@ public final class ShowSQLHigh {
     }
 
     public static void execute(ManagerService service) {
-        String sql = "select sql_id as ID, user as USER, count(0) as FREQUENCY, avg(duration) AVG_TIME, max(duration) as MAX_TIME, min(duration) as MIN_TIME, duration as EXECUTE_TIME, start_time as LAST_TIME, sql_digest as SQL from dble_information.sql_log group by sql_digest order by start_time";
+        String sql = "select sql_id as ID, user as USER, count(0) as FREQUENCY, avg(duration) AVG_TIME, max(duration) as MAX_TIME, min(duration) as MIN_TIME, duration as EXECUTE_TIME, start_time as LAST_TIME, sql_digest as SQL from dble_information.sql_log group by sql_digest,user order by start_time";
         (new ManagerSelectHandler()).execute(service, sql);
     }
 

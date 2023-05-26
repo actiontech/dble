@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Objects;
 
 public class SSLHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(SSLHandler.class);
@@ -211,7 +212,7 @@ public class SSLHandler {
 
             if (result.bytesProduced() > 0) {
                 decryptOut.flip();
-                ByteBuffer outBuffer = con.allocate(result.bytesProduced());
+                ByteBuffer outBuffer = con.allocate(decryptOut.capacity());
                 outBuffer.put(decryptOut);
                 return outBuffer;
             }
@@ -227,14 +228,17 @@ public class SSLHandler {
     }
 
     private SSLEngineResult wrap(SSLEngine engine0, ByteBuffer in) throws SSLException {
+        int overflows = 0;
         for (; ; ) {
             SSLEngineResult result = engine0.wrap(in, decryptOut);
-            switch (result.getStatus()) {
-                case BUFFER_OVERFLOW:
+            if (Objects.requireNonNull(result.getStatus()) == Status.BUFFER_OVERFLOW || in.position() < in.limit()) {
+                if (overflows++ != 0) {
+                    decryptOut = ensure(decryptOut, decryptOut.capacity() * 2);
+                } else {
                     decryptOut = ensure(decryptOut, engine0.getSession().getPacketBufferSize());
-                    break;
-                default:
-                    return result;
+                }
+            } else {
+                return result;
             }
         }
     }
@@ -276,9 +280,17 @@ public class SSLHandler {
         }
     }
 
-    private ByteBuffer ensure(ByteBuffer recycleBuffer, int size) {
+    private ByteBuffer ensure(ByteBuffer oldBuffer, int size) {
+        if (oldBuffer.capacity() >= size) {
+            return oldBuffer;
+        }
         ByteBuffer newBuffer = con.allocate(size);
-        con.recycle(recycleBuffer);
+        oldBuffer.flip();
+        newBuffer.put(oldBuffer);
+
+        oldBuffer.clear();
+        con.recycle(oldBuffer);
+
         return newBuffer;
     }
 

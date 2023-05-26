@@ -20,6 +20,7 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.RequestScope;
@@ -550,6 +551,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     @Override
     public void beforePacket(MySQLPacket packet) {
+        if (packet instanceof OkPacket) {
+            session.trace(t -> t.setFrontendSetRows(((OkPacket) packet).getAffectedRows()));
+        }
         session.multiStatementPacket(packet);
     }
 

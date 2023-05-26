@@ -136,6 +136,14 @@ public class TrackProbe extends AbstractTrackProbe {
         sqlTracking(t -> t.setBackendResponseTxEnd(service, System.nanoTime()));
     }
 
+    public void setFrontendAddRows() {
+        sqlTracking(t -> t.setFrontendAddRows());
+    }
+
+    public void setFrontendSetRows(long rows) {
+        sqlTracking(t -> t.setFrontendSetRows(rows));
+    }
+
     // get the rows、 netOutBytes、resultSize information in the last handler
     public void doSqlStat(long sqlRows, long netOutBytes, long resultSize) {
         sqlTracking(t -> t.setSqlStat(sqlRows, netOutBytes, resultSize));

@@ -21,10 +21,9 @@ import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.TransactionOperate;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLFrontAuthService;
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.statistic.stat.FrontActiveRatioStat;
+import com.actiontech.dble.statistic.trace.AbstractTrackProbe;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -172,11 +171,7 @@ public abstract class AbstractConnection implements Connection {
         if (isClosed.compareAndSet(false, true)) {
             if (service instanceof BusinessService) {
                 ((BusinessService) service).controlTx(TransactionOperate.QUIT);
-                if (service instanceof ShardingService) {
-                    ((ShardingService) service).getSession2().trace(t -> t.setExit());
-                } else if (service instanceof RWSplitService) {
-                    ((RWSplitService) service).getSession2().trace(t -> t.setExit());
-                }
+                AbstractTrackProbe.trace(service, t -> t.setExit());
             }
             FrontActiveRatioStat.getInstance().remove(this);
             closeSocket();

@@ -3,10 +3,15 @@ package com.actiontech.dble.statistic.trace;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.function.Consumer;
 
 public abstract class AbstractTrackProbe {
     public static final Logger LOGGER = LoggerFactory.getLogger(AbstractTrackProbe.class);
@@ -68,6 +73,12 @@ public abstract class AbstractTrackProbe {
     public void setBackendResponseClose(MySQLResponseService service) {
     }
 
+    public void setFrontendAddRows() {
+    }
+
+    public void setFrontendSetRows(long rows) {
+    }
+
     public void doSqlStat(long sqlRows, long netOutBytes, long resultSize) {
     }
 
@@ -97,5 +108,13 @@ public abstract class AbstractTrackProbe {
 
     public void clear() {
 
+    }
+
+    public static void trace(AbstractService service, Consumer<AbstractTrackProbe> consumer) {
+        if (service instanceof ShardingService) {
+            ((ShardingService) service).getSession2().trace(consumer);
+        } else if (service instanceof RWSplitService) {
+            ((RWSplitService) service).getSession2().trace(consumer);
+        }
     }
 }

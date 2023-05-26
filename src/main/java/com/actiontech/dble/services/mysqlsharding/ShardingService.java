@@ -375,6 +375,13 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         }
     }
 
+    @Override
+    public void checkMaxPacketSize(byte[] data) {
+        if (data.length - MySQLPacket.PACKET_HEADER_SIZE >= SystemConfig.getInstance().getMaxPacketSize()) {
+            throw new IllegalArgumentException("Packet for query is too large (" + data.length + " > " + SystemConfig.getInstance().getMaxPacketSize() + ").You can change maxPacketSize value in bootstrap.cnf.");
+        }
+    }
+
     public void stmtFetch(byte[] data) {
         if (prepareHandler != null) {
             prepareHandler.fetch(data);

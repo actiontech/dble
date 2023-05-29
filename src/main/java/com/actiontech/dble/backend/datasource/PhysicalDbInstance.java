@@ -347,7 +347,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         return dsVersion;
     }
 
-    protected void setDsVersion(String dsVersion) {
+    public void setDsVersion(String dsVersion) {
         this.dsVersion = dsVersion;
     }
 

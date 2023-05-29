@@ -108,6 +108,16 @@ public final class DryRun {
                     LOGGER.debug("[dry-run] test connection, catch exception", e);
                 }
             }
+
+            try {
+                LOGGER.info("[dry-run] check dble and mysql version start");
+                //check version
+                ConfigUtil.checkDbleAndMysqlVersion(loader.getDbGroups());
+            } catch (Exception e) {
+                LOGGER.debug("[dry-run] check dble and mysql version, catch exception:", e);
+                list.add(new ErrorInfo("Backend", "ERROR", "check dble and mysql version exception: " + e.getMessage()));
+            }
+
             try {
                 LOGGER.info("[dry-run] check and get system variables from backend start");
                 List<String> syncKeyVariables = ConfigUtil.getAndSyncKeyVariables(loader.getDbGroups(), false);

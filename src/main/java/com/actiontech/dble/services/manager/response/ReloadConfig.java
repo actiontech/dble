@@ -333,14 +333,18 @@ public final class ReloadConfig {
         ReloadLogHelper.briefInfo("check and get system variables from random node start");
         SystemVariables newSystemVariables;
         if (forceAllReload) {
-            //check version/packetSize/lowerCase
+            //check version
+            ConfigUtil.checkDbleAndMysqlVersion(newDbGroups);
+            //check packetSize/lowerCase
             ConfigUtil.getAndSyncKeyVariables(newDbGroups, true);
-            //system variables
+            //get system variables
             newSystemVariables = getSystemVariablesFromdbGroup(loader, newDbGroups);
         } else {
-            //check version/packetSize/lowerCase
+            //check version
+            ConfigUtil.checkDbleAndMysqlVersion(changeItemList, loader);
+            //check packetSize/lowerCase
             ConfigUtil.getAndSyncKeyVariables(changeItemList, true);
-            //system variables
+            //get system variables
             newSystemVariables = getSystemVariablesFromdbGroup(loader, loader.getDbGroups());
         }
         ReloadLogHelper.briefInfo("check and get system variables from random node end");
@@ -520,12 +524,14 @@ public final class ReloadConfig {
                         changeItem.setAffectTestConn(true);
                     } else {
                         newDbInstance.setTestConnSuccess(oldDbInstance.isTestConnSuccess());
+                        newDbInstance.setDsVersion(oldDbInstance.getDsVersion());
                     }
                     return changeItem;
                 }).forEach(changeItemList::add);
                 //testConnSuccess with both
                 for (Map.Entry<String, PhysicalDbInstance> dbInstanceEntry : dbInstanceMapDifference.entriesInCommon().entrySet()) {
                     dbInstanceEntry.getValue().setTestConnSuccess(oldDbInstanceMap.get(dbInstanceEntry.getKey()).isTestConnSuccess());
+                    dbInstanceEntry.getValue().setDsVersion(oldDbInstanceMap.get(dbInstanceEntry.getKey()).getDsVersion());
                 }
 
             }

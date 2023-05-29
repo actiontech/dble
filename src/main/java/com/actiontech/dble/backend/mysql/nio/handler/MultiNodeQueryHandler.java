@@ -370,7 +370,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         lock.lock();
         try {
-            if (isFail()) {
+            if (isFail() && firstResponsed) {
                 cleanBuffer();
                 return;
             }

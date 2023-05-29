@@ -14,11 +14,24 @@ public final class RwSplitSelectHandler {
     }
 
     public static void handle(String stmt, RWSplitService service, int offset) {
-        int rs2 = RwSplitServerParseSelect.parseSpecial(stmt);
-        if (rs2 == RwSplitServerParseSelect.LOCK_READ) {
-            service.getSession2().execute(true, null, false, true);
-        } else {
-            service.getSession2().execute(null, null, false, true);
+        switch (RwSplitServerParseSelect.parse(stmt, offset)) {
+            case RwSplitServerParseSelect.SELECT_VAR_ALL:
+                service.getSession2().selectCompatibilityVariables(true, null, null, false, false);
+                break;
+            default: {
+                int rs2 = RwSplitServerParseSelect.parseSpecial(stmt);
+                switch (rs2) {
+                    case RwSplitServerParseSelect.LOCK_READ:
+                        service.getSession2().execute(true, null, false, true);
+                        break;
+                    default:
+                        service.getSession2().execute(null, null, false, true);
+                        break;
+                }
+                break;
+            }
+
+
         }
     }
 

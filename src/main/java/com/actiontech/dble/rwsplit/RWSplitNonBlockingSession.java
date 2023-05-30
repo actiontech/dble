@@ -18,6 +18,7 @@ import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.services.rwsplit.handle.PSHandler;
 import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
 import com.actiontech.dble.singleton.RouteService;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,6 +164,7 @@ public class RWSplitNonBlockingSession extends Session {
             if ((originPacket != null && originPacket.length > 4 && originPacket[4] == MySQLPacket.COM_STMT_EXECUTE)) {
                 long statementId = ByteUtil.readUB4(originPacket, 5);
                 PreparedStatementHolder holder = rwSplitService.getPrepareStatement(statementId);
+                StatisticListener.getInstance().record(rwSplitService, r -> r.onFrontendSetSql(getService().getSchema(), holder.getPrepareSql()));
                 if (holder.isMustMaster() && conn.getInstance().isReadInstance()) {
                     holder.setExecuteOrigin(originPacket);
                     PSHandler handler = new PSHandler(rwSplitService, holder);

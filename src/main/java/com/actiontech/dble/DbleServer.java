@@ -305,6 +305,7 @@ public final class DbleServer {
     }
 
     private void checkJdkVersion() {
+        DbleSocketOptions.clean();
         if (DbleSocketOptions.osName().contains("Windows")) {
             LOGGER.warn("current system version does not support the tcpKeepIdle,tcpKeepInterval,tcpKeepCount parameter.");
             return;

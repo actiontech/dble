@@ -13,6 +13,7 @@ import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.memory.unsafe.Platform;
+import com.actiontech.dble.net.DbleSocketOptions;
 import com.actiontech.dble.util.NetUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.Strings;
@@ -1903,8 +1904,8 @@ public final class SystemConfig {
         return tcpKeepIdle;
     }
 
-    public void setTcpKeepIdle(int tcpKeepIdle) {
-        if (tcpKeepIdle > 0) {
+    public void setTcpKeepIdle(int tcpKeepIdle) throws IOException {
+        if (tcpKeepIdle > 0 && DbleSocketOptions.check(DbleSocketOptions.TCP_KEEP_IDLE, tcpKeepIdle)) {
             this.tcpKeepIdle = tcpKeepIdle;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "tcpKeepIdle", tcpKeepIdle, this.tcpKeepIdle));
@@ -1915,8 +1916,8 @@ public final class SystemConfig {
         return tcpKeepInterval;
     }
 
-    public void setTcpKeepInterval(int tcpKeepInterval) {
-        if (tcpKeepInterval > 0) {
+    public void setTcpKeepInterval(int tcpKeepInterval) throws IOException {
+        if (tcpKeepInterval > 0 && DbleSocketOptions.check(DbleSocketOptions.TCP_KEEP_INTERVAL, tcpKeepInterval)) {
             this.tcpKeepInterval = tcpKeepInterval;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "tcpKeepInterval", tcpKeepInterval, this.tcpKeepInterval));
@@ -1927,8 +1928,8 @@ public final class SystemConfig {
         return tcpKeepCount;
     }
 
-    public void setTcpKeepCount(int tcpKeepCount) {
-        if (tcpKeepCount > 0) {
+    public void setTcpKeepCount(int tcpKeepCount) throws IOException {
+        if (tcpKeepCount > 0 && DbleSocketOptions.check(DbleSocketOptions.TCP_KEEP_COUNT, tcpKeepCount)) {
             this.tcpKeepCount = tcpKeepCount;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "tcpKeepCount", tcpKeepCount, this.tcpKeepCount));

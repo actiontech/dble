@@ -17,7 +17,7 @@ public class StatisticEntry {
     public StatisticEntry(FrontendInfo frontendInfo, long startTime,
                           String sql, long rows, long endTime) {
         this.frontend = frontendInfo;
-        this.sql = sql.replaceAll("[\\t\\n\\r]", " ");
+        this.sql = sql.replaceAll("[\\t\\n\\r]", " ").trim();
         this.rows = rows;
         this.duration = endTime - startTime;
     }

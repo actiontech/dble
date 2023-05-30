@@ -3,7 +3,7 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.statistic.stat;
+package com.actiontech.dble.statistic.sql.analyzer;
 
 import java.util.concurrent.atomic.AtomicLongArray;
 

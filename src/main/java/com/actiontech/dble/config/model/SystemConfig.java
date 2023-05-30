@@ -139,16 +139,6 @@ public final class SystemConfig {
     private boolean useDefaultPageNumber = true;
     private int mappedFileSize = 1024 * 1024 * 64;
 
-    // sql statistics
-    private int useSqlStat = 1;
-    private int sqlRecordCount = 10;
-    //Threshold of big result ,default512kb
-    private int maxResultSet = 512 * 1024;
-    //Threshold of Usage Percent of buffer pool,if reached the Threshold,big result will be clean up,default 80%
-    private int bufferUsagePercent = 80;
-    //period of clear the big result
-    private long clearBigSQLResultSetMapMs = 10 * 60 * 1000;
-
     //frontSocket unit:bytes
     private int frontSocketSoRcvbuf = 1024 * 1024;
     private int frontSocketSoSndbuf = 4 * 1024 * 1024;
@@ -215,6 +205,7 @@ public final class SystemConfig {
     private String routePenetrationRules = "";
 
     private int enableStatistic = 0;
+    private int enableStatisticAnalysis = 0;
     private int associateTablesByEntryByUserTableSize = 1024;
     private int frontendByBackendByEntryByUserTableSize = 1024;
     private int tableByUserByEntryTableSize = 1024;
@@ -224,8 +215,11 @@ public final class SystemConfig {
     private int enableConnectionAssociateThread = 1;
 
     // sampling
-    private int samplingRate = 0;
+    private int samplingRate = 100;
     private int sqlLogTableSize = 1024;
+
+    //Threshold of big result ,default512kb
+    private int maxResultSet = 512 * 1024;
 
     //use inSubQueryTransformToJoin
     private boolean inSubQueryTransformToJoin = false;
@@ -430,6 +424,20 @@ public final class SystemConfig {
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "enableStatistic", enableStatistic, this.enableStatistic));
         }
+    }
+
+    public int getEnableStatisticAnalysis() {
+        return enableStatisticAnalysis;
+    }
+
+    @SuppressWarnings("unused")
+    public void setEnableStatisticAnalysis(int enableStatisticAnalysis) {
+        if (enableStatisticAnalysis >= 0 && enableStatisticAnalysis <= 1) {
+            this.enableStatisticAnalysis = enableStatisticAnalysis;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableStatisticAnalysis", enableStatisticAnalysis, this.enableStatisticAnalysis));
+        }
+
     }
 
     public int getAssociateTablesByEntryByUserTableSize() {
@@ -749,19 +757,6 @@ public final class SystemConfig {
         return homePath;
     }
 
-    public int getUseSqlStat() {
-        return useSqlStat;
-    }
-
-    @SuppressWarnings("unused")
-    public void setUseSqlStat(int useSqlStat) {
-        if (useSqlStat >= 0 && useSqlStat <= 1) {
-            this.useSqlStat = useSqlStat;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "useSqlStat", useSqlStat, this.useSqlStat));
-        }
-    }
-
     public int getUseCompression() {
         return useCompression;
     }
@@ -1006,20 +1001,6 @@ public final class SystemConfig {
         }
     }
 
-
-    public int getSqlRecordCount() {
-        return sqlRecordCount;
-    }
-
-    @SuppressWarnings("unused")
-    public void setSqlRecordCount(int sqlRecordCount) {
-        if (sqlRecordCount > 0) {
-            this.sqlRecordCount = sqlRecordCount;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "sqlRecordCount", sqlRecordCount, this.sqlRecordCount));
-        }
-    }
-
     public int getRecordTxn() {
         return recordTxn;
     }
@@ -1056,32 +1037,6 @@ public final class SystemConfig {
             this.maxResultSet = maxResultSet;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "maxResultSet", maxResultSet, this.maxResultSet));
-        }
-    }
-
-    public int getBufferUsagePercent() {
-        return bufferUsagePercent;
-    }
-
-    @SuppressWarnings("unused")
-    public void setBufferUsagePercent(int bufferUsagePercent) {
-        if (bufferUsagePercent >= 0 && bufferUsagePercent <= 100) {
-            this.bufferUsagePercent = bufferUsagePercent;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "bufferUsagePercent", bufferUsagePercent, this.bufferUsagePercent));
-        }
-    }
-
-    public long getClearBigSQLResultSetMapMs() {
-        return clearBigSQLResultSetMapMs;
-    }
-
-    @SuppressWarnings("unused")
-    public void setClearBigSQLResultSetMapMs(long clearBigSQLResultSetMapMs) {
-        if (clearBigSQLResultSetMapMs > 0) {
-            this.clearBigSQLResultSetMapMs = clearBigSQLResultSetMapMs;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "clearBigSQLResultSetMapMs", clearBigSQLResultSetMapMs, this.clearBigSQLResultSetMapMs));
         }
     }
 
@@ -1986,11 +1941,7 @@ public final class SystemConfig {
                 ", bufferPoolChunkSize=" + bufferPoolChunkSize +
                 ", bufferPoolPageSize=" + bufferPoolPageSize +
                 ", bufferPoolPageNumber=" + bufferPoolPageNumber +
-                ", useSqlStat=" + useSqlStat +
-                ", sqlRecordCount=" + sqlRecordCount +
                 ", maxResultSet=" + maxResultSet +
-                ", bufferUsagePercent=" + bufferUsagePercent +
-                ", clearBigSQLResultSetMapMs=" + clearBigSQLResultSetMapMs +
                 "  frontSocketSoRcvbuf=" + frontSocketSoRcvbuf +
                 ", frontSocketSoSndbuf=" + frontSocketSoSndbuf +
                 ", frontSocketNoDelay=" + frontSocketNoDelay +
@@ -2012,7 +1963,7 @@ public final class SystemConfig {
                 ", enableAlert=" + enableAlert +
                 ", maxCharsPerColumn=" + maxCharsPerColumn +
                 ", maxRowSizeToFile=" + maxRowSizeToFile +
-                ",enableBatchLoadData=" + enableBatchLoadData +
+                ", enableBatchLoadData=" + enableBatchLoadData +
                 ", xaRetryCount=" + xaRetryCount +
                 ", enableFlowControl=" + enableFlowControl +
                 ", flowControlHighLevel=" + flowControlHighLevel +
@@ -2029,6 +1980,7 @@ public final class SystemConfig {
                 ", generalLogFileSize=" + generalLogFileSize +
                 ", generalLogQueueSize=" + generalLogQueueSize +
                 ", enableStatistic=" + enableStatistic +
+                ", enableStatisticAnalysis=" + enableStatisticAnalysis +
                 ", associateTablesByEntryByUserTableSize=" + associateTablesByEntryByUserTableSize +
                 ", frontendByBackendByEntryByUserTableSize=" + frontendByBackendByEntryByUserTableSize +
                 ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +

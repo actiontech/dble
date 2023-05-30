@@ -76,7 +76,7 @@ public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
                     currRecord.addDelete(fEntry.getRows(), fEntry.getDuration());
                     break;
                 case ServerParse.SELECT:
-                    currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
+                    currRecord.addSelect(fEntry.getExaminedRows(), fEntry.getRows(), fEntry.getDuration());
                     break;
                 default:
                     // ignore

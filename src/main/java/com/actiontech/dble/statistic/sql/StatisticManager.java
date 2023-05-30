@@ -15,7 +15,10 @@ import com.actiontech.dble.statistic.sql.handler.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Timer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -24,7 +27,6 @@ public final class StatisticManager {
     private static final StatisticManager INSTANCE = new StatisticManager();
     private StatisticDisruptor disruptor;
     private static Map<String, StatisticDataHandler> statisticDataHandlers = new HashMap<>(8);
-    private static StatisticListener statisticListener = StatisticListener.getInstance();
 
     private static ConcurrentLinkedQueue<UsageDataBlock> usageData = new ConcurrentLinkedQueue<>();
     private boolean isStart = false;
@@ -42,6 +44,8 @@ public final class StatisticManager {
     private volatile int sqlLogSize = SystemConfig.getInstance().getSqlLogTableSize();
     private volatile int samplingRate = SystemConfig.getInstance().getSamplingRate();
 
+    private volatile boolean enableAnalysis = SystemConfig.getInstance().getEnableStatisticAnalysis() == 1;
+
     private StatisticManager() {
         Runtime.getRuntime().addShutdownHook(new Thread(this::close));
     }
@@ -56,6 +60,7 @@ public final class StatisticManager {
         statisticDataHandlers.put(AssociateTablesByEntryByUser.TABLE_NAME, new AssociateTablesByEntryByUserCalcHandler());
         // sampling
         statisticDataHandlers.put(SqlLog.TABLE_NAME, new SqlStatisticHandler());
+        statisticDataHandlers.put("analysis", new AnalysisHandler());
     }
 
     // start
@@ -63,7 +68,6 @@ public final class StatisticManager {
         statisticDataHandlers.values().forEach(StatisticDataHandler::clear);
         ArrayList list = new ArrayList<>(statisticDataHandlers.values());
         disruptor = new StatisticDisruptor(statisticQueueSize, (StatisticDataHandler[]) list.toArray(new StatisticDataHandler[list.size()]));
-        statisticListener.start();
         isStart = true;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("start sql statistic success");
@@ -72,7 +76,6 @@ public final class StatisticManager {
 
     // stop
     public void stop() {
-        statisticListener.stop();
         if (disruptor != null) {
             disruptor.stop();
             disruptor = null;
@@ -138,6 +141,10 @@ public final class StatisticManager {
         usageData.clear();
     }
 
+    public boolean mainSwitch() {
+        return enable || samplingRate > 0 || enableAnalysis;
+    }
+
     public boolean isEnable() {
         return enable;
     }
@@ -148,7 +155,7 @@ public final class StatisticManager {
             start();
             return;
         }
-        if (!enable && (isStart && samplingRate == 0)) {
+        if (!enable && (isStart && samplingRate == 0 && !enableAnalysis)) {
             stop();
         }
     }
@@ -195,7 +202,22 @@ public final class StatisticManager {
             }
             return;
         }
-        if (samplingRate == 0 && (isStart && !enable)) {
+        if (samplingRate == 0 && (isStart && !enable && !enableAnalysis)) {
+            stop();
+        }
+    }
+
+    public boolean isEnableAnalysis() {
+        return enableAnalysis;
+    }
+
+    public void setEnableAnalysis(boolean enableAnalysis) {
+        this.enableAnalysis = enableAnalysis;
+        if (enableAnalysis && !isStart) {
+            start();
+            return;
+        }
+        if (!enableAnalysis && (isStart && samplingRate == 0 && !enable)) {
             stop();
         }
     }

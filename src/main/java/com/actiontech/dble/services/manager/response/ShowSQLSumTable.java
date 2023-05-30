@@ -9,8 +9,8 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.statistic.stat.TableStat;
-import com.actiontech.dble.statistic.stat.TableStatAnalyzer;
+import com.actiontech.dble.statistic.sql.analyzer.TableStat;
+import com.actiontech.dble.statistic.sql.analyzer.TableStatAnalyzer;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -78,16 +78,6 @@ public final class ShowSQLSumTable {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        /*
-        int i=0;
-        Map<String, TableStat> statMap = TableStatAnalyzer.getInstance().getTableStatMap();
-        for (TableStat tableStat : statMap.values()) {
-            i++;
-           RowDataPacket row = getRow(tableStat,i, c.getCharset());//getRow(sqlStat,sql, c.getCharset());
-           row.packetId = ++packetId;
-           buffer = row.write(buffer, c,true);
-        }
-        */
         List<TableStat> list = TableStatAnalyzer.getInstance().getTableStats(isClear);
         int i = 1;
         for (TableStat tableStat : list) {

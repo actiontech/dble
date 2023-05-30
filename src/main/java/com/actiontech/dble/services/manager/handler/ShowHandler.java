@@ -129,23 +129,19 @@ public final class ShowHandler {
                 ShowTables.execute(service, stmt);
                 break;
             case ManagerParseShow.SQL:
-                boolean isClearSql = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
-                ShowSQL.execute(service, isClearSql);
+                ShowSQL.execute(service);
                 break;
             case ManagerParseShow.SQL_SLOW:
-                boolean isClearSlow = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
-                ShowSQLSlow.execute(service, isClearSlow);
+                ShowSQLSlow.execute(service);
                 break;
             case ManagerParseShow.GENERAL_LOG:
                 GeneralLogCf.ShowGeneralLog.execute(service);
                 break;
             case ManagerParseShow.SQL_HIGH:
-                boolean isClearHigh = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
-                ShowSQLHigh.execute(service, isClearHigh);
+                ShowSQLHigh.execute(service);
                 break;
             case ManagerParseShow.SQL_LARGE:
-                boolean isClearLarge = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
-                ShowSQLLarge.execute(service, isClearLarge);
+                ShowSQLLarge.execute(service);
                 break;
             case ManagerParseShow.SQL_CONDITION:
                 ShowSQLCondition.execute(service);

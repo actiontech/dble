@@ -6,7 +6,6 @@
 package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.services.TransactionOperate;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 
 public final class CallbackFactory {
 
@@ -18,23 +17,10 @@ public final class CallbackFactory {
     };
 
     public static final Callback TX_START = (isSuccess, resp, rwSplitService) -> {
-        if (rwSplitService.isInTransaction()) {
-            StatisticListener.getInstance().record(rwSplitService, r -> r.onTxEnd());
-            rwSplitService.controlTx(TransactionOperate.BEGIN);
-            StatisticListener.getInstance().record(rwSplitService, r -> r.onTxStartByImplicitly());
-        } else {
-            rwSplitService.controlTx(TransactionOperate.BEGIN);
-            StatisticListener.getInstance().record(rwSplitService, r -> r.onTxStart());
-        }
+        rwSplitService.controlTx(TransactionOperate.BEGIN);
     };
 
     public static final Callback TX_END = (isSuccess, resp, rwSplitService) -> {
-        if (rwSplitService.isInTransaction()) {
-            StatisticListener.getInstance().record(rwSplitService, r -> r.onTxEnd());
-            if (!rwSplitService.isAutocommit()) {
-                StatisticListener.getInstance().record(rwSplitService, r -> r.onTxStartByImplicitly());
-            }
-        }
         rwSplitService.controlTx(TransactionOperate.END);
     };
 
@@ -44,7 +30,6 @@ public final class CallbackFactory {
 
     public static final Callback TX_AUTOCOMMIT = (isSuccess, resp, rwSplitService) -> {
         if (!rwSplitService.isAutocommit()) {
-            StatisticListener.getInstance().record(rwSplitService, r -> r.onTxEnd());
             rwSplitService.getSession2().getConn().getBackendService().setAutocommit(true);
             rwSplitService.controlTx(TransactionOperate.AUTOCOMMIT);
         }
@@ -52,9 +37,6 @@ public final class CallbackFactory {
 
     public static final Callback TX_UN_AUTOCOMMIT = (isSuccess, resp, rwSplitService) -> {
         if (rwSplitService.isAutocommit()) {
-            if (!rwSplitService.isTxStart()) {
-                StatisticListener.getInstance().record(rwSplitService, r -> r.onTxStart());
-            }
             rwSplitService.controlTx(TransactionOperate.UNAUTOCOMMIT);
         }
     };
@@ -62,8 +44,5 @@ public final class CallbackFactory {
     // public static final Callback XA_START = ...
 
     public static final Callback XA_END = (isSuccess, resp, rwSplitService) -> {
-        if (isSuccess) {
-            StatisticListener.getInstance().record(rwSplitService.getSession(), r -> r.onXaStop());
-        }
     };
 }

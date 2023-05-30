@@ -11,7 +11,7 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlag;
 import com.actiontech.dble.services.TransactionService;
-import com.actiontech.dble.statistic.sql.StatisticListener;
+import com.actiontech.dble.statistic.trace.AbstractTrackProbe;
 
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
@@ -35,7 +35,7 @@ public interface WriteAbleService {
      * @param writeFlags
      */
     default void writeDirectly(ByteBuffer buffer, @Nonnull EnumSet<WriteFlag> writeFlags, ResultFlag resultFlag) {
-        beforeWriteFinishPure(writeFlags);
+        beforeWriteFinishPure(writeFlags, resultFlag);
         final boolean end = writeFlags.contains(WriteFlag.END_OF_QUERY) || writeFlags.contains(WriteFlag.END_OF_SESSION);
         if (end) {
             beforeWriteFinish(writeFlags, resultFlag);
@@ -47,14 +47,14 @@ public interface WriteAbleService {
         }
     }
 
-    default void beforeWriteFinishPure(@Nonnull EnumSet<WriteFlag> writeFlags) {
+    default void beforeWriteFinishPure(@Nonnull EnumSet<WriteFlag> writeFlags, ResultFlag resultFlag) {
         if ((writeFlags.contains(WriteFlag.END_OF_QUERY) ||
                 writeFlags.contains(WriteFlag.END_OF_SESSION) ||
                 writeFlags.contains(WriteFlag.PARK_OF_MULTI_QUERY)) &&
                 this instanceof TransactionService) {
             TransactionService service = ((TransactionService) this);
             service.redressControlTx();
-            StatisticListener.getInstance().record(service, r -> r.onFrontendSqlEnd());
+            AbstractTrackProbe.trace(service, t -> t.setResponseTime((resultFlag == ResultFlag.OK || resultFlag == ResultFlag.EOF_ROW)));
         }
     }
 

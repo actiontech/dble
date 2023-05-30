@@ -96,7 +96,7 @@ public class LoadDataResponseHandler extends CustomDataResponseHandler {
 
     private void handleRowEofPacket(byte[] data) {
         if (service.getSession() != null && !service.isTesting() && service.getLogResponse().compareAndSet(false, true)) {
-            service.getSession().setBackendResponseEndTime(this.service);
+            service.getSession().trace(t -> t.setBackendResponseEndTime(this.service));
         }
         ResponseHandler respHand = service.getResponseHandler();
         service.getLogResponse().set(false);

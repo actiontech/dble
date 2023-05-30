@@ -70,7 +70,7 @@ public class CommitStage extends Stage implements TransactionStage {
         if (session.closed())
             return;
 
-        session.setFinishedCommitTime();
+        session.trace(t -> t.setFinishedCommitTime());
         if (transactionCallback != null)
             transactionCallback.callback();
 

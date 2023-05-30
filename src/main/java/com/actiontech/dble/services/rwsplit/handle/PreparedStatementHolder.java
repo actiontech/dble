@@ -8,11 +8,13 @@ public class PreparedStatementHolder {
     private final boolean mustMaster;
     private byte[] fieldType;
     private boolean needAddFieldType;
+    private String prepareSql;
 
-    public PreparedStatementHolder(byte[] prepareOrigin, int paramsCount, boolean mustMaster) {
+    public PreparedStatementHolder(byte[] prepareOrigin, int paramsCount, boolean mustMaster, String sql) {
         this.prepareOrigin = prepareOrigin;
         this.paramsCount = paramsCount;
         this.mustMaster = mustMaster;
+        this.prepareSql = sql;
     }
 
     public boolean isMustMaster() {
@@ -51,5 +53,9 @@ public class PreparedStatementHolder {
 
     public int getParamsCount() {
         return paramsCount;
+    }
+
+    public String getPrepareSql() {
+        return prepareSql;
     }
 }

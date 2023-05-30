@@ -269,6 +269,11 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         try {
             RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
             String sql = mm.readString(getCharset().getClient());
+            if (sql.endsWith(";")) {
+                sql = sql.substring(0, sql.length() - 1).trim();
+            }
+            sql = sql.trim();
+            final String finalSql = sql;
             int rs = serverParse.parse(sql);
             int sqlType = rs & 0xff;
             if (sqlType == ServerParse.SELECT) {
@@ -278,7 +283,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                         if (isSuccess) {
                             long statementId = ByteUtil.readUB4(resp, 5);
                             int paramCount = ByteUtil.readUB2(resp, 11);
-                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true));
+                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql));
                         }
                     }, false);
                 } else {
@@ -286,7 +291,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                         if (isSuccess) {
                             long statementId = ByteUtil.readUB4(resp, 5);
                             int paramCount = ByteUtil.readUB2(resp, 11);
-                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false));
+                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false, finalSql));
                         }
                     }, false);
                 }
@@ -295,7 +300,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                     if (isSuccess) {
                         long statementId = ByteUtil.readUB4(resp, 5);
                         int paramCount = ByteUtil.readUB2(resp, 11);
-                        psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true));
+                        psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql));
                     }
                 });
             }

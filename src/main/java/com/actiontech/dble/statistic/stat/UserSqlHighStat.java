@@ -9,7 +9,6 @@ import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class UserSqlHighStat {
 
@@ -17,7 +16,6 @@ public class UserSqlHighStat {
 
     private Map<String, SqlFrequency> sqlFrequencyMap = new ConcurrentHashMap<>();
 
-    private ReentrantLock lock = new ReentrantLock();
 
 
     private SqlParser sqlParser = new SqlParser();
@@ -26,24 +24,17 @@ public class UserSqlHighStat {
         String newSql = this.sqlParser.mergeSql(sql);
         SqlFrequency frequency = this.sqlFrequencyMap.get(newSql);
         if (frequency == null) {
-            if (lock.tryLock()) {
-                try {
-                    frequency = new SqlFrequency();
-                    frequency.setSql(newSql);
-                } finally {
-                    lock.unlock();
-                }
-            } else {
-                while (frequency == null) {
-                    frequency = this.sqlFrequencyMap.get(newSql);
-                }
+            frequency = new SqlFrequency();
+            frequency.setSql(newSql);
+            SqlFrequency tmp = sqlFrequencyMap.putIfAbsent(newSql, frequency);
+            if (tmp != null) {
+                frequency = tmp;
             }
         }
         frequency.setLastTime(endTime);
         frequency.incCount();
         //TODO setExecuteTime has thread safe problem
         frequency.setExecuteTime(executeTime);
-        this.sqlFrequencyMap.put(newSql, frequency);
     }
 
 

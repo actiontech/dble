@@ -111,7 +111,7 @@ public class TraceResult implements Cloneable {
     public void setResponseTime(final ShardingService shardingService, boolean isSuccess) {
         if (this.requestEnd == null) {
             this.requestEnd = TraceRecord.currenTime();
-            if (this.isCompletedV1() &&
+            if (SlowQueryLog.getInstance().isEnableSlowLog() && this.isCompletedV1() &&
                     isSuccess && getOverAllMilliSecond() > SlowQueryLog.getInstance().getSlowTime()) {
                 SlowQueryLog.getInstance().putSlowQueryLog(shardingService, this.clone());
             }

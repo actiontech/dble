@@ -16,4 +16,12 @@ public final class GeneralProvider {
     public static void showGeneralLog() {
     }
 
+    public static void beforeSlowLogClose() {
+    }
+
+    public static void afterSlowLogClose() {
+    }
+
+    public static void runFlushLogTask() {
+    }
 }

@@ -328,7 +328,7 @@ public class NonBlockingSession implements Session {
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             responseTime = System.nanoTime();
             traceResult.setVeryEnd(responseTime);
-            if (isSuccess) {
+            if (isSuccess && SlowQueryLog.getInstance().isEnableSlowLog()) {
                 SlowQueryLog.getInstance().putSlowQueryLog(this.source, (TraceResult) traceResult.clone());
             }
         }

@@ -128,7 +128,7 @@ public final class ClusterConfig {
         if (sequenceHandlerType >= 1 && sequenceHandlerType <= 4) {
             this.sequenceHandlerType = sequenceHandlerType;
         } else {
-            problemReporter.warn("sequenceHandlerType value is " + sequenceHandlerType + ", it will use default value:" + this.sequenceHandlerType);
+            problemReporter.warn("sequenceHandlerType value is " + sequenceHandlerType + ", you can use default value:" + this.sequenceHandlerType);
         }
     }
 

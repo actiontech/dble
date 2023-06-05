@@ -41,4 +41,13 @@ public final class GeneralProvider {
 
     public static void showTableByNodeUnitHandlerFinished() {
     }
+
+    public static void beforeSlowLogClose() {
+    }
+
+    public static void afterSlowLogClose() {
+    }
+
+    public static void runFlushLogTask() {
+    }
 }

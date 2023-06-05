@@ -201,8 +201,8 @@ public class SelectTraceResult {
                     long requestCount = tr.backendRouteList.size();
                     long firstRevCount = tr.backendRouteList.stream().filter(f -> f.getFirstRevTime() != 0).count();
                     long finishedCount = tr.backendRouteList.stream().filter(f -> f.getFinished() != 0).count();
-                    long recordStartCount = tr.complexHandlerList.size();
-                    long recordEndCount = tr.complexHandlerList.stream().filter(f -> f.endTime != 0).count();
+                    long recordStartCount = tr.complexHandlerMap.size();
+                    long recordEndCount = tr.complexHandlerMap.values().stream().filter(f -> f.endTime != 0).count();
                     LOGGER.debug("collect info not in pairs; requestEnd:{}, requestCount:{}, firstRevCount:{}, finishedCount:{}, recordStartCount:{}, recordEndCount:{}",
                             tr.requestEnd, requestCount, firstRevCount, finishedCount, recordStartCount, recordEndCount);
                 }
@@ -327,8 +327,8 @@ public class SelectTraceResult {
                     long requestCount = tr.backendRouteList.size();
                     long firstRevCount = tr.backendRouteList.stream().filter(f -> f.getFirstRevTime() != 0).count();
                     long finishedCount = tr.backendRouteList.stream().filter(f -> f.getFinished() != 0).count();
-                    long recordStartCount = tr.complexHandlerList.size();
-                    long recordEndCount = tr.complexHandlerList.stream().filter(f -> f.endTime != 0).count();
+                    long recordStartCount = tr.complexHandlerMap.size();
+                    long recordEndCount = tr.complexHandlerMap.values().stream().filter(f -> f.endTime != 0).count();
                     LOGGER.debug("collect info not in pairs; requestEnd:{}, requestCount:{}, firstRevCount:{}, finishedCount:{}, recordStartCount:{}, recordEndCount:{}",
                             tr.requestEnd, requestCount, firstRevCount, finishedCount, recordStartCount, recordEndCount);
                 }

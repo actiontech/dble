@@ -19,13 +19,13 @@ import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
 import com.actiontech.dble.statistic.sql.entry.StatisticBackendSqlEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -49,7 +49,7 @@ public class TraceResult implements Cloneable {
     protected ResponseHandler simpleHandler = null;
     protected List<BackendRoute> backendRouteList = Lists.newCopyOnWriteArrayList();
     protected BaseHandlerBuilder builder = null; // for complex query
-    protected ConcurrentLinkedQueue<ComplexHandler> complexHandlerList = new ConcurrentLinkedQueue();
+    protected Map<DMLResponseHandler, ComplexHandler> complexHandlerMap = Maps.newConcurrentMap();
     protected SqlTraceType type;
     protected long requestEnd;
     protected long requestEndMs;
@@ -280,16 +280,14 @@ public class TraceResult implements Cloneable {
 
     public void addToRecordStartMap(DMLResponseHandler handler, long time) {
         if (!isDetailTrace) return;
-        Optional<ComplexHandler> find = complexHandlerList.stream().filter(f -> f.handler == handler).findFirst();
-        if (!find.isPresent())
-            complexHandlerList.add(new ComplexHandler(handler, time));
+        complexHandlerMap.putIfAbsent(handler, new ComplexHandler(handler, time));
     }
 
     public void addToRecordEndMap(DMLResponseHandler handler, long time) {
         if (!isDetailTrace) return;
-        Optional<ComplexHandler> find = complexHandlerList.stream().filter(f -> f.handler == handler).findFirst();
-        if (find.isPresent())
-            find.get().setEndTime(time);
+        if (complexHandlerMap.containsKey(handler)) {
+            complexHandlerMap.get(handler).setEndTime(time);
+        }
     }
 
     private void reset() {
@@ -312,7 +310,7 @@ public class TraceResult implements Cloneable {
         simpleHandler = null;
         builder = null;
         backendRouteList.clear();
-        complexHandlerList.clear();
+        complexHandlerMap.clear();
         isDetailTrace = false;
     }
 
@@ -361,8 +359,8 @@ public class TraceResult implements Cloneable {
             if (firstRevCount != 0) {
                 long finishedCount = this.backendRouteList.stream().filter(f -> f.getFinished() != 0).count();
                 if (firstRevCount == finishedCount) {
-                    long recordStartCount = this.complexHandlerList.size();
-                    long recordEndCount = this.complexHandlerList.stream().filter(f -> f.endTime != 0).count();
+                    long recordStartCount = this.complexHandlerMap.size();
+                    long recordEndCount = this.complexHandlerMap.values().stream().filter(f -> f.endTime != 0).count();
                     return recordStartCount == recordEndCount;
                 }
             }
@@ -398,8 +396,8 @@ public class TraceResult implements Cloneable {
             tr.previous = null;
             tr.simpleHandler = this.simpleHandler;
             tr.builder = this.builder;
-            tr.backendRouteList = new ArrayList<>(this.backendRouteList);
-            tr.complexHandlerList = new ConcurrentLinkedQueue(this.complexHandlerList);
+            tr.backendRouteList = new CopyOnWriteArrayList(this.backendRouteList);
+            tr.complexHandlerMap = new ConcurrentHashMap<>(this.complexHandlerMap);
             tr.isDetailTrace = this.isDetailTrace;
             return tr;
         } catch (Exception e) {
@@ -414,11 +412,7 @@ public class TraceResult implements Cloneable {
     }
 
     protected ComplexHandler findByComplexHandler(ResponseHandler handler0) {
-        Optional<ComplexHandler> find = this.complexHandlerList.stream().filter(f -> f.handler == handler0).findFirst();
-        if (find.isPresent()) {
-            return find.get();
-        }
-        return null;
+        return complexHandlerMap.get(handler0);
     }
 
     protected static class BackendRoute {
@@ -502,6 +496,10 @@ public class TraceResult implements Cloneable {
 
         public void setEndTime(long endTime) {
             this.endTime = endTime;
+        }
+
+        public DMLResponseHandler getHandler() {
+            return handler;
         }
     }
 }

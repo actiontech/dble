@@ -22,7 +22,7 @@ public final class ReloadSlowQueryFlushPeriod {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSlowQueryFlushPeriod.class);
 
     public static void execute(ManagerConnection c, int time) {
-        if (time < 0) {
+        if (time <= 0) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the commend is not correct");
             return;
         }

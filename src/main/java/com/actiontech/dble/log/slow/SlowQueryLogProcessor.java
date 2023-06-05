@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.log.slow;
 
+import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.DailyRotateLogStore;
 import com.actiontech.dble.server.ServerConnection;
@@ -24,6 +25,7 @@ public class SlowQueryLogProcessor extends Thread {
     private BlockingQueue<SlowQueryLogEntry> queue;
     private DailyRotateLogStore store;
     private ScheduledExecutorService scheduler;
+    private ScheduledFuture<?> scheduledFuture;
     private long logSize = 0;
     private long lastLogSize = 0;
     private static final String FILE_HEADER = "/FAKE_PATH/mysqld, Version: FAKE_VERSION. started with:\n" +
@@ -39,30 +41,39 @@ public class SlowQueryLogProcessor extends Thread {
     @Override
     public void run() {
         SlowQueryLogEntry log;
-        scheduler.scheduleAtFixedRate(flushLogTask(), SlowQueryLog.getInstance().getFlushPeriod(), SlowQueryLog.getInstance().getFlushPeriod(), TimeUnit.SECONDS);
+        initFlushLogTask();
         try {
             store.open();
             while (SlowQueryLog.getInstance().isEnableSlowLog()) {
                 try {
                     log = queue.poll(100, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) {
-                    continue;
-                }
-                if (log == null) {
-                    continue;
-                }
-                writeLog(log);
-                logSize++;
-                synchronized (this) {
-                    if ((logSize - lastLogSize) % SlowQueryLog.getInstance().getFlushSize() == 0) {
-                        flushLog();
+
+                    if (log == null) {
+                        continue;
                     }
+                    writeLog(log);
+                    logSize++;
+                    synchronized (this) {
+                        if ((logSize - lastLogSize) % SlowQueryLog.getInstance().getFlushSize() == 0) {
+                            flushLog();
+                        }
+                    }
+                } catch (Throwable e) {
+                    LOGGER.warn("slow log error:", e);
                 }
             }
-            // disable slow_query_log, end task
-            while ((log = queue.poll()) != null) {
-                writeLog(log);
-                logSize++;
+
+            // disable slow_query_log, need to place all the remaining elements in the queue
+            while (true) {
+                try {
+                    if ((log = queue.poll()) == null) {
+                        break;
+                    }
+                    writeLog(log);
+                    logSize++;
+                } catch (Throwable e) {
+                    LOGGER.warn("slow log error:", e);
+                }
             }
             scheduler.shutdown();
             flushLog();
@@ -71,6 +82,14 @@ public class SlowQueryLogProcessor extends Thread {
             LOGGER.info("transaction log error:", e);
             store.close();
         }
+    }
+
+    public void initFlushLogTask() {
+        scheduledFuture = scheduler.scheduleAtFixedRate(flushLogTask(), SlowQueryLog.getInstance().getFlushPeriod(), SlowQueryLog.getInstance().getFlushPeriod(), TimeUnit.SECONDS);
+    }
+
+    public void cancelFlushLogTask() {
+        scheduledFuture.cancel(false);
     }
 
     private synchronized void writeLog(SlowQueryLogEntry log) throws IOException {
@@ -94,8 +113,8 @@ public class SlowQueryLogProcessor extends Thread {
         try {
             store.force(false);
         } catch (IOException e) {
-            LOGGER.info("transaction log error:", e);
-            store.close();
+            LOGGER.warn("flush slow log error:", e);
+            GeneralProvider.beforeSlowLogClose();
         }
     }
 
@@ -104,6 +123,7 @@ public class SlowQueryLogProcessor extends Thread {
             @Override
             public void run() {
                 synchronized (this) {
+                    GeneralProvider.runFlushLogTask();
                     flushLog();
                 }
             }

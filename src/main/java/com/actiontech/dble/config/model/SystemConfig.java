@@ -263,9 +263,9 @@ public final class SystemConfig {
     private int enableMemoryBufferMonitorRecordPool = 1;
 
     //tcp
-    private int tcpKeepIdle = 30;
-    private int tcpKeepInterval = 10;
-    private int tcpKeepCount = 3;
+    private int tcpKeepIdle = DbleSocketOptions.getInstance().getTcpKeepIdle();
+    private int tcpKeepInterval = DbleSocketOptions.getInstance().getTcpKeepInterval();
+    private int tcpKeepCount = DbleSocketOptions.getInstance().getTcpKeepCount();
 
 
     //maximum number of rows in select result set in multi-table update
@@ -1904,8 +1904,8 @@ public final class SystemConfig {
         return tcpKeepIdle;
     }
 
-    public void setTcpKeepIdle(int tcpKeepIdle) throws IOException {
-        if (tcpKeepIdle > 0 && DbleSocketOptions.check(DbleSocketOptions.TCP_KEEP_IDLE, tcpKeepIdle)) {
+    public void setTcpKeepIdle(int tcpKeepIdle) {
+        if (tcpKeepIdle > 0) {
             this.tcpKeepIdle = tcpKeepIdle;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "tcpKeepIdle", tcpKeepIdle, this.tcpKeepIdle));
@@ -1916,8 +1916,8 @@ public final class SystemConfig {
         return tcpKeepInterval;
     }
 
-    public void setTcpKeepInterval(int tcpKeepInterval) throws IOException {
-        if (tcpKeepInterval > 0 && DbleSocketOptions.check(DbleSocketOptions.TCP_KEEP_INTERVAL, tcpKeepInterval)) {
+    public void setTcpKeepInterval(int tcpKeepInterval) {
+        if (tcpKeepInterval > 0) {
             this.tcpKeepInterval = tcpKeepInterval;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "tcpKeepInterval", tcpKeepInterval, this.tcpKeepInterval));
@@ -1928,8 +1928,8 @@ public final class SystemConfig {
         return tcpKeepCount;
     }
 
-    public void setTcpKeepCount(int tcpKeepCount) throws IOException {
-        if (tcpKeepCount > 0 && DbleSocketOptions.check(DbleSocketOptions.TCP_KEEP_COUNT, tcpKeepCount)) {
+    public void setTcpKeepCount(int tcpKeepCount) {
+        if (tcpKeepCount > 0) {
             this.tcpKeepCount = tcpKeepCount;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "tcpKeepCount", tcpKeepCount, this.tcpKeepCount));

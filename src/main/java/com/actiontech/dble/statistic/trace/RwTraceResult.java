@@ -69,7 +69,7 @@ public class RwTraceResult implements Cloneable {
 
     public void setBackendRequestTime(MySQLResponseService service, long time) {
         final ResponseHandler responseHandler = service.getResponseHandler();
-        if (responseHandler != null) {
+        if (responseHandler != null && sql != null) {
             Optional<ActualRoute> find = actualRouteList.stream().filter(f -> (f.handler == responseHandler)).findFirst();
             if (!find.isPresent()) {
                 ActualRoute ar = new ActualRoute(responseHandler, sql, time);
@@ -81,7 +81,7 @@ public class RwTraceResult implements Cloneable {
 
     public void setBackendSqlAddRows(MySQLResponseService service, Long num) {
         final ResponseHandler responseHandler = service.getResponseHandler();
-        if (responseHandler != null) {
+        if (responseHandler != null && sql != null) {
             Optional<ActualRoute> find = actualRouteList.stream().filter(f -> (f.handler == responseHandler)).findFirst();
             if (find.isPresent()) {
                 ActualRoute ar = find.get();
@@ -96,7 +96,7 @@ public class RwTraceResult implements Cloneable {
 
     public void setBackendResponseEndTime(MySQLResponseService service, long time) {
         ResponseHandler responseHandler = service.getResponseHandler();
-        if (responseHandler != null) {
+        if (responseHandler != null && sql != null) {
             Optional<ActualRoute> find = actualRouteList.stream().filter(f -> (f.handler == responseHandler && f.finished == 0)).findFirst();
             if (find.isPresent()) {
                 ActualRoute ar = find.get();

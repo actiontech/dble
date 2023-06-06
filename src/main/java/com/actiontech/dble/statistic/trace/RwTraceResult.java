@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class RwTraceResult implements Cloneable {
     private static final Logger LOGGER = LoggerFactory.getLogger(RwTraceResult.class);
@@ -187,6 +188,7 @@ public class RwTraceResult implements Cloneable {
         RwTraceResult rwTr;
         try {
             rwTr = (RwTraceResult) super.clone();
+            rwTr.actualRouteList = new CopyOnWriteArrayList(this.actualRouteList);
         } catch (Exception e) {
             LOGGER.warn("clone RwTraceResult error", e);
             throw new AssertionError(e.getMessage());

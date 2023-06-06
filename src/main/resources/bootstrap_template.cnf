@@ -247,3 +247,7 @@
 
 -DenableMemoryBufferMonitor=0
 -DenableMemoryBufferMonitorRecordPool=1
+
+-DtcpKeepIdle=30
+-DtcpKeepInterval=10
+-DtcpKeepCounte=3

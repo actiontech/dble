@@ -13,6 +13,7 @@ import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.memory.unsafe.Platform;
+import com.actiontech.dble.net.DbleSocketOptions;
 import com.actiontech.dble.util.NetUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.Strings;
@@ -262,9 +263,9 @@ public final class SystemConfig {
     private int enableMemoryBufferMonitorRecordPool = 1;
 
     //tcp
-    private int tcpKeepIdle = 30;
-    private int tcpKeepInterval = 10;
-    private int tcpKeepCount = 3;
+    private int tcpKeepIdle = DbleSocketOptions.getInstance().getTcpKeepIdle();
+    private int tcpKeepInterval = DbleSocketOptions.getInstance().getTcpKeepInterval();
+    private int tcpKeepCount = DbleSocketOptions.getInstance().getTcpKeepCount();
 
 
     //maximum number of rows in select result set in multi-table update

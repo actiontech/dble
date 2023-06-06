@@ -430,7 +430,7 @@ public abstract class AbstractConnection implements Connection {
         channel.setOption(StandardSocketOptions.TCP_NODELAY, soNoDelay == 1);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-        DbleSocketOptions.setKeepAliveOptions(channel);
+        DbleSocketOptions.getInstance().setKeepAliveOptions(channel);
 
         this.setReadBufferChunk(soRcvBuf);
     }

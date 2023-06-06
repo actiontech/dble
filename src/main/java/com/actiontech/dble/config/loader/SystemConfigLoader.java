@@ -12,6 +12,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.memory.unsafe.Platform;
+import com.actiontech.dble.net.DbleSocketOptions;
 import com.actiontech.dble.server.status.SqlDumpLog;
 import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.util.ResourceUtil;
@@ -209,7 +210,7 @@ public final class SystemConfigLoader {
     }
 
 
-    public static void verifyOtherParam() {
+    public static void verifyOtherParam() throws IOException {
         // other
         SqlDumpLog.getInstance().verify();
 
@@ -221,5 +222,6 @@ public final class SystemConfigLoader {
         if (home == null) {
             StartProblemReporter.getInstance().addError("homePath is not set.");
         }
+        DbleSocketOptions.getInstance().check();
     }
 }

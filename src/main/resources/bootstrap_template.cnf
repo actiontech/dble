@@ -173,7 +173,7 @@
 #  the threshold for judging if the query is slow , unit is millisecond
 -DsqlSlowTime=100
 # slow log queue overflow policy
--DslowQueueOverflowPolicy=2
+-DslowQueueOverflowPolicy=1
 
 #  used for load data,maxCharsPerColumn means max chars length for per column when load data
 -DmaxCharsPerColumn=65535

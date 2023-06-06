@@ -175,7 +175,7 @@ public final class SystemConfig {
     private int flushSlowLogPeriod = 1; //second
     private int flushSlowLogSize = 1000; //row
     private int sqlSlowTime = 100; //ms
-    private int slowQueueOverflowPolicy = 2;
+    private int slowQueueOverflowPolicy = 1;
 
     //general log
     private int enableGeneralLog = 0;

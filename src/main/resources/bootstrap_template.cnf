@@ -250,4 +250,4 @@
 
 -DtcpKeepIdle=30
 -DtcpKeepInterval=10
--DtcpKeepCounte=3
+-DtcpKeepCount=3

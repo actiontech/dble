@@ -7,7 +7,6 @@ package com.actiontech.dble.config.loader.zkprocess.xmltozk;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterController;
-import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
@@ -44,8 +43,7 @@ public final class XmltoZkMain {
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
 
-        if (ClusterHelper.useClusterHa() && DbleServer.getInstance().isUseOuterHa()) {
-            //must before upload db data
+        if (DbleServer.getInstance().isUseOuterHa()) {
             new DataHostStatusTozkLoader(zkListen, zkConn);
         }
 

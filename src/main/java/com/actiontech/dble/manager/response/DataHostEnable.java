@@ -59,13 +59,37 @@ public final class DataHostEnable {
                 }
 
                 int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, enable.group(0));
-                if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
-                    if (!enableWithCluster(id, dh, subHostName, mc)) {
-                        return;
+                if (ClusterGeneralConfig.isUseGeneralCluster()) {
+                    if (useCluster) {
+                        if (!enableWithCluster(id, dh, subHostName, mc)) {
+                            return;
+                        }
+                    } else {
+                        try {
+                            String result = dh.enableHosts(subHostName, true);
+                            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getHostName()), result);
+                            HaConfigManager.getInstance().haFinish(id, null, result);
+                        } catch (Exception e) {
+                            HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                            mc.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                            return;
+                        }
                     }
-                } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
-                    if (!enableWithZK(id, dh, subHostName, mc)) {
-                        return;
+                } else if (ClusterGeneralConfig.isUseZK()) {
+                    if (useCluster) {
+                        if (!enableWithZK(id, dh, subHostName, mc)) {
+                            return;
+                        }
+                    } else {
+                        try {
+                            String result = dh.enableHosts(subHostName, true);
+                            DataHostDisable.setStatusToZK(KVPathUtil.getHaStatusPath(dh.getHostName()), ZKUtils.getConnection(), result);
+                            HaConfigManager.getInstance().haFinish(id, null, result);
+                        } catch (Exception e) {
+                            HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                            mc.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                            return;
+                        }
                     }
                 } else {
                     try {

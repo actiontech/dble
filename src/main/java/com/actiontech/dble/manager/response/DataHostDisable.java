@@ -65,13 +65,42 @@ public final class DataHostDisable {
                 }
 
                 int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, disable.group(0));
-                if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
-                    if (!disableWithCluster(id, dh, subHostName, mc)) {
-                        return;
+
+                if (ClusterGeneralConfig.isUseGeneralCluster()) {
+                    if (useCluster) {
+                        if (!disableWithCluster(id, dh, subHostName, mc)) {
+                            return;
+                        }
+                    } else {
+                        try {
+                            //local set disable
+                            final String result = dh.disableHosts(subHostName, true);
+                            //update total dataSources status
+                            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getHostName()), dh.getClusterHaJson());
+                            HaConfigManager.getInstance().haFinish(id, null, result);
+                        } catch (Exception e) {
+                            HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                            mc.writeErrMessage(ErrorCode.ER_YES, "disable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                            return;
+                        }
                     }
-                } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
-                    if (!disableWithZK(id, dh, subHostName, mc)) {
-                        return;
+                } else if (ClusterGeneralConfig.isUseZK()) {
+                    if (useCluster) {
+                        if (!disableWithZK(id, dh, subHostName, mc)) {
+                            return;
+                        }
+                    } else {
+                        try {
+                            //local set disable
+                            final String result = dh.disableHosts(subHostName, true);
+                            //update total dataSources status
+                            setStatusToZK(KVPathUtil.getHaStatusPath(dh.getHostName()), ZKUtils.getConnection(), dh.getClusterHaJson());
+                            HaConfigManager.getInstance().haFinish(id, null, result);
+                        } catch (Exception e) {
+                            HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                            mc.writeErrMessage(ErrorCode.ER_YES, "disable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                            return;
+                        }
                     }
                 } else {
                     try {

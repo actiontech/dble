@@ -57,15 +57,17 @@ public final class DataHostSwitch {
                     mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getHostName() + " do not exists");
                     return;
                 }
-
+                // no cluster mod need not to write status to cluster
                 if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
                     if (!switchWithCluster(id, dh, masterName, mc)) {
                         return;
                     }
+
                 } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
                     if (!switchWithZK(id, dh, masterName, mc)) {
                         return;
                     }
+
                 } else {
                     try {
                         //dble start in single mode

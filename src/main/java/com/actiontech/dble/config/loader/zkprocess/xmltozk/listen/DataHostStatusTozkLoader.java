@@ -1,7 +1,6 @@
 package com.actiontech.dble.config.loader.zkprocess.xmltozk.listen;
 
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
@@ -28,11 +27,9 @@ public class DataHostStatusTozkLoader extends ZkMultiLoader implements NotifySer
     public boolean notifyProcess() throws Exception {
         HaConfigManager.getInstance().init();
         ClusterDelayProvider.delayBeforeUploadHa();
-        if (ClusterHelper.useClusterHa()) {
-            Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                this.checkAndWriteString(KVPathUtil.getHaStatusPath() + SEPARATOR, entry.getKey(), entry.getValue());
-            }
+        Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            this.checkAndWriteString(KVPathUtil.getHaStatusPath() + SEPARATOR, entry.getKey(), entry.getValue());
         }
         return true;
     }

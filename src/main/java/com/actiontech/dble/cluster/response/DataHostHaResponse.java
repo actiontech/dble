@@ -35,12 +35,11 @@ public class DataHostHaResponse implements ClusterXmlLoader {
         }
         LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
         if (configValue.getKey().contains(DATA_HOST_STATUS)) {
-            KvBean reloadStatus = ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath());
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, "");
+            KvBean reloadStatus = ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath());
             while (reloadStatus != null) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 reloadStatus = ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath());
-                continue;
             }
             String[] path = configValue.getKey().split("/");
             String dhName = path[path.length - 1];
@@ -77,11 +76,9 @@ public class DataHostHaResponse implements ClusterXmlLoader {
     public void notifyCluster() throws Exception {
         HaConfigManager.getInstance().init();
         ClusterDelayProvider.delayBeforeUploadHa();
-        if (ClusterHelper.useClusterHa()) {
-            Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(entry.getKey()), entry.getValue());
-            }
+        Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(entry.getKey()), entry.getValue());
         }
     }
 }

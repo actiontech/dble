@@ -22,7 +22,7 @@ public final class ShardingPrivileges {
 
     // check SQL Privilege
     public static boolean checkPrivilege(ServerUserConfig userConfig, String schema, String tableName, CheckType chekcType) {
-        if (!(userConfig instanceof ShardingUserConfig)) {
+        if (!(userConfig instanceof ShardingUserConfig)) { // contains HybridTAUserConfig
             return true;
         }
         UserPrivilegesConfig userPrivilege = ((ShardingUserConfig) userConfig).getPrivilegesConfig();

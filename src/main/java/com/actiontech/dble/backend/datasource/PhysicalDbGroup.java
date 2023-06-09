@@ -70,6 +70,7 @@ public class PhysicalDbGroup {
     private boolean shardingUseless = true;
     private boolean rwSplitUseless = true;
     private boolean analysisUseless = true;
+    private boolean hybridTAUseless = true;
     private Set<Session> rwSplitSessionSet = Sets.newConcurrentHashSet();
     private volatile Integer state = Integer.valueOf(INITIAL);
 
@@ -164,7 +165,7 @@ public class PhysicalDbGroup {
     }
 
     public boolean isUseless() {
-        return shardingUseless && rwSplitUseless && analysisUseless;
+        return shardingUseless && rwSplitUseless && analysisUseless && hybridTAUseless;
     }
 
     public boolean isShardingUseless() {
@@ -191,11 +192,18 @@ public class PhysicalDbGroup {
         this.analysisUseless = analysisUseless;
     }
 
+    public boolean isHybridTAUseless() {
+        return hybridTAUseless;
+    }
+
+    public void setHybridTAUseless(boolean hybridTAUseless) {
+        this.hybridTAUseless = hybridTAUseless;
+    }
+
     private boolean checkSlaveSynStatus(PhysicalDbInstance ds) {
         return (dbGroupConfig.getDelayThreshold() != -1 &&
                 dbGroupConfig.isShowSlaveSql()) || ds.getDbGroup().isDelayDetectionStart();
     }
-
 
     public PhysicalDbInstance getWriteDbInstance() {
         return writeDbInstance;

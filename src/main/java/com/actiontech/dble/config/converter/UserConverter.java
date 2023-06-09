@@ -48,6 +48,7 @@ public class UserConverter {
     public static final String TYPE_SHARDING_USER = "shardingUser";
     public static final String TYPE_RWSPLIT_USER = "rwSplitUser";
     public static final String TYPE_ANALYSIS_USER = "analysisUser";
+    public static final String TYPE_HYBRIDTA_USER = "hybridTAUser";
     private final Gson gson = JsonFactory.getJson();
     private final Map<UserName, UserConfig> userConfigMap = Maps.newLinkedHashMap();
     private final Map<String, Properties> blackListConfigMap = Maps.newLinkedHashMap();
@@ -155,6 +156,8 @@ public class UserConverter {
 
             if (user instanceof ManagerUser) {
                 fillManagerUser(userConfig, (ManagerUser) user);
+            } else if (user instanceof HybridTAUser) {
+                fillHybridTAUser(userConfig, (HybridTAUser) user, blackListMap, problemReporter);
             } else if (user instanceof ShardingUser) {
                 fillShardingUser(userConfig, (ShardingUser) user, blackListMap, problemReporter);
             } else if (user instanceof RwSplitUser) {
@@ -201,6 +204,31 @@ public class UserConverter {
         RwSplitUserConfig rwSplitUserConfig = new RwSplitUserConfig(userConfig, userName.getTenant(), wallProvider, dbGroup);
         rwSplitUserConfig.setId(this.userId.incrementAndGet());
         this.userConfigMap.put(userName, rwSplitUserConfig);
+    }
+
+    private void fillHybridTAUser(UserConfig userConfig, HybridTAUser hybridTAUser, Map<String, WallProvider> blackListMap, ProblemReporter problemReporter) {
+        String tenant = hybridTAUser.getTenant();
+        final boolean readOnly = Optional.ofNullable(hybridTAUser.getReadOnly()).orElse(false);
+        String schemas = hybridTAUser.getSchemas();
+        String blacklistStr = hybridTAUser.getBlacklist();
+
+        UserName userName = new UserName(userConfig.getName(), tenant);
+        if (this.userConfigMap.containsKey(userName)) {
+            throw new ConfigException("User [" + userName.getFullName() + "] has already existed");
+        }
+        if (StringUtil.isEmpty(schemas)) {
+            throw new ConfigException("User [" + userName.getFullName() + "]'s schemas is empty");
+        }
+        String[] strArray = SplitUtil.split(schemas, ',', true);
+
+        WallProvider wallProvider = getWallProvider(blackListMap, problemReporter, blacklistStr, userName);
+        // load DML Privileges
+        Privileges privileges = hybridTAUser.getPrivileges();
+        UserPrivilegesConfig privilegesConfig = loadPrivilegesConfig(privileges, userConfig);
+
+        HybridTAUserConfig hybridTAUserConfig = new HybridTAUserConfig(userConfig, userName.getTenant(), wallProvider, readOnly, new HashSet<>(Arrays.asList(strArray)), privilegesConfig);
+        hybridTAUserConfig.setId(this.userId.incrementAndGet());
+        this.userConfigMap.put(userName, hybridTAUserConfig);
     }
 
     private void fillShardingUser(UserConfig userConfig, ShardingUser shardingUser, Map<String, WallProvider> blackListMap, ProblemReporter problemReporter) {

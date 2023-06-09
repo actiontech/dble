@@ -43,7 +43,7 @@ public class DbleEntrySchema extends ManagerBaseTable {
                 sorted((a, b) -> Integer.compare(a.getValue().getId(), b.getValue().getId())).
                 forEach(v -> {
                     UserConfig userConfig = v.getValue();
-                    if (userConfig instanceof ShardingUserConfig) {
+                    if (userConfig instanceof ShardingUserConfig) { // contains HybridTAUserConfig
                         for (String schema : ((ShardingUserConfig) userConfig).getSchemas()) {
                             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
                             map.put(COLUMN_ID, userConfig.getId() + "");

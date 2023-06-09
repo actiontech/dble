@@ -10,7 +10,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlTransient;
 
 @XmlTransient
-@XmlSeeAlso({ShardingUser.class, ManagerUser.class, RwSplitUser.class, AnalysisUser.class})
+@XmlSeeAlso({ShardingUser.class, ManagerUser.class, RwSplitUser.class, AnalysisUser.class, HybridTAUser.class})
 public class User {
 
     @XmlAttribute(required = true)

@@ -33,6 +33,7 @@ public final class ClusterPathUtil {
     public static final String SCHEMA = "schema";
     public static final String DB_GROUP = "dbGroup";
     public static final String SHARDING_NODE = "shardingNode";
+    public static final String AP_NODE = "apNode";
     public static final String BLACKLIST = "blacklist";
     public static final String VERSION = "version";
     public static final String FUNCTION = "function";

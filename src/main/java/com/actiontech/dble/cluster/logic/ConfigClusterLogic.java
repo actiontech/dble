@@ -25,6 +25,7 @@ import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.function.Function;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Schema;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Table;
+import com.actiontech.dble.cluster.zkprocess.entity.sharding.shardingnode.ApNode;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.shardingnode.ShardingNode;
 import com.actiontech.dble.cluster.zkprocess.entity.user.BlackList;
 import com.actiontech.dble.cluster.zkprocess.entity.user.User;
@@ -423,6 +424,12 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
             shardingBean.setShardingNode(shardingNodeList);
         }
 
+        JsonElement apNodeJson = jsonObject.get(ClusterPathUtil.AP_NODE);
+        if (apNodeJson != null) {
+            List<ApNode> apNodeList = gson.fromJson(apNodeJson.toString(), new TypeToken<List<ApNode>>() {
+            }.getType());
+            shardingBean.setApNode(apNodeList);
+        }
         JsonElement functionJson = jsonObject.get(ClusterPathUtil.FUNCTION);
         if (functionJson != null) {
             List<Function> functions = gson.fromJson(functionJson.toString(), new TypeToken<List<Function>>() {

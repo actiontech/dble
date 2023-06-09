@@ -60,7 +60,7 @@ public class DbleBlacklist extends ManagerBaseTable {
         List<String> blackListNames = new ArrayList<>();
         for (UserConfig userConfig : userConfigList) {
             WallProvider blackList = null;
-            if (userConfig instanceof ShardingUserConfig) {
+            if (userConfig instanceof ShardingUserConfig) { // contains HybridTAUserConfig
                 blackList = ((ShardingUserConfig) userConfig).getBlacklist();
             } else if (userConfig instanceof RwSplitUserConfig) {
                 blackList = ((RwSplitUserConfig) userConfig).getBlacklist();

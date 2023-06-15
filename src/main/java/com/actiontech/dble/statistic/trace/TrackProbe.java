@@ -3,6 +3,7 @@ package com.actiontech.dble.statistic.trace;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -126,6 +127,10 @@ public class TrackProbe extends AbstractTrackProbe {
         sessionStage = SessionStage.First_Node_Fetched_Result;
         sqlTracking(t -> t.setBackendResponseEndTime(service, System.nanoTime()));
         sqlCosting(c -> c.setBackendResponseEndTime());
+    }
+
+    public void setBackendTerminateByComplex(MultiNodeMergeHandler mergeHandler) {
+        sqlTracking(t -> t.setBackendTerminateByComplex(mergeHandler, System.nanoTime()));
     }
 
     public void setBackendResponseTxEnd(MySQLResponseService service) {

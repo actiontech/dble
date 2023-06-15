@@ -3,6 +3,7 @@ package com.actiontech.dble.statistic.trace;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -65,6 +66,9 @@ public abstract class AbstractTrackProbe {
     }
 
     public void setBackendResponseEndTime(MySQLResponseService service) {
+    }
+
+    public void setBackendTerminateByComplex(MultiNodeMergeHandler mergeHandler) {
     }
 
     public void setBackendResponseTxEnd(MySQLResponseService service) {

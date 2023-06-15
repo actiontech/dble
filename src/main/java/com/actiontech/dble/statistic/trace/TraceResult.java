@@ -7,7 +7,9 @@ package com.actiontech.dble.statistic.trace;
 
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
+import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.status.SlowQueryLog;
@@ -23,7 +25,9 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -144,6 +148,7 @@ public class TraceResult implements Cloneable {
             if (find.isPresent()) {
                 BackendRoute ar = find.get();
                 ar.setFirstRevTime(time);
+                ar.setMysqlResponseService(service);
             }
         }
     }
@@ -181,6 +186,29 @@ public class TraceResult implements Cloneable {
                         ar.getRequestTime(), ar.getSql(), node.getSqlType(), ar.getRow().get(), ar.getFinished());
                 bEntry.setNeedToTx(ar.isAutocommit());
                 StatisticManager.getInstance().push(bEntry);
+            }
+        }
+    }
+
+    public void setBackendTerminateByComplex(MultiNodeMergeHandler mergeHandler, long time) {
+        for (BaseDMLHandler handler : mergeHandler.getExeHandlers()) {
+            Optional<BackendRoute> find = backendRouteList.stream().filter(f -> (f.handler == handler && f.firstRevTime != 0 && f.finished == 0)).findFirst();
+            if (find.isPresent()) {
+                BackendRoute ar = find.get();
+                ar.setFinished(time);
+                MySQLResponseService service;
+                if ((service = ar.getMysqlResponseService()) != null) {
+                    RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
+                    if (node != null) {
+                        ar.setAutocommit(service.isAutocommit());
+                        StatisticBackendSqlEntry bEntry = new StatisticBackendSqlEntry(
+                                frontendInfo,
+                                new BackendInfo(service.getConnection(), node.getName()),
+                                ar.getRequestTime(), ar.getSql(), node.getSqlType(), ar.getRow().get(), ar.getFinished());
+                        bEntry.setNeedToTx(ar.isAutocommit());
+                        StatisticManager.getInstance().push(bEntry);
+                    }
+                }
             }
         }
     }
@@ -417,6 +445,7 @@ public class TraceResult implements Cloneable {
 
     protected static class BackendRoute {
         ResponseHandler handler;
+        MySQLResponseService mysqlResponseService;
         String routeKey;
         String shardingNode;
         String sql;
@@ -473,6 +502,14 @@ public class TraceResult implements Cloneable {
 
         public void setAutocommit(boolean autocommit) {
             this.autocommit = autocommit;
+        }
+
+        public MySQLResponseService getMysqlResponseService() {
+            return mysqlResponseService;
+        }
+
+        public void setMysqlResponseService(MySQLResponseService mysqlResponseService) {
+            this.mysqlResponseService = mysqlResponseService;
         }
     }
 

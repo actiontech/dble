@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.BaseSelectHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
+import com.actiontech.dble.btrace.provider.SlowLogProvider;
 import com.actiontech.dble.plan.util.ComplexQueryPlanUtil;
 import com.actiontech.dble.plan.util.ReferenceHandlerInfo;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -127,6 +128,7 @@ public class TraceResult implements Cloneable {
             System.arraycopy(this.shardingNodes, 0, tempShardingNodes, 0, this.shardingNodes.length);
             System.arraycopy(shardingNodes, 0, tempShardingNodes, this.shardingNodes.length, shardingNodes.length);
             this.shardingNodes = tempShardingNodes;
+            SlowLogProvider.setShardingNodes();
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("append to existing shardingNodes,current size is " + this.shardingNodes.length);
             }

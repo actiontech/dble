@@ -61,7 +61,8 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         return DistributedSequenceHandler.instance;
     }
 
-    public void load(boolean isLowerCaseTableNames) {
+    @Override
+    public void load(String sequenceJson, boolean isLowerCaseTableNames) {
         if (ClusterConfig.getInstance().isSequenceInstanceByZk()) {
             initializeZK();
             loadInstanceIdByZK();

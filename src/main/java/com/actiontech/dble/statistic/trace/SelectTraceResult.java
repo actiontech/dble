@@ -227,8 +227,9 @@ public class SelectTraceResult {
                 long firstRevCount = bRs.stream().filter(f -> f.getFirstRevTime() != 0).count();
                 long finishedCount = bRs.stream().filter(f -> f.getFinished() != 0).count();
                 if (CollectionUtil.isEmpty(bRs) || firstRevCount != 1 || finishedCount != 1) {
-                    if (LOGGER.isDebugEnabled())
+                    if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("collect info not in pairs for connection; firstRevCount is {}, finishedCount is {}", firstRevCount, finishedCount);
+                    }
                     return true;
                 }
                 TraceResult.BackendRoute ar = bRs.iterator().next();
@@ -345,10 +346,10 @@ public class SelectTraceResult {
             DMLResponseHandler handler = result.getHandler();
             if (handler instanceof BaseSelectHandler) {
                 List<TraceResult.BackendRoute> bRs = tr.findByHandler(handler);
-                if (LOGGER.isDebugEnabled()) {
-                    long firstRevCount = bRs.stream().filter(f -> f.getFirstRevTime() != 0).count();
-                    long finishedCount = bRs.stream().filter(f -> f.getFinished() != 0).count();
-                    if (CollectionUtil.isEmpty(bRs) || firstRevCount != 1 || finishedCount != 1) {
+                long firstRevCount = bRs.stream().filter(f -> f.getFirstRevTime() != 0).count();
+                long finishedCount = bRs.stream().filter(f -> f.getFinished() != 0).count();
+                if (CollectionUtil.isEmpty(bRs) || firstRevCount != 1 || finishedCount != 1) {
+                    if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("collect info not in pairs for connection; firstRevCount is {}, finishedCount is {}", firstRevCount, finishedCount);
                     }
                     return true;
@@ -360,7 +361,7 @@ public class SelectTraceResult {
                     TraceResult.ComplexHandler complexHandler = tr.findByComplexHandler(handler);
                     if (complexHandler == null || complexHandler.getEndTime() == 0) {
                         if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("collect info not in pairs for handler" + handler);
+                            LOGGER.debug("collect info not in pairs for handler: {}", handler);
                         }
                         return true;
                     }

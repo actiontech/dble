@@ -70,6 +70,7 @@ public final class QueryConditionAnalyzer implements AbstractAnalyzer {
             if (values != null) {
                 if (this.map.size() < MAX_QUERY_MAP_SIZE) {
                     for (Object value : values) {
+                        if (value == null) continue;
                         AtomicLong count = this.map.get(value);
                         if (count == null) {
                             count = new AtomicLong(1L);

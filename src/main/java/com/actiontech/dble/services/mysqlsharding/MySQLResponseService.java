@@ -716,10 +716,9 @@ public class MySQLResponseService extends VariablesService {
 
     public void signal() {
         this.setRowDataFlowing(false);
-        if (recycler != null) {
-            recycler.signal();
-            recycler = null;
-        }
+        Optional.ofNullable(recycler).ifPresent(res -> res.signal());
+        recycler = null;
+
     }
 
 

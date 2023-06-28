@@ -288,8 +288,8 @@ public final class ClusterLogic {
                     return;
                 }
                 try {
-                    boolean result = ReloadConfig.reloadByConfig(Integer.parseInt(params), false);
-                    if (!checkLocalResult(result)) {
+                    ReloadConfig.ReloadResult result = ReloadConfig.reloadByConfig(Integer.parseInt(params), false);
+                    if (!checkLocalResult(result.isSuccess())) {
                         return;
                     }
                 } catch (Exception e) {
@@ -953,6 +953,30 @@ public final class ClusterLogic {
         Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
         for (Map.Entry<String, String> entry : map.entrySet()) {
             ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(entry.getKey()), entry.getValue());
+        }
+        LOGGER.info("syncDbGroupStatusToCluster success");
+    }
+
+    public static void syncDbGroupStatusToCluster(ReloadConfig.ReloadResult reloadResult) throws Exception {
+        LOGGER.info("syncDbGroupStatusToCluster start");
+        HaConfigManager.getInstance().init(true);
+        Map<String, String> dbGroupStatusMap = HaConfigManager.getInstance().getSourceJsonList();
+
+        Map<String, PhysicalDbGroup> recycleHostMap = reloadResult.getRecycleHostMap();
+        if (recycleHostMap != null) {
+            for (Map.Entry<String, PhysicalDbGroup> groupEntry : recycleHostMap.entrySet()) {
+                String dbGroupName = groupEntry.getKey();
+                LOGGER.debug("delete dbGroup_status:{}", dbGroupName);
+                ClusterHelper.cleanKV(ClusterPathUtil.getHaStatusPath(dbGroupName));
+            }
+        }
+        Map<String, PhysicalDbGroup> addOrChangeHostMap = reloadResult.getAddOrChangeHostMap();
+        if (addOrChangeHostMap != null) {
+            for (Map.Entry<String, PhysicalDbGroup> groupEntry : addOrChangeHostMap.entrySet()) {
+                String dbGroupStatusJson = dbGroupStatusMap.get(groupEntry.getKey());
+                LOGGER.debug("add dbGroup_status:{}---{}", groupEntry.getKey(), dbGroupStatusJson);
+                ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(groupEntry.getKey()), dbGroupStatusJson);
+            }
         }
         LOGGER.info("syncDbGroupStatusToCluster success");
     }

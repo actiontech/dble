@@ -1,6 +1,7 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.cluster.general.bean.KvBean;
+import com.actiontech.dble.services.manager.response.ReloadConfig;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -57,12 +58,12 @@ public final class ClusterHelper {
         return ClusterGeneralConfig.getInstance().getClusterSender().getOnlineMap();
     }
 
-    public static void writeConfToCluster() throws Exception {
+    public static void writeConfToCluster(ReloadConfig.ReloadResult reloadResult) throws Exception {
         ClusterLogic.syncSequenceJsonToCluster();
         ClusterLogic.syncDbJsonToCluster();
         ClusterLogic.syncShardingJsonToCluster();
         ClusterLogic.syncUseJsonToCluster();
-        ClusterLogic.syncDbGroupStatusToCluster();
+        ClusterLogic.syncDbGroupStatusToCluster(reloadResult);
     }
 
     public static String getPathValue(String path) throws Exception {

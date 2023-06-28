@@ -562,10 +562,9 @@ public class MySQLConnection extends AbstractConnection implements
         }
 
         this.setRowDataFlowing(false);
-        if (recycler != null) {
-            recycler.signal();
-            recycler = null;
-        }
+        Optional.ofNullable(recycler).ifPresent(res -> res.signal());
+        recycler = null;
+
     }
 
     private String getSetSQL(Map<String, String> usrVars, Map<String, String> sysVars, Set<String> toResetSys) {

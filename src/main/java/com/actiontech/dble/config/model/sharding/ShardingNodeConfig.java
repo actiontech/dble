@@ -4,7 +4,7 @@
  */
 package com.actiontech.dble.config.model.sharding;
 
-public final class ShardingNodeConfig {
+public class ShardingNodeConfig {
 
     private final String name;
     private final String database;

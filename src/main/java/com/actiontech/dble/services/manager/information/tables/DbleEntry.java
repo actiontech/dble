@@ -89,6 +89,8 @@ public class DbleEntry extends ManagerBaseTable {
                     map.put(COLUMN_ID, userConfig.getId() + "");
                     if (userConfig instanceof ManagerUserConfig) {
                         getManagerUserConfig(map, (ManagerUserConfig) userConfig);
+                    } else if (userConfig instanceof HybridTAUserConfig) {
+                        getHybridTAUserConfig(map, (HybridTAUserConfig) userConfig);
                     } else if (userConfig instanceof ShardingUserConfig) {
                         getShardingUserConfig(map, (ShardingUserConfig) userConfig);
                     } else if (userConfig instanceof RwSplitUserConfig) {
@@ -156,6 +158,21 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == 0 ? "no limit" : userConfig.getMaxCon() + "");
         map.put(COLUMN_BLACKLIST, userConfig.getBlacklist() == null ? null : userConfig.getBlacklist().getName());
     }
+
+    private void getHybridTAUserConfig(LinkedHashMap<String, String> map, HybridTAUserConfig userConfig) {
+        map.put(COLUMN_TYPE, userConfig.getTenant() != null ? "conn_attr" : "username");
+        map.put(COLUMN_USER_TYPE, UserConverter.TYPE_HYBRIDTA_USER);
+        map.put(COLUMN_USERNAME, userConfig.getName());
+        map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(userConfig));
+        map.put(COLUMN_ENCRYPT_CONFIGURED, userConfig.isEncrypt() + "");
+        map.put(COLUMN_CONN_ATTR_KEY, userConfig.getTenant() != null ? "tenant" : null);
+        map.put(COLUMN_CONN_ATTR_VALUE, userConfig.getTenant());
+        map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
+        map.put(COLUMN_READONLY, "-");
+        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == 0 ? "no limit" : userConfig.getMaxCon() + "");
+        map.put(COLUMN_BLACKLIST, userConfig.getBlacklist() == null ? null : userConfig.getBlacklist().getName());
+    }
+
 
     public static String getPasswordEncrypt(UserConfig userConfig) {
         try {

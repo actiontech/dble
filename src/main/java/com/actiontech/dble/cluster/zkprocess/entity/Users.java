@@ -20,7 +20,8 @@ public class Users {
             @XmlElementRef(name = "ShardingUser", type = ShardingUser.class),
             @XmlElementRef(name = "ManagerUser", type = ManagerUser.class),
             @XmlElementRef(name = "RwSplitUser", type = RwSplitUser.class),
-            @XmlElementRef(name = "AnalysisUser", type = AnalysisUser.class)
+            @XmlElementRef(name = "AnalysisUser", type = AnalysisUser.class),
+            @XmlElementRef(name = "HybridTAUser", type = HybridTAUser.class)
     })
     protected List<Object> user;
 

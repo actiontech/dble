@@ -357,7 +357,7 @@ public final class DryRun {
             for (UserConfig user : userMap.values()) {
                 if (user instanceof ManagerUserConfig) {
                     hasManagerUser = true;
-                } else if (user instanceof ShardingUserConfig) {
+                } else if (user instanceof ShardingUserConfig) { // contains HybridTAUserConfig
                     hasShardingUser = true;
                     schema.addAll(((ShardingUserConfig) user).getSchemas());
                 } else {

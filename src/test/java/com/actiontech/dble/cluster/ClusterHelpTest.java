@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.cluster;
 
+import com.actiontech.dble.backend.datasource.ApNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
@@ -51,10 +52,12 @@ public class ClusterHelpTest {
         Map<String, AbstractPartitionAlgorithm> functionMapByXml = configInitializerByXml.getFunctions();
         Map<String, SchemaConfig> schemaConfigMapByXml = configInitializerByXml.getSchemas();
         Map<String, ShardingNode> shardingNodeMapByXml = configInitializerByXml.getShardingNodes();
+        Map<String, ApNode> apNodeMapByXml = configInitializerByXml.getApNodes();
         Map<ERTable, Set<ERTable>> erTableSetMapByJson = configInitializerByJson.getErRelations();
         Map<String, AbstractPartitionAlgorithm> functionMapByJson = configInitializerByJson.getFunctions();
         Map<String, SchemaConfig> schemaConfigMapByJson = configInitializerByJson.getSchemas();
         Map<String, ShardingNode> shardingNodeMapByJson = configInitializerByJson.getShardingNodes();
+        Map<String, ApNode> apNodeMapByJson = configInitializerByJson.getApNodes();
 
         Assert.assertEquals(erTableSetMapByXml.size(), erTableSetMapByJson.size());
         for (Map.Entry<ERTable, Set<ERTable>> erTableSetEntry : erTableSetMapByXml.entrySet()) {
@@ -73,6 +76,12 @@ public class ClusterHelpTest {
         for (Map.Entry<String, ShardingNode> shardingNodeConfigEntry : shardingNodeMapByXml.entrySet()) {
             ShardingNode shardingNodeJson = shardingNodeMapByJson.get(shardingNodeConfigEntry.getKey());
             Assert.assertTrue(shardingNodeJson.equalsBaseInfo(shardingNodeConfigEntry.getValue()));
+        }
+
+        Assert.assertEquals(apNodeMapByXml.size(), apNodeMapByJson.size());
+        for (Map.Entry<String, ApNode> apNodeConfigEntry : apNodeMapByXml.entrySet()) {
+            ApNode apNodeJson = apNodeMapByJson.get(apNodeConfigEntry.getKey());
+            Assert.assertTrue(apNodeJson.equalsBaseInfo(apNodeConfigEntry.getValue()));
         }
 
         Assert.assertEquals(schemaConfigMapByXml.size(), schemaConfigMapByJson.size());
@@ -134,7 +143,9 @@ public class ClusterHelpTest {
 
         for (Map.Entry<UserName, UserConfig> userConfigEntry : users.entrySet()) {
             UserConfig userConfig = userConfigMap.get(userConfigEntry.getKey());
-            if (userConfig instanceof ShardingUserConfig) {
+            if (userConfig instanceof HybridTAUserConfig) {
+                Assert.assertTrue(((HybridTAUserConfig) userConfigEntry.getValue()).equalsBaseInfo((HybridTAUserConfig) userConfig));
+            } else if (userConfig instanceof ShardingUserConfig) {
                 Assert.assertTrue(((ShardingUserConfig) userConfigEntry.getValue()).equalsBaseInfo((ShardingUserConfig) userConfig));
             } else if (userConfig instanceof RwSplitUserConfig) {
                 Assert.assertTrue(((RwSplitUserConfig) userConfigEntry.getValue()).equalsBaseInfo((RwSplitUserConfig) userConfig));
@@ -146,7 +157,9 @@ public class ClusterHelpTest {
         }
         for (Map.Entry<UserName, UserConfig> userConfigEntry : userConfigMap.entrySet()) {
             UserConfig userConfig = users.get(userConfigEntry.getKey());
-            if (userConfig instanceof ShardingUserConfig) {
+            if (userConfig instanceof HybridTAUserConfig) {
+                Assert.assertTrue(((HybridTAUserConfig) userConfigEntry.getValue()).equalsBaseInfo((HybridTAUserConfig) userConfig));
+            } else if (userConfig instanceof ShardingUserConfig) {
                 Assert.assertTrue(((ShardingUserConfig) userConfigEntry.getValue()).equalsBaseInfo((ShardingUserConfig) userConfig));
             } else if (userConfig instanceof RwSplitUserConfig) {
                 Assert.assertTrue(((RwSplitUserConfig) userConfigEntry.getValue()).equalsBaseInfo((RwSplitUserConfig) userConfig));

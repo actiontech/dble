@@ -28,7 +28,7 @@ public final class BusinessServiceFactory {
 
     public static FrontendService<? extends UserConfig> getBusinessService(AuthResultInfo info, AbstractConnection connection) {
         UserConfig userConfig = info.getUserConfig();
-        if (userConfig instanceof ShardingUserConfig) {
+        if (userConfig instanceof ShardingUserConfig) { // contains HybridTAUserConfig
             return new ShardingService(connection, info);
         } else if (userConfig instanceof ManagerUserConfig) {
             return new ManagerService(connection, info);

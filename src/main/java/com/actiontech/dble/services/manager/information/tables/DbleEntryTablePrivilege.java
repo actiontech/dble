@@ -76,7 +76,7 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                 sorted((a, b) -> Integer.compare(a.getValue().getId(), b.getValue().getId())).
                 forEach(v -> {
                     UserConfig userConfig = v.getValue();
-                    if (userConfig instanceof ShardingUserConfig) {
+                    if (userConfig instanceof ShardingUserConfig) { // contains HybridTAUserConfig
                         ShardingUserConfig shardingUserConfig = ((ShardingUserConfig) userConfig);
                         UserPrivilegesConfig userPrivilegesConfig = shardingUserConfig.getPrivilegesConfig();
                         if (userPrivilegesConfig != null) {

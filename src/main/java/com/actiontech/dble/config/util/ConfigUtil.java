@@ -6,6 +6,7 @@
 package com.actiontech.dble.config.util;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.ApNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
@@ -258,8 +259,8 @@ public final class ConfigUtil {
         if (!instance.getDbGroup().isRwSplitUseless()) {
             //rw-split
             return checkVersionWithRwSplit(version, instance, isThrowException, type);
-        } else if (!instance.getDbGroup().isShardingUseless() || !instance.getDbGroup().isAnalysisUseless()) {
-            //sharding or analysis
+        } else if (!instance.getDbGroup().isShardingUseless() || !instance.getDbGroup().isAnalysisUseless() || !instance.getDbGroup().isHybridTAUseless()) {
+            //sharding or analysis or hybridTA(apNode)
             boolean isMatch = majorVersion >= VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion());
             if (!isMatch && isThrowException) {
                 throw new ConfigException("this dbInstance[=" + instance.getConfig().getUrl() + "]'s version[=" + version + "] cannot be lower than the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "],pls check the backend " + type + " node.");
@@ -448,7 +449,7 @@ public final class ConfigUtil {
                 .filter(changeItem -> (changeItem.getType() == ChangeType.ADD) ||
                         (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectTestConn()) ||
                         (changeItem.getItemType() == ChangeItemType.USERNAME && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectEntryDbGroup()) ||
-                        (changeItem.getItemType() == ChangeItemType.SHARDING_NODE && changeItem.getType() == ChangeType.UPDATE))
+                        ((changeItem.getItemType() == ChangeItemType.SHARDING_NODE || changeItem.getItemType() == ChangeItemType.AP_NODE) && changeItem.getType() == ChangeType.UPDATE))
                 .collect(Collectors.toList());
 
         if (changeItemList.size() == 0 || needCheckVersionList.isEmpty()) {
@@ -470,6 +471,10 @@ public final class ConfigUtil {
             } else if (changeItem.getItemType() == ChangeItemType.SHARDING_NODE) {
                 ShardingNode shardingNode = (ShardingNode) item;
                 PhysicalDbGroup dbGroup = shardingNode.getDbGroup();
+                checkDbGroupVersion(dbGroup);
+            } else if (changeItem.getItemType() == ChangeItemType.AP_NODE) {
+                ApNode apNode = (ApNode) item;
+                PhysicalDbGroup dbGroup = apNode.getDbGroup();
                 checkDbGroupVersion(dbGroup);
             } else if (changeItem.getItemType() == ChangeItemType.USERNAME) {
                 UserConfig userConfig = newConfigLoader.getUsers().get(item);

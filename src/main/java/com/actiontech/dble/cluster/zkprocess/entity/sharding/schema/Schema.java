@@ -31,6 +31,9 @@ public class Schema implements Named {
     protected String shardingNode;
 
     @XmlAttribute
+    protected String apNode;
+
+    @XmlAttribute
     protected String function;
 
     @XmlElementRefs({
@@ -80,6 +83,14 @@ public class Schema implements Named {
         this.function = function;
     }
 
+    public void setApNode(String apNode) {
+        this.apNode = apNode;
+    }
+
+    public String getApNode() {
+        return apNode;
+    }
+
     public boolean isLogicalCreateADrop() {
         return logicalCreateADrop;
     }
@@ -92,6 +103,8 @@ public class Schema implements Named {
                 sqlMaxLimit +
                 ", shardingNode=" +
                 shardingNode +
+                ", apNode=" +
+                apNode +
                 ", function=" +
                 function +
                 ", table=" +

@@ -6,7 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.datasource.BaseNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
@@ -106,7 +106,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             // create new connection
             node.setRunOnSlave(rrs.getRunOnSlave());
             ServerConfig conf = DbleServer.getInstance().getConfig();
-            ShardingNode dn = conf.getShardingNodes().get(node.getName());
+            BaseNode dn = conf.getAllNodes().get(node.getName());
             dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), session.getShardingService().isAutocommit(), node, this, node);
         } finally {
             TraceManager.finishSpan(session.getShardingService(), traceObject);

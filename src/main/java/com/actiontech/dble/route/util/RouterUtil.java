@@ -22,6 +22,7 @@ import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.druid.impl.DruidSingleUnitSelectParser;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
@@ -34,15 +35,15 @@ import com.actiontech.dble.util.CharsetContext;
 import com.actiontech.dble.util.HexFormatUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLSetQuantifier;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
-import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.ast.statement.SQLTableSource;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.stat.TableStat;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -213,6 +214,21 @@ public final class RouterUtil {
         }
         rrs.setNodes(nodes);
 
+        if (rrs.getSqlType() == ServerParse.SELECT) {
+            ((DruidSingleUnitSelectParser) druidParser).tryRouteToApNode(schema, rrs, statement, service);
+        }
+        return rrs;
+    }
+
+    public static RouteResultset routeToApNode(RouteResultset rrs, String apNode, Set<String> tableSet) {
+        if (apNode == null) {
+            return rrs;
+        }
+        RouteResultsetNode[] nodes = new RouteResultsetNode[1];
+        nodes[0] = new RouteResultsetNode(apNode, rrs.getSqlType(), rrs.getStatement(), tableSet);
+        nodes[0].setApNode(true);
+        rrs.setNodes(nodes);
+        rrs.setFinishedRoute(true);
         return rrs;
     }
 
@@ -1295,5 +1311,153 @@ public final class RouterUtil {
             }
         }
         return isAllGlobal;
+    }
+
+    /**
+     * clickhouse and mysql syntax incompatibility
+     *
+     * @param selectQuery
+     * @return
+     */
+    public static boolean checkSQLNotSupport(SQLSelectQuery selectQuery) {
+        if (selectQuery instanceof MySqlSelectQueryBlock) {
+            MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectQuery;
+            //only support distinct
+            if (mysqlSelectQuery.getDistionOption() != 0 && mysqlSelectQuery.getDistionOption() != SQLSetQuantifier.DISTINCT) {
+                return true;
+            }
+            //    [HIGH_PRIORITY]
+            if (mysqlSelectQuery.isHignPriority()) {
+                return true;
+            }
+            //    [STRAIGHT_JOIN]
+            if (mysqlSelectQuery.isStraightJoin()) {
+                return true;
+            }
+            //    [SQL_SMALL_RESULT] [SQL_BIG_RESULT] [SQL_BUFFER_RESULT]
+            if (mysqlSelectQuery.isSmallResult() || mysqlSelectQuery.isBigResult() || mysqlSelectQuery.isBufferResult()) {
+                return true;
+            }
+            //    [SQL_NO_CACHE|SQL_CACHE] [SQL_CALC_FOUND_ROWS]
+            if (mysqlSelectQuery.getCache() != null || mysqlSelectQuery.isCalcFoundRows()) {
+                return true;
+            }
+            //[WINDOW window_name AS (window_spec)
+            //        [, window_name AS (window_spec)] ...]
+            if (mysqlSelectQuery.getWindows() != null && !mysqlSelectQuery.getWindows().isEmpty()) {
+                return true;
+            }
+            //[FOR {UPDATE | SHARE}
+            //        [OF tbl_name [, tbl_name] ...]
+            //        [NOWAIT | SKIP LOCKED]
+            //      | LOCK IN SHARE MODE]
+            if (mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isForShare() || mysqlSelectQuery.isNoWait() || mysqlSelectQuery.isSkipLocked() || mysqlSelectQuery.isLockInShareMode()) {
+                return true;
+            }
+            //from
+            SQLTableSource tableSource = mysqlSelectQuery.getFrom();
+            return checkSQLNotSupportOfTableSource(tableSource);
+        } else if (selectQuery instanceof SQLUnionQuery) {
+            SQLUnionQuery query = (SQLUnionQuery) selectQuery;
+            List<SQLSelectQuery> relations = query.getRelations();
+            for (SQLSelectQuery relation : relations) {
+                if (checkSQLNotSupport(relation)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
+    private static boolean checkSQLNotSupportOfTableSource(SQLTableSource tableSource) {
+        if (tableSource instanceof SQLExprTableSource) {
+            SQLExprTableSource exprTableSource = (SQLExprTableSource) tableSource;
+            if (exprTableSource.getPartitionSize() != 0) {
+                return true;
+            }
+        } else if (tableSource instanceof SQLSubqueryTableSource) {
+            SQLSubqueryTableSource fromSource = (SQLSubqueryTableSource) tableSource;
+            SQLSelectQuery sqlSelectQuery = fromSource.getSelect().getQuery();
+            return checkSQLNotSupport(sqlSelectQuery);
+        } else if (tableSource instanceof SQLJoinTableSource) {
+            SQLJoinTableSource fromSource = (SQLJoinTableSource) tableSource;
+            SQLTableSource left = fromSource.getLeft();
+            if (checkSQLNotSupportOfTableSource(left)) {
+                return true;
+            }
+            SQLTableSource right = fromSource.getRight();
+            return checkSQLNotSupportOfTableSource(right);
+        } else if (tableSource instanceof SQLUnionQueryTableSource) {
+            SQLUnionQueryTableSource fromSource = (SQLUnionQueryTableSource) tableSource;
+            SQLUnionQuery unionQuery = fromSource.getUnion();
+            return checkSQLNotSupport(unionQuery);
+        }
+        return false;
+    }
+
+
+    /**
+     * check contains aggregate function
+     *
+     * @param selectQuery
+     * @return
+     */
+    public static boolean checkFunction(SQLSelectQuery selectQuery) {
+        boolean isAggregate;
+        if (selectQuery instanceof MySqlSelectQueryBlock) {
+            MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectQuery;
+            if (mysqlSelectQuery.getGroupBy() != null) {
+                return true;
+            }
+            //select item
+            List<String> aggregateFunctionList = Lists.newArrayList("AVG", "COUNT", "MAX", "MIN", "SUM", "STDDEV_POP", "STDDEV_SAMP", "VAR_POP", "VAR_SAMP");
+            for (SQLSelectItem sqlSelectItem : mysqlSelectQuery.getSelectList()) {
+                SQLExpr expr = sqlSelectItem.getExpr();
+                if (expr instanceof SQLMethodInvokeExpr) {
+                    SQLMethodInvokeExpr aggregateExpr = (SQLMethodInvokeExpr) expr;
+                    String methodName = aggregateExpr.getMethodName();
+                    isAggregate = aggregateFunctionList.contains(methodName.toLowerCase()) || aggregateFunctionList.contains(methodName.toUpperCase());
+                    if (isAggregate) {
+                        return true;
+                    }
+                }
+            }
+            //from
+            SQLTableSource tableSource = mysqlSelectQuery.getFrom();
+            return checkFunctionOfTableSource(tableSource);
+        } else if (selectQuery instanceof SQLUnionQuery) {
+            SQLUnionQuery query = (SQLUnionQuery) selectQuery;
+            List<SQLSelectQuery> relations = query.getRelations();
+            for (SQLSelectQuery relation : relations) {
+                if (checkFunction(relation)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean checkFunctionOfTableSource(SQLTableSource tableSource) {
+        if (tableSource == null || tableSource instanceof SQLExprTableSource) {
+            return false;
+        } else if (tableSource instanceof SQLSubqueryTableSource) {
+            SQLSubqueryTableSource fromSource = (SQLSubqueryTableSource) tableSource;
+            SQLSelectQuery sqlSelectQuery = fromSource.getSelect().getQuery();
+            return checkFunction(sqlSelectQuery);
+        } else if (tableSource instanceof SQLJoinTableSource) {
+            SQLJoinTableSource fromSource = (SQLJoinTableSource) tableSource;
+            SQLTableSource left = fromSource.getLeft();
+            if (checkFunctionOfTableSource(left)) {
+                return true;
+            }
+            SQLTableSource right = fromSource.getRight();
+            return checkFunctionOfTableSource(right);
+        } else if (tableSource instanceof SQLUnionQueryTableSource) {
+            SQLUnionQueryTableSource fromSource = (SQLUnionQueryTableSource) tableSource;
+            SQLUnionQuery unionQuery = fromSource.getUnion();
+            return checkFunction(unionQuery);
+        }
+        return false;
     }
 }

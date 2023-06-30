@@ -394,6 +394,27 @@ public abstract class BackendService extends AbstractService {
         }
     }
 
+    protected StringBuilder getSynSqlOfAP(boolean expectAutocommit, VariablesService front) {
+        // schema
+        String schema = connection.getSchema();
+        int schemaSyn = StringUtil.equals(schema, connection.getOldSchema()) || schema == null ? 0 : 1;
+        // autocommit
+        if (schemaSyn == 0 || ignoreSql(front)) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        if (schemaSyn == 1) {
+            getChangeSchemaCommand(sb, schema);
+        } else {
+            schema = null;
+        }
+        metaDataSynced = false;
+        statusSync = new StatusSync(schema,
+                front.getCharset(), front.getTxIsolation(), expectAutocommit, front.isReadOnly(),
+                schemaSyn, usrVariables, sysVariables, new HashSet<>());
+        return sb;
+    }
+
     protected StringBuilder getSynSql(boolean expectAutocommit, VariablesService front) {
         // variables
         Set<String> toResetSys = new HashSet<>();

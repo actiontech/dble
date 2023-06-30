@@ -6,7 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.datasource.BaseNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
@@ -146,7 +146,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     connRrns.add(node);
                     // create new connection
                     node.setRunOnSlave(rrs.getRunOnSlave());
-                    ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
+                    BaseNode dn = DbleServer.getInstance().getConfig().getAllNodes().get(node.getName());
                     dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), sessionAutocommit, node, this, node);
                 }
             }

@@ -44,6 +44,11 @@
             <name>aliyun maven</name>
             <url>https://maven.aliyun.com/nexus/content/groups/public/</url>
         </repository>
+        <repository>
+            <id>ossrh</id>
+            <name>Sonatype OSSRH</name>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
@@ -83,6 +88,19 @@
             <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
             <version>1.2.6</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.49</version>
+        </dependency>
+        <dependency>
+            <groupId>com.clickhouse</groupId>
+            <artifactId>clickhouse-jdbc</artifactId>
+            <version>0.4.6</version>
+            <!-- use uber jar with all dependencies included, change classifier to http for smaller jar -->
+            <classifier>http</classifier>
         </dependency>
         <dependency>
             <groupId>org.quartz-scheduler</groupId>

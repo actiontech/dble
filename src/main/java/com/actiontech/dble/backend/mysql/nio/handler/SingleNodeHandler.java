@@ -106,7 +106,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             // create new connection
             node.setRunOnSlave(rrs.getRunOnSlave());
             ServerConfig conf = DbleServer.getInstance().getConfig();
-            ShardingNode dn = conf.getShardingNodes().get(node.getName());
+            ShardingNode dn = conf.getAllNodes().get(node.getName());
             dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), session.getShardingService().isAutocommit(), node, this, node);
         } finally {
             TraceManager.finishSpan(session.getShardingService(), traceObject);

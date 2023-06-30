@@ -207,6 +207,14 @@ public class ServerConfig {
         return apNodes;
     }
 
+    public Map<String, ShardingNode> getAllNodes() {
+        waitIfChanging();
+        Map<String, ShardingNode> nodeMap = Maps.newHashMap();
+        nodeMap.putAll(shardingNodes);
+        nodeMap.putAll(apNodes);
+        return nodeMap;
+    }
+
     public Map<String, PhysicalDbGroup> getDbGroups() {
         waitIfChanging();
         return dbGroups;

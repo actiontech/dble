@@ -146,7 +146,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     connRrns.add(node);
                     // create new connection
                     node.setRunOnSlave(rrs.getRunOnSlave());
-                    ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
+                    ShardingNode dn = DbleServer.getInstance().getConfig().getAllNodes().get(node.getName());
                     dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), sessionAutocommit, node, this, node);
                 }
             }

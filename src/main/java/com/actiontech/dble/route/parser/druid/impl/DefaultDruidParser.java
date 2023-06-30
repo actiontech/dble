@@ -20,11 +20,13 @@ import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.ConditionUtil;
 import com.actiontech.dble.route.util.RouterUtil;
+import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -52,6 +54,9 @@ public class DefaultDruidParser implements DruidParser {
     public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor schemaStatVisitor, ShardingService service, boolean isExplain) throws SQLException {
         ctx = new DruidShardingParseInfo();
         schema = visitorParse(schema, rrs, stmt, schemaStatVisitor, service, isExplain);
+        if (this instanceof DruidSelectParser && rrs.isFinishedRoute() && !rrs.isNeedOptimizer()) {
+            tryRouteToApNode(schema, rrs, stmt, service);
+        }
         changeSql(schema, rrs, stmt);
         return schema;
     }
@@ -60,6 +65,26 @@ public class DefaultDruidParser implements DruidParser {
         return this.parser(schema, rrs, stmt, schemaStatVisitor, service, false);
     }
 
+    public void tryRouteToApNode(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ShardingService service) {
+        if (rrs.getSqlType() == ServerParse.SELECT) {
+            //simple query
+            boolean inTransaction = service.isInTransaction();
+            if (!inTransaction) {
+                SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
+                SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
+                boolean notSupport = RouterUtil.checkSQLNotSupport(sqlSelectQuery);
+                if (notSupport) {
+                    return;
+                }
+                boolean isAggregate = schema != null && schema.getDefaultApNode() != null && RouterUtil.checkFunction(sqlSelectQuery);
+                if (isAggregate) {
+                    Set<String> tableSet = ctx.getTables().stream().map(tableEntry -> tableEntry.getKey() + "." + tableEntry.getValue()).collect(Collectors.toSet());
+                    rrs.setNeedOptimizer(false);
+                    RouterUtil.routeToApNode(rrs, schema.getDefaultApNode(), tableSet);
+                }
+            }
+        }
+    }
 
     @Override
     public void changeSql(SchemaConfig schema, RouteResultset rrs,

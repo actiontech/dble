@@ -36,6 +36,7 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
     private boolean isForUpdate = false;
     private volatile byte loadDataRrnStatus;
     private boolean nodeRepeat = false;
+    private boolean isApNode;
 
     public RouteResultsetNode(String name, int sqlType, String srcStatement) {
         this.name = name;
@@ -62,6 +63,21 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
         this.repeatTableIndex = new AtomicLong(0);
         loadDataRrnStatus = 0;
         this.tableSet = tableSet;
+    }
+
+    public RouteResultsetNode(String name, int sqlType, String srcStatement, Set<String> tableSet, boolean isApNode) {
+        this.name = name;
+        this.limitStart = 0;
+        this.limitSize = -1;
+        this.sqlType = sqlType;
+        this.statement = srcStatement;
+        this.statementHash = srcStatement.hashCode();
+        this.canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
+        this.multiplexNum = new AtomicLong(0);
+        this.repeatTableIndex = new AtomicLong(0);
+        loadDataRrnStatus = 0;
+        this.tableSet = tableSet;
+        this.isApNode = isApNode;
     }
 
     public byte getLoadDataRrnStatus() {
@@ -176,6 +192,14 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
 
     public Set<String> getTableSet() {
         return tableSet;
+    }
+
+    public boolean isApNode() {
+        return isApNode;
+    }
+
+    public void setApNode(boolean apNode) {
+        isApNode = apNode;
     }
 
     @Override

@@ -200,7 +200,7 @@ public class ItemSumVariance extends ItemSumNum {
 
     @Override
     public String funcName() {
-        return sample == 1 ? "VAR_SAMP" : "VARIANCE";
+        return sample == 1 ? "VAR_SAMP" : "VAR_POP";
     }
 
     @Override

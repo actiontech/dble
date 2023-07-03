@@ -7,6 +7,7 @@ package com.actiontech.dble.cluster.zkprocess.entity;
 
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.function.Function;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Schema;
+import com.actiontech.dble.cluster.zkprocess.entity.sharding.shardingnode.ApNode;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.shardingnode.ShardingNode;
 import com.actiontech.dble.config.Versions;
 
@@ -26,6 +27,8 @@ public class Shardings {
     private List<Schema> schema;
 
     private List<ShardingNode> shardingNode;
+
+    private List<ApNode> apNode;
 
     protected List<Function> function;
 
@@ -51,6 +54,16 @@ public class Shardings {
         this.shardingNode = shardingNode;
     }
 
+    public List<ApNode> getApNode() {
+        if (this.apNode == null) {
+            apNode = new ArrayList<>();
+        }
+        return apNode;
+    }
+
+    public void setApNode(List<ApNode> apNode) {
+        this.apNode = apNode;
+    }
 
     public List<Function> getFunction() {
         if (this.function == null) {
@@ -77,6 +90,8 @@ public class Shardings {
                 schema +
                 ", shardingNode=" +
                 shardingNode +
+                ", apNode=" +
+                apNode +
                 ", function=" +
                 function +
                 "]";

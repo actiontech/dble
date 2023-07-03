@@ -9,10 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
-import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.datasource.*;
 import com.actiontech.dble.cluster.JsonFactory;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.values.RawJson;
@@ -24,6 +21,7 @@ import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableFakeConfig;
+import com.actiontech.dble.config.model.user.HybridTAUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
@@ -62,6 +60,7 @@ public class ServerConfig {
     private volatile Map<UserName, UserConfig> users;
     private volatile Map<String, SchemaConfig> schemas;
     private volatile Map<String, ShardingNode> shardingNodes;
+    private volatile Map<String, ApNode> apNodes;
     private volatile Map<String, PhysicalDbGroup> dbGroups;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
     private volatile Map<String, Set<ERTable>> funcNodeERMap;
@@ -86,6 +85,7 @@ public class ServerConfig {
 
         this.schemas = confInitNew.getSchemas();
         this.shardingNodes = confInitNew.getShardingNodes();
+        this.apNodes = confInitNew.getApNodes();
         this.erRelations = confInitNew.getErRelations();
         this.funcNodeERMap = confInitNew.getFuncNodeERMap();
         this.functions = confInitNew.getFunctions();
@@ -109,6 +109,7 @@ public class ServerConfig {
         this.dbGroups = confInit.getDbGroups();
         this.schemas = confInit.getSchemas();
         this.shardingNodes = confInit.getShardingNodes();
+        this.apNodes = confInit.getApNodes();
         this.erRelations = confInit.getErRelations();
         this.funcNodeERMap = confInit.getFuncNodeERMap();
         this.functions = confInit.getFunctions();
@@ -128,6 +129,7 @@ public class ServerConfig {
 
         this.schemas = confInitNew.getSchemas();
         this.shardingNodes = confInitNew.getShardingNodes();
+        this.apNodes = confInitNew.getApNodes();
         this.erRelations = confInitNew.getErRelations();
         this.funcNodeERMap = confInitNew.getFuncNodeERMap();
         this.functions = confInitNew.getFunctions();
@@ -198,6 +200,11 @@ public class ServerConfig {
     public Map<String, ShardingNode> getShardingNodes() {
         waitIfChanging();
         return shardingNodes;
+    }
+
+    public Map<String, ApNode> getApNodes() {
+        waitIfChanging();
+        return apNodes;
     }
 
     public Map<String, PhysicalDbGroup> getDbGroups() {
@@ -546,6 +553,11 @@ public class ServerConfig {
             if (shardingNode.getDbGroup() != null) {
                 shardingNode.getDbGroup().removeSchema(shardingNode.getDatabase());
             }
+        } else if (itemType == ChangeItemType.AP_NODE) {
+            ApNode apNode = (ApNode) item;
+            if (apNode.getDbGroup() != null) {
+                apNode.getDbGroup().removeSchema(apNode.getDatabase());
+            }
         }
     }
 
@@ -617,6 +629,15 @@ public class ServerConfig {
             if (shardingNode.getDbGroup() != null) {
                 shardingNode.getDbGroup().addSchema(shardingNode.getDatabase());
             }
+        } else if (itemType == ChangeItemType.AP_NODE) {
+            ApNode apNode = (ApNode) item;
+            ApNode oldApNode = this.apNodes.get(apNode.getName());
+            if (oldApNode != null && oldApNode.getDbGroup() != null) {
+                oldApNode.getDbGroup().removeSchema(oldApNode.getDatabase());
+            }
+            if (apNode.getDbGroup() != null) {
+                apNode.getDbGroup().addSchema(apNode.getDatabase());
+            }
         }
     }
 
@@ -653,6 +674,11 @@ public class ServerConfig {
             ShardingNode shardingNode = (ShardingNode) item;
             if (shardingNode.getDbGroup() != null) {
                 shardingNode.getDbGroup().addSchema(shardingNode.getDatabase());
+            }
+        } else if (itemType == ChangeItemType.AP_NODE) {
+            ApNode apNode = (ApNode) item;
+            if (apNode.getDbGroup() != null) {
+                apNode.getDbGroup().addSchema(apNode.getDatabase());
             }
         }
     }
@@ -748,7 +774,7 @@ public class ServerConfig {
 
         //user sharding
         for (UserConfig uc : users.values()) {
-            if (uc instanceof ShardingUserConfig) {
+            if (uc instanceof ShardingUserConfig) { // contains HybridTAUserConfig
                 ShardingUserConfig shardingUser = (ShardingUserConfig) uc;
                 shardingUser.changeMapToLowerCase();
                 if (shardingUser.getPrivilegesConfig() != null) {
@@ -811,10 +837,7 @@ public class ServerConfig {
                     ShardingUserConfig shardingUser = (ShardingUserConfig) uc;
                     Set<String> authSchemas = shardingUser.getSchemas();
                     for (String schema : authSchemas) {
-                        if (!schemas.containsKey(schema)) {
-                            String errMsg = "SelfCheck### User[name:" + shardingUser.getName() + (shardingUser.getTenant() == null ? "" : ",tenant:" + shardingUser.getTenant()) + "]'s schema [" + schema + "] is not exist!";
-                            throw new ConfigException(errMsg);
-                        }
+                        checkSchemaByUser(schema, shardingUser);
                     }
 
                     if (shardingUser.getPrivilegesConfig() != null) {
@@ -844,6 +867,20 @@ public class ServerConfig {
                     }
                 }
             }
+        }
+    }
+
+    private void checkSchemaByUser(String schema, ShardingUserConfig shardingUser) {
+        if (!schemas.containsKey(schema)) {
+            String errMsg = "SelfCheck### User[name:" + shardingUser.getName() + (shardingUser.getTenant() == null ? "" : ",tenant:" + shardingUser.getTenant()) + "]'s schema [" + schema + "] is not exist!";
+            throw new ConfigException(errMsg);
+        }
+        if (shardingUser instanceof HybridTAUserConfig && schemas.get(schema).getDefaultApNode() == null) {
+            String errMsg = "SelfCheck### User[name:" + shardingUser.getName() + (shardingUser.getTenant() == null ? "" : ",tenant:" + shardingUser.getTenant()) + "]'s schema [" + schema + "] must contain apNode!";
+            throw new ConfigException(errMsg);
+        } else if (!(shardingUser instanceof HybridTAUserConfig) && schemas.get(schema).getDefaultApNode() != null) { // ShardingUserConfig
+            String errMsg = "SelfCheck### User[name:" + shardingUser.getName() + (shardingUser.getTenant() == null ? "" : ",tenant:" + shardingUser.getTenant()) + "]'s schema [" + schema + "] can not contain apNode!";
+            throw new ConfigException(errMsg);
         }
     }
 

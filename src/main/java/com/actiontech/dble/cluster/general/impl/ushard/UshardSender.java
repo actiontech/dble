@@ -48,7 +48,7 @@ public class UshardSender extends AbstractConsulSender {
     @Override
     public void initConInfo() {
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
+                ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
         setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
     }
 
@@ -57,7 +57,7 @@ public class UshardSender extends AbstractConsulSender {
         serverId = SystemConfig.getInstance().getServerId();
         sourceComponentId = SystemConfig.getInstance().getInstanceName();
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
+                ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
         setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
         startUpdateNodes();
         ClusterToXml.loadKVtoFile(this);
@@ -310,7 +310,7 @@ public class UshardSender extends AbstractConsulSender {
                         }
                         LOGGER.warn("error in ucore nodes watch,try for another time", e);
                         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
+                                ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
                         UshardSender.this.setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
                         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
                     }
@@ -347,7 +347,7 @@ public class UshardSender extends AbstractConsulSender {
         ManagedChannel channel = null;
         try {
             channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                    ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
+                    ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
             stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
             //check connection is ready
             ClusterHelper.isExist(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName()));

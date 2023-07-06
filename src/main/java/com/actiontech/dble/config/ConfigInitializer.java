@@ -5,10 +5,7 @@
  */
 package com.actiontech.dble.config;
 
-import com.actiontech.dble.backend.datasource.ApNode;
-import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.datasource.*;
 import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.Shardings;
 import com.actiontech.dble.config.converter.DBConverter;
@@ -16,6 +13,7 @@ import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.converter.ShardingConverter;
 import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.helper.TestSchemasTask;
+import com.actiontech.dble.config.helper.TestSchemasTaskForClickHouse;
 import com.actiontech.dble.config.helper.TestTask;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -32,6 +30,7 @@ import com.actiontech.dble.services.manager.response.ChangeItem;
 import com.actiontech.dble.services.manager.response.ChangeItemType;
 import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.CollectionUtil;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -373,7 +372,7 @@ public class ConfigInitializer implements ProblemReporter {
                 dbGroup = entry.getValue();
                 dbGroupName = entry.getKey();
 
-                // sharding group
+                // db group
                 List<Pair<String, String>> schemaList = null;
                 if (hostSchemaMap.containsKey(dbGroupName)) {
                     schemaList = hostSchemaMap.get(entry.getKey());
@@ -392,7 +391,7 @@ public class ConfigInitializer implements ProblemReporter {
                         ds.setTestConnSuccess(false);
                         continue;
                     }
-                    if (!testDbInstance(dbGroupName, ds, schemaList)) {
+                    if (!testDbInstance(dbGroupName, ds, schemaList, ds.getConfig().getDataBaseType())) {
                         isAllDbInstanceConnected = false;
                         errDbInstanceNames.add("dbInstance[" + dbGroupName + "." + ds.getName() + "]");
                     }
@@ -463,7 +462,7 @@ public class ConfigInitializer implements ProblemReporter {
             ds.setTestConnSuccess(false);
             return true;
         }
-        return testDbInstance(dbGroupName, ds, schemaList);
+        return testDbInstance(dbGroupName, ds, schemaList, ds.getConfig().getDataBaseType());
     }
 
 
@@ -485,7 +484,7 @@ public class ConfigInitializer implements ProblemReporter {
         }
     }
 
-    private boolean testDbInstance(String dbGroupName, PhysicalDbInstance ds, List<Pair<String, String>> schemaList) {
+    private boolean testDbInstance(String dbGroupName, PhysicalDbInstance ds, List<Pair<String, String>> schemaList, DataBaseType dataBaseType) {
         boolean isConnectivity = true;
         String dbInstanceKey = "dbInstance[" + dbGroupName + "." + ds.getName() + "]";
         try {
@@ -499,10 +498,16 @@ public class ConfigInitializer implements ProblemReporter {
                 errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + dbInstanceKey + "]"));
                 LOGGER.warn("SelfCheck### can't connect to [" + dbInstanceKey + "]");
                 isConnectivity = false;
-            } else if (schemaList != null) {
-                TestSchemasTask testSchemaTask = new TestSchemasTask(shardingNodes, ds, schemaList, !ds.isReadInstance());
-                testSchemaTask.start();
-                testSchemaTask.join(3000);
+            } else if (!CollectionUtil.isEmpty(schemaList)) {
+                if (dataBaseType == DataBaseType.MYSQL) {
+                    TestSchemasTask testSchemaTask = new TestSchemasTask(shardingNodes, ds, schemaList, !ds.isReadInstance());
+                    testSchemaTask.start();
+                    testSchemaTask.join(3000);
+                } else {
+                    TestSchemasTaskForClickHouse testSchemaTask2 = new TestSchemasTaskForClickHouse(apNodes, ds, schemaList, !ds.isReadInstance());
+                    testSchemaTask2.start();
+                    testSchemaTask2.join(3000);
+                }
             } else {
                 LOGGER.info("SelfCheck### connect to [" + dbInstanceKey + "] successfully.");
             }
@@ -522,6 +527,12 @@ public class ConfigInitializer implements ProblemReporter {
             for (ShardingNode shardingNode : shardingNodes.values()) {
                 List<Pair<String, String>> nodes = dbInstanceSchemaMap.computeIfAbsent(shardingNode.getDbGroupName(), k -> new ArrayList<>(8));
                 nodes.add(new Pair<>(shardingNode.getName(), shardingNode.getDatabase()));
+            }
+        }
+        if (apNodes != null) {
+            for (ApNode apNode : apNodes.values()) {
+                List<Pair<String, String>> nodes = dbInstanceSchemaMap.computeIfAbsent(apNode.getDbGroupName(), k -> new ArrayList<>(8));
+                nodes.add(new Pair<>(apNode.getName(), apNode.getDatabase()));
             }
         }
         return dbInstanceSchemaMap;

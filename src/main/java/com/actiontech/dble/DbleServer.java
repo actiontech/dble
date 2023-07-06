@@ -469,7 +469,7 @@ public final class DbleServer {
             config.reviseLowerCase();
             config.selfChecking0();
             config.loadSequence(DbleTempConfig.getInstance().getSequenceConfig());
-            ConfigUtil.setSchemasForPool(config.getDbGroups(), config.getShardingNodes());
+            ConfigUtil.setSchemasForPool(config.getDbGroups(), config.getAllNodes());
         } else {
             config.selfChecking0();
             config.loadSequence(DbleTempConfig.getInstance().getSequenceConfig());

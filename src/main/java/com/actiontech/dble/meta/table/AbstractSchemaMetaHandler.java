@@ -13,6 +13,7 @@ import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.meta.ViewMeta;
+import com.actiontech.dble.util.StringUtil;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,6 +47,10 @@ public abstract class AbstractSchemaMetaHandler {
         handlers.add(new FakeConfigTableHandler(this, getTmManager()));
         // tables config
         handlers.add(new ConfigTableHandler(this));
+        if (!StringUtil.isBlank(schemaConfig.getDefaultApNode())) {
+            // check tables exists in ClickHouse
+            handlers.add(new ClickHouseTableHandler(this, getTmManager()));
+        }
 
         boolean existTable = false;
         for (ModeTableHandler handler : handlers) {

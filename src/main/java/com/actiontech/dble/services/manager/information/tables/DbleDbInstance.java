@@ -379,6 +379,8 @@ public class DbleDbInstance extends ManagerWritableTable {
         DBInstance dbInstance = new DBInstance();
         StringBuilder url = new StringBuilder();
         List<Property> propertyList = Lists.newArrayList();
+        String key;
+        String entryValue;
         for (Map.Entry<String, String> entry : map.entrySet()) {
             switch (entry.getKey()) {
                 case COLUMN_NAME:
@@ -432,6 +434,13 @@ public class DbleDbInstance extends ManagerWritableTable {
                 case COLUMN_TEST_ON_BORROW:
                 case COLUMN_TEST_ON_RETURN:
                 case COLUMN_TEST_WHILE_IDLE:
+                    key = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, entry.getKey());
+                    entryValue = entry.getValue();
+                    if (StringUtil.isBlank(entryValue) || (!StringUtil.equalsIgnoreCase(entryValue, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(entryValue, Boolean.TRUE.toString()))) {
+                        throw new ConfigException("Column '" + entry.getKey() + "' values only support 'false' or 'true'.");
+                    }
+                    propertyList.add(new Property(entryValue, key));
+                    break;
                 case COLUMN_CONNECTION_TIMEOUT:
                 case COLUMN_CONNECTION_HEARTBEAT_TIMEOUT:
                 case COLUMN_TIME_BETWEEN_EVICTION_RUNS_MILLIS:
@@ -440,8 +449,12 @@ public class DbleDbInstance extends ManagerWritableTable {
                 case COLUMN_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS:
                 case COLUMN_FLOW_HIGH_LEVEL:
                 case COLUMN_FLOW_LOW_LEVEL:
-                    String key = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, entry.getKey());
-                    propertyList.add(new Property(entry.getValue(), key));
+                    key = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, entry.getKey());
+                    entryValue = entry.getValue();
+                    if (StringUtil.isBlank(entryValue) || IntegerUtil.parseInt(entryValue) <= 0) {
+                        throw new ConfigException("Column '" + entry.getKey() + "' should be an integer greater than 0!");
+                    }
+                    propertyList.add(new Property(entryValue, key));
                     break;
                 default:
                     break;

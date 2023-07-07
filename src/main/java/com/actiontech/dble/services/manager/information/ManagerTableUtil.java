@@ -111,8 +111,8 @@ public final class ManagerTableUtil {
                     String value = null == row.getValue(i) ? null : new String(row.getValue(i), charset);
                     affectPk.put(columnName, value);
                     if (null != values) {
-                        boolean match = values.entrySet().stream().anyMatch(valueEntry -> !StringUtil.equals(affectPk.get(valueEntry.getKey()), valueEntry.getValue()));
-                        if (!match) {
+                        boolean isSkipRow = values.entrySet().stream().allMatch(valueEntry -> affectPk.containsKey(valueEntry.getKey()) && StringUtil.equals(affectPk.get(valueEntry.getKey()), valueEntry.getValue()));
+                        if (isSkipRow) {
                             breakFlag = true;
                             break;
                         }

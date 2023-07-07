@@ -267,22 +267,26 @@ public class DbleDbGroup extends ManagerWritableTable {
                     }
                 }
             }
-            String delayThresholdStr = row.get(COLUMN_DELAY_THRESHOLD);
-            String heartbeatTimeoutStr = row.get(COLUMN_HEARTBEAT_TIMEOUT);
-            String heartbeatRetryStr = row.get(COLUMN_HEARTBEAT_RETRY);
-            if (!StringUtil.isBlank(delayThresholdStr) && IntegerUtil.parseInt(delayThresholdStr) < -1) {
-                throw new ConfigException("Column '" + COLUMN_DELAY_THRESHOLD + "' should be an integer greater than or equal to -1!");
-            }
-            if (!StringUtil.isBlank(heartbeatTimeoutStr) && IntegerUtil.parseInt(heartbeatTimeoutStr) < 0) {
-                throw new ConfigException("Column '" + COLUMN_HEARTBEAT_TIMEOUT + "' should be an integer greater than or equal to 0!");
-            }
-            if (!StringUtil.isBlank(heartbeatRetryStr) && IntegerUtil.parseInt(heartbeatRetryStr) < 0) {
-                throw new ConfigException("Column '" + COLUMN_HEARTBEAT_RETRY + "' should be an integer greater than or equal to 0!");
-            }
-            String heartbeatKeepAliveStr = row.get(COLUMN_KEEP_ALIVE);
-            if (!StringUtil.isBlank(heartbeatKeepAliveStr) && IntegerUtil.parseInt(heartbeatKeepAliveStr) < 0) {
-                throw new ConfigException("Column '" + COLUMN_KEEP_ALIVE + "' should be an integer greater than or equal to 0!");
-            }
+            checkInterValue(row);
+        }
+    }
+
+    private void checkInterValue(LinkedHashMap<String, String> row) {
+        String delayThresholdStr = row.get(COLUMN_DELAY_THRESHOLD);
+        String heartbeatTimeoutStr = row.get(COLUMN_HEARTBEAT_TIMEOUT);
+        String heartbeatRetryStr = row.get(COLUMN_HEARTBEAT_RETRY);
+        if (row.containsKey(COLUMN_DELAY_THRESHOLD) && (StringUtil.isBlank(delayThresholdStr) || IntegerUtil.parseInt(delayThresholdStr) < -1)) {
+            throw new ConfigException("Column '" + COLUMN_DELAY_THRESHOLD + "' should be an integer greater than or equal to -1!");
+        }
+        if (row.containsKey(COLUMN_HEARTBEAT_TIMEOUT) && (StringUtil.isBlank(heartbeatTimeoutStr) || IntegerUtil.parseInt(heartbeatTimeoutStr) < 0)) {
+            throw new ConfigException("Column '" + COLUMN_HEARTBEAT_TIMEOUT + "' should be an integer greater than or equal to 0!");
+        }
+        if (row.containsKey(COLUMN_HEARTBEAT_RETRY) && (StringUtil.isBlank(heartbeatRetryStr) || IntegerUtil.parseInt(heartbeatRetryStr) < 0)) {
+            throw new ConfigException("Column '" + COLUMN_HEARTBEAT_RETRY + "' should be an integer greater than or equal to 0!");
+        }
+        String heartbeatKeepAliveStr = row.get(COLUMN_KEEP_ALIVE);
+        if (row.containsKey(COLUMN_KEEP_ALIVE) && (StringUtil.isBlank(heartbeatKeepAliveStr) || IntegerUtil.parseInt(heartbeatKeepAliveStr) < 0)) {
+            throw new ConfigException("Column '" + COLUMN_KEEP_ALIVE + "' should be an integer greater than or equal to 0!");
         }
     }
 

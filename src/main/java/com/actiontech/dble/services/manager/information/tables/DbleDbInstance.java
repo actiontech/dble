@@ -7,40 +7,29 @@ package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
-import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.Property;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
-import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.HeartBeat;
-import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.config.model.db.PoolConfig;
 import com.actiontech.dble.config.util.ConfigException;
-import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
 import com.actiontech.dble.services.manager.response.ShowHeartbeat;
-import com.actiontech.dble.util.DecryptUtil;
-import com.actiontech.dble.util.ResourceUtil;
-import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.*;
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.stream.XMLStreamException;
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -112,7 +101,7 @@ public class DbleDbInstance extends ManagerWritableTable {
     private static final String COLUMN_HEARTBEAT_PERIOD_MILLIS = "heartbeat_period_millis";
 
     public DbleDbInstance() {
-        super(TABLE_NAME, 30);
+        super(TABLE_NAME, 33);
         setNotWritableColumnSet(COLUMN_ACTIVE_CONN_COUNT, COLUMN_IDLE_CONN_COUNT, COLUMN_READ_CONN_REQUEST, COLUMN_WRITE_CONN_REQUEST,
                 COLUMN_LAST_HEARTBEAT_ACK_TIMESTAMP, COLUMN_LAST_HEARTBEAT_ACK, COLUMN_HEARTBEAT_STATUS, COLUMN_HEARTBEAT_FAILURE_IN_LAST_5MIN);
 
@@ -269,98 +258,181 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     @Override
     public int insertRows(List<LinkedHashMap<String, String>> rows) throws SQLException {
-        return insertOrUpdate(rows, true);
-    }
+        List<DBInstance> dbInstanceList = rows.stream().map(this::transformRowToDBInstance).collect(Collectors.toList());
+        DbGroups dbGroups = DbleDbGroup.getDbGroups();
 
-    private int insertOrUpdate(List<LinkedHashMap<String, String>> rows, boolean insertFlag) throws SQLException {
-        decryptPassword(rows, insertFlag);
-        final int size = rows.size();
-        XmlProcessBase xmlProcess = new XmlProcessBase();
-        DbGroups dbs = transformRow(xmlProcess, null, rows);
-        //check logical foreign key
-        if (!rows.isEmpty()) {
-            String msg = String.format("Cannot add or update a child row: a logical foreign key '%s' constraint fails", COLUMN_DB_GROUP);
-            throw new SQLException(msg, "42S22", ErrorCode.ER_NO_REFERENCED_ROW_2);
-        }
-        //check primary
-        for (DBGroup group : dbs.getDbGroup()) {
-            long primaryCount = group.getDbInstance().stream().filter(dbInstance -> null != dbInstance.getPrimary() && dbInstance.getPrimary()).count();
-            if (primaryCount != 1) {
-                String msg = String.format("dbGroup[%s] has one and only one primary instance", group.getName());
-                throw new ConfigException(msg);
-            }
-        }
-        //check connection
-        checkInstanceConnection(dbs);
-        //remove temp row
         DbleDbGroup dbleDbGroup = (DbleDbGroup) ManagerSchemaInfo.getInstance().getTables().get(DbleDbGroup.TABLE_NAME);
-        for (DBGroup dbGroup : dbs.getDbGroup()) {
-            dbleDbGroup.getTempRowList().removeIf(group -> StringUtil.equals(group.get(DbleDbGroup.COLUMN_NAME), dbGroup.getName()));
-        }
-        dbs.encryptPassword();
-        //write to configuration
-        xmlProcess.writeObjToXml(dbs, getXmlFilePath(), "db");
-        return size;
-    }
+        List<LinkedHashMap<String, String>> tempDbGroupMapList = dbleDbGroup.getTempRowList();
+        List<DBGroup> tempDbGroupList = tempDbGroupMapList.stream().map(dbleDbGroup::transformRowToDBGroup).collect(Collectors.toList());
 
+        for (DBInstance dbInstance : dbInstanceList) {
+            Optional<DBGroup> dbGroupOp = dbGroups.getDbGroup().stream().filter(dbGroup -> StringUtil.equals(dbGroup.getName(), dbInstance.getDbGroup())).findFirst();
+            if (!dbGroupOp.isPresent()) {
+                dbGroupOp = tempDbGroupList.stream().filter(dbGroup -> StringUtil.equals(dbGroup.getName(), dbInstance.getDbGroup())).findFirst();
+                if (!dbGroupOp.isPresent()) {
+                    String msg = String.format("Cannot add or update a child row: a logical foreign key '%s':%s constraint fails", COLUMN_DB_GROUP, dbInstance.getDbGroup());
+                    throw new SQLException(msg, "42S22", ErrorCode.ER_NO_REFERENCED_ROW_2);
+                }
+                dbGroups.addDbGroup(dbGroupOp.get());
+            }
+            dbGroupOp.get().addDbInstance(dbInstance);
+        }
+        DbleDbGroup.saveDbGroups(dbGroups, getXmlFilePath());
+        return rows.size();
+    }
 
     @Override
     public int updateRows(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws SQLException {
-        affectPks.forEach(affectPk -> affectPk.putAll(values));
-        return insertOrUpdate(Lists.newArrayList(affectPks), false);
+        affectPks.forEach(affectPk -> {
+            if (Boolean.FALSE.toString().equalsIgnoreCase(affectPk.get(COLUMN_ENCRYPT_CONFIGURED))) {
+                String password = DecryptUtil.dbHostDecrypt(true, affectPk.get(COLUMN_NAME), affectPk.get(COLUMN_USER), affectPk.get(COLUMN_PASSWORD_ENCRYPT));
+                affectPk.put(COLUMN_PASSWORD_ENCRYPT, password);
+            }
+            affectPk.putAll(values);
+        });
+        List<DBInstance> dbInstanceList = affectPks.stream().map(this::transformRowToDBInstance).collect(Collectors.toList());
+        DbGroups dbGroups = DbleDbGroup.getDbGroups();
+        for (DBInstance dbInstance : dbInstanceList) {
+            Optional<DBGroup> dbGroupOp = dbGroups.getDbGroup().stream().filter(dbGroup -> StringUtil.equals(dbGroup.getName(), dbInstance.getDbGroup())).findFirst();
+            if (!dbGroupOp.isPresent()) {
+                String msg = String.format("Cannot add or update a child row: a logical foreign key '%s':%s constraint fails", COLUMN_DB_GROUP, dbInstance.getDbGroup());
+                throw new SQLException(msg, "42S22", ErrorCode.ER_NO_REFERENCED_ROW_2);
+            }
+            dbGroupOp.get().getDbInstance().removeIf(sourceDbInstance -> StringUtil.equals(sourceDbInstance.getName(), dbInstance.getName()));
+            dbGroupOp.get().addDbInstance(dbInstance);
+        }
+        DbleDbGroup.saveDbGroups(dbGroups, getXmlFilePath());
+        return affectPks.size();
     }
 
     @Override
     public int deleteRows(Set<LinkedHashMap<String, String>> affectPks) throws SQLException {
-        XmlProcessBase xmlProcess = new XmlProcessBase();
-        DbGroups dbGroups = transformRow(xmlProcess, null, null);
-        for (LinkedHashMap<String, String> affectPk : affectPks) {
-            for (DBGroup dbGroup : dbGroups.getDbGroup()) {
-                dbGroup.getDbInstance().removeIf(dbInstance -> StringUtil.equals(affectPk.get(COLUMN_DB_GROUP), dbGroup.getName()) && StringUtil.equals(affectPk.get(COLUMN_NAME), dbInstance.getName()));
+        List<DBInstance> dbInstanceList = affectPks.stream().map(this::transformRowToDBInstance).collect(Collectors.toList());
+        DbGroups dbGroups = DbleDbGroup.getDbGroups();
+        for (DBInstance dbInstance : dbInstanceList) {
+            Optional<DBGroup> dbGroupOp = dbGroups.getDbGroup().stream().filter(dbGroup -> StringUtil.equals(dbGroup.getName(), dbInstance.getDbGroup())).findFirst();
+            if (!dbGroupOp.isPresent()) {
+                String msg = String.format("Cannot add or update a child row: a logical foreign key '%s':%s constraint fails", COLUMN_DB_GROUP, dbInstance.getDbGroup());
+                throw new SQLException(msg, "42S22", ErrorCode.ER_NO_REFERENCED_ROW_2);
             }
+            dbGroupOp.get().getDbInstance().removeIf(sourceDbInstance -> StringUtil.equals(sourceDbInstance.getName(), dbInstance.getName()));
         }
-        for (DBGroup dbGroup : dbGroups.getDbGroup()) {
-            boolean existPrimary = dbGroup.getDbInstance().stream().anyMatch(dbInstance -> null != dbInstance.getPrimary() && dbInstance.getPrimary());
-            if (!existPrimary && !dbGroup.getDbInstance().isEmpty()) {
-                throw new SQLException("Table dble_db_group[" + dbGroup.getName() + "] needs to retain a primary dbInstance", "42S22", ErrorCode.ER_YES);
-            }
-        }
-        Set<DBGroup> removeDBGroupSet = dbGroups.getDbGroup().stream().filter(dbGroup -> dbGroup.getDbInstance().isEmpty()).collect(Collectors.toSet());
-        //check remove empty instance
-        checkDeleteRule(removeDBGroupSet);
         //remove empty instance
         dbGroups.getDbGroup().removeIf(dbGroup -> dbGroup.getDbInstance().isEmpty());
-        dbGroups.encryptPassword();
-        //write to configuration
-        xmlProcess.writeObjToXml(dbGroups, getXmlFilePath(), "db");
+
+        DbleDbGroup.saveDbGroups(dbGroups, getXmlFilePath());
         return affectPks.size();
     }
 
-    private void checkDeleteRule(Set<DBGroup> removeDBGroupSet) {
-        for (DBGroup dbGroup : removeDBGroupSet) {
-            //check user-group
-            DbleRwSplitEntry dbleRwSplitEntry = (DbleRwSplitEntry) ManagerSchemaInfo.getInstance().getTables().get(DbleRwSplitEntry.TABLE_NAME);
-            boolean existUser = dbleRwSplitEntry.getRows().stream().anyMatch(entry -> entry.get(DbleRwSplitEntry.COLUMN_DB_GROUP).equals(dbGroup.getName()));
-            if (existUser) {
-                throw new ConfigException("Cannot delete or update a parent row: a foreign key constraint fails `dble_db_user`(`db_group`) REFERENCES `dble_db_group`(`name`)");
-            }
-            //check sharding_node-group
-            DbleShardingNode dbleShardingNode = (DbleShardingNode) ManagerSchemaInfo.getInstance().getTables().get(DbleShardingNode.TABLE_NAME);
-            boolean existShardingNode = dbleShardingNode.getRows().stream().anyMatch(entry -> entry.get(DbleShardingNode.COLUMN_DB_GROUP).equals(dbGroup.getName()));
-            if (existShardingNode) {
-                throw new ConfigException("Cannot delete or update a parent row: a foreign key constraint fails `dble_sharding_node`(`db_group`) REFERENCES `dble_db_group`(`name`)");
-            }
+    @Override
+    public void afterExecute() {
+        //remove temp dbGroup
+        DbGroups dbGroups = DbleDbGroup.getDbGroups();
+        DbleDbGroup dbleDbGroup = (DbleDbGroup) ManagerSchemaInfo.getInstance().getTables().get(DbleDbGroup.TABLE_NAME);
+        for (DBGroup dbGroup : dbGroups.getDbGroup()) {
+            dbleDbGroup.getTempRowList().removeIf(group -> StringUtil.equals(group.get(DbleDbGroup.COLUMN_NAME), dbGroup.getName()));
         }
     }
 
-    private void decryptPassword(List<LinkedHashMap<String, String>> rows, boolean insertFlag) {
-        for (LinkedHashMap<String, String> row : rows) {
-            checkBooleanVal(row);
-            if ((insertFlag && Boolean.parseBoolean(row.get(COLUMN_ENCRYPT_CONFIGURED))) || !insertFlag) {
-                row.put(COLUMN_PASSWORD_ENCRYPT, DecryptUtil.dbHostDecrypt(true, row.get(COLUMN_NAME),
-                        row.get(COLUMN_USER), row.get(COLUMN_PASSWORD_ENCRYPT)));
+
+    private DBInstance transformRowToDBInstance(LinkedHashMap<String, String> map) {
+        if (null == map || map.isEmpty()) {
+            return null;
+        }
+        checkBooleanVal(map);
+        DBInstance dbInstance = new DBInstance();
+        StringBuilder url = new StringBuilder();
+        List<Property> propertyList = Lists.newArrayList();
+        String key;
+        String entryValue;
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            switch (entry.getKey()) {
+                case COLUMN_NAME:
+                    dbInstance.setName(entry.getValue());
+                    break;
+                case COLUMN_DB_GROUP:
+                    dbInstance.setDbGroup(entry.getValue());
+                    break;
+                case COLUMN_ADDR:
+                case COLUMN_PORT:
+                    url.append(entry.getValue()).append(":");
+                    break;
+                case COLUMN_USER:
+                    dbInstance.setUser(entry.getValue());
+                    break;
+                case COLUMN_PASSWORD_ENCRYPT:
+                    dbInstance.setPassword(entry.getValue());
+                    break;
+                case COLUMN_ENCRYPT_CONFIGURED:
+                    dbInstance.setUsingDecrypt(entry.getValue());
+                    break;
+                case COLUMN_PRIMARY:
+                    dbInstance.setPrimary(!StringUtil.isEmpty(entry.getValue()) && Boolean.parseBoolean(entry.getValue()));
+                    break;
+                case COLUMN_DISABLED:
+                    dbInstance.setDisabled(entry.getValue());
+                    break;
+                case COLUMN_MIN_CONN_COUNT:
+                    if (!StringUtil.isBlank(entry.getValue())) {
+                        dbInstance.setMinCon(IntegerUtil.parseInt(entry.getValue()));
+                    }
+                    if (dbInstance.getMinCon() < 0) {
+                        throw new ConfigException("Column 'min_conn_count' value cannot be less than 0.");
+                    }
+                    break;
+                case COLUMN_MAX_CONN_COUNT:
+                    if (!StringUtil.isBlank(entry.getValue())) {
+                        dbInstance.setMaxCon(IntegerUtil.parseInt(entry.getValue()));
+                    }
+                    if (dbInstance.getMaxCon() < 0) {
+                        throw new ConfigException("Column 'max_conn_count' value cannot be less than 0.");
+                    }
+                    break;
+                case COLUMN_READ_WEIGHT:
+                    if (IntegerUtil.parseInt(Optional.ofNullable(entry.getValue()).orElse("0")) < 0) {
+                        throw new ConfigException("readWeight attribute in dbInstance[" + map.get(COLUMN_NAME) + "] can't be less than 0!");
+                    }
+                    dbInstance.setReadWeight(entry.getValue());
+                    break;
+                case COLUMN_ID:
+                    dbInstance.setId(entry.getValue());
+                    break;
+                case COLUMN_TEST_ON_CREATE:
+                case COLUMN_TEST_ON_BORROW:
+                case COLUMN_TEST_ON_RETURN:
+                case COLUMN_TEST_WHILE_IDLE:
+                    key = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, entry.getKey());
+                    entryValue = entry.getValue();
+                    if (StringUtil.isBlank(entryValue) || (!StringUtil.equalsIgnoreCase(entryValue, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(entryValue, Boolean.TRUE.toString()))) {
+                        throw new ConfigException("Column '" + entry.getKey() + "' values only support 'false' or 'true'.");
+                    }
+                    propertyList.add(new Property(entryValue, key));
+                    break;
+                case COLUMN_CONNECTION_TIMEOUT:
+                case COLUMN_CONNECTION_HEARTBEAT_TIMEOUT:
+                case COLUMN_TIME_BETWEEN_EVICTION_RUNS_MILLIS:
+                case COLUMN_IDLE_TIMEOUT:
+                case COLUMN_HEARTBEAT_PERIOD_MILLIS:
+                case COLUMN_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS:
+                    key = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, entry.getKey());
+                    entryValue = entry.getValue();
+                    if (StringUtil.isBlank(entryValue)) {
+                        throw new ConfigException("Column '" + entry.getKey() + "' should be an integer greater than 0!");
+                    }
+                    if (!LongUtil.isLong(entryValue)) {
+                        throw new ConfigException("property [ " + entry.getKey() + " ] '" + entryValue + "' data type should be long");
+                    } else if (LongUtil.parseLong(entryValue) <= 0) {
+                        throw new ConfigException("property [ " + entry.getKey() + " ] '" + entryValue + "' should be an integer greater than 0!");
+                    }
+                    propertyList.add(new Property(entryValue, key));
+                    break;
+                default:
+                    break;
             }
         }
+        dbInstance.setUrl(url.substring(0, url.length() - 1));
+        dbInstance.setProperty(propertyList);
+        return dbInstance;
     }
 
     private void checkBooleanVal(LinkedHashMap<String, String> row) {
@@ -369,186 +441,12 @@ public class DbleDbInstance extends ManagerWritableTable {
         for (String key : keySet) {
             if (row.containsKey(key) && !StringUtil.isEmpty(row.get(key))) {
                 String value = row.get(key);
-                if (!StringUtil.equalsIgnoreCase(value, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(value, Boolean.TRUE.toString())) {
+                if (StringUtil.isBlank(value) || !StringUtil.equalsIgnoreCase(value, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(value, Boolean.TRUE.toString())) {
                     throw new ConfigException("Column '" + key + "' values only support 'false' or 'true'.");
                 }
             }
         }
     }
-
-
-    public DbGroups transformRow(XmlProcessBase xmlProcess, List<LinkedHashMap<String, String>> changeDbGroupRows, List<LinkedHashMap<String, String>> changeDbInstanceRows) {
-        if (null == xmlProcess) {
-            return null;
-        }
-        DbGroups dbs = null;
-        try {
-            xmlProcess.addParseClass(DbGroups.class);
-            xmlProcess.initJaxbClass();
-            dbs = (DbGroups) xmlProcess.baseParseXmlToBean(ConfigFileName.DB_XML);
-        } catch (JAXBException | XMLStreamException e) {
-            e.printStackTrace();
-        }
-        if (null == dbs) {
-            throw new ConfigException("configuration is empty");
-        }
-        for (DBGroup dbGroup : dbs.getDbGroup()) {
-            for (DBInstance dbInstance : dbGroup.getDbInstance()) {
-                String usingDecrypt = dbInstance.getUsingDecrypt();
-                if (!StringUtil.isEmpty(usingDecrypt) && Boolean.parseBoolean(usingDecrypt)) {
-                    dbInstance.setPassword(DecryptUtil.dbHostDecrypt(true, dbInstance.getName(), dbInstance.getUser(), dbInstance.getPassword()));
-                }
-            }
-        }
-        DbleDbGroup dbleDbGroup = (DbleDbGroup) ManagerSchemaInfo.getInstance().getTables().get(DbleDbGroup.TABLE_NAME);
-        List<LinkedHashMap<String, String>> dbGroupRowList = dbleDbGroup.getRows();
-        for (LinkedHashMap<String, String> dbGroupRow : dbGroupRowList) {
-            DBGroup dbGroup = initDBGroup(dbGroupRow, changeDbGroupRows, dbs);
-            initDBInstance(dbGroupRow, changeDbInstanceRows, dbGroup);
-            dbs.addDbGroup(dbGroup);
-        }
-        dbs.getDbGroup().removeIf(dbGroup -> null == dbGroup.getDbInstance() || dbGroup.getDbInstance().isEmpty());
-        return dbs;
-    }
-
-    private void initDBInstance(LinkedHashMap<String, String> dbGroupRow, List<LinkedHashMap<String, String>> changeDbInstanceRows, DBGroup dbGroup) {
-        if (null == changeDbInstanceRows) {
-            return;
-        }
-        List<LinkedHashMap<String, String>> instanceRowList = changeDbInstanceRows.stream().filter(row -> StringUtil.equals(dbGroupRow.get(DbleDbGroup.COLUMN_NAME), row.get(COLUMN_DB_GROUP))).collect(Collectors.toList());
-        if (!instanceRowList.isEmpty()) {
-            instanceRowList.forEach(instanceRowMap -> {
-                List<Property> propertyList = Lists.newArrayList();
-                String testOnCreate = instanceRowMap.get(COLUMN_TEST_ON_CREATE);
-                if (!StringUtil.isEmpty(testOnCreate)) {
-                    propertyList.add(new Property(testOnCreate, "testOnCreate"));
-                }
-                String testOnBorrow = instanceRowMap.get(COLUMN_TEST_ON_BORROW);
-                if (!StringUtil.isEmpty(testOnBorrow)) {
-                    propertyList.add(new Property(testOnBorrow, "testOnBorrow"));
-                }
-                String testOnReturn = instanceRowMap.get(COLUMN_TEST_ON_RETURN);
-                if (!StringUtil.isEmpty(testOnReturn)) {
-                    propertyList.add(new Property(testOnReturn, "testOnReturn"));
-                }
-                String testWhileIdle = instanceRowMap.get(COLUMN_TEST_WHILE_IDLE);
-                if (!StringUtil.isEmpty(testWhileIdle)) {
-                    propertyList.add(new Property(testWhileIdle, "testWhileIdle"));
-                }
-                String connectionTimeout = instanceRowMap.get(COLUMN_CONNECTION_TIMEOUT);
-                if (!StringUtil.isEmpty(connectionTimeout)) {
-                    propertyList.add(new Property(connectionTimeout, "connectionTimeout"));
-                }
-                String connectionHeartbeatTimeout = instanceRowMap.get(COLUMN_CONNECTION_HEARTBEAT_TIMEOUT);
-                if (!StringUtil.isEmpty(connectionHeartbeatTimeout)) {
-                    propertyList.add(new Property(connectionHeartbeatTimeout, "connectionHeartbeatTimeout"));
-                }
-                String timeBetweenEvictionRunsMillis = instanceRowMap.get(COLUMN_TIME_BETWEEN_EVICTION_RUNS_MILLIS);
-                if (!StringUtil.isEmpty(timeBetweenEvictionRunsMillis)) {
-                    propertyList.add(new Property(timeBetweenEvictionRunsMillis, "timeBetweenEvictionRunsMillis"));
-                }
-                String idleTimeout = instanceRowMap.get(COLUMN_IDLE_TIMEOUT);
-                if (!StringUtil.isEmpty(idleTimeout)) {
-                    propertyList.add(new Property(idleTimeout, "idleTimeout"));
-                }
-                String heartbeatPeriodMillis = instanceRowMap.get(COLUMN_HEARTBEAT_PERIOD_MILLIS);
-                if (!StringUtil.isEmpty(heartbeatPeriodMillis)) {
-                    propertyList.add(new Property(heartbeatPeriodMillis, "heartbeatPeriodMillis"));
-                }
-                String evictorShutdownTimeoutMillis = instanceRowMap.get(COLUMN_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS);
-                if (!StringUtil.isEmpty(evictorShutdownTimeoutMillis)) {
-                    propertyList.add(new Property(evictorShutdownTimeoutMillis, "evictorShutdownTimeoutMillis"));
-                }
-                Integer maxCon = StringUtil.isEmpty(instanceRowMap.get(COLUMN_MAX_CONN_COUNT)) ? null : Integer.valueOf(instanceRowMap.get(COLUMN_MAX_CONN_COUNT));
-                Integer minCon = StringUtil.isEmpty(instanceRowMap.get(COLUMN_MIN_CONN_COUNT)) ? null : Integer.valueOf(instanceRowMap.get(COLUMN_MIN_CONN_COUNT));
-                Boolean primary = StringUtil.isEmpty(instanceRowMap.get(COLUMN_PRIMARY)) ? null : Boolean.valueOf(instanceRowMap.get(COLUMN_PRIMARY));
-                DBInstance dbInstance = new DBInstance(instanceRowMap.get(COLUMN_NAME), instanceRowMap.get(COLUMN_ADDR) + ":" + instanceRowMap.get(COLUMN_PORT),
-                        instanceRowMap.get(COLUMN_PASSWORD_ENCRYPT), instanceRowMap.get(COLUMN_USER), maxCon, minCon, instanceRowMap.get(COLUMN_DISABLED),
-                        instanceRowMap.get(COLUMN_ID), instanceRowMap.get(COLUMN_READ_WEIGHT), primary, propertyList, instanceRowMap.get(COLUMN_ENCRYPT_CONFIGURED));
-                if (dbGroup.getDbInstance().stream().anyMatch(instance -> StringUtil.equals(instance.getName(), dbInstance.getName()))) {
-                    dbGroup.getDbInstance().removeIf(instance -> StringUtil.equals(instance.getName(), dbInstance.getName()));
-                }
-                dbGroup.addDbInstance(dbInstance);
-                changeDbInstanceRows.remove(instanceRowMap);
-            });
-        }
-    }
-
-    private DBGroup initDBGroup(LinkedHashMap<String, String> dbGroupRow, List<LinkedHashMap<String, String>> changeDbGroupRows, DbGroups dbs) {
-        changeDbGroupRows = null != changeDbGroupRows ? changeDbGroupRows : Lists.newArrayList();
-        LinkedHashMap<String, String> finalDbGroupRow = dbGroupRow;
-        Optional<LinkedHashMap<String, String>> changeDbGroupRow = changeDbGroupRows.stream().filter(changeGroupRow -> StringUtil.equals(changeGroupRow.get(DbleDbGroup.COLUMN_NAME), finalDbGroupRow.get(COLUMN_NAME))).findFirst();
-        if (changeDbGroupRow.isPresent()) {
-            dbGroupRow = changeDbGroupRow.get();
-        }
-        Integer timeout = StringUtil.isEmpty(dbGroupRow.get(DbleDbGroup.COLUMN_HEARTBEAT_TIMEOUT)) ? null : Integer.valueOf(dbGroupRow.get(DbleDbGroup.COLUMN_HEARTBEAT_TIMEOUT));
-        Integer errorRetryCount = StringUtil.isEmpty(dbGroupRow.get(DbleDbGroup.COLUMN_HEARTBEAT_RETRY)) ? null : Integer.valueOf(dbGroupRow.get(DbleDbGroup.COLUMN_HEARTBEAT_RETRY));
-        Integer rwSplitMode = StringUtil.isEmpty(dbGroupRow.get(DbleDbGroup.COLUMN_RW_SPLIT_MODE)) ? null : Integer.valueOf(dbGroupRow.get(DbleDbGroup.COLUMN_RW_SPLIT_MODE));
-        Integer delayThreshold = StringUtil.isEmpty(dbGroupRow.get(DbleDbGroup.COLUMN_DELAY_THRESHOLD)) ? null : Integer.valueOf(dbGroupRow.get(DbleDbGroup.COLUMN_DELAY_THRESHOLD));
-        HeartBeat heartBeat = new HeartBeat(dbGroupRow.get(DbleDbGroup.COLUMN_HEARTBEAT_STMT), timeout, errorRetryCount);
-        DBGroup dbGroup = new DBGroup(rwSplitMode, dbGroupRow.get(DbleDbGroup.COLUMN_NAME), delayThreshold, dbGroupRow.get(DbleDbGroup.COLUMN_DISABLE_HA), heartBeat);
-        Optional<DBGroup> first = dbs.getDbGroup().stream().filter(group -> StringUtil.equals(group.getName(), dbGroup.getName())).findFirst();
-        if (first.isPresent()) {
-            DBGroup oldDbGroup = first.get();
-            dbs.getDbGroup().removeIf(group -> StringUtil.equals(group.getName(), dbGroup.getName()));
-            dbGroup.addAllDbInstance(oldDbGroup.getDbInstance());
-        }
-        return dbGroup;
-    }
-
-    private void checkInstanceConnection(DbGroups dbs) {
-        try {
-            for (DBGroup dbGroup : dbs.getDbGroup()) {
-                List<DBInstance> dbInstanceList = dbGroup.getDbInstance();
-                DbInstanceConfig tmpDbInstanceConfig = null;
-                List<DbInstanceConfig> dbInstanceConfigList = Lists.newArrayList();
-                for (DBInstance dbInstance : dbInstanceList) {
-                    String url = dbInstance.getUrl();
-                    int colonIndex = url.indexOf(':');
-                    String ip = url.substring(0, colonIndex).trim();
-                    int port = Integer.parseInt(url.substring(colonIndex + 1).trim());
-                    boolean disabled = !StringUtil.isEmpty(dbInstance.getDisabled()) && Boolean.parseBoolean(dbInstance.getDisabled());
-                    int readWeight = StringUtil.isEmpty(dbInstance.getReadWeight()) ? 0 : Integer.parseInt(dbInstance.getReadWeight());
-                    boolean usingDecrypt = !StringUtil.isEmpty(dbInstance.getUsingDecrypt()) && Boolean.parseBoolean(dbInstance.getUsingDecrypt());
-                    List<Property> propertyList = dbInstance.getProperty();
-                    PoolConfig poolConfig = null;
-                    if (!propertyList.isEmpty()) {
-                        Map<String, String> propertyMap = propertyList.stream().collect(Collectors.toMap(Property::getName, Property::getValue));
-                        poolConfig = new PoolConfig();
-                        ParameterMapping.mapping(poolConfig, propertyMap, null);
-                    }
-                    String password = dbInstance.getPassword();
-                    boolean primary = (null == dbInstance.getPrimary() ? false : dbInstance.getPrimary());
-                    if (primary) {
-                        tmpDbInstanceConfig = new DbInstanceConfig(dbInstance.getName(), ip, port, url, dbInstance.getUser(), password, readWeight, dbInstance.getId(),
-                                disabled, true, dbInstance.getMaxCon(), dbInstance.getMinCon(), poolConfig, usingDecrypt);
-                    } else {
-                        dbInstanceConfigList.add(new DbInstanceConfig(dbInstance.getName(), ip, port, url, dbInstance.getUser(), password, readWeight, dbInstance.getId(),
-                                disabled, false, dbInstance.getMaxCon(), dbInstance.getMinCon(), poolConfig, usingDecrypt));
-                    }
-                }
-                boolean disableHA = !StringUtil.isEmpty(dbGroup.getDisableHA()) && Boolean.parseBoolean(dbGroup.getDisableHA());
-                DbInstanceConfig[] dbInstanceConfigs = dbInstanceConfigList.isEmpty() ? new DbInstanceConfig[0] : dbInstanceConfigList.toArray(new DbInstanceConfig[0]);
-                DbGroupConfig dbGroupConf = new DbGroupConfig(dbGroup.getName(), tmpDbInstanceConfig, dbInstanceConfigs, dbGroup.getDelayThreshold(), disableHA);
-                //test connection
-                PhysicalDbInstance writeSource = new MySQLInstance(dbGroupConf.getWriteInstanceConfig(), dbGroupConf, true);
-                boolean isConnected = writeSource.testConnection();
-                if (!isConnected) {
-                    throw new ConfigException("Can't connect to [" + dbGroupConf.getName() + "," + writeSource.getName() + "," + writeSource.getConfig().getUrl() + "]");
-                }
-                for (DbInstanceConfig readInstanceConfig : dbGroupConf.getReadInstanceConfigs()) {
-                    MySQLInstance readInstance = new MySQLInstance(readInstanceConfig, dbGroupConf, false);
-                    isConnected = readInstance.testConnection();
-                    if (!isConnected) {
-                        throw new ConfigException("Can't connect to [" + dbGroupConf.getName() + "," + readInstance.getName() + "," + readInstance.getConfig().getUrl() + "]");
-                    }
-                }
-            }
-        } catch (IllegalAccessException | InvocationTargetException | IOException e) {
-            throw new ConfigException(e);
-        }
-    }
-
 
     public static String getPasswordEncrypt(String instanceName, String name, String password) {
         try {

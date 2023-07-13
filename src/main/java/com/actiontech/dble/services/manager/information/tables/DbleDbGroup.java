@@ -9,19 +9,25 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
+import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
+import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.HeartBeat;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
+import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import javax.xml.bind.JAXBException;
+import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.*;
@@ -121,17 +127,27 @@ public class DbleDbGroup extends ManagerWritableTable {
         if (dbGroupRows.isEmpty()) {
             return affectPks.size();
         }
-        XmlProcessBase xmlProcess = new XmlProcessBase();
-        DbleDbInstance dbleDbInstance = (DbleDbInstance) ManagerSchemaInfo.getInstance().getTables().get(DbleDbInstance.TABLE_NAME);
-        DbGroups dbs = dbleDbInstance.transformRow(xmlProcess, dbGroupRows, null);
+        List<DBGroup> dbGroupList = affectPks.stream().map(this::transformRowToDBGroup).collect(Collectors.toList());
 
-        dbs.encryptPassword();
-        xmlProcess.writeObjToXml(dbs, getXmlFilePath(), "db");
+        DbGroups dbGroups = getDbGroups();
+        for (DBGroup dbGroup : dbGroupList) {
+            Optional<DBGroup> dbGroupOp = dbGroups.getDbGroup().stream().filter(sourceDbGroup -> StringUtil.equals(sourceDbGroup.getName(), dbGroup.getName())).findFirst();
+            if (!dbGroupOp.isPresent()) {
+                String msg = String.format("this row[%s] does not exist.", dbGroup.getName());
+                throw new SQLException(msg, "42S22", ErrorCode.ER_NO_REFERENCED_ROW_2);
+            }
+            dbGroup.setDbInstance(dbGroupOp.get().getDbInstance());
+            dbGroups.getDbGroup().removeIf(sourceDbGroup -> StringUtil.equals(sourceDbGroup.getName(), dbGroup.getName()));
+            dbGroups.getDbGroup().add(dbGroup);
+        }
+
+
+        DbleDbGroup.saveDbGroups(dbGroups, getXmlFilePath());
         return affectPks.size();
     }
 
     @Override
-    public int deleteRows(Set<LinkedHashMap<String, String>> affectPks) throws SQLException {
+    public int deleteRows(Set<LinkedHashMap<String, String>> affectPks) {
         //check
         checkDeleteRule(affectPks);
         //temp
@@ -146,16 +162,63 @@ public class DbleDbGroup extends ManagerWritableTable {
             return affectPks.size();
         }
 
-        XmlProcessBase xmlProcess = new XmlProcessBase();
-        DbleDbInstance dbleDbInstance = (DbleDbInstance) ManagerSchemaInfo.getInstance().getTables().get(DbleDbInstance.TABLE_NAME);
-        DbGroups dbs = dbleDbInstance.transformRow(xmlProcess, null, null);
+        DbGroups dbGroups = getDbGroups();
+
         for (LinkedHashMap<String, String> affectPk : dbGroupRows) {
-            dbs.getDbGroup().removeIf(dbGroup -> StringUtil.equals(dbGroup.getName(), affectPk.get(COLUMN_NAME)));
+            dbGroups.getDbGroup().removeIf(dbGroup -> StringUtil.equals(dbGroup.getName(), affectPk.get(COLUMN_NAME)));
         }
 
-        dbs.encryptPassword();
-        xmlProcess.writeObjToXml(dbs, getXmlFilePath(), "db");
+        DbleDbGroup.saveDbGroups(dbGroups, getXmlFilePath());
         return affectPks.size();
+    }
+
+    public DBGroup transformRowToDBGroup(LinkedHashMap<String, String> values) {
+        DBGroup dbGroup = new DBGroup();
+        HeartBeat heartbeat = new HeartBeat();
+        dbGroup.setHeartbeat(heartbeat);
+        for (Map.Entry<String, String> latestVal : values.entrySet()) {
+            String key = latestVal.getKey();
+            String value = latestVal.getValue();
+            switch (key) {
+                case COLUMN_NAME:
+                    dbGroup.setName(value);
+                    break;
+                case COLUMN_HEARTBEAT_STMT:
+                    heartbeat.setValue(value);
+                    break;
+                case COLUMN_HEARTBEAT_TIMEOUT:
+                    heartbeat.setTimeout(Integer.parseInt(value));
+                    break;
+                case COLUMN_HEARTBEAT_RETRY:
+                    heartbeat.setErrorRetryCount(Integer.parseInt(value));
+                    break;
+                case COLUMN_RW_SPLIT_MODE:
+                    dbGroup.setRwSplitMode(Integer.parseInt(value));
+                    break;
+                case COLUMN_DELAY_THRESHOLD:
+                    dbGroup.setDelayThreshold(Integer.parseInt(value));
+                    break;
+                case COLUMN_DISABLE_HA:
+                    dbGroup.setDisableHA(value);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return dbGroup;
+    }
+
+
+    public static void saveDbGroups(DbGroups dbGroups, String xmlFilePath) {
+        XmlProcessBase xmlProcess = new XmlProcessBase();
+        xmlProcess.addParseClass(DbGroups.class);
+        try {
+            xmlProcess.initJaxbClass();
+        } catch (JAXBException e) {
+            throw new ConfigException(e);
+        }
+        //write to configuration
+        xmlProcess.writeObjToXml(dbGroups, xmlFilePath, "db");
     }
 
     private void checkDeleteRule(Set<LinkedHashMap<String, String>> affectPks) {
@@ -187,32 +250,54 @@ public class DbleDbGroup extends ManagerWritableTable {
 
     private void checkRule(LinkedHashMap<String, String> row) {
         if (null != row && !row.isEmpty()) {
-            String delayThresholdStr = row.get(COLUMN_DELAY_THRESHOLD);
-            int delayThreshold = StringUtil.isEmpty(delayThresholdStr) ? 0 : Integer.parseInt(delayThresholdStr);
-            String disableHaStr = row.get(COLUMN_DISABLE_HA);
-            if (!StringUtil.isEmpty(disableHaStr) && !StringUtil.equalsIgnoreCase(disableHaStr, Boolean.FALSE.toString()) &&
-                    !StringUtil.equalsIgnoreCase(disableHaStr, Boolean.TRUE.toString())) {
-                throw new ConfigException("Column 'disable_ha' values only support 'false' or 'true'.");
-            }
-            boolean disableHa = !StringUtil.isEmpty(disableHaStr) && Boolean.parseBoolean(disableHaStr);
-            String rwSplitModeStr = row.get(COLUMN_RW_SPLIT_MODE);
-            int rwSplitMode = StringUtil.isEmpty(rwSplitModeStr) ? 0 : Integer.parseInt(rwSplitModeStr);
-            String heartbeatTimeoutStr = row.get(COLUMN_HEARTBEAT_TIMEOUT);
-            int heartbeatTimeout = StringUtil.isEmpty(heartbeatTimeoutStr) ? 0 : Integer.parseInt(heartbeatTimeoutStr);
-            String heartbeatRetryStr = row.get(COLUMN_HEARTBEAT_RETRY);
-            int heartbeatRetry = StringUtil.isEmpty(heartbeatRetryStr) ? 0 : Integer.parseInt(heartbeatRetryStr);
-            DbGroupConfig dbGroupConfig = new DbGroupConfig(row.get(COLUMN_NAME), null, null, delayThreshold, disableHa);
-            dbGroupConfig.setRwSplitMode(rwSplitMode);
-            dbGroupConfig.setHeartbeatSQL(row.get(COLUMN_HEARTBEAT_STMT));
-            dbGroupConfig.setHeartbeatTimeout(heartbeatTimeout * 1000);
-            dbGroupConfig.setErrorRetryCount(heartbeatRetry);
-
-            LinkedHashMap<String, String> map = initMap(dbGroupConfig);
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                if (row.containsKey(entry.getKey())) {
-                    row.put(entry.getKey(), entry.getValue());
+            if (row.containsKey(COLUMN_DISABLE_HA) && !StringUtil.isEmpty(row.get(COLUMN_DISABLE_HA))) {
+                String disableHaStr = row.get(COLUMN_DISABLE_HA);
+                if (!StringUtil.equalsIgnoreCase(disableHaStr, Boolean.FALSE.toString()) &&
+                        !StringUtil.equalsIgnoreCase(disableHaStr, Boolean.TRUE.toString())) {
+                    throw new ConfigException("Column 'disable_ha' values only support 'false' or 'true'.");
                 }
             }
+            if (row.containsKey(COLUMN_RW_SPLIT_MODE) && !StringUtil.isEmpty(row.get(COLUMN_RW_SPLIT_MODE))) {
+                String rwSplitModeStr = row.get(COLUMN_RW_SPLIT_MODE);
+                if (!StringUtil.isBlank(rwSplitModeStr)) {
+                    int rwSplitMode = IntegerUtil.parseInt(rwSplitModeStr);
+                    if (rwSplitMode > 2 || rwSplitMode < 0) {
+                        throw new ConfigException("rwSplitMode should be between 0 and 2!");
+                    }
+                }
+            }
+            checkInterValue(row);
+        }
+    }
+
+    public static DbGroups getDbGroups() {
+        XmlProcessBase xmlProcess = new XmlProcessBase();
+        DbGroups dbs = null;
+        try {
+            xmlProcess.addParseClass(DbGroups.class);
+            xmlProcess.initJaxbClass();
+            dbs = (DbGroups) xmlProcess.baseParseXmlToBean(ConfigFileName.DB_XML);
+        } catch (JAXBException | XMLStreamException e) {
+            e.printStackTrace();
+        }
+        if (null == dbs) {
+            throw new ConfigException("configuration is empty");
+        }
+        return dbs;
+    }
+
+    private void checkInterValue(LinkedHashMap<String, String> row) {
+        String delayThresholdStr = row.get(COLUMN_DELAY_THRESHOLD);
+        String heartbeatTimeoutStr = row.get(COLUMN_HEARTBEAT_TIMEOUT);
+        String heartbeatRetryStr = row.get(COLUMN_HEARTBEAT_RETRY);
+        if (row.containsKey(COLUMN_DELAY_THRESHOLD) && (StringUtil.isBlank(delayThresholdStr) || IntegerUtil.parseInt(delayThresholdStr) < -1)) {
+            throw new ConfigException("Column '" + COLUMN_DELAY_THRESHOLD + "' should be an integer greater than or equal to -1!");
+        }
+        if (row.containsKey(COLUMN_HEARTBEAT_TIMEOUT) && (StringUtil.isBlank(heartbeatTimeoutStr) || IntegerUtil.parseInt(heartbeatTimeoutStr) < 0)) {
+            throw new ConfigException("Column '" + COLUMN_HEARTBEAT_TIMEOUT + "' should be an integer greater than or equal to 0!");
+        }
+        if (row.containsKey(COLUMN_HEARTBEAT_RETRY) && (StringUtil.isBlank(heartbeatRetryStr) || IntegerUtil.parseInt(heartbeatRetryStr) < 0)) {
+            throw new ConfigException("Column '" + COLUMN_HEARTBEAT_RETRY + "' should be an integer greater than or equal to 0!");
         }
     }
 

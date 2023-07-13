@@ -18,6 +18,7 @@ public class Property implements Named {
 
     @XmlValue
     protected String value;
+
     @XmlAttribute(name = "name")
     protected String name;
 

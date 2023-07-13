@@ -3,20 +3,22 @@ package com.actiontech.dble.services.manager.information.tables;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.zkprocess.entity.Users;
+import com.actiontech.dble.cluster.zkprocess.entity.user.RwSplitUser;
+import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.loader.xml.XMLUserLoader;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
-import com.actiontech.dble.util.IPAddressUtil;
-import com.actiontech.dble.util.ResourceUtil;
-import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.*;
 import com.google.common.collect.Maps;
 
+import javax.xml.bind.JAXBException;
+import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.*;
@@ -37,6 +39,7 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
     private static final String COLUMN_MAX_CONN_COUNT = "max_conn_count";
     private static final String COLUMN_BLACKLIST = "blacklist";
     public static final String COLUMN_DB_GROUP = "db_group";
+    public static final String CONSTANT_NO_LIMIT = "no limit";
 
     public DbleRwSplitEntry() {
         super(TABLE_NAME, 10);
@@ -102,7 +105,7 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
                     map.put(COLUMN_CONN_ATTR_KEY, rwSplitUserConfig.getTenant() != null ? "tenant" : null);
                     map.put(COLUMN_CONN_ATTR_VALUE, rwSplitUserConfig.getTenant());
                     map.put(COLUMN_WHITE_IPS, DbleEntry.getWhiteIps(rwSplitUserConfig.getWhiteIPs()));
-                    map.put(COLUMN_MAX_CONN_COUNT, rwSplitUserConfig.getMaxCon() == -1 ? "no limit" : rwSplitUserConfig.getMaxCon() + "");
+                    map.put(COLUMN_MAX_CONN_COUNT, rwSplitUserConfig.getMaxCon() == 0 ? CONSTANT_NO_LIMIT : rwSplitUserConfig.getMaxCon() + "");
                     map.put(COLUMN_BLACKLIST, rwSplitUserConfig.getBlacklist() == null ? null : rwSplitUserConfig.getBlacklist().getName());
                     map.put(COLUMN_DB_GROUP, dbGroupName);
                     list.add(map);
@@ -114,37 +117,167 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
 
     @Override
     public int insertRows(List<LinkedHashMap<String, String>> rows) throws SQLException {
-        for (LinkedHashMap<String, String> row : rows) {
-            check(row);
-        }
-        //write to configuration
-        List<LinkedHashMap<String, String>> tempRowList = rows.stream().map(this::transformRow).collect(Collectors.toList());
-        XMLUserLoader xmlUserLoader = new XMLUserLoader();
-        xmlUserLoader.insertRwSplitUser(tempRowList, getXmlFilePath());
+        List<RwSplitUser> rwSplitUserList = rows.stream().map(this::transformRowToUser).collect(Collectors.toList());
+        Users users = getUser();
+
+        checkLogicalUniqueKeyDuplicate(users, rwSplitUserList);
+
+        users.getUser().addAll(rwSplitUserList);
+
+        saveUsers(users, getXmlFilePath());
         return rows.size();
     }
 
     @Override
     public int updateRows(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws SQLException {
-        check(values);
-        //write to configuration
-        List<LinkedHashMap<String, String>> tempRowList = affectPks.stream().map(this::transformRow).collect(Collectors.toList());
-        XMLUserLoader xmlUserLoader = new XMLUserLoader();
-        xmlUserLoader.updateRwSplitUser(tempRowList, transformRow(values), getXmlFilePath());
+        affectPks.forEach(affectPk -> {
+            if (Boolean.FALSE.toString().equalsIgnoreCase(affectPk.get(COLUMN_ENCRYPT_CONFIGURED))) {
+                String password = DecryptUtil.decrypt(true, affectPk.get(COLUMN_USERNAME), affectPk.get(COLUMN_PASSWORD_ENCRYPT));
+                affectPk.put(COLUMN_PASSWORD_ENCRYPT, password);
+            }
+            affectPk.putAll(values);
+        });
+        List<RwSplitUser> rwSplitUserList = affectPks.stream().map(this::transformRowToUser).collect(Collectors.toList());
+        Users users = getUser();
+        updateList(users, rwSplitUserList, false);
+
+        saveUsers(users, getXmlFilePath());
         return affectPks.size();
     }
 
     @Override
     public int deleteRows(Set<LinkedHashMap<String, String>> affectPks) throws SQLException {
-        //write to configuration
-        List<LinkedHashMap<String, String>> tempRowList = affectPks.stream().map(this::transformRow).collect(Collectors.toList());
-        XMLUserLoader xmlUserLoader = new XMLUserLoader();
-        xmlUserLoader.deleteRwSplitUser(tempRowList, getXmlFilePath());
+        List<RwSplitUser> rwSplitUserList = affectPks.stream().map(this::transformRowToUser).collect(Collectors.toList());
+        Users users = getUser();
+        updateList(users, rwSplitUserList, true);
+
+        saveUsers(users, getXmlFilePath());
         return affectPks.size();
     }
 
 
-    private void check(LinkedHashMap<String, String> tempRowMap) throws SQLException {
+    private void saveUsers(Users users, String xmlFilePath) {
+        XmlProcessBase xmlProcess = new XmlProcessBase();
+        xmlProcess.addParseClass(Users.class);
+        try {
+            xmlProcess.initJaxbClass();
+        } catch (JAXBException e) {
+            throw new ConfigException(e);
+        }
+        xmlProcess.writeObjToXml(users, xmlFilePath, "user");
+    }
+    private Users getUser() {
+        XmlProcessBase xmlParseBase = new XmlProcessBase();
+        // xml file to bean
+        Users usersBean = null;
+        try {
+            xmlParseBase.addParseClass(Users.class);
+            xmlParseBase.initJaxbClass();
+            usersBean = (Users) xmlParseBase.baseParseXmlToBean(ConfigFileName.USER_XML);
+        } catch (JAXBException | XMLStreamException e) {
+            e.printStackTrace();
+        }
+        if (null == usersBean) {
+            throw new ConfigException("configuration is empty");
+        }
+        return usersBean;
+    }
+
+    private void updateList(Users users, List<RwSplitUser> rwSplitUserList, boolean isDelete) {
+        for (RwSplitUser rwSplitUser : rwSplitUserList) {
+            for (int i = 0; i < users.getUser().size(); i++) {
+                Object obj = users.getUser().get(i);
+                if (obj instanceof RwSplitUser) {
+                    RwSplitUser sourceUser = (RwSplitUser) obj;
+                    if (StringUtil.equals(sourceUser.getName(), rwSplitUser.getName()) && StringUtil.equals(sourceUser.getTenant(), rwSplitUser.getTenant())) {
+                        if (!isDelete) {
+                            users.getUser().set(i, rwSplitUser);
+                        } else {
+                            users.getUser().remove(i);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void checkLogicalUniqueKeyDuplicate(Users users, List<RwSplitUser> rwSplitUserList) throws SQLException {
+        List<RwSplitUser> sourceList = users.getUser().stream().filter(user -> user instanceof RwSplitUser).map(user -> (RwSplitUser) user).collect(Collectors.toList());
+        for (RwSplitUser rwSplitUser : rwSplitUserList) {
+            boolean isExist = sourceList.stream().anyMatch(sourceUser -> StringUtil.equals(sourceUser.getName(), rwSplitUser.getName()) && StringUtil.equals(sourceUser.getTenant(), rwSplitUser.getTenant()));
+            if (isExist) {
+                String msg = String.format("Duplicate entry '%s-%s-%s'for logical unique '%s-%s-%s'", rwSplitUser.getName(),
+                        StringUtil.isEmpty(rwSplitUser.getTenant()) ? null : "tenant", rwSplitUser.getTenant(), COLUMN_USERNAME, COLUMN_CONN_ATTR_KEY, COLUMN_CONN_ATTR_VALUE);
+                throw new SQLException(msg, "42S22", ErrorCode.ER_DUP_ENTRY);
+            }
+        }
+    }
+
+
+    private void checkBooleanVal(LinkedHashMap<String, String> tempRowMap) {
+        if (tempRowMap.containsKey(COLUMN_ENCRYPT_CONFIGURED) && !StringUtil.isEmpty(tempRowMap.get(COLUMN_ENCRYPT_CONFIGURED))) {
+            String encryptConfigured = tempRowMap.get(COLUMN_ENCRYPT_CONFIGURED);
+            if (!StringUtil.equalsIgnoreCase(encryptConfigured, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(encryptConfigured, Boolean.TRUE.toString())) {
+                throw new ConfigException("Column 'encrypt_configured' values only support 'false' or 'true'.");
+            }
+        }
+        if (!StringUtil.isBlank(tempRowMap.get(COLUMN_CONN_ATTR_KEY))) {
+            if (!StringUtil.equals(tempRowMap.get(COLUMN_CONN_ATTR_KEY), "tenant")) {
+                throw new ConfigException("'conn_attr_key' value is ['tenant',null].");
+            }
+            if (StringUtil.isBlank(tempRowMap.get(COLUMN_CONN_ATTR_VALUE))) {
+                throw new ConfigException("'conn_attr_key' and 'conn_attr_value' are used together.");
+            }
+        } else {
+            if (!StringUtil.isBlank(tempRowMap.get(COLUMN_CONN_ATTR_VALUE))) {
+                throw new ConfigException("'conn_attr_key' and 'conn_attr_value' are used together.");
+            }
+        }
+    }
+
+    private RwSplitUser transformRowToUser(LinkedHashMap<String, String> map) {
+        if (null == map || map.isEmpty()) {
+            return null;
+        }
+        check(map);
+        RwSplitUser rwSplitUser = new RwSplitUser();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            switch (entry.getKey()) {
+                case COLUMN_USERNAME:
+                    rwSplitUser.setName(entry.getValue());
+                    break;
+                case COLUMN_PASSWORD_ENCRYPT:
+                    rwSplitUser.setPassword(entry.getValue());
+                    break;
+                case COLUMN_ENCRYPT_CONFIGURED:
+                    rwSplitUser.setUsingDecrypt(entry.getValue());
+                    break;
+                case COLUMN_CONN_ATTR_VALUE:
+                    rwSplitUser.setTenant(entry.getValue());
+                    break;
+                case COLUMN_WHITE_IPS:
+                    rwSplitUser.setWhiteIPs(entry.getValue());
+                    break;
+                case COLUMN_MAX_CONN_COUNT:
+                    if (!StringUtil.isBlank(entry.getValue())) {
+                        rwSplitUser.setMaxCon(IntegerUtil.parseInt(entry.getValue().replace(CONSTANT_NO_LIMIT, "0")));
+                    }
+                    if (rwSplitUser.getMaxCon() < 0) {
+                        throw new ConfigException("Column 'max_conn_count' value cannot be less than 0.");
+                    }
+                    break;
+                case COLUMN_DB_GROUP:
+                    rwSplitUser.setDbGroup(entry.getValue());
+                    break;
+                default:
+                    break;
+            }
+        }
+        return rwSplitUser;
+    }
+
+    private void check(LinkedHashMap<String, String> tempRowMap) {
         //check whiteIPs
         checkWhiteIPs(tempRowMap);
         //check db_group
@@ -153,11 +286,12 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
         checkBooleanVal(tempRowMap);
     }
 
-    private void checkBooleanVal(LinkedHashMap<String, String> tempRowMap) {
-        if (tempRowMap.containsKey(COLUMN_ENCRYPT_CONFIGURED) && !StringUtil.isEmpty(tempRowMap.get(COLUMN_ENCRYPT_CONFIGURED))) {
-            String encryptConfigured = tempRowMap.get(COLUMN_ENCRYPT_CONFIGURED);
-            if (!StringUtil.equalsIgnoreCase(encryptConfigured, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(encryptConfigured, Boolean.TRUE.toString())) {
-                throw new ConfigException("Column 'encrypt_configured' values only support 'false' or 'true'.");
+    private void checkDbGroup(LinkedHashMap<String, String> tempRowMap) {
+        if (tempRowMap.containsKey(COLUMN_DB_GROUP)) {
+            Map<String, PhysicalDbGroup> dbGroupMap = DbleServer.getInstance().getConfig().getDbGroups();
+            boolean isExist = dbGroupMap.keySet().stream().anyMatch(groupName -> StringUtil.equals(groupName, tempRowMap.get(COLUMN_DB_GROUP)));
+            if (!isExist) {
+                throw new ConfigException("Column 'db_group' value '" + tempRowMap.get(COLUMN_DB_GROUP) + "' does not exist or not active.");
             }
         }
     }
@@ -167,44 +301,5 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
         if (tempRowMap.containsKey(COLUMN_WHITE_IPS) && !StringUtil.isEmpty(tempRowMap.get(COLUMN_WHITE_IPS))) {
             IPAddressUtil.checkWhiteIPs(tempRowMap.get(COLUMN_WHITE_IPS));
         }
-    }
-
-    private void checkDbGroup(LinkedHashMap<String, String> tempRowMap) throws SQLException {
-        if (tempRowMap.containsKey(COLUMN_DB_GROUP)) {
-            Map<String, PhysicalDbGroup> dbGroupMap = DbleServer.getInstance().getConfig().getDbGroups();
-            boolean isExist = dbGroupMap.keySet().stream().anyMatch(groupName -> StringUtil.equals(groupName, tempRowMap.get(COLUMN_DB_GROUP)));
-            if (!isExist) {
-                throw new SQLException("Column 'db_group' value '" + tempRowMap.get(COLUMN_DB_GROUP) + "' does not exist or not active.", "42S22", ErrorCode.ER_ERROR_ON_WRITE);
-            }
-        }
-    }
-
-    private LinkedHashMap<String, String> transformRow(LinkedHashMap<String, String> map) {
-        if (null == map || map.isEmpty()) {
-            return null;
-        }
-        LinkedHashMap<String, String> xmlMap = Maps.newLinkedHashMap();
-        if (null != map.get(COLUMN_USERNAME)) {
-            xmlMap.put("name", map.get(COLUMN_USERNAME));
-        }
-        if (null != map.get(COLUMN_PASSWORD_ENCRYPT)) {
-            xmlMap.put("password", map.get(COLUMN_PASSWORD_ENCRYPT));
-        }
-        if (null != map.get(COLUMN_WHITE_IPS)) {
-            xmlMap.put("whiteIPs", map.get(COLUMN_WHITE_IPS));
-        }
-        if (null != map.get(COLUMN_MAX_CONN_COUNT)) {
-            xmlMap.put("maxCon", map.get(COLUMN_MAX_CONN_COUNT));
-        }
-        if (null != map.get(COLUMN_CONN_ATTR_VALUE)) {
-            xmlMap.put("tenant", map.get(COLUMN_CONN_ATTR_VALUE));
-        }
-        if (null != map.get(COLUMN_DB_GROUP)) {
-            xmlMap.put("dbGroup", map.get(COLUMN_DB_GROUP));
-        }
-        if (null != map.get(COLUMN_ENCRYPT_CONFIGURED)) {
-            xmlMap.put("usingDecrypt", map.get(COLUMN_ENCRYPT_CONFIGURED));
-        }
-        return xmlMap;
     }
 }

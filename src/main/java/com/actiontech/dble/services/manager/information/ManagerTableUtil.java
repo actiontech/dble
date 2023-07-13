@@ -23,6 +23,8 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
+
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -41,6 +43,11 @@ public final class ManagerTableUtil {
         } else if (valueExpr instanceof SQLCharExpr) {
             SQLCharExpr charExpr = (SQLCharExpr) valueExpr;
             value = charExpr.getText();
+            if (StringUtil.isBlank(value) || StringUtil.equalsIgnoreCase(value, "null")) {
+                throw new SQLNonTransientException("Not Supported of Value EXPR :" + valueExpr.toString());
+            }
+        } else if (valueExpr instanceof SQLNullExpr) {
+            value = null;
         } else {
             throw new SQLNonTransientException("Not Supported of Value EXPR :" + valueExpr.toString());
         }
@@ -98,8 +105,8 @@ public final class ManagerTableUtil {
                     String value = null == row.getValue(i) ? null : new String(row.getValue(i), charset);
                     affectPk.put(columnName, value);
                     if (null != values) {
-                        boolean match = values.entrySet().stream().anyMatch(valueEntry -> !StringUtil.equals(affectPk.get(valueEntry.getKey()), valueEntry.getValue()));
-                        if (!match) {
+                        boolean isSkipRow = values.entrySet().stream().allMatch(valueEntry -> affectPk.containsKey(valueEntry.getKey()) && StringUtil.equals(affectPk.get(valueEntry.getKey()), valueEntry.getValue()));
+                        if (isSkipRow) {
                             breakFlag = true;
                             break;
                         }

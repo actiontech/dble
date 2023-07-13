@@ -59,7 +59,9 @@ public final class InsertHandler {
             service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
             return;
         }
-        int rowSize;
+        int rowSize = 0;
+        boolean isSuccess = true;
+        String errorMsg = null;
         try {
             rows = managerTable.makeInsertRows(columns, insert.getValuesList());
             managerTable.checkPrimaryKeyDuplicate(rows);
@@ -67,26 +69,33 @@ public final class InsertHandler {
             if (rowSize != 0) {
                 ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()));
             }
+            managerTable.afterExecute();
         } catch (SQLException e) {
-            service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
-            return;
+            isSuccess = false;
+            errorMsg = e.getMessage();
         } catch (ConfigException e) {
-            service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
-            return;
+            isSuccess = false;
+            errorMsg = "Insert failure.The reason is " + e.getMessage();
         } catch (Exception e) {
+            isSuccess = false;
             if (e.getCause() instanceof ConfigException) {
                 //reload fail
+                errorMsg = "Insert failure.The reason is " + e.getMessage();
+                LOGGER.warn("Insert failure.The reason is ", e);
                 handleConfigException(e, service, managerTable);
             } else {
-                service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+                errorMsg = "unknown error:" + e.getMessage();
                 LOGGER.warn("unknown error:", e);
             }
-            return;
         } finally {
             managerTable.deleteBackupFile();
             managerTable.getLock().unlock();
         }
-        writeOkPacket(1, rowSize, managerTable.getMsg(), service);
+        if (isSuccess) {
+            writeOkPacket(1, rowSize, managerTable.getMsg(), service);
+        } else {
+            service.writeErrMessage(ErrorCode.ER_YES, errorMsg);
+        }
     }
 
     private List<String> getColumn(MySqlInsertStatement insert, ManagerWritableTable managerTable, ManagerService service) {
@@ -180,9 +189,7 @@ public final class InsertHandler {
         try {
             managerTable.rollbackXmlFile();
         } catch (IOException ioException) {
-            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
-            return;
+            LOGGER.warn("unknown error:", e);
         }
-        service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
     }
 }

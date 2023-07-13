@@ -106,20 +106,24 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
         for (SQLInsertStatement.ValuesClause valuesClause : values) {
             List<SQLExpr> value = valuesClause.getValues();
             LinkedHashMap<String, String> row = new LinkedHashMap<>();
-            int index = 0;
+            int index;
             for (Map.Entry<String, ColumnMeta> column : columns.entrySet()) {
                 String columnName = column.getKey();
                 String insertColumn;
-                if (insertColumns.size() > index && columnName.equals(insertColumn = insertColumns.get(index))) {
-                    String insertColumnVal = ManagerTableUtil.valueToString(value.get(index));
+                index = insertColumns.indexOf(columnName);
+                String insertColumnVal;
+                if (-1 != index && insertColumns.size() > index && columnName.equals(insertColumn = insertColumns.get(index))) {
+                    insertColumnVal = ManagerTableUtil.valueToString(value.get(index));
                     if (this.notWritableColumnSet.contains(columnName) && !StringUtil.isEmpty(insertColumnVal)) {
                         throw new SQLException("Column '" + insertColumn + "' is not writable", "42S22", ErrorCode.ER_ERROR_ON_WRITE);
                     }
-                    row.put(columnName, insertColumnVal);
-                    index++;
+                    if (null == insertColumnVal) {
+                        insertColumnVal = column.getValue().getDefaultVal();
+                    }
                 } else {
-                    row.put(columnName, column.getValue().getDefaultVal());
+                    insertColumnVal = column.getValue().getDefaultVal();
                 }
+                row.put(columnName, insertColumnVal);
             }
             lst.add(row);
         }
@@ -152,7 +156,7 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
             String pkValue = pk.toString();
             if (pks.contains(pkValue)) {
                 throw new SQLException("Duplicate entry '" + pkValue + "' for key 'PRIMARY'", "23000", ErrorCode.ER_DUP_ENTRY);
-            } else {
+            } else if (!StringUtil.isBlank(pkValue) && !StringUtil.equalsIgnoreCase(pkValue, "null")) {
                 pks.add(pkValue);
             }
         }
@@ -195,5 +199,8 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
         if (tempFile.exists()) {
             tempFile.delete();
         }
+    }
+
+    public void afterExecute() {
     }
 }

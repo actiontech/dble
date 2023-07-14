@@ -14,6 +14,7 @@ import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
+import com.actiontech.dble.util.CollectionUtil;
 
 import java.util.*;
 
@@ -54,13 +55,16 @@ public final class FilterUtils {
                 }
 
                 Map<String, List<Item>> itemMap = groupByReferTable(filter, saveSet);
-
-                for (Map.Entry<String, List<Item>> entry : itemMap.entrySet()) {
-                    ItemCondOr x = new ItemCondOr(entry.getValue());
-                    x.getReferTables().addAll(entry.getValue().get(0).getReferTables());
-                    filterList.add(x);
+                if (!CollectionUtil.isEmpty(itemMap)) {
+                    for (Map.Entry<String, List<Item>> entry : itemMap.entrySet()) {
+                        ItemCondOr x = new ItemCondOr(entry.getValue());
+                        x.getReferTables().addAll(entry.getValue().get(0).getReferTables());
+                        x.setWithUnValAble(true);
+                        filterList.add(x);
+                    }
+                } else {
+                    filterList.add(cond);
                 }
-                filterList.add(cond);
             } else {
                 filterList.add(cond);
             }

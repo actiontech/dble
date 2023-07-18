@@ -37,6 +37,7 @@ public final class ManagerSchemaInfo {
         registerTable(new DbleFrontConnections());
         registerTable(new DbleBackendConnections());
         registerTable(new DbleShardingNode());
+        registerTable(new DbleApNode());
         registerTable(new DbleSchema());
         registerTable(new DbleThreadUsage());
         registerTable(new DbleEntry());

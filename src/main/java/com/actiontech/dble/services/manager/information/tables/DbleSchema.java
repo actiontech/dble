@@ -25,12 +25,14 @@ public class DbleSchema extends ManagerBaseTable {
 
     private static final String COLUMN_FUNCTION = "function";
 
+    private static final String COLUMN_AP_NODE = "ap_node";
+
     private static final String COLUMN_SQL_MAX_LIMIT = "sql_max_limit";
 
     private static final String COLUMN_LOGICAL_CREATE_AND_DROP = "logical_create_and_drop";
 
     public DbleSchema() {
-        super(TABLE_NAME, 5);
+        super(TABLE_NAME, 6);
     }
 
     @Override
@@ -43,6 +45,9 @@ public class DbleSchema extends ManagerBaseTable {
 
         columns.put(COLUMN_FUNCTION, new ColumnMeta(COLUMN_FUNCTION, "varchar(64)", true));
         columnsType.put(COLUMN_FUNCTION, Fields.FIELD_TYPE_VAR_STRING);
+
+        columns.put(COLUMN_AP_NODE, new ColumnMeta(COLUMN_AP_NODE, "varchar(64)", true));
+        columnsType.put(COLUMN_AP_NODE, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_SQL_MAX_LIMIT, new ColumnMeta(COLUMN_SQL_MAX_LIMIT, "int(11)", true));
         columnsType.put(COLUMN_SQL_MAX_LIMIT, Fields.FIELD_TYPE_LONG);
@@ -60,6 +65,7 @@ public class DbleSchema extends ManagerBaseTable {
             map.put(COLUMN_NAME, e.getName());
             map.put(COLUMN_SHARDING_NODE, e.getDefaultShardingNodes() == null ? null : String.join(",", e.getDefaultShardingNodes()));
             map.put(COLUMN_FUNCTION, e.getFunction() == null ? "-" : e.getFunction().getName());
+            map.put(COLUMN_AP_NODE, e.getDefaultApNode());
             map.put(COLUMN_SQL_MAX_LIMIT, String.valueOf(e.getDefaultMaxLimit()));
             map.put(COLUMN_LOGICAL_CREATE_AND_DROP, e.isLogicalCreateADrop() + "");
             return map;

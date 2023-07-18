@@ -33,6 +33,7 @@ public final class ParameterMapping {
     private static List<String> errorParameters = new ArrayList<>();
     private static final Map<String, String> COMPATIBLE_MAP = new HashMap<>();
     private static Set<String> errorCompatibleSet = new HashSet<>();
+    private static final Set<String> ON_OFF_SET = new HashSet<>();
 
 
     static {
@@ -42,6 +43,40 @@ public final class ParameterMapping {
         COMPATIBLE_MAP.put("frontWorker", "processorExecutor");
         COMPATIBLE_MAP.put("backendWorker", "backendProcessorExecutor");
         COMPATIBLE_MAP.put("writeToBackendWorker", "writeToBackendExecutor");
+
+
+        ON_OFF_SET.add("useCompression");
+        ON_OFF_SET.add("usingAIO");
+        ON_OFF_SET.add("useThreadUsageStat");
+        ON_OFF_SET.add("usePerformanceMode");
+        ON_OFF_SET.add("useCostTimeStat");
+        ON_OFF_SET.add("autocommit");
+        ON_OFF_SET.add("checkTableConsistency");
+        ON_OFF_SET.add("recordTxn");
+        ON_OFF_SET.add("useSqlStat");
+        ON_OFF_SET.add("frontSocketNoDelay");
+        ON_OFF_SET.add("backSocketNoDelay");
+        ON_OFF_SET.add("enableGeneralLog");
+        ON_OFF_SET.add("enableBatchLoadData");
+        ON_OFF_SET.add("enableRoutePenetration");
+        ON_OFF_SET.add("enableAlert");
+        ON_OFF_SET.add("enableStatistic");
+        ON_OFF_SET.add("enableSessionActiveRatioStat");
+        ON_OFF_SET.add("enableConnectionAssociateThread");
+        ON_OFF_SET.add("enableAsyncRelease");
+        ON_OFF_SET.add("enableMemoryBufferMonitor");
+        ON_OFF_SET.add("enableMemoryBufferMonitorRecordPool");
+        ON_OFF_SET.add("enableSlowLog");
+        ON_OFF_SET.add("useCostTimeStat");
+
+        ON_OFF_SET.add("capClientFoundRows");
+        ON_OFF_SET.add("useJoinStrategy");
+        ON_OFF_SET.add("enableCursor");
+        ON_OFF_SET.add("enableFlowControl");
+        ON_OFF_SET.add("useOuterHa");
+        ON_OFF_SET.add("useNewJoinOptimizer");
+        ON_OFF_SET.add("inSubQueryTransformToJoin");
+        ON_OFF_SET.add("closeHeartBeatRecord");
     }
 
     public static void mapping(Object target, Properties src, ProblemReporter problemReporter) throws IllegalAccessException,
@@ -69,6 +104,7 @@ public final class ParameterMapping {
             }
             if (isPrimitiveType(cls)) {
                 try {
+                    valStr = onOffProcess(name, cls, valStr);
                     value = convert(cls, valStr);
                 } catch (NumberFormatException nfe) {
                     String propertyName = pd.getName();
@@ -124,6 +160,7 @@ public final class ParameterMapping {
             }
             if (isPrimitiveType(cls)) {
                 try {
+                    valStr = onOffProcess(propertyName, cls, valStr);
                     value = convert(cls, valStr);
                 } catch (NumberFormatException nfe) {
                     String msg = getTypeErrorMessage(propertyName, valStr, cls);
@@ -260,6 +297,38 @@ public final class ParameterMapping {
         return valStr;
     }
 
+    private static String onOffProcess(String name, Class<?> cls, String val) {
+        String value = val;
+        if (!ON_OFF_SET.contains(name)) {
+            return value;
+        }
+        if (!cls.equals(Integer.TYPE) && !cls.equals(Boolean.TYPE)) {
+            throw new NumberFormatException("parameter " + name + " is not boolean value or Integer value");
+        }
+        int valInteger;
+        boolean valBoolean;
+        if (BooleanUtil.isBoolean(val)) {
+            valBoolean = BooleanUtil.parseBoolean(val);
+            valInteger = booleanToInt(valBoolean);
+        } else {
+            valInteger = Integer.parseInt(val);
+            checkOnOffInteger(valInteger);
+            valBoolean = intToBoolean(valInteger);
+        }
+        if (cls.equals(Integer.TYPE)) {
+            value = String.valueOf(valInteger);
+        } else {
+            value = String.valueOf(valBoolean);
+        }
+        return value;
+    }
+
+    private static void checkOnOffInteger(int valInteger) {
+        if (valInteger < 0 || valInteger > 1) {
+            throw new NumberFormatException("value " + valInteger + " is illegal");
+        }
+    }
+
     public static String getErrorCompatibleMessage(String name) {
         String message = "";
         if (errorCompatibleSet.contains(name)) {
@@ -272,8 +341,20 @@ public final class ParameterMapping {
     private static String getTypeErrorMessage(String name, String values, Class<?> cls) {
         String message = getErrorCompatibleMessage(name);
         StringBuilder sb = new StringBuilder(message);
-        sb.append("property [ ").append(name).append(" ] '").append(values).append("' data type should be ").append(cls.toString());
+        if (ON_OFF_SET.contains(name)) {
+            sb.append("check the property [ ").append(name).append(" ] '").append(values).append("' data type or value");
+        } else {
+            sb.append("property [ ").append(name).append(" ] '").append(values).append("' data type should be ").append(cls.toString());
+        }
         return sb.toString();
+    }
+
+    private static boolean intToBoolean(int num) {
+        return num != 0;
+    }
+
+    private static int booleanToInt(boolean bool) {
+        return bool ? 1 : 0;
     }
 
 }

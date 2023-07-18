@@ -28,12 +28,13 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class GetNodeTablesHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(GetNodeTablesHandler.class);
     protected static final String SQL = "show full tables where Table_type ='BASE TABLE' ";
+    protected static final String CLICKHOUSE_SQL = "show tables ";
     private static final String SQL_WITH_VIEW = "show full tables ";
     protected String shardingNode;
     protected boolean isFinished = false;
     protected Lock lock = new ReentrantLock();
     protected Condition notify = lock.newCondition();
-    private String sql = SQL;
+    protected String sql = SQL;
 
     GetNodeTablesHandler(String shardingNode, boolean skipView) {
         this.shardingNode = shardingNode;
@@ -74,7 +75,7 @@ public abstract class GetNodeTablesHandler {
         }
     }
 
-    private class MySQLShowTablesListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
+    protected class MySQLShowTablesListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
         private String mysqlShowTableCol;
         private PhysicalDbInstance ds;
         private String schema;

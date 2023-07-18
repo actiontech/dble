@@ -92,4 +92,8 @@ public final class AlertUtil {
     public static String getTableLackKey(String node, String table) {
         return "shardingNode[" + node + "]:Table[" + table + "]";
     }
+
+    public static String getTableLackKey2(String node, String table) {
+        return "apNode[" + node + "]:Table[" + table + "]";
+    }
 }

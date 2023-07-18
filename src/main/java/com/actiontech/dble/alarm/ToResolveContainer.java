@@ -18,6 +18,7 @@ public final class ToResolveContainer {
     public static final Set<String> TABLE_LACK = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     public static final Set<String> GLOBAL_TABLE_CONSISTENCY = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     public static final Set<String> SHARDING_NODE_LACK = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    public static final Set<String> AP_NODE_LACK = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     public static final Set<String> CREATE_CONN_FAIL = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     public static final Set<String> REACH_MAX_CON = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     public static final Set<String> XA_WRITE_CHECK_POINT_FAIL = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());

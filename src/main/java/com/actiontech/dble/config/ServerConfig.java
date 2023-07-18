@@ -17,6 +17,7 @@ import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.Shardings;
 import com.actiontech.dble.cluster.zkprocess.entity.Users;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
+import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
@@ -37,6 +38,7 @@ import com.actiontech.dble.services.manager.response.ChangeItem;
 import com.actiontech.dble.services.manager.response.ChangeItemType;
 import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.*;
+import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.collect.Maps;
@@ -90,7 +92,7 @@ public class ServerConfig {
         this.funcNodeERMap = confInitNew.getFuncNodeERMap();
         this.functions = confInitNew.getFunctions();
         this.fullyConfigured = confInitNew.isFullyConfigured();
-        ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
+        ConfigUtil.setSchemasForPool(dbGroups, getAllNodes());
 
         this.reloadTime = TimeUtil.currentTimeMillis();
 
@@ -114,7 +116,7 @@ public class ServerConfig {
         this.funcNodeERMap = confInit.getFuncNodeERMap();
         this.functions = confInit.getFunctions();
         this.fullyConfigured = confInit.isFullyConfigured();
-        ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
+        ConfigUtil.setSchemasForPool(dbGroups, getAllNodes());
 
         this.reloadTime = TimeUtil.currentTimeMillis();
 
@@ -134,7 +136,7 @@ public class ServerConfig {
         this.funcNodeERMap = confInitNew.getFuncNodeERMap();
         this.functions = confInitNew.getFunctions();
         this.fullyConfigured = confInitNew.isFullyConfigured();
-        ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
+        ConfigUtil.setSchemasForPool(dbGroups, getAllNodes());
 
         this.reloadTime = TimeUtil.currentTimeMillis();
 
@@ -207,6 +209,14 @@ public class ServerConfig {
         return apNodes;
     }
 
+    public Map<String, BaseNode> getAllNodes() {
+        waitIfChanging();
+        Map<String, BaseNode> all = new HashMap<>(shardingNodes);
+        if (!CollectionUtil.isEmpty(apNodes))
+            all.putAll(apNodes);
+        return all;
+    }
+
     public Map<String, PhysicalDbGroup> getDbGroups() {
         waitIfChanging();
         return dbGroups;
@@ -232,21 +242,21 @@ public class ServerConfig {
     }
 
     public boolean reload(Map<UserName, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
-                          Map<String, ShardingNode> newShardingNodes, Map<String, PhysicalDbGroup> newDbGroups,
+                          Map<String, ShardingNode> newShardingNodes, Map<String, ApNode> newApNodes, Map<String, PhysicalDbGroup> newDbGroups,
                           Map<String, PhysicalDbGroup> oldDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           Map<String, Set<ERTable>> newFuncNodeERMap,
                           SystemVariables newSystemVariables, boolean isFullyConfigured,
                           final int loadAllMode, Map<String, Properties> newBlacklistConfig, Map<String, AbstractPartitionAlgorithm> newFunctions,
                           RawJson userJsonConfig, RawJson sequenceJsonConfig, RawJson shardingJsonConfig, RawJson dbJsonConfig, List<ChangeItem> changeItemList) throws SQLNonTransientException {
-        boolean result = apply(newUsers, newSchemas, newShardingNodes, newDbGroups, oldDbGroups, newErRelations, newFuncNodeERMap,
+        boolean result = apply(newUsers, newSchemas, newShardingNodes, newApNodes, newDbGroups, oldDbGroups, newErRelations, newFuncNodeERMap,
                 newSystemVariables, isFullyConfigured, loadAllMode, newBlacklistConfig, newFunctions, userJsonConfig,
                 sequenceJsonConfig, shardingJsonConfig, dbJsonConfig, changeItemList);
         this.reloadTime = TimeUtil.currentTimeMillis();
         return result;
     }
 
-    private void calcDiffForMetaData(Map<String, SchemaConfig> newSchemas, Map<String, ShardingNode> newShardingNodes, int loadAllMode,
+    private void calcDiffForMetaData(Map<String, SchemaConfig> newSchemas, Map<String, ShardingNode> newShardingNodes, Map<String, ApNode> newApNodes, int loadAllMode,
                                      List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables,
                                      List<String> delSchema, List<String> reloadSchema) {
         for (Map.Entry<String, SchemaConfig> schemaEntry : this.schemas.entrySet()) {
@@ -260,20 +270,22 @@ public class ServerConfig {
                     delSchema.add(oldSchema);
                     reloadSchema.add(oldSchema);
                 } else {
-                    if (newSchemaConfig.getDefaultShardingNodes() != null) { // reload config_all
+                    if (newSchemaConfig.getDefaultShardingNodes() != null || !StringUtil.isBlank(newSchemaConfig.getDefaultApNode())) { // reload config_all
                         //check shardingNode and dbGroup change
                         List<String> strShardingNodes = newSchemaConfig.getDefaultShardingNodes();
-                        if (isShardingNodeChanged(strShardingNodes, newShardingNodes)) {
+                        String strApNode = newSchemaConfig.getDefaultApNode();
+                        if (isShardingNodeChanged(strShardingNodes, newShardingNodes) || isApNodeChanged(strApNode, newApNodes)) {
                             delSchema.add(oldSchema);
                             reloadSchema.add(oldSchema);
                             continue;
-                        } else if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 && isDbGroupChanged(strShardingNodes, newShardingNodes)) { // reload @@config_all not contains -s
+                        } else if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 &&
+                                (isDbGroupChanged(strShardingNodes, newShardingNodes) || isDbGroupChangedByApNode(strApNode, newApNodes))) { // reload @@config_all not contains -s
                             delSchema.add(oldSchema);
                             reloadSchema.add(oldSchema);
                             continue;
                         }
                     }
-                    calcTableDiffForMetaData(newShardingNodes, loadAllMode, delTables, reloadTables, oldSchema, newSchemaConfig, oldSchemaConfig);
+                    calcTableDiffForMetaData(newShardingNodes, newApNodes, loadAllMode, delTables, reloadTables, oldSchema, newSchemaConfig, oldSchemaConfig);
                 }
             }
         }
@@ -287,7 +299,8 @@ public class ServerConfig {
         }
     }
 
-    private void calcTableDiffForMetaData(Map<String, ShardingNode> newShardingNodes, int loadAllMode, List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables, String oldSchema, SchemaConfig newSchemaConfig, SchemaConfig oldSchemaConfig) {
+    private void calcTableDiffForMetaData(Map<String, ShardingNode> newShardingNodes, Map<String, ApNode> newApNodes, int loadAllMode,
+                                          List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables, String oldSchema, SchemaConfig newSchemaConfig, SchemaConfig oldSchemaConfig) {
         for (Map.Entry<String, BaseTableConfig> tableEntry : oldSchemaConfig.getTables().entrySet()) {
             String oldTable = tableEntry.getKey();
             BaseTableConfig newTableConfig = newSchemaConfig.getTables().get(oldTable);
@@ -339,6 +352,17 @@ public class ServerConfig {
         return false;
     }
 
+    private boolean isApNodeChanged(String strApNode, Map<String, ApNode> newApNodes) {
+        ApNode newDBNode = newApNodes.get(strApNode);
+        ApNode oldDBNode = apNodes.get(strApNode);
+        if (!oldDBNode.getDatabase().equals(newDBNode.getDatabase()) ||
+                oldDBNode.getDbGroup() == null ||
+                !oldDBNode.getDbGroup().getGroupName().equals(newDBNode.getDbGroup().getGroupName())) {
+            return true;
+        }
+        return false;
+    }
+
     private boolean isDbGroupChanged(List<String> strShardingNodes, Map<String, ShardingNode> newShardingNodes) {
         for (String strShardingNode : strShardingNodes) {
             PhysicalDbGroup newDBPool = newShardingNodes.get(strShardingNode).getDbGroup();
@@ -351,9 +375,20 @@ public class ServerConfig {
         return false;
     }
 
+    private boolean isDbGroupChangedByApNode(String strApNodes, Map<String, ApNode> newApNodes) {
+        PhysicalDbGroup newDBPool = newApNodes.get(strApNodes).getDbGroup();
+        PhysicalDbGroup oldDBPool = apNodes.get(strApNodes).getDbGroup();
+        PhysicalDbGroupDiff diff = new PhysicalDbGroupDiff(oldDBPool, newDBPool);
+        if (!PhysicalDbGroupDiff.CHANGE_TYPE_NO.equals(diff.getChangeType())) {
+            return true;
+        }
+        return false;
+    }
+
     private boolean apply(Map<UserName, UserConfig> newUsers,
                           Map<String, SchemaConfig> newSchemas,
                           Map<String, ShardingNode> newShardingNodes,
+                          Map<String, ApNode> newApNodes,
                           Map<String, PhysicalDbGroup> newDbGroups,
                           Map<String, PhysicalDbGroup> oldDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
@@ -367,7 +402,7 @@ public class ServerConfig {
         List<String> reloadSchema = new ArrayList<>();
         if (isFullyConfigured) {
             ReloadLogHelper.briefInfo("calcDiffForMetaData ...");
-            calcDiffForMetaData(newSchemas, newShardingNodes, loadAllMode, delTables, reloadTables, delSchema, reloadSchema);
+            calcDiffForMetaData(newSchemas, newShardingNodes, newApNodes, loadAllMode, delTables, reloadTables, delSchema, reloadSchema);
         }
         final ReentrantLock metaLock = ProxyMeta.getInstance().getTmManager().getMetaLock();
         metaLock.lock();
@@ -386,7 +421,7 @@ public class ServerConfig {
             ReloadLogHelper.briefInfo("init new dbGroup start");
             if ((loadAllMode & ManagerParseConfig.OPTR_MODE) != 0) {
                 //all dbGroup reload & recycle
-                initDbGroupByMap(oldDbGroups, newDbGroups, newShardingNodes, isFullyConfigured, loadAllMode);
+                initDbGroupByMap(oldDbGroups, newDbGroups, newShardingNodes, newApNodes, isFullyConfigured, loadAllMode);
             } else {
                 //replace dbGroup reference
                 for (Map.Entry<String, ShardingNode> shardingNodeEntry : newShardingNodes.entrySet()) {
@@ -397,13 +432,22 @@ public class ServerConfig {
                     }
                     shardingNode.setDbGroup(oldDbGroup);
                 }
+                for (Map.Entry<String, ApNode> apNodeEntry : newApNodes.entrySet()) {
+                    ApNode apNode = apNodeEntry.getValue();
+                    PhysicalDbGroup oldDbGroup = oldDbGroups.get(apNode.getDbGroupName());
+                    if (null == oldDbGroup) {
+                        oldDbGroup = newDbGroups.get(apNode.getDbGroupName());
+                    }
+                    apNode.setDbGroup(oldDbGroup);
+                }
                 //only change dbGroup reload & recycle
-                initDbGroupByMap(changeItemList, oldDbGroups, newShardingNodes, isFullyConfigured, loadAllMode);
+                initDbGroupByMap(changeItemList, oldDbGroups, newShardingNodes, newApNodes, isFullyConfigured, loadAllMode);
                 newDbGroups = oldDbGroups;
             }
             ReloadLogHelper.briefInfo("init new dbGroup end");
             ReloadLogHelper.briefInfo("config the transformation ...");
             this.shardingNodes = newShardingNodes;
+            this.apNodes = newApNodes;
             this.dbGroups = newDbGroups;
             this.fullyConfigured = isFullyConfigured;
             DbleServer.getInstance().reloadSystemVariables(newSystemVariables);
@@ -468,7 +512,7 @@ public class ServerConfig {
     }
 
     private static void initDbGroupByMap(Map<String, PhysicalDbGroup> oldDbGroups, Map<String, PhysicalDbGroup> newDbGroups,
-                                         Map<String, ShardingNode> newShardingNodes, boolean fullyConfigured, int loadAllMode) {
+                                         Map<String, ShardingNode> newShardingNodes, Map<String, ApNode> newApNodes, boolean fullyConfigured, int loadAllMode) {
         if (oldDbGroups != null) {
             //Only -r uses this method to recycle the connection pool
             String recycleGroupName;
@@ -487,10 +531,19 @@ public class ServerConfig {
             String hostName = dbGroup.getGroupName();
             // set schemas
             ArrayList<String> dnSchemas = new ArrayList<>(30);
-            for (ShardingNode dn : newShardingNodes.values()) {
-                if (dn.getDbGroup().getGroupName().equals(hostName)) {
-                    dn.setDbGroup(dbGroup);
-                    dnSchemas.add(dn.getDatabase());
+            if (dbGroup.getDbGroupConfig().instanceDatabaseType() == DataBaseType.MYSQL) {
+                for (ShardingNode dn : newShardingNodes.values()) {
+                    if (dn.getDbGroup().getGroupName().equals(hostName)) {
+                        dn.setDbGroup(dbGroup);
+                        dnSchemas.add(dn.getDatabase());
+                    }
+                }
+            } else {
+                for (ApNode dn : newApNodes.values()) {
+                    if (dn.getDbGroup().getGroupName().equals(hostName)) {
+                        dn.setDbGroup(dbGroup);
+                        dnSchemas.add(dn.getDatabase());
+                    }
                 }
             }
             dbGroup.setSchemas(dnSchemas);
@@ -503,7 +556,8 @@ public class ServerConfig {
     }
 
 
-    private void initDbGroupByMap(List<ChangeItem> changeItemList, Map<String, PhysicalDbGroup> oldDbGroupMap, Map<String, ShardingNode> newShardingNodes,
+    private void initDbGroupByMap(List<ChangeItem> changeItemList, Map<String, PhysicalDbGroup> oldDbGroupMap,
+                                  Map<String, ShardingNode> newShardingNodes, Map<String, ApNode> newApNodes,
                                   boolean isFullyConfigured, int loadAllMode) {
         Map<ChangeItem, PhysicalDbGroup> updateDbGroupMap = Maps.newHashMap();
         for (ChangeItem changeItem : changeItemList) {
@@ -511,10 +565,10 @@ public class ServerConfig {
             ChangeItemType itemType = changeItem.getItemType();
             switch (changeItem.getType()) {
                 case ADD:
-                    addItem(item, itemType, oldDbGroupMap, newShardingNodes, isFullyConfigured);
+                    addItem(item, itemType, oldDbGroupMap, newShardingNodes, newApNodes, isFullyConfigured);
                     break;
                 case UPDATE:
-                    updateItem(item, itemType, oldDbGroupMap, newShardingNodes, changeItem, updateDbGroupMap, loadAllMode);
+                    updateItem(item, itemType, oldDbGroupMap, newShardingNodes, newApNodes, changeItem, updateDbGroupMap, loadAllMode);
                     break;
                 case DELETE:
                     deleteItem(item, itemType, oldDbGroupMap, loadAllMode);
@@ -561,7 +615,8 @@ public class ServerConfig {
         }
     }
 
-    private void updateItem(Object item, ChangeItemType itemType, Map<String, PhysicalDbGroup> oldDbGroupMap, Map<String, ShardingNode> newShardingNodes, ChangeItem changeItem,
+    private void updateItem(Object item, ChangeItemType itemType, Map<String, PhysicalDbGroup> oldDbGroupMap,
+                            Map<String, ShardingNode> newShardingNodes, Map<String, ApNode> newApNodes, ChangeItem changeItem,
                             Map<ChangeItem, PhysicalDbGroup> updateDbGroupMap, int loadAllMode) {
         if (itemType == ChangeItemType.PHYSICAL_DB_GROUP) {
             //change dbGroup
@@ -586,7 +641,7 @@ public class ServerConfig {
             if (!dbGroupCopy) {
                 oldDbGroup.copyBaseInfo(physicalDbGroup);
             }
-            reloadSchema(oldDbGroup, newShardingNodes);
+            reloadSchema(oldDbGroup, newShardingNodes, newApNodes);
             if (changeItem.isAffectConnectionPool()) {
                 if (physicalDbGroup.getRwSplitMode() == 0) {
                     oldDbGroup.stopPool("reload config, recycle read instance", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0), false);
@@ -654,11 +709,12 @@ public class ServerConfig {
         return dbInstance;
     }
 
-    private void addItem(Object item, ChangeItemType itemType, Map<String, PhysicalDbGroup> oldDbGroupMap, Map<String, ShardingNode> newShardingNodes, boolean isFullyConfigured) {
+    private void addItem(Object item, ChangeItemType itemType, Map<String, PhysicalDbGroup> oldDbGroupMap,
+                         Map<String, ShardingNode> newShardingNodes, Map<String, ApNode> newApNodes, boolean isFullyConfigured) {
         if (itemType == ChangeItemType.PHYSICAL_DB_GROUP) {
             //add dbGroup+dbInstance
             PhysicalDbGroup physicalDbGroup = (PhysicalDbGroup) item;
-            initDbGroup(physicalDbGroup, newShardingNodes, isFullyConfigured);
+            initDbGroup(physicalDbGroup, newShardingNodes, newApNodes, isFullyConfigured);
             oldDbGroupMap.put(physicalDbGroup.getGroupName(), physicalDbGroup);
         } else if (itemType == ChangeItemType.PHYSICAL_DB_INSTANCE) {
             //add dbInstance
@@ -683,7 +739,7 @@ public class ServerConfig {
         }
     }
 
-    public static void reloadSchema(PhysicalDbGroup dbGroup, Map<String, ShardingNode> newShardingNodes) {
+    public static void reloadSchema(PhysicalDbGroup dbGroup, Map<String, ShardingNode> newShardingNodes, Map<String, ApNode> newApNodes) {
         String hostName = dbGroup.getGroupName();
         // set schemas
         ArrayList<String> dnSchemas = new ArrayList<>(30);
@@ -693,12 +749,18 @@ public class ServerConfig {
                 dnSchemas.add(dn.getDatabase());
             }
         }
+        for (ApNode dn : newApNodes.values()) {
+            if (dn.getDbGroup().getGroupName().equals(hostName)) {
+                dn.setDbGroup(dbGroup);
+                dnSchemas.add(dn.getDatabase());
+            }
+        }
         dbGroup.setSchemas(dnSchemas);
     }
 
 
-    private static void initDbGroup(PhysicalDbGroup dbGroup, Map<String, ShardingNode> newShardingNodes, boolean fullyConfigured) {
-        reloadSchema(dbGroup, newShardingNodes);
+    private static void initDbGroup(PhysicalDbGroup dbGroup, Map<String, ShardingNode> newShardingNodes, Map<String, ApNode> newApNodes, boolean fullyConfigured) {
+        reloadSchema(dbGroup, newShardingNodes, newApNodes);
         if (fullyConfigured) {
             dbGroup.init("reload config");
         } else {
@@ -784,6 +846,10 @@ public class ServerConfig {
         }
 
         for (ShardingNode physicalDBNode : shardingNodes.values()) {
+            physicalDBNode.toLowerCase();
+        }
+
+        for (ApNode physicalDBNode : apNodes.values()) {
             physicalDBNode.toLowerCase();
         }
 

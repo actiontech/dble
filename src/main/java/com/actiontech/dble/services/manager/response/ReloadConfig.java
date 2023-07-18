@@ -290,6 +290,7 @@ public final class ReloadConfig {
             Map<UserName, UserConfig> newUsers = newConfig.getUsers();
             Map<String, SchemaConfig> newSchemas = newConfig.getSchemas();
             Map<String, ShardingNode> newShardingNodes = newConfig.getShardingNodes();
+            Map<String, ApNode> newApNodes = newConfig.getApNodes();
             Map<ERTable, Set<ERTable>> newErRelations = newConfig.getErRelations();
             Map<String, Set<ERTable>> newFuncNodeERMap = newConfig.getFuncNodeERMap();
             Map<String, Properties> newBlacklistConfig = newConfig.getBlacklistConfig();
@@ -302,7 +303,7 @@ public final class ReloadConfig {
             ServerConfig oldConfig = DbleServer.getInstance().getConfig();
             boolean result;
             try {
-                result = oldConfig.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, oldConfig.getDbGroups(), newErRelations, newFuncNodeERMap,
+                result = oldConfig.reload(newUsers, newSchemas, newShardingNodes, newApNodes, newDbGroups, oldConfig.getDbGroups(), newErRelations, newFuncNodeERMap,
                         newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions,
                         loader.getUserConfig(), loader.getSequenceConfig(), loader.getShardingConfig(), loader.getDbConfig(), changeItemList);
                 CronScheduler.getInstance().init(oldConfig.getSchemas());
@@ -566,33 +567,6 @@ public final class ReloadConfig {
         }
 
         return changeItemList;
-    }
-
-    private static PhysicalDbInstance getPhysicalDbInstance(ConfigInitializer loader) {
-        PhysicalDbInstance ds = null;
-        for (PhysicalDbGroup dbGroup : loader.getDbGroups().values()) {
-            PhysicalDbInstance dsTest = dbGroup.getWriteDbInstance();
-            if (dsTest.isTestConnSuccess()) {
-                ds = dsTest;
-            }
-            if (ds != null) {
-                break;
-            }
-        }
-        if (ds == null) {
-            for (PhysicalDbGroup dbGroup : loader.getDbGroups().values()) {
-                for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
-                    if (dsTest.isTestConnSuccess()) {
-                        ds = dsTest;
-                        break;
-                    }
-                }
-                if (ds != null) {
-                    break;
-                }
-            }
-        }
-        return ds;
     }
 
     private static void recycleOldBackendConnections(boolean forceAllReload, boolean closeFrontCon) {

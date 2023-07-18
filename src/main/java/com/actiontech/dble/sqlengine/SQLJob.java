@@ -6,8 +6,8 @@
 package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.BaseNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.config.ErrorCode;
@@ -39,7 +39,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
     public static final Logger LOGGER = LoggerFactory.getLogger(SQLJob.class);
 
     private final String sql;
-    private final String shardingNode;
+    private final String baseNode;
     private final String schema;
     private BackendConnection connection;
     private final SQLJobHandler jobHandler;
@@ -54,15 +54,15 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
         this.jobHandler = jobHandler;
         this.ds = ds;
         this.schema = schema;
-        this.shardingNode = null;
+        this.baseNode = null;
     }
 
-    public SQLJob(String sql, String shardingNode, SQLJobHandler jobHandler, boolean isMustWriteNode) {
+    public SQLJob(String sql, String baseNode, SQLJobHandler jobHandler, boolean isMustWriteNode) {
         super();
         this.sql = "/*#timestamp=" + System.currentTimeMillis() + " from=" + SystemConfig.getInstance().getInstanceName() + " reason=sql job*/" + sql;
         this.jobHandler = jobHandler;
         this.ds = null;
-        this.shardingNode = shardingNode;
+        this.baseNode = baseNode;
         this.schema = null;
         this.isMustWriteNode = isMustWriteNode;
     }
@@ -72,9 +72,8 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
             if (ds == null) {
-                RouteResultsetNode node = new RouteResultsetNode(shardingNode, ServerParse.SELECT, sql);
-                // create new connection
-                ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
+                RouteResultsetNode node = new RouteResultsetNode(baseNode, ServerParse.SELECT, sql);
+                BaseNode dn = DbleServer.getInstance().getConfig().getAllNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), isMustWriteNode, true, node, this, node);
             } else {
                 ds.getConnection(schema, this, null, isMustWriteNode);
@@ -121,7 +120,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
     protected boolean doFinished(boolean failed) {
         if (finished.compareAndSet(false, true)) {
             GeneralProvider.sqlJobDoFinished();
-            jobHandler.finished(shardingNode == null ? schema : shardingNode, failed);
+            jobHandler.finished(baseNode == null ? schema : baseNode, failed);
             return true;
         }
         return false;
@@ -199,10 +198,11 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
         doFinished(true);
     }
 
+
     @Override
     public String toString() {
-        return "SQLJob [shardingNode=" +
-                shardingNode + ",schema=" +
+        return "SQLJob [baseNode=" +
+                baseNode + ",schema=" +
                 schema + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";
     }

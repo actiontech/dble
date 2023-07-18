@@ -6,16 +6,22 @@
 package com.actiontech.dble.util;
 
 public final class BooleanUtil {
+    private static final String TRUE = "true";
+    private static final String FALSE = "false";
     private BooleanUtil() {
     }
 
     public static boolean parseBoolean(String val) {
-        if ("true".equalsIgnoreCase(val)) {
+        if (TRUE.equalsIgnoreCase(val)) {
             return true;
-        } else if ("false".equalsIgnoreCase(val)) {
+        } else if (FALSE.equalsIgnoreCase(val)) {
             return false;
         } else {
             throw new NumberFormatException("value " + val + " is not boolean value");
         }
+    }
+
+    public static boolean isBoolean(String val) {
+        return TRUE.equalsIgnoreCase(val) || FALSE.equalsIgnoreCase(val);
     }
 }

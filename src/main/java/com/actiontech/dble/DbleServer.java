@@ -41,6 +41,7 @@ import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.services.factorys.ManagerConnectionFactory;
 import com.actiontech.dble.services.factorys.ServerConnectionFactory;
+import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
@@ -50,8 +51,10 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.Cipher;
 import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
+import java.security.KeyFactory;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -299,6 +302,16 @@ public final class DbleServer {
 
         LOGGER.info("===========================================CHECK JDK VERSION===================================");
         checkJdkVersion();
+
+        getComplexQueryExecutor().execute(() -> {
+            try {
+                ManagerSchemaInfo.getInstance();
+                KeyFactory.getInstance("RSA");
+                Cipher.getInstance("RSA");
+            } catch (Exception e) {
+                LOGGER.warn("exception:", e);
+            }
+        });
 
         LOGGER.info("======================================ALL START INIT FINISH=======================================");
         startup = true;

@@ -107,9 +107,9 @@ public final class DryRun {
             }
         }
         try {
-            String msg = ConfigUtil.getAndSyncKeyVariables(loader.getDbGroups(), false);
-            if (msg != null) {
-                list.add(new ErrorInfo("Backend", "WARNING", msg));
+            List<String> syncKeyVariables = ConfigUtil.getAndSyncKeyVariables(loader.getDbGroups(), false);
+            for (String syncKeyVariable : syncKeyVariables) {
+                list.add(new ErrorInfo("Backend", "WARNING", syncKeyVariable));
             }
         } catch (Exception e) {
             list.add(new ErrorInfo("Backend", "ERROR", e.getMessage()));

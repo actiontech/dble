@@ -604,7 +604,8 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                 this.config.getPort() == dbInstance.getConfig().getPort() &&
                 this.config.getUser().equals(dbInstance.getConfig().getUser()) &&
                 this.config.getPassword().equals(dbInstance.getConfig().getPassword()) &&
-                this.config.isUsingDecrypt() == dbInstance.getConfig().isUsingDecrypt();
+                this.config.isUsingDecrypt() == dbInstance.getConfig().isUsingDecrypt() &&
+                this.disabled.get() == dbInstance.isDisabled();
     }
 
     @Override

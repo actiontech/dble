@@ -147,13 +147,6 @@ public class DbInstanceConfig {
         return dataBaseType;
     }
 
-    public boolean provideVars() {
-        if (dataBaseType == DataBaseType.MYSQL) {
-            return true;
-        }
-        return false;
-    }
-
     public String getDbDistrict() {
         return dbDistrict;
     }

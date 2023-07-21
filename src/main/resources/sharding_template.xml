@@ -50,12 +50,20 @@
     </schema>
     <!-- sharding testdb2 route to database named dn5 in localhost2  -->
     <schema name="testdb2" shardingNode="dn5"/>
+
+    <schema name="testdb3" apNode="apNode1">
+        <shardingTable name="tb_enum_sharding" shardingNode="dn1,dn2" sqlMaxLimit="200" function="func_enum"
+                       shardingColumn="code"/>
+    </schema>
     <shardingNode name="dn1" dbGroup="dbGroup1" database="db_1"/>
     <shardingNode name="dn2" dbGroup="dbGroup2" database="db_2"/>
     <shardingNode name="dn3" dbGroup="dbGroup1" database="db_3"/>
     <shardingNode name="dn4" dbGroup="dbGroup2" database="db_4"/>
     <shardingNode name="dn5" dbGroup="dbGroup1" database="db_5"/>
     <shardingNode name="dn6" dbGroup="dbGroup2" database="db_6"/>
+
+    <apNode name="apNode1" dbGroup="dbGroup3" database="ap_db1"/>
+
     <!-- enum partition -->
     <function name="func_enum" class="Enum">
         <property name="mapFile">partition-enum.txt</property>

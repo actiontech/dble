@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.services.manager.response;
 
+import com.actiontech.dble.backend.datasource.ApNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
@@ -23,10 +24,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
-import com.actiontech.dble.config.model.user.ManagerUserConfig;
-import com.actiontech.dble.config.model.user.ShardingUserConfig;
-import com.actiontech.dble.config.model.user.UserConfig;
-import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.meta.table.DryRunGetNodeTablesHandler;
 import com.actiontech.dble.net.mysql.*;
@@ -242,7 +240,6 @@ public final class DryRun {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("table-exists-check");
         try {
             Map<String, Set<String>> tableMap = showShardingNodeTable(serverConfig, isLowerCase, list, schemaMap);
-
             for (SchemaConfig schema : serverConfig.getSchemas().values()) {
                 for (BaseTableConfig table : schema.getTables().values()) {
                     StringBuilder sb = new StringBuilder(100);
@@ -258,6 +255,19 @@ public final class DryRun {
                     }
                 }
             }
+
+            Map<String, Set<String>> tableMap2 = showApNodeTable(serverConfig, isLowerCase, list, schemaMap);
+            for (SchemaConfig schema : serverConfig.getSchemas().values()) {
+                String apDn = schema.getDefaultApNode();
+                if (!StringUtil.isBlank(apDn)) {
+                    for (BaseTableConfig table : schema.getTables().values()) {
+                        if (tableMap2.get(apDn) != null && !tableMap2.get(apDn).contains(table.getName())) {
+                            list.add(new ErrorInfo("Meta", "WARNING", "Table " + schema.getName() + "." + table.getName() + " doesn't exists in apNode[" + apDn + "]"));
+                        }
+                    }
+                }
+            }
+
         } finally {
             TraceManager.finishSpan(traceObject);
         }
@@ -296,6 +306,38 @@ public final class DryRun {
         return result;
     }
 
+    private static Map<String, Set<String>> showApNodeTable(ServerConfig serverConfig, boolean isLowerCase, List<ErrorInfo> list, Map<String, Set<String>> schemaMap) {
+        Map<String, Set<String>> result = new ConcurrentHashMap<>();
+        AtomicInteger counter = new AtomicInteger(serverConfig.getApNodes().size());
+        for (ApNode apNode : serverConfig.getApNodes().values()) {
+            String dbGroupName = apNode.getDbGroupName();
+            String databaseName = apNode.getDatabase();
+            if (schemaMap.containsKey(dbGroupName)) {
+                Set<String> schemaSet = schemaMap.get(dbGroupName);
+                boolean exist;
+                if (isLowerCase) {
+                    Optional<String> existSchema = schemaSet.stream().filter(schema -> StringUtil.equals(schema.toLowerCase(), databaseName)).findFirst();
+                    exist = existSchema.isPresent();
+                } else {
+                    exist = schemaSet.contains(databaseName);
+                }
+                if (exist) {
+                    DryRunGetNodeTablesHandler showTablesHandler = new DryRunGetNodeTablesHandler(counter, apNode, result, isLowerCase, list);
+                    showTablesHandler.execute();
+                } else {
+                    counter.decrementAndGet();
+                    list.add(new ErrorInfo("Meta", "WARNING", "Database " + apNode.getDatabase() + " doesn't exists in dbGroup[" + apNode.getDbGroupName() + "]"));
+                }
+            } else {
+                counter.decrementAndGet();
+                list.add(new ErrorInfo("Meta", "WARNING", "Database " + apNode.getDatabase() + " doesn't exists in dbGroup[" + apNode.getDbGroupName() + "]"));
+            }
+        }
+        while (counter.get() != 0) {
+            LockSupport.parkNanos(1000L);
+        }
+        return result;
+    }
 
     private static void printResult(ManagerService service, List<ErrorInfo> list) {
         ByteBuffer buffer = service.allocate();
@@ -357,6 +399,9 @@ public final class DryRun {
             for (UserConfig user : userMap.values()) {
                 if (user instanceof ManagerUserConfig) {
                     hasManagerUser = true;
+                } else if (user instanceof HybridTAUserConfig) {
+                    hasShardingUser = true;
+                    schema.addAll(((HybridTAUserConfig) user).getSchemas());
                 } else if (user instanceof ShardingUserConfig) {
                     hasShardingUser = true;
                     schema.addAll(((ShardingUserConfig) user).getSchemas());
@@ -366,9 +411,9 @@ public final class DryRun {
             }
             if (!hasShardingUser) {
                 if (serverConfig.getSchemas().size() > 0) {
-                    list.add(new ErrorInfo("Xml", "WARNING", "There is No Sharding User"));
+                    list.add(new ErrorInfo("Xml", "WARNING", "There is No Sharding/HybridTA User"));
                 } else {
-                    list.add(new ErrorInfo("Xml", "NOTICE", "There is No Sharding User"));
+                    list.add(new ErrorInfo("Xml", "NOTICE", "There is No Sharding/HybridTA User"));
                 }
             } else if (schema.size() <= serverConfig.getSchemas().size()) {
                 for (String schemaName : serverConfig.getSchemas().keySet()) {

@@ -16,6 +16,7 @@ import com.actiontech.dble.cluster.zkprocess.entity.Property;
 import com.actiontech.dble.cluster.zkprocess.entity.Shardings;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.function.Function;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.*;
+import com.actiontech.dble.cluster.zkprocess.entity.sharding.shardingnode.ApNode;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.shardingnode.ShardingNode;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
@@ -23,6 +24,7 @@ import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.db.type.DataBaseType;
+import com.actiontech.dble.config.model.sharding.ApNodeConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.ShardingNodeConfig;
 import com.actiontech.dble.config.model.sharding.table.*;
@@ -54,6 +56,7 @@ public class ShardingConverter {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShardingConverter.class);
 
     private Map<String, com.actiontech.dble.backend.datasource.ShardingNode> shardingNodeMap = Maps.newLinkedHashMap();
+    private Map<String, com.actiontech.dble.backend.datasource.ApNode> apNodeMap = Maps.newLinkedHashMap();
     private final Map<String, AbstractPartitionAlgorithm> functionMap = Maps.newLinkedHashMap();
     private final Map<String, SchemaConfig> schemaConfigMap = Maps.newLinkedHashMap();
     private final Map<ERTable, Set<ERTable>> erRelations = Maps.newLinkedHashMap();
@@ -105,6 +108,7 @@ public class ShardingConverter {
         }
         jsonObj.add(ClusterPathUtil.SCHEMA, gson.toJsonTree(schemaArray));
         jsonObj.add(ClusterPathUtil.SHARDING_NODE, gson.toJsonTree(shardings.getShardingNode()));
+        jsonObj.add(ClusterPathUtil.AP_NODE, gson.toJsonTree(shardings.getApNode()));
         List<Function> functionList = shardings.getFunction();
         readMapFileAddFunction(functionList);
         jsonObj.add(ClusterPathUtil.FUNCTION, gson.toJsonTree(functionList));
@@ -115,9 +119,11 @@ public class ShardingConverter {
         Shardings shardings = shardingJsonToBean(shardingJson);
         List<ShardingNode> shardingNodeList = shardings.getShardingNode();
         List<Function> functionList = shardings.getFunction();
+        List<ApNode> apNodeList = shardings.getApNode();
         removeFileContent(functionList);
         List<Schema> schemaList = shardings.getSchema();
         Map<String, ShardingNodeConfig> shardingNodeConfigMap = Maps.newLinkedHashMap();
+        Map<String, ApNodeConfig> apNodeConfigMap = Maps.newLinkedHashMap();
         List<ErrorInfo> errorInfos = new ArrayList<>();
         if (shardings.getVersion() != null && !Versions.CONFIG_VERSION.equals(shardings.getVersion())) {
             if (problemReporter != null) {
@@ -132,9 +138,11 @@ public class ShardingConverter {
         }
         try {
             shardingNodeListToMap(shardingNodeList, dbGroupMap, shardingNodeConfigMap);
+            apNodeListToMap(apNodeList, dbGroupMap, apNodeConfigMap);
             functionListToMap(functionList, problemReporter);
-            schemaListToMap(schemaList, shardingNodeConfigMap, problemReporter);
+            schemaListToMap(schemaList, shardingNodeConfigMap, apNodeConfigMap, problemReporter);
             deleteUselessShardingNode(errorInfos, sequenceJson);
+            deleteUselessApNode(errorInfos);
         } catch (Exception e) {
             String message = e.getMessage() == null ? e.toString() : e.getMessage();
             throw new ConfigException("sharding json to map occurred  parse errors, The detailed errors are as follows. " + message, e);
@@ -185,15 +193,13 @@ public class ShardingConverter {
         }
     }
 
-    private void schemaListToMap(List<Schema> schemaList, Map<String, ShardingNodeConfig> shardingNodeConfigMap, ProblemReporter problemReporter) {
+    private void schemaListToMap(List<Schema> schemaList, Map<String, ShardingNodeConfig> shardingNodeConfigMap, Map<String, ApNodeConfig> apNodeConfigMap, ProblemReporter problemReporter) {
         for (com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Schema schema : schemaList) {
             String schemaName = schema.getName();
             String schemaShardingNode = schema.getShardingNode();
             String schemaFunction = schema.getFunction();
-            String schemaSqlMaxLimitStr = null == schema.getSqlMaxLimit() ? null : String.valueOf(schema.getSqlMaxLimit());
-            List<Object> tableList = Optional.ofNullable(schema.getTable()).orElse(Lists.newArrayList());
+            String schemaApNode = schema.getApNode();
 
-            int schemaSqlMaxLimit = getSqlMaxLimit(schemaSqlMaxLimitStr, -1);
             List<String> shardingNodeList = null;
             AbstractPartitionAlgorithm algorithm = null;
             //check and add shardingNode
@@ -226,33 +232,50 @@ public class ShardingConverter {
                 }
             }
 
+            String apNode = null;
+            if (schemaApNode != null && !StringUtil.isBlank(schemaApNode)) {
+                apNode = schemaApNode.trim();
+                if (!apNodeConfigMap.containsKey(apNode)) {
+                    throw new ConfigException("apNode '" + apNode + "' is not found!");
+                }
+            }
+
             //load tables from sharding
             Map<String, BaseTableConfig> tableConfigMap = Maps.newLinkedHashMap();
             if (this.schemaConfigMap.containsKey(schemaName)) {
                 throw new ConfigException("schema " + schemaName + " duplicated!");
             }
 
-            for (Object tableObj : tableList) {
-                if (tableObj instanceof ShardingTable) {
-                    fillShardingTable((ShardingTable) tableObj, schemaSqlMaxLimit, tableConfigMap, shardingNodeConfigMap, problemReporter);
-                } else if (tableObj instanceof GlobalTable) {
-                    fillGlobalTable((GlobalTable) tableObj, schemaSqlMaxLimit, tableConfigMap, shardingNodeConfigMap);
-                } else if (tableObj instanceof SingleTable) {
-                    fillSingleTable((SingleTable) tableObj, schemaSqlMaxLimit, tableConfigMap, shardingNodeConfigMap);
-                }
-            }
+            // check&load tables
+            String schemaSqlMaxLimitStr = null == schema.getSqlMaxLimit() ? null : String.valueOf(schema.getSqlMaxLimit());
+            int schemaSqlMaxLimit = getSqlMaxLimit(schemaSqlMaxLimitStr, -1);
+            tableListToSchema(schema, schemaSqlMaxLimit, tableConfigMap, shardingNodeConfigMap, problemReporter);
 
             // if sharding has no default shardingNode,it must contains at least one table
             if (shardingNodeList == null && tableConfigMap.size() == 0) {
                 throw new ConfigException(
                         "sharding " + schemaName + " didn't config tables,so you must set shardingNode property!");
             }
-            SchemaConfig schemaConfig = new SchemaConfig(schemaName, shardingNodeList, algorithm, tableConfigMap, schemaSqlMaxLimit, schema.isLogicalCreateADrop());
+            SchemaConfig schemaConfig = new SchemaConfig(schemaName, shardingNodeList, algorithm, apNode, tableConfigMap, schemaSqlMaxLimit, schema.isLogicalCreateADrop());
             mergeFuncNodeERMap(schemaConfig);
             mergeFkERMap(schemaConfig);
             this.schemaConfigMap.put(schemaName, schemaConfig);
         }
         makeAllErRelations();
+    }
+
+    private void tableListToSchema(com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Schema schema, int schemaSqlMaxLimit,
+                                   Map<String, BaseTableConfig> tableConfigMap, Map<String, ShardingNodeConfig> shardingNodeConfigMap, ProblemReporter problemReporter) {
+        final List<Object> tableList = Optional.ofNullable(schema.getTable()).orElse(Lists.newArrayList());
+        for (Object tableObj : tableList) {
+            if (tableObj instanceof ShardingTable) {
+                fillShardingTable((ShardingTable) tableObj, schemaSqlMaxLimit, tableConfigMap, shardingNodeConfigMap, problemReporter);
+            } else if (tableObj instanceof GlobalTable) {
+                fillGlobalTable((GlobalTable) tableObj, schemaSqlMaxLimit, tableConfigMap, shardingNodeConfigMap);
+            } else if (tableObj instanceof SingleTable) {
+                fillSingleTable((SingleTable) tableObj, schemaSqlMaxLimit, tableConfigMap, shardingNodeConfigMap);
+            }
+        }
     }
 
     public static void removeFileContent(List<Function> functionList) {
@@ -483,11 +506,45 @@ public class ShardingConverter {
                 } else {
                     throw new ConfigException("The dbGroup[" + entry.getValue().getDbGroupName() + "] associated with ShardingNode[" + entry.getKey() + "] does not exist");
                 }
-                if (shardingNodeGroup.getDbGroupConfig().getWriteInstanceConfig().getDataBaseType() != DataBaseType.MYSQL) {
-                    throw new ConfigException("The dbGroup[" + entry.getValue().getDbGroupName() + "] not support database type [" + entry.getKey() + "]");
+                DataBaseType dataBaseType = shardingNodeGroup.getDbGroupConfig().getWriteInstanceConfig().getDataBaseType();
+                if (dataBaseType != DataBaseType.MYSQL) {
+                    throw new ConfigException("The dbGroup[" + entry.getValue().getDbGroupName() + "] not support database type [" + dataBaseType + "]");
                 }
             } else {
                 errorInfos.add(new ErrorInfo("Xml", "WARNING", "shardingNode " + shardingNodeName + " is useless"));
+                iterator.remove();
+            }
+        }
+    }
+
+    private void deleteUselessApNode(List<ErrorInfo> errorInfos) {
+        Set<String> allUseApNode = new HashSet<>();
+        for (SchemaConfig sc : this.schemaConfigMap.values()) {
+            // check apNode / dbGroup
+            if (sc.getDefaultApNode() != null) {
+                allUseApNode.add(sc.getDefaultApNode());
+            }
+        }
+
+        //delete redundancy apNode
+        Iterator<Map.Entry<String, com.actiontech.dble.backend.datasource.ApNode>> iterator = this.apNodeMap.entrySet().iterator();
+        PhysicalDbGroup apNodeGroup;
+        while (iterator.hasNext()) {
+            Map.Entry<String, com.actiontech.dble.backend.datasource.ApNode> entry = iterator.next();
+            String apNodeName = entry.getKey();
+            if (allUseApNode.contains(apNodeName)) {
+                apNodeGroup = entry.getValue().getDbGroup();
+                if (apNodeGroup != null) {
+                    apNodeGroup.setHybridTAUseless(false);
+                } else {
+                    throw new ConfigException("The dbGroup[" + entry.getValue().getDbGroupName() + "] associated with ApNode[" + entry.getKey() + "] does not exist");
+                }
+                DataBaseType dataBaseType = apNodeGroup.getDbGroupConfig().getWriteInstanceConfig().getDataBaseType();
+                if (dataBaseType != DataBaseType.CLICKHOUSE) {
+                    throw new ConfigException("The dbGroup[" + entry.getValue().getDbGroupName() + "] not support database type [" + dataBaseType + "]");
+                }
+            } else {
+                errorInfos.add(new ErrorInfo("Xml", "WARNING", "apNode " + apNodeName + " is useless"));
                 iterator.remove();
             }
         }
@@ -703,8 +760,49 @@ public class ShardingConverter {
         this.shardingNodeMap = initShardingNodes(shardingNodeConfigMap, dbGroupMap);
     }
 
-    private void createShardingNode(String dnName, String database, String host, Set<String> checkSet, Map<String, ShardingNodeConfig> shardingNodeConfigMap) {
+    private void apNodeListToMap(List<ApNode> apNodeList, Map<String, PhysicalDbGroup> dbGroupMap, Map<String, ApNodeConfig> apNodeConfigMap) {
+        Set<String> checkSet = new HashSet<>();
+        for (ApNode apNode : apNodeList) {
+            String apNodeName = apNode.getName();
+            String apNodeDatabase = apNode.getDatabase();
+            String apNodeDbGroup = apNode.getDbGroup();
+            PhysicalDbGroup dbGroup = dbGroupMap.get(apNodeDbGroup);
+            if (StringUtils.isBlank(apNodeName) || StringUtils.isBlank(apNodeDatabase) || StringUtils.isBlank(apNodeDbGroup)) {
+                throw new ConfigException("apNode " + apNodeName + " define error ,attribute can't be empty");
+            }
+            if (Objects.nonNull(dbGroup) && dbGroup.getDbGroupConfig().instanceDatabaseType() != DataBaseType.CLICKHOUSE) {
+                throw new ConfigException("apNodeDbGroup [" + apNodeDbGroup + "] define error ,all dbInstance database type must be " + DataBaseType.CLICKHOUSE);
+            }
+            //dnNamePre(name),databaseStr(database),host(dbGroup) can use ',', '$', '-' to configure multi nodes
+            // but the database size *dbGroup size must equal the size of name
+            // every dbGroup has all database in its tag
+            //eg:<apNode name="dn$0-759" dbGroup="localhost$1-10" database="db$0-75" />
+            //means:localhost1 has database of db$0-75,localhost2 has database of db$0-75(name is dn$76-151)
+            String[] dnNames = SplitUtil.split(apNodeName, ',', '$', '-');
+            String[] databases = SplitUtil.split(apNodeDatabase, ',', '$', '-');
+            String[] hostStrings = SplitUtil.split(apNodeDbGroup, ',', '$', '-');
 
+            if (dnNames.length != databases.length * hostStrings.length) {
+                throw new ConfigException("apNode " + apNodeName +
+                        " define error ,Number of apNode name must be = Number of database * Number of dbGroup");
+            }
+            if (dnNames.length > 1) {
+                List<String[]> mhdList = mergerHostDatabase(hostStrings, databases);
+                for (int k = 0; k < dnNames.length; k++) {
+                    String[] hd = mhdList.get(k);
+                    String dnName = dnNames[k];
+                    String databaseName = hd[1];
+                    String hostName = hd[0];
+                    createApNode(dnName, databaseName, hostName, checkSet, apNodeConfigMap);
+                }
+            } else {
+                createApNode(apNodeName, apNodeDatabase, apNodeDbGroup, checkSet, apNodeConfigMap);
+            }
+        }
+        this.apNodeMap = initApNodes(apNodeConfigMap, dbGroupMap);
+    }
+
+    private void createShardingNode(String dnName, String database, String host, Set<String> checkSet, Map<String, ShardingNodeConfig> shardingNodeConfigMap) {
         ShardingNodeConfig conf = new ShardingNodeConfig(dnName, database, host);
         if (checkSet.contains(host + "#" + database)) {
             throw new ConfigException("shardingNode " + conf.getName() + " use the same dbGroup&database with other shardingNode");
@@ -717,6 +815,22 @@ public class ShardingConverter {
         shardingNodeConfigMap.put(conf.getName(), conf);
     }
 
+    private void createApNode(String dnName, String database, String host, Set<String> checkSet, Map<String, ApNodeConfig> apNodeConfigMap) {
+        if (shardingNodeMap.containsKey(dnName)) {
+            throw new ConfigException("apNode " + dnName + " repeat, because shardingNode already exists has that name");
+        }
+        ApNodeConfig conf = new ApNodeConfig(dnName, database, host);
+        if (checkSet.contains(host + "#" + database)) {
+            throw new ConfigException("apNode " + conf.getName() + " use the same dbGroup&database with other apNode");
+        } else {
+            checkSet.add(host + "#" + database);
+        }
+        if (apNodeConfigMap.containsKey(conf.getName())) {
+            throw new ConfigException("apNode " + conf.getName() + " duplicated!");
+        }
+        apNodeConfigMap.put(conf.getName(), conf);
+    }
+
     private Map<String, com.actiontech.dble.backend.datasource.ShardingNode> initShardingNodes(Map<String, ShardingNodeConfig> nodeConf, Map<String, PhysicalDbGroup> dbGroupMap) {
         Map<String, com.actiontech.dble.backend.datasource.ShardingNode> nodes = new HashMap<>(nodeConf.size());
         for (ShardingNodeConfig conf : nodeConf.values()) {
@@ -727,9 +841,23 @@ public class ShardingConverter {
         return nodes;
     }
 
+    private Map<String, com.actiontech.dble.backend.datasource.ApNode> initApNodes(Map<String, ApNodeConfig> nodeConf, Map<String, PhysicalDbGroup> dbGroupMap) {
+        Map<String, com.actiontech.dble.backend.datasource.ApNode> nodes = new HashMap<>(nodeConf.size());
+        for (ApNodeConfig conf : nodeConf.values()) {
+            PhysicalDbGroup pool = dbGroupMap.get(conf.getDbGroupName());
+            com.actiontech.dble.backend.datasource.ApNode apNode = new com.actiontech.dble.backend.datasource.ApNode(conf.getDbGroupName(), conf.getName(), conf.getDatabase(), pool);
+            nodes.put(apNode.getName(), apNode);
+        }
+        return nodes;
+    }
+
 
     public Map<String, com.actiontech.dble.backend.datasource.ShardingNode> getShardingNodeMap() {
         return shardingNodeMap;
+    }
+
+    public Map<String, com.actiontech.dble.backend.datasource.ApNode> getApNodeMap() {
+        return apNodeMap;
     }
 
     public Map<String, AbstractPartitionAlgorithm> getFunctionMap() {

@@ -63,4 +63,5 @@ public interface ResponseHandler {
      */
     void connectionClose(@Nonnull AbstractService service, String reason);
 
+
 }

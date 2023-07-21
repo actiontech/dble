@@ -6,6 +6,7 @@
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.ApNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
@@ -289,6 +290,7 @@ public final class ReloadConfig {
             Map<UserName, UserConfig> newUsers = newConfig.getUsers();
             Map<String, SchemaConfig> newSchemas = newConfig.getSchemas();
             Map<String, ShardingNode> newShardingNodes = newConfig.getShardingNodes();
+            Map<String, ApNode> newApNodes = newConfig.getApNodes();
             Map<ERTable, Set<ERTable>> newErRelations = newConfig.getErRelations();
             Map<String, Set<ERTable>> newFuncNodeERMap = newConfig.getFuncNodeERMap();
             Map<String, Properties> newBlacklistConfig = newConfig.getBlacklistConfig();
@@ -301,7 +303,7 @@ public final class ReloadConfig {
             ServerConfig oldConfig = DbleServer.getInstance().getConfig();
             boolean result;
             try {
-                result = oldConfig.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, oldConfig.getDbGroups(), newErRelations, newFuncNodeERMap,
+                result = oldConfig.reload(newUsers, newSchemas, newShardingNodes, newApNodes, newDbGroups, oldConfig.getDbGroups(), newErRelations, newFuncNodeERMap,
                         newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions,
                         loader.getUserConfig(), loader.getSequenceConfig(), loader.getShardingConfig(), loader.getDbConfig(), changeItemList);
                 CronScheduler.getInstance().init(oldConfig.getSchemas());
@@ -361,7 +363,7 @@ public final class ReloadConfig {
             if (forceAllReload && loader.isFullyConfigured()) {
                 loader.testConnection();
             } else {
-                syncShardingNode(loader);
+                syncShardingAndApNode(loader);
                 loader.testConnection(changeItemList);
             }
         } catch (Exception e) {
@@ -413,13 +415,21 @@ public final class ReloadConfig {
         }
     }
 
-    private static void syncShardingNode(ConfigInitializer loader) {
+    private static void syncShardingAndApNode(ConfigInitializer loader) {
+        // sync schema_exists(only testConn can update schema_exists)
         Map<String, ShardingNode> oldShardingNodeMap = DbleServer.getInstance().getConfig().getShardingNodes();
         Map<String, ShardingNode> newShardingNodeMap = loader.getShardingNodes();
         for (Map.Entry<String, ShardingNode> shardingNodeEntry : newShardingNodeMap.entrySet()) {
-            //sync schema_exists,only testConn can update schema_exists
             if (oldShardingNodeMap.containsKey(shardingNodeEntry.getKey())) {
                 shardingNodeEntry.getValue().setSchemaExists(oldShardingNodeMap.get(shardingNodeEntry.getKey()).isSchemaExists());
+            }
+        }
+
+        Map<String, ApNode> oldApNodeMap = DbleServer.getInstance().getConfig().getApNodes();
+        Map<String, ApNode> newApNodeMap = loader.getApNodes();
+        for (Map.Entry<String, ApNode> apNodeEntry : newApNodeMap.entrySet()) {
+            if (oldApNodeMap.containsKey(apNodeEntry.getKey())) {
+                apNodeEntry.getValue().setSchemaExists(oldApNodeMap.get(apNodeEntry.getKey()).isSchemaExists());
             }
         }
 
@@ -463,6 +473,21 @@ public final class ReloadConfig {
         shardingNodeMapDiff.entriesDiffering().entrySet().stream().map(differenceEntry -> {
             ShardingNode newShardingNode = differenceEntry.getValue().leftValue();
             ChangeItem changeItem = new ChangeItem(ChangeType.UPDATE, newShardingNode, ChangeItemType.SHARDING_NODE);
+            return changeItem;
+        }).forEach(changeItemList::add);
+
+        //apNode
+        Map<String, ApNode> oldApNodeMap = oldServerConfig.getApNodes();
+        Map<String, ApNode> newApNodeMap = newLoader.getApNodes();
+        MapDifference<String, ApNode> apNodeMapDiff = Maps.difference(newApNodeMap, oldApNodeMap);
+        //delete
+        apNodeMapDiff.entriesOnlyOnRight().values().stream().map(apNode -> new ChangeItem(ChangeType.DELETE, apNode, ChangeItemType.AP_NODE)).forEach(changeItemList::add);
+        //add
+        apNodeMapDiff.entriesOnlyOnLeft().values().stream().map(apNode -> new ChangeItem(ChangeType.ADD, apNode, ChangeItemType.AP_NODE)).forEach(changeItemList::add);
+        //update
+        apNodeMapDiff.entriesDiffering().entrySet().stream().map(differenceEntry -> {
+            ApNode newApNode = differenceEntry.getValue().leftValue();
+            ChangeItem changeItem = new ChangeItem(ChangeType.UPDATE, newApNode, ChangeItemType.AP_NODE);
             return changeItem;
         }).forEach(changeItemList::add);
 
@@ -542,33 +567,6 @@ public final class ReloadConfig {
         }
 
         return changeItemList;
-    }
-
-    private static PhysicalDbInstance getPhysicalDbInstance(ConfigInitializer loader) {
-        PhysicalDbInstance ds = null;
-        for (PhysicalDbGroup dbGroup : loader.getDbGroups().values()) {
-            PhysicalDbInstance dsTest = dbGroup.getWriteDbInstance();
-            if (dsTest.isTestConnSuccess()) {
-                ds = dsTest;
-            }
-            if (ds != null) {
-                break;
-            }
-        }
-        if (ds == null) {
-            for (PhysicalDbGroup dbGroup : loader.getDbGroups().values()) {
-                for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
-                    if (dsTest.isTestConnSuccess()) {
-                        ds = dsTest;
-                        break;
-                    }
-                }
-                if (ds != null) {
-                    break;
-                }
-            }
-        }
-        return ds;
     }
 
     private static void recycleOldBackendConnections(boolean forceAllReload, boolean closeFrontCon) {

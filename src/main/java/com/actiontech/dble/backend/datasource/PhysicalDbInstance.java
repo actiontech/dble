@@ -97,7 +97,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
             LOGGER.info("init dbInstance[{}] because {}, but it has been initialized, skip initialization.", this.dbGroup.getGroupName() + "." + name, reason);
             return;
         }
-        //minCon/maxCon/numOfShardingNodes
+        //minCon/maxCon/(numOfShardingNodes/numOfApNodes)
         checkPoolSize();
 
         LOGGER.info("init dbInstance[{}]", this.dbGroup.getGroupName() + "." + name);
@@ -112,7 +112,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         List<String> physicalSchemas = dbGroup.getSchemas();
         int initSize = physicalSchemas.size();
         if (size < initSize) {
-            LOGGER.warn("For db instance[{}], minIdle is less than (the count of shardingNodes), so dble will create at least 1 conn for every schema, " +
+            LOGGER.warn("For db instance[{}], minIdle is less than (the count of shardingNodes/apNodes), so dble will create at least 1 conn for every schema, " +
                     "minCon size before:{}, now:{}", this.dbGroup.getGroupName() + "." + name, size, initSize);
             config.setMinCon(initSize);
         }
@@ -120,7 +120,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         initSize = Math.max(initSize, config.getMinCon());
         size = config.getMaxCon();
         if (size < initSize) {
-            LOGGER.warn("For db instance[{}], maxTotal[{}] is less than the minCon or the count of shardingNodes,change the maxCon into {}", this.dbGroup.getGroupName() + "." + name, size, initSize);
+            LOGGER.warn("For db instance[{}], maxTotal[{}] is less than the minCon or the count of shardingNodes/apNodes,change the maxCon into {}", this.dbGroup.getGroupName() + "." + name, size, initSize);
             config.setMaxCon(initSize);
         }
     }
@@ -530,7 +530,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     }
 
     public void updatePoolCapacity() {
-        //minCon/maxCon/numOfShardingNodes
+        //minCon/maxCon/(numOfShardingNodes/numOfApNodes)
         if ((dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) && !dbGroup.isUseless()) {
             checkPoolSize();
             connectionPool.evictImmediately();

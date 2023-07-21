@@ -6,9 +6,7 @@
 package com.actiontech.dble.config.util;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.datasource.*;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.DbleTempConfig;
@@ -23,6 +21,7 @@ import com.actiontech.dble.services.manager.response.ChangeItem;
 import com.actiontech.dble.services.manager.response.ChangeItemType;
 import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -75,15 +74,15 @@ public final class ConfigUtil {
         return s.append(text.substring(cur)).toString();
     }
 
-    public static void setSchemasForPool(Map<String, PhysicalDbGroup> dbGroupMap, Map<String, ShardingNode> shardingNodeMap) {
+    public static void setSchemasForPool(Map<String, PhysicalDbGroup> dbGroupMap, Map<String, BaseNode> baseNodeMap) {
         for (PhysicalDbGroup dbGroup : dbGroupMap.values()) {
-            dbGroup.setSchemas(getShardingNodeSchemasOfDbGroup(dbGroup.getGroupName(), shardingNodeMap));
+            dbGroup.setSchemas(getBaseNodeSchemasOfDbGroup(dbGroup.getGroupName(), baseNodeMap));
         }
     }
 
-    private static ArrayList<String> getShardingNodeSchemasOfDbGroup(String dbGroup, Map<String, ShardingNode> shardingNodeMap) {
+    private static ArrayList<String> getBaseNodeSchemasOfDbGroup(String dbGroup, Map<String, BaseNode> baseNodeMap) {
         ArrayList<String> schemaList = new ArrayList<>(30);
-        for (ShardingNode dn : shardingNodeMap.values()) {
+        for (BaseNode dn : baseNodeMap.values()) {
             if (dn.getDbGroup() != null && dn.getDbGroup().getGroupName().equals(dbGroup)) {
                 schemaList.add(dn.getDatabase());
             }
@@ -165,7 +164,7 @@ public final class ConfigUtil {
             });
 
             List<String> syncKeyVariables = Lists.newArrayList();
-            List<String> mysqlSyncKeyVariables = getMysqlSyncKeyVariables(mysqlDbGroups, needSync);
+            List<String> mysqlSyncKeyVariables = getMysqlSyncKeyVariables(mysqlDbGroups, needSync, !CollectionUtil.isEmpty(clickHouseDbGroups));
             Optional.ofNullable(mysqlSyncKeyVariables).ifPresent(syncKeyVariables::addAll);
             List<String> clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(clickHouseDbGroups, needSync);
             Optional.ofNullable(clickHouseSyncKeyVariables).ifPresent(syncKeyVariables::addAll);
@@ -176,7 +175,7 @@ public final class ConfigUtil {
     }
 
     @Nullable
-    private static List<String> getMysqlSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws InterruptedException, ExecutionException, IOException {
+    private static List<String> getMysqlSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync, boolean existClickHouse) throws InterruptedException, ExecutionException, IOException {
         String msg = null;
         List<String> list = new ArrayList<>();
         if (dbGroups.size() == 0) {
@@ -224,7 +223,12 @@ public final class ConfigUtil {
         }
         if (secondGroup.size() != 0) {
             // if all datasoure's lower case are not equal, throw exception
-            StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend MySQLs are different.");
+            StringBuilder sb = new StringBuilder();
+            if (existClickHouse) {
+                sb.append("The configuration contains Clickhouse. Since clickhouse is case-sensitive by default, The values of lower_case_table_names for backend MySQLs must be 0. ");
+            } else {
+                sb.append("The values of lower_case_table_names for backend MySQLs are different. ");
+            }
             String firstGroupValue;
             String secondGroupValue;
             if (lowerCase) {
@@ -237,10 +241,14 @@ public final class ConfigUtil {
             sb.append("These MySQL's value is");
             sb.append(firstGroupValue);
             sb.append(Strings.join(firstGroup, ','));
-            sb.append(".And these MySQL's value is");
+            sb.append(". And these MySQL's value is");
             sb.append(secondGroupValue);
             sb.append(Strings.join(secondGroup, ','));
             sb.append(".");
+            throw new IOException(sb.toString());
+        }
+        if (existClickHouse && lowerCase) {
+            StringBuilder sb = new StringBuilder("The configuration contains Clickhouse. Since clickhouse is case-sensitive by default, The values of lower_case_table_names for backend MySQLs must be 0. All current backend mysql are 1.");
             throw new IOException(sb.toString());
         }
         dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
@@ -258,8 +266,8 @@ public final class ConfigUtil {
         if (!instance.getDbGroup().isRwSplitUseless()) {
             //rw-split
             return checkVersionWithRwSplit(version, instance, isThrowException, type);
-        } else if (!instance.getDbGroup().isShardingUseless() || !instance.getDbGroup().isAnalysisUseless()) {
-            //sharding or analysis
+        } else if (!instance.getDbGroup().isShardingUseless() || !instance.getDbGroup().isAnalysisUseless() || !instance.getDbGroup().isHybridTAUseless()) {
+            //sharding or analysis or hybridTA(apNode)
             boolean isMatch = majorVersion >= VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion());
             if (!isMatch && isThrowException) {
                 throw new ConfigException("this dbInstance[=" + instance.getConfig().getUrl() + "]'s version[=" + version + "] cannot be lower than the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "],pls check the backend " + type + " node.");
@@ -310,23 +318,12 @@ public final class ConfigUtil {
         List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
         getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync, dbInstanceList);
 
-        boolean lowerCase = false;
-        boolean isFirst = true;
-        Set<String> firstGroup = new HashSet<>();
-        Set<String> secondGroup = new HashSet<>();
+        final boolean lowerCase = false; // ClickHouse is case sensitive by default
         int minNodePacketSize = Integer.MAX_VALUE;
         for (Map.Entry<VariableMapKey, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
-            VariableMapKey variableMapKey = entry.getKey();
             Future<KeyVariables> future = entry.getValue();
             KeyVariables keyVariables = future.get();
             if (keyVariables != null) {
-                if (isFirst) {
-                    lowerCase = keyVariables.isLowerCase();
-                    isFirst = false;
-                    firstGroup.add(variableMapKey.getDataSourceName());
-                } else if (keyVariables.isLowerCase() != lowerCase) {
-                    secondGroup.add(variableMapKey.getDataSourceName());
-                }
                 minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
             }
         }
@@ -335,27 +332,6 @@ public final class ConfigUtil {
             msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
             list.add(msg);
             LOGGER.warn(msg);
-        }
-        if (secondGroup.size() != 0) {
-            // if all datasoure's lower case are not equal, throw exception
-            StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend clickHouse are different.");
-            String firstGroupValue;
-            String secondGroupValue;
-            if (lowerCase) {
-                firstGroupValue = " not 0 :";
-                secondGroupValue = " 0 :";
-            } else {
-                firstGroupValue = " 0 :";
-                secondGroupValue = " not 0 :";
-            }
-            sb.append("These clickHouse's value is");
-            sb.append(firstGroupValue);
-            sb.append(Strings.join(firstGroup, ','));
-            sb.append(".And these clickHouse's value is");
-            sb.append(secondGroupValue);
-            sb.append(Strings.join(secondGroup, ','));
-            sb.append(".");
-            throw new IOException(sb.toString());
         }
         dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
         DbleTempConfig.getInstance().setLowerCase(lowerCase);
@@ -448,7 +424,7 @@ public final class ConfigUtil {
                 .filter(changeItem -> (changeItem.getType() == ChangeType.ADD) ||
                         (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectTestConn()) ||
                         (changeItem.getItemType() == ChangeItemType.USERNAME && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectEntryDbGroup()) ||
-                        (changeItem.getItemType() == ChangeItemType.SHARDING_NODE && changeItem.getType() == ChangeType.UPDATE))
+                        ((changeItem.getItemType() == ChangeItemType.SHARDING_NODE || changeItem.getItemType() == ChangeItemType.AP_NODE) && changeItem.getType() == ChangeType.UPDATE))
                 .collect(Collectors.toList());
 
         if (changeItemList.size() == 0 || needCheckVersionList.isEmpty()) {
@@ -470,6 +446,10 @@ public final class ConfigUtil {
             } else if (changeItem.getItemType() == ChangeItemType.SHARDING_NODE) {
                 ShardingNode shardingNode = (ShardingNode) item;
                 PhysicalDbGroup dbGroup = shardingNode.getDbGroup();
+                checkDbGroupVersion(dbGroup);
+            } else if (changeItem.getItemType() == ChangeItemType.AP_NODE) {
+                ApNode apNode = (ApNode) item;
+                PhysicalDbGroup dbGroup = apNode.getDbGroup();
                 checkDbGroupVersion(dbGroup);
             } else if (changeItem.getItemType() == ChangeItemType.USERNAME) {
                 UserConfig userConfig = newConfigLoader.getUsers().get(item);

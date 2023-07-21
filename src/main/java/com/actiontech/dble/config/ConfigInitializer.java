@@ -5,9 +5,7 @@
  */
 package com.actiontech.dble.config;
 
-import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.datasource.*;
 import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.Shardings;
 import com.actiontech.dble.config.converter.DBConverter;
@@ -15,16 +13,14 @@ import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.converter.ShardingConverter;
 import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.helper.TestSchemasTask;
+import com.actiontech.dble.config.helper.TestSchemasTaskForClickHouse;
 import com.actiontech.dble.config.helper.TestTask;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
-import com.actiontech.dble.config.model.user.AnalysisUserConfig;
-import com.actiontech.dble.config.model.user.RwSplitUserConfig;
-import com.actiontech.dble.config.model.user.UserConfig;
-import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
@@ -34,6 +30,7 @@ import com.actiontech.dble.services.manager.response.ChangeItem;
 import com.actiontech.dble.services.manager.response.ChangeItemType;
 import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.CollectionUtil;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -53,6 +50,7 @@ public class ConfigInitializer implements ProblemReporter {
     private volatile Map<UserName, UserConfig> users;
     private volatile Map<String, SchemaConfig> schemas = Maps.newHashMap();
     private volatile Map<String, ShardingNode> shardingNodes = Maps.newHashMap();
+    private volatile Map<String, ApNode> apNodes = Maps.newHashMap();
     private volatile Map<String, PhysicalDbGroup> dbGroups;
     private volatile Map<ERTable, Set<ERTable>> erRelations = Maps.newHashMap();
     private volatile Map<String, Set<ERTable>> funcNodeERMap = Maps.newHashMap();
@@ -147,12 +145,14 @@ public class ConfigInitializer implements ProblemReporter {
             this.funcNodeERMap = shardingConverter.getFuncNodeERMap();
             this.shardingNodes = shardingConverter.getShardingNodeMap();
             this.functions = shardingConverter.getFunctionMap();
+            this.apNodes = shardingConverter.getApNodeMap();
         }
         this.shardingConfig = shardingJson;
 
         this.sequenceConfig = sequenceJson;
         checkRwSplitDbGroup();
         checkAnalysisDbGroup();
+        checkHybridTADbGroup();
         checkWriteDbInstance();
     }
 
@@ -240,6 +240,20 @@ public class ConfigInitializer implements ProblemReporter {
         }
     }
 
+    private void checkHybridTADbGroup() {
+        dbGroups.values().stream().filter(f -> !f.isHybridTAUseless()).forEach(g -> {
+            if (g.getDbGroupConfig().instanceDatabaseType() != DataBaseType.CLICKHOUSE) {
+                throw new ConfigException("The dbGroup[" + g.getGroupName() + "]  database type must be " + DataBaseType.CLICKHOUSE);
+            } else {
+                g.getAllDbInstanceMap().values().stream().forEach(i -> {
+                    if (i.getConfig().getDataBaseType() != DataBaseType.CLICKHOUSE) {
+                        throw new ConfigException("The dbInstance[" + g.getGroupName() + "." + i.getName() + "] all dbInstance database type must be " + DataBaseType.CLICKHOUSE);
+                    }
+                });
+            }
+        });
+    }
+
     public void testConnection(List<ChangeItem> changeItemList) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("test-connection");
         try {
@@ -284,6 +298,14 @@ public class ConfigInitializer implements ProblemReporter {
                             if (!isDbInstanceConnected) {
                                 isAllDbInstanceConnected = false;
                             }
+                        } else if (itemType == ChangeItemType.AP_NODE) {
+                            ApNode apNode = (ApNode) item;
+                            dbGroup = apNode.getDbGroup();
+
+                            boolean isDbInstanceConnected = testDbGroup(dbGroup, hostSchemaMap, dbGroupTested, errDbInstanceNames);
+                            if (!isDbInstanceConnected) {
+                                isAllDbInstanceConnected = false;
+                            }
                         }
                         break;
                     case UPDATE:
@@ -302,6 +324,14 @@ public class ConfigInitializer implements ProblemReporter {
                         } else if (itemType == ChangeItemType.SHARDING_NODE) {
                             ShardingNode shardingNode = (ShardingNode) item;
                             dbGroup = shardingNode.getDbGroup();
+
+                            boolean isDbInstanceConnected = testDbGroup(dbGroup, hostSchemaMap, dbGroupTested, errDbInstanceNames);
+                            if (!isDbInstanceConnected) {
+                                isAllDbInstanceConnected = false;
+                            }
+                        } else if (itemType == ChangeItemType.AP_NODE) {
+                            ApNode apNode = (ApNode) item;
+                            dbGroup = apNode.getDbGroup();
 
                             boolean isDbInstanceConnected = testDbGroup(dbGroup, hostSchemaMap, dbGroupTested, errDbInstanceNames);
                             if (!isDbInstanceConnected) {
@@ -329,7 +359,6 @@ public class ConfigInitializer implements ProblemReporter {
         }
     }
 
-
     public void testConnection() {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("test-connection");
         try {
@@ -343,7 +372,7 @@ public class ConfigInitializer implements ProblemReporter {
                 dbGroup = entry.getValue();
                 dbGroupName = entry.getKey();
 
-                // sharding group
+                // db group
                 List<Pair<String, String>> schemaList = null;
                 if (hostSchemaMap.containsKey(dbGroupName)) {
                     schemaList = hostSchemaMap.get(entry.getKey());
@@ -362,7 +391,7 @@ public class ConfigInitializer implements ProblemReporter {
                         ds.setTestConnSuccess(false);
                         continue;
                     }
-                    if (!testDbInstance(dbGroupName, ds, schemaList)) {
+                    if (!testDbInstance(dbGroupName, ds, schemaList, ds.getConfig().getDataBaseType())) {
                         isAllDbInstanceConnected = false;
                         errDbInstanceNames.add("dbInstance[" + dbGroupName + "." + ds.getName() + "]");
                     }
@@ -433,7 +462,7 @@ public class ConfigInitializer implements ProblemReporter {
             ds.setTestConnSuccess(false);
             return true;
         }
-        return testDbInstance(dbGroupName, ds, schemaList);
+        return testDbInstance(dbGroupName, ds, schemaList, ds.getConfig().getDataBaseType());
     }
 
 
@@ -455,7 +484,7 @@ public class ConfigInitializer implements ProblemReporter {
         }
     }
 
-    private boolean testDbInstance(String dbGroupName, PhysicalDbInstance ds, List<Pair<String, String>> schemaList) {
+    private boolean testDbInstance(String dbGroupName, PhysicalDbInstance ds, List<Pair<String, String>> schemaList, DataBaseType dataBaseType) {
         boolean isConnectivity = true;
         String dbInstanceKey = "dbInstance[" + dbGroupName + "." + ds.getName() + "]";
         try {
@@ -469,10 +498,16 @@ public class ConfigInitializer implements ProblemReporter {
                 errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + dbInstanceKey + "]"));
                 LOGGER.warn("SelfCheck### can't connect to [" + dbInstanceKey + "]");
                 isConnectivity = false;
-            } else if (schemaList != null) {
-                TestSchemasTask testSchemaTask = new TestSchemasTask(shardingNodes, ds, schemaList, !ds.isReadInstance());
-                testSchemaTask.start();
-                testSchemaTask.join(3000);
+            } else if (!CollectionUtil.isEmpty(schemaList)) {
+                if (dataBaseType == DataBaseType.MYSQL) {
+                    TestSchemasTask testSchemaTask = new TestSchemasTask(shardingNodes, ds, schemaList, !ds.isReadInstance());
+                    testSchemaTask.start();
+                    testSchemaTask.join(3000);
+                } else {
+                    TestSchemasTaskForClickHouse testSchemaTask2 = new TestSchemasTaskForClickHouse(apNodes, ds, schemaList, !ds.isReadInstance());
+                    testSchemaTask2.start();
+                    testSchemaTask2.join(3000);
+                }
             } else {
                 LOGGER.info("SelfCheck### connect to [" + dbInstanceKey + "] successfully.");
             }
@@ -492,6 +527,12 @@ public class ConfigInitializer implements ProblemReporter {
             for (ShardingNode shardingNode : shardingNodes.values()) {
                 List<Pair<String, String>> nodes = dbInstanceSchemaMap.computeIfAbsent(shardingNode.getDbGroupName(), k -> new ArrayList<>(8));
                 nodes.add(new Pair<>(shardingNode.getName(), shardingNode.getDatabase()));
+            }
+        }
+        if (apNodes != null) {
+            for (ApNode apNode : apNodes.values()) {
+                List<Pair<String, String>> nodes = dbInstanceSchemaMap.computeIfAbsent(apNode.getDbGroupName(), k -> new ArrayList<>(8));
+                nodes.add(new Pair<>(apNode.getName(), apNode.getDatabase()));
             }
         }
         return dbInstanceSchemaMap;
@@ -516,6 +557,10 @@ public class ConfigInitializer implements ProblemReporter {
 
     public Map<String, ShardingNode> getShardingNodes() {
         return shardingNodes;
+    }
+
+    public Map<String, ApNode> getApNodes() {
+        return apNodes;
     }
 
     public Map<String, PhysicalDbGroup> getDbGroups() {

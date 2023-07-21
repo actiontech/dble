@@ -79,7 +79,7 @@ public final class ShowUser {
 
     private static RowDataPacket getRow(UserConfig user, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        if (user instanceof ShardingUserConfig) {
+        if (user instanceof ShardingUserConfig) { // contains HybridTAUserConfig
             ShardingUserConfig shardingUser = (ShardingUserConfig) user;
             if (shardingUser.getTenant() != null) {
                 row.add(StringUtil.encode(shardingUser.getName() + ":" + shardingUser.getTenant(), charset));

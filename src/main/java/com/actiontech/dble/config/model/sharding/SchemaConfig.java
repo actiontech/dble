@@ -24,6 +24,7 @@ public class SchemaConfig {
     private final boolean noSharding;
     private final List<String> defaultShardingNodes;
     private final AbstractPartitionAlgorithm function;
+    private final String defaultApNode;
     private final String metaShardingNode;
     private final Set<String> allShardingNodes;
     /**
@@ -36,11 +37,12 @@ public class SchemaConfig {
     private Map<String, Set<ERTable>> funcNodeERMap;
     private final boolean logicalCreateADrop;
 
-    public SchemaConfig(String name, List<String> defaultShardingNodes, AbstractPartitionAlgorithm function,
+    public SchemaConfig(String name, List<String> defaultShardingNodes, AbstractPartitionAlgorithm function, String defaultApNode,
                         Map<String, BaseTableConfig> tables, int defaultMaxLimit, boolean logicalCreateADrop) {
         this.name = name;
         this.defaultShardingNodes = defaultShardingNodes;
         this.function = function;
+        this.defaultApNode = defaultApNode;
         this.tables = tables;
         this.defaultMaxLimit = defaultMaxLimit;
         this.logicalCreateADrop = logicalCreateADrop;
@@ -64,6 +66,7 @@ public class SchemaConfig {
         this.name = oldSchemaConfig.getName().toLowerCase();
         this.defaultShardingNodes = oldSchemaConfig.getDefaultShardingNodes();
         this.function = oldSchemaConfig.getFunction();
+        this.defaultApNode = oldSchemaConfig.getDefaultApNode();
         this.tables = oldSchemaConfig.getLowerCaseTables();
         this.defaultMaxLimit = oldSchemaConfig.getDefaultMaxLimit();
         this.logicalCreateADrop = oldSchemaConfig.isLogicalCreateADrop();
@@ -217,6 +220,10 @@ public class SchemaConfig {
         return function;
     }
 
+    public String getDefaultApNode() {
+        return defaultApNode;
+    }
+
     public Map<ERTable, Set<ERTable>> getFkErRelations() {
         return fkErRelations;
     }
@@ -280,6 +287,7 @@ public class SchemaConfig {
 
     public boolean equalsConfigInfo(SchemaConfig schemaConfig) {
         boolean isEquals = CollectionUtil.equalsWithEmpty(this.defaultShardingNodes, schemaConfig.getDefaultShardingNodes());
+        isEquals = isEquals && StringUtil.equalsWithEmpty(this.defaultApNode, schemaConfig.getDefaultApNode());
         if (isEquals && isDefaultShardingNode()) {
             return this.function.equals(schemaConfig.getFunction()) &&
                     this.defaultMaxLimit == schemaConfig.getDefaultMaxLimit();

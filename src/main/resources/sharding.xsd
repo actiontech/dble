@@ -12,6 +12,7 @@
             <xs:sequence>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="schema"/>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="shardingNode"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="apNode"/>
                 <xs:element minOccurs="0" maxOccurs="unbounded" ref="function"/>
             </xs:sequence>
             <xs:attribute name="version" type="xs:string"/>

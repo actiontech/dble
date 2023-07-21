@@ -58,6 +58,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.actiontech.dble.cluster.path.ClusterPathUtil.SEPARATOR;
 import static com.actiontech.dble.meta.ReloadStatus.TRIGGER_TYPE_COMMAND;
+import static com.actiontech.dble.services.manager.response.ChangeItemType.PHYSICAL_DB_INSTANCE;
 
 public final class ReloadConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadConfig.class);
@@ -332,7 +333,7 @@ public final class ReloadConfig {
     private static SystemVariables checkVersionAGetSystemVariables(ConfigInitializer loader, Map<String, PhysicalDbGroup> newDbGroups, List<ChangeItem> changeItemList, boolean forceAllReload) throws Exception {
         ReloadLogHelper.briefInfo("check and get system variables from random node start");
         SystemVariables newSystemVariables;
-        if (forceAllReload) {
+        if (forceAllReload || ConfigUtil.isAllDbInstancesChange(changeItemList)) {
             //check version
             ConfigUtil.checkDbleAndMysqlVersion(newDbGroups);
             //check packetSize/lowerCase
@@ -350,6 +351,8 @@ public final class ReloadConfig {
         ReloadLogHelper.briefInfo("check and get system variables from random node end");
         return newSystemVariables;
     }
+
+
 
     /**
      * test connection
@@ -500,14 +503,14 @@ public final class ReloadConfig {
 
                 MapDifference<String, PhysicalDbInstance> dbInstanceMapDifference = Maps.difference(newDbInstanceMap, oldDbInstanceMap);
                 //delete
-                dbInstanceMapDifference.entriesOnlyOnRight().values().stream().map(dbInstance -> new ChangeItem(ChangeType.DELETE, dbInstance, ChangeItemType.PHYSICAL_DB_INSTANCE)).forEach(changeItemList::add);
+                dbInstanceMapDifference.entriesOnlyOnRight().values().stream().map(dbInstance -> new ChangeItem(ChangeType.DELETE, dbInstance, PHYSICAL_DB_INSTANCE)).forEach(changeItemList::add);
                 //add
-                dbInstanceMapDifference.entriesOnlyOnLeft().values().stream().map(dbInstance -> new ChangeItem(ChangeType.ADD, dbInstance, ChangeItemType.PHYSICAL_DB_INSTANCE)).forEach(changeItemList::add);
+                dbInstanceMapDifference.entriesOnlyOnLeft().values().stream().map(dbInstance -> new ChangeItem(ChangeType.ADD, dbInstance, PHYSICAL_DB_INSTANCE)).forEach(changeItemList::add);
                 //update
                 dbInstanceMapDifference.entriesDiffering().values().stream().map(physicalDbInstanceValueDifference -> {
                     PhysicalDbInstance newDbInstance = physicalDbInstanceValueDifference.leftValue();
                     PhysicalDbInstance oldDbInstance = physicalDbInstanceValueDifference.rightValue();
-                    ChangeItem changeItem = new ChangeItem(ChangeType.UPDATE, newDbInstance, ChangeItemType.PHYSICAL_DB_INSTANCE);
+                    ChangeItem changeItem = new ChangeItem(ChangeType.UPDATE, newDbInstance, PHYSICAL_DB_INSTANCE);
                     if (!newDbInstance.equalsForConnectionPool(oldDbInstance)) {
                         changeItem.setAffectConnectionPool(true);
                     }

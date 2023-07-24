@@ -90,7 +90,9 @@ public class DruidSelectParserTest {
         String origSQL13 = "select id from sbtest1 for update NOWAIT";
         String origSQL14 = "select id from sbtest1 for update SKIP LOCKED";
         String origSQL15 = "select id from sbtest1 LOCK IN SHARE MODE";
-        ArrayList<String> list = Lists.newArrayList(origSQL1, origSQL2, origSQL3, origSQL4, origSQL5, origSQL6, origSQL7, origSQL8, origSQL9, origSQL10, origSQL11, origSQL12, origSQL13, origSQL14, origSQL15);
+        String origSQL16 = "select id,@a from sbtest1";
+        String origSQL17 = "select id from sbtest1 where id = @a";
+        ArrayList<String> list = Lists.newArrayList(origSQL1, origSQL2, origSQL3, origSQL4, origSQL5, origSQL6, origSQL7, origSQL8, origSQL9, origSQL10, origSQL11, origSQL12, origSQL13, origSQL14, origSQL15, origSQL16, origSQL17);
         for (String sql : list) {
             SQLStatement stmt = DruidUtil.parseSQL(sql);
             MySqlSelectQueryBlock query = (MySqlSelectQueryBlock) ((SQLSelectStatement) stmt).getSelect().getQuery();
@@ -112,6 +114,15 @@ public class DruidSelectParserTest {
     @Test
     public void testAPNotSupport_subQuery_union() throws SQLException {
         String sql = "select a.* from (select * from sbtest1 LOCK IN SHARE MODE) a union select * from sbtest1";
+        SQLStatement stmt = DruidUtil.parseSQL(sql);
+        SQLSelectQuery query = ((SQLSelectStatement) stmt).getSelect().getQuery();
+        boolean notSupport = RouterUtil.checkSQLNotSupport(query);
+        Assert.assertTrue(notSupport);
+    }
+
+    @Test
+    public void testAPNotSupport_variables() throws SQLException {
+        String sql = "select a.* from (select * from sbtest1 where id = @a) a union select @a from sbtest1";
         SQLStatement stmt = DruidUtil.parseSQL(sql);
         SQLSelectQuery query = ((SQLSelectStatement) stmt).getSelect().getQuery();
         boolean notSupport = RouterUtil.checkSQLNotSupport(query);

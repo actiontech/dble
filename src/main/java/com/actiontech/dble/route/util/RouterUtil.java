@@ -37,8 +37,10 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLSetQuantifier;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.stat.TableStat;
@@ -1354,6 +1356,17 @@ public final class RouterUtil {
             if (mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isForShare() || mysqlSelectQuery.isNoWait() || mysqlSelectQuery.isSkipLocked() || mysqlSelectQuery.isLockInShareMode()) {
                 return true;
             }
+            //select-variables
+            boolean containVariables = mysqlSelectQuery.getSelectList().stream().anyMatch(selectItem -> selectItem.getExpr() instanceof SQLVariantRefExpr);
+            if (containVariables) {
+                return true;
+            }
+            //where-variables
+            SQLExpr whereExpr = mysqlSelectQuery.getWhere();
+            containVariables = checkSQLNotSupportOfWhere(whereExpr);
+            if (containVariables) {
+                return true;
+            }
             //from
             SQLTableSource tableSource = mysqlSelectQuery.getFrom();
             return checkSQLNotSupportOfTableSource(tableSource);
@@ -1364,6 +1377,18 @@ public final class RouterUtil {
                 if (checkSQLNotSupport(relation)) {
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    private static boolean checkSQLNotSupportOfWhere(SQLExpr whereExpr) {
+        if (whereExpr instanceof SQLBinaryOpExpr) {
+            SQLBinaryOpExpr tmp = (SQLBinaryOpExpr) whereExpr;
+            if (tmp.getLeft() instanceof SQLBinaryOpExpr) {
+                return checkSQLNotSupportOfWhere(tmp.getLeft()) || checkSQLNotSupportOfWhere(tmp.getRight());
+            } else {
+                return tmp.getLeft() instanceof SQLVariantRefExpr || tmp.getRight() instanceof SQLVariantRefExpr;
             }
         }
         return false;

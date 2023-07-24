@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.services.manager;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
@@ -16,6 +17,7 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.PingPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
+import com.actiontech.dble.net.service.NotificationServiceTask;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
@@ -45,6 +47,13 @@ public class ManagerService extends FrontendService<ManagerUserConfig> {
         this.handler.setReadOnly(userConfig.isReadOnly());
         this.session = new ManagerSession(this);
         this.commands = connection.getProcessor().getCommands();
+    }
+
+    @Override
+    public void handle(ServiceTask task) {
+        beforeInsertServiceTask(task);
+        task.setTaskId(taskId.getAndIncrement());
+        DbleServer.getInstance().getManagerFrontHandlerQueue().offer(task);
     }
 
     @Override
@@ -83,6 +92,9 @@ public class ManagerService extends FrontendService<ManagerUserConfig> {
         return true;
     }
 
+    public void notifyTaskThread() {
+        DbleServer.getInstance().getManagerFrontHandlerQueue().offerFirst(new NotificationServiceTask(this));
+    }
 
     public void killAndClose(String reason) {
         connection.close(reason);

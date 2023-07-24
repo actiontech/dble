@@ -14,12 +14,17 @@ import java.util.concurrent.atomic.LongAdder;
  */
 public class ThreadPoolStatistic {
     private static final ThreadPoolStatistic FRONT_BUSINESS = new ThreadPoolStatistic();
+    private static final ThreadPoolStatistic FRONT_MANAGER = new ThreadPoolStatistic();
     private static final ThreadPoolStatistic BACKEND_BUSINESS = new ThreadPoolStatistic();
     private static final ThreadPoolStatistic WRITE_TO_BACKEND = new ThreadPoolStatistic();
     private LongAdder completedTaskCount = new LongAdder();
 
     public static ThreadPoolStatistic getFrontBusiness() {
         return FRONT_BUSINESS;
+    }
+
+    public static ThreadPoolStatistic getFrontManager() {
+        return FRONT_MANAGER;
     }
 
     public static ThreadPoolStatistic getBackendBusiness() {

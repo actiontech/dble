@@ -39,6 +39,7 @@ import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +136,7 @@ public class MySQLResponseService extends BackendService {
         if (protocolResponseHandler != defaultResponseHandler) {
             protocolResponseHandler = defaultResponseHandler;
         }
-        synAndDoExecute(synSQL, sql, service.getCharset());
+        synAndDoExecute(synSQL, sql, service.getCharset(), false);
     }
 
     public void execute(RWSplitService service, byte[] originPacket) {
@@ -190,7 +191,7 @@ public class MySQLResponseService extends BackendService {
             }
             String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             StringBuilder synSQL = getSynSql(xaTxId, rrn, isAutoCommit, service);
-            synAndDoExecute(synSQL, rrn.getStatement(), service.getCharset());
+            synAndDoExecute(synSQL, rrn.getStatement(), service.getCharset(), rrn.isApNode());
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }
@@ -215,7 +216,7 @@ public class MySQLResponseService extends BackendService {
         if (protocolResponseHandler != defaultResponseHandler) {
             protocolResponseHandler = defaultResponseHandler;
         }
-        synAndDoExecute(synSQL, rrn.getStatement(), charsetName);
+        synAndDoExecute(synSQL, rrn.getStatement(), charsetName, rrn.isApNode());
     }
 
     public void executeMultiNode(RouteResultsetNode rrn, ShardingService service, boolean isAutoCommit) {
@@ -232,7 +233,7 @@ public class MySQLResponseService extends BackendService {
             } else if (protocolResponseHandler != defaultResponseHandler) {
                 protocolResponseHandler = defaultResponseHandler;
             }
-            synAndDoExecuteMultiNode(synSQL, rrn, service.getCharset());
+            synAndDoExecuteMultiNode(synSQL, rrn, service.getCharset(), rrn.isApNode());
         } catch (Exception e) {
             LOGGER.info("route error {},{},{}", rrn, this, service);
             throw e;
@@ -241,7 +242,7 @@ public class MySQLResponseService extends BackendService {
         }
     }
 
-    private void synAndDoExecuteMultiNode(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
+    private void synAndDoExecuteMultiNode(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset, boolean apNode) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("send cmd by WriteToBackendExecutor to conn[" + this + "]");
         }
@@ -256,22 +257,37 @@ public class MySQLResponseService extends BackendService {
         }
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("con need syn,sync sql is " + synSQL.toString() + ", con:" + this);
+            LOGGER.debug("con need syn,sync sql is " + synSQL + ", con:" + this);
         }
-        // and our query sql to multi command at last
-        synSQL.append(rrn.getStatement()).append(";");
-        // syn and execute others
-        if (session != null) {
-            session.setBackendRequestTime(this);
+
+        if (apNode) {
+            // clickhouse does not support multi-statements
+            // syn and execute others
+            if (session != null) {
+                session.setBackendRequestTime(this);
+            }
+            // syn sharding
+            List<WriteToBackendTask> taskList = new ArrayList<>(2);
+            taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
+            taskList.add(sendQueryCmdTask(rrn.getStatement(), clientCharset));
+            DbleServer.getInstance().getWriteToBackendQueue().add(taskList);
+            // waiting syn result...
+        } else {
+            // and our query sql to multi command at last
+            synSQL.append(rrn.getStatement()).append(";");
+            // syn and execute others
+            if (session != null) {
+                session.setBackendRequestTime(this);
+            }
+            // syn sharding
+            List<WriteToBackendTask> taskList = new ArrayList<>(1);
+            taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
+            DbleServer.getInstance().getWriteToBackendQueue().add(taskList);
+            // waiting syn result...
         }
-        // syn sharding
-        List<WriteToBackendTask> taskList = new ArrayList<>(1);
-        taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
-        DbleServer.getInstance().getWriteToBackendQueue().add(taskList);
-        // waiting syn result...
     }
 
-    private void synAndDoExecute(StringBuilder synSQL, String sql, CharsetNames clientCharset) {
+    private void synAndDoExecute(StringBuilder synSQL, String sql, CharsetNames clientCharset, boolean apNode) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "syn&do-execute-sql");
         if (synSQL != null && traceObject != null) {
             TraceManager.log(ImmutableMap.of("synSQL", synSQL), traceObject);
@@ -287,16 +303,30 @@ public class MySQLResponseService extends BackendService {
             }
 
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("con need syn,sync sql is " + synSQL.toString() + ", con:" + this);
+                LOGGER.debug("con need syn,sync sql is " + synSQL + ", con:" + this);
             }
-            // and our query sql to multi command at last
-            synSQL.append(sql).append(";");
-            // syn and execute others
-            if (session != null) {
-                session.setBackendRequestTime(this);
+            if (apNode) {
+                // clickhouse does not support multi-statements
+                // syn and execute others
+                if (session != null) {
+                    session.setBackendRequestTime(this);
+                }
+                List<String> sqlList = Lists.newArrayList(synSQL.toString(), sql);
+                for (String statement : sqlList) {
+                    this.sendQueryCmd(statement, clientCharset);
+                }
+                // waiting syn result...
+            } else {
+                // and our query sql to multi command at last
+                synSQL.append(sql).append(";");
+                // syn and execute others
+                if (session != null) {
+                    session.setBackendRequestTime(this);
+                }
+                this.sendQueryCmd(synSQL.toString(), clientCharset);
+                // waiting syn result...
             }
-            this.sendQueryCmd(synSQL.toString(), clientCharset);
-            // waiting syn result...
+
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }
@@ -314,8 +344,13 @@ public class MySQLResponseService extends BackendService {
     }
 
     private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn, boolean expectAutocommit, VariablesService front) {
-
-        StringBuilder sb = getSynSql(expectAutocommit, front);
+        StringBuilder sb;
+        if (rrn != null && rrn.isApNode()) {
+            sb = getSynSqlOfAP(expectAutocommit, front);
+            return sb;
+        } else {
+            sb = getSynSql(expectAutocommit, front);
+        }
 
         if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE && !isDDL) {
             // clientTxIsolation = Isolation.SERIALIZABLE;TODO:NEEDED?

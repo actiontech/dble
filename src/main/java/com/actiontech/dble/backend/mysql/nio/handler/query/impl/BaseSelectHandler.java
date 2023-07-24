@@ -6,7 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.datasource.BaseNode;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.Session;
@@ -58,7 +58,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
             exeConn.getBackendService().setResponseHandler(this);
             return exeConn;
         } else {
-            ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(rrss.getName());
+            BaseNode dn = DbleServer.getInstance().getConfig().getAllNodes().get(rrss.getName());
             //autocommit is serverSession.getWriteSource().isAutocommit() && !serverSession.getWriteSource().isTxStart()
             final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, rrss);
             serverSession.bindConnection(rrss, newConn);

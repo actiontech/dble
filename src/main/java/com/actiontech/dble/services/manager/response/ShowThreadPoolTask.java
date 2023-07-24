@@ -117,6 +117,7 @@ public final class ShowThreadPoolTask {
         DbleServer server = DbleServer.getInstance();
         list.add(server.getTimerExecutor());
         list.add(server.getFrontExecutor());
+        list.add(server.getManagerFrontExecutor());
         list.add(server.getBackendExecutor());
         list.add(server.getComplexQueryExecutor());
         list.add(server.getWriteToBackendExecutor());

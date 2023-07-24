@@ -75,6 +75,7 @@ public final class DbleThreadPoolTask extends ManagerBaseTable {
         List<LinkedHashMap<String, String>> lst = new ArrayList<>(5);
         lst.add(getRow((NameableExecutor) server.getTimerExecutor()));
         lst.add(getRow((NameableExecutor) server.getFrontExecutor()));
+        lst.add(getRow((NameableExecutor) server.getManagerFrontExecutor()));
         lst.add(getRow((NameableExecutor) server.getBackendExecutor()));
         lst.add(getRow((NameableExecutor) server.getComplexQueryExecutor()));
         lst.add(getRow((NameableExecutor) server.getWriteToBackendExecutor()));
@@ -97,30 +98,9 @@ public final class DbleThreadPoolTask extends ManagerBaseTable {
         long activeCount, completedTaskCount, queueSize, totalCount;
         final Map<Thread, Runnable> threadRunnableMap = DbleServer.getInstance().getRunnableMap().get(exec.getName());
         switch (exec.getName()) {
-            case DbleServer.FRONT_WORKER_NAME: {
-                if (threadRunnableMap == null) {
-                    activeCount = 0;
-                } else {
-                    activeCount = threadRunnableMap.values().stream().filter(ele -> (ele instanceof FrontendRunnable) && ((FrontendRunnable) ele).getThreadContext().isDoingTask()).count();
-                }
-
-                queueSize = DbleServer.getInstance().getFrontHandlerQueue().size();
-                for (IOProcessor frontProcessor : DbleServer.getInstance().getFrontProcessors()) {
-                    for (FrontendConnection con : frontProcessor.getFrontends().values()) {
-                        if (con == null) {
-                            continue;
-                        }
-                        final AbstractService service = con.getService();
-                        if (service instanceof FrontendService) {
-                            queueSize += ((FrontendService<?>) service).getRecvTaskQueueSize();
-                        }
-                    }
-                }
-                final ThreadPoolStatistic statistic = ThreadPoolStatistic.getFrontBusiness();
-                completedTaskCount = statistic.getCompletedTaskCount().longValue();
-                totalCount = activeCount + queueSize + completedTaskCount;
-            }
-            break;
+            case DbleServer.FRONT_WORKER_NAME:
+            case DbleServer.FRONT_MANAGER_WORKER_NAME:
+                return calculateRowForFront(exec, threadRunnableMap);
             case DbleServer.BACKEND_WORKER_NAME: {
                 if (threadRunnableMap == null) {
                     activeCount = 0;
@@ -182,8 +162,70 @@ public final class DbleThreadPoolTask extends ManagerBaseTable {
         row.setCompletedTask(completedTaskCount);
         row.setTotalTaskCount(totalCount);
         return row;
+    }
 
+    public static Row calculateRowForFront(NameableExecutor exec, final Map<Thread, Runnable> threadRunnableMap) {
+        long activeCount = 0, completedTaskCount = 0, queueSize = 0, totalCount = 0;
+        switch (exec.getName()) {
+            case DbleServer.FRONT_WORKER_NAME: {
+                if (threadRunnableMap == null) {
+                    activeCount = 0;
+                } else {
+                    activeCount = threadRunnableMap.values().stream().filter(ele -> (ele instanceof FrontendRunnable) && ((FrontendRunnable) ele).getThreadContext().isDoingTask()).count();
+                }
 
+                queueSize = DbleServer.getInstance().getFrontHandlerQueue().size();
+                for (IOProcessor frontProcessor : DbleServer.getInstance().getFrontProcessors()) {
+                    for (FrontendConnection con : frontProcessor.getFrontends().values()) {
+                        if (con == null) {
+                            continue;
+                        }
+                        final AbstractService service = con.getService();
+                        if (!con.isManager() && service instanceof FrontendService) {
+                            queueSize += ((FrontendService<?>) service).getRecvTaskQueueSize();
+                        }
+                    }
+                }
+                final ThreadPoolStatistic statistic = ThreadPoolStatistic.getFrontBusiness();
+                completedTaskCount = statistic.getCompletedTaskCount().longValue();
+                totalCount = activeCount + queueSize + completedTaskCount;
+            }
+            break;
+            case DbleServer.FRONT_MANAGER_WORKER_NAME: {
+                if (threadRunnableMap == null) {
+                    activeCount = 0;
+                } else {
+                    activeCount = threadRunnableMap.values().stream().filter(ele -> (ele instanceof FrontendRunnable) && ((FrontendRunnable) ele).getThreadContext().isDoingTask()).count();
+                }
+
+                queueSize = DbleServer.getInstance().getManagerFrontHandlerQueue().size();
+                for (IOProcessor frontProcessor : DbleServer.getInstance().getFrontProcessors()) {
+                    for (FrontendConnection con : frontProcessor.getFrontends().values()) {
+                        if (con == null) {
+                            continue;
+                        }
+                        final AbstractService service = con.getService();
+                        if (con.isManager() && service instanceof FrontendService) {
+                            queueSize += ((FrontendService<?>) service).getRecvTaskQueueSize();
+                        }
+                    }
+                }
+                final ThreadPoolStatistic statistic = ThreadPoolStatistic.getFrontManager();
+                completedTaskCount = statistic.getCompletedTaskCount().longValue();
+                totalCount = activeCount + queueSize + completedTaskCount;
+            }
+            break;
+            default:
+                break;
+        }
+        Row row = new Row();
+        row.setName(exec.getName());
+        row.setPoolSize(exec.getPoolSize());
+        row.setActiveTaskCount(activeCount);
+        row.setTaskQueueSize(queueSize);
+        row.setCompletedTask(completedTaskCount);
+        row.setTotalTaskCount(totalCount);
+        return row;
     }
 
 

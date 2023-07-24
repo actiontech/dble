@@ -76,6 +76,7 @@ public final class DbleThreadPool extends ManagerWritableTable {
         List<LinkedHashMap<String, String>> lst = new ArrayList<>(5);
         lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getTimerExecutor())));
         lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getFrontExecutor())));
+        lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getManagerFrontExecutor())));
         lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getBackendExecutor())));
         lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getComplexQueryExecutor())));
         lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getWriteToBackendExecutor())));
@@ -147,6 +148,8 @@ public final class DbleThreadPool extends ManagerWritableTable {
         switch (executorName) {
             case DbleServer.FRONT_WORKER_NAME:
                 return "frontWorker";
+            case DbleServer.FRONT_MANAGER_WORKER_NAME:
+                return "managerFrontWorker";
             case DbleServer.BACKEND_WORKER_NAME:
                 return "backendWorker";
             case DbleServer.WRITE_TO_BACKEND_WORKER_NAME:
@@ -284,6 +287,12 @@ public final class DbleThreadPool extends ManagerWritableTable {
                     }
                 }
                 break;
+            case DbleServer.FRONT_MANAGER_WORKER_NAME:
+                for (int i = 0; i < increaseVal; i++) {
+                    LOGGER.debug("will execute thread:{}", nameableExecutor.toString());
+                    nameableExecutor.execute(new FrontendBlockRunnable((BlockingDeque<ServiceTask>) server.getManagerFrontHandlerQueue()));
+                }
+                break;
             case DbleServer.BACKEND_WORKER_NAME:
                 if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
                     for (int i = 0; i < increaseVal; i++) {
@@ -324,6 +333,8 @@ public final class DbleThreadPool extends ManagerWritableTable {
         switch (executorName) {
             case DbleServer.FRONT_WORKER_NAME:
                 return (NameableExecutor) server.getFrontExecutor();
+            case DbleServer.FRONT_MANAGER_WORKER_NAME:
+                return (NameableExecutor) server.getManagerFrontExecutor();
             case DbleServer.BACKEND_WORKER_NAME:
                 return (NameableExecutor) server.getBackendExecutor();
             case DbleServer.WRITE_TO_BACKEND_WORKER_NAME:

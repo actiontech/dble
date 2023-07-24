@@ -274,12 +274,12 @@ public class ServerConfig {
                         //check shardingNode and dbGroup change
                         List<String> strShardingNodes = newSchemaConfig.getDefaultShardingNodes();
                         String strApNode = newSchemaConfig.getDefaultApNode();
-                        if (isShardingNodeChanged(strShardingNodes, newShardingNodes) || isApNodeChanged(strApNode, newApNodes)) {
+                        if (isShardingNodeChanged(strShardingNodes, newShardingNodes) || (!StringUtil.isBlank(strApNode) && isApNodeChanged(strApNode, newApNodes))) {
                             delSchema.add(oldSchema);
                             reloadSchema.add(oldSchema);
                             continue;
                         } else if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 &&
-                                (isDbGroupChanged(strShardingNodes, newShardingNodes) || isDbGroupChangedByApNode(strApNode, newApNodes))) { // reload @@config_all not contains -s
+                                (isDbGroupChanged(strShardingNodes, newShardingNodes) || (!StringUtil.isBlank(strApNode) && isDbGroupChangedByApNode(strApNode, newApNodes)))) { // reload @@config_all not contains -s
                             delSchema.add(oldSchema);
                             reloadSchema.add(oldSchema);
                             continue;

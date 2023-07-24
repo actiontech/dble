@@ -61,6 +61,7 @@ public final class SystemConfig {
     private int NIOBackendRW = NIOFrontRW;
     // CHECKSTYLE:ON
     private int frontWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
+    private int managerFrontWorker = (NIOFrontRW > 2) ? NIOFrontRW / 2 : 2;
     private int backendWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
     private int complexQueryWorker = frontWorker > 8 ? 8 : frontWorker;
     private int writeToBackendWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
@@ -866,6 +867,20 @@ public final class SystemConfig {
         } else {
             String message = ParameterMapping.getErrorCompatibleMessage("frontWorker");
             problemReporter.warn(message + String.format(WARNING_FORMAT, "frontWorker", frontWorker, this.frontWorker));
+        }
+    }
+
+    public int getManagerFrontWorker() {
+        return managerFrontWorker;
+    }
+
+    @SuppressWarnings("unused")
+    public void setManagerFrontWorker(int managerFrontWorker) {
+        if (managerFrontWorker > 0) {
+            this.managerFrontWorker = managerFrontWorker;
+        } else {
+            String message = ParameterMapping.getErrorCompatibleMessage("managerFrontWorker");
+            problemReporter.warn(message + String.format(WARNING_FORMAT, "managerFrontWorker", managerFrontWorker, this.managerFrontWorker));
         }
     }
 
@@ -1948,6 +1963,7 @@ public final class SystemConfig {
                 ", NIOFrontRW=" + NIOFrontRW +
                 ", NIOBackendRW=" + NIOBackendRW +
                 ", frontWorker=" + frontWorker +
+                ", managerFrontWorker=" + managerFrontWorker +
                 ", backendWorker=" + backendWorker +
                 ", complexQueryWorker=" + complexQueryWorker +
                 ", writeToBackendWorker=" + writeToBackendWorker +

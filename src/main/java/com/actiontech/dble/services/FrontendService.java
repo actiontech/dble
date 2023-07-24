@@ -52,7 +52,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     private final Queue<ServiceTask> taskQueue = new PriorityQueue<>();
     // will non null if is dong task
     private volatile Long doingTaskThread = null;
-    private AtomicLong taskId = new AtomicLong(1);
+    protected AtomicLong taskId = new AtomicLong(1);
     // current task index,Will increased when every new task is processed。
     private long currentTaskIndex = 0;
     // consumed task  id,Used to indicate next task id.(this=nextTaskId-1)
@@ -186,7 +186,11 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
             }
 
             super.consumeSingleTask(serviceTask);
-            ThreadPoolStatistic.getFrontBusiness().getCompletedTaskCount().increment();
+            if (serviceTask.getService() instanceof ManagerService) {
+                ThreadPoolStatistic.getFrontManager().getCompletedTaskCount().increment();
+            } else {
+                ThreadPoolStatistic.getFrontBusiness().getCompletedTaskCount().increment();
+            }
         } catch (NeedDelayedException e) {
             throw e;
         } catch (Throwable e) {

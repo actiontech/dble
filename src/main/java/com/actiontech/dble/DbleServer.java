@@ -71,6 +71,7 @@ public final class DbleServer {
     private final AtomicBoolean backupLocked = new AtomicBoolean(false);
 
     public static final String FRONT_WORKER_NAME = "frontWorker";
+    public static final String FRONT_MANAGER_WORKER_NAME = "managerFrontWorker";
     public static final String BACKEND_WORKER_NAME = "backendWorker";
     public static final String WRITE_TO_BACKEND_WORKER_NAME = "writeToBackendWorker";
     public static final String COMPLEX_QUERY_EXECUTOR_NAME = "complexQueryWorker";
@@ -107,6 +108,7 @@ public final class DbleServer {
     private ExecutorService nioFrontExecutor;
     private ExecutorService nioBackendExecutor;
     private ExecutorService frontExecutor;
+    private ExecutorService managerFrontExecutor;
     private ExecutorService backendExecutor;
     private ExecutorService writeToBackendExecutor;
     private ExecutorService complexQueryExecutor;
@@ -114,6 +116,7 @@ public final class DbleServer {
     private Map<String, ThreadWorkUsage> threadUsedMap = new ConcurrentHashMap<>();
 
     private Deque<ServiceTask> frontHandlerQueue;
+    private Deque<ServiceTask> managerFrontHandlerQueue;
     private BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
 
     private Queue<ServiceTask> concurrentBackHandlerQueue;
@@ -330,6 +333,7 @@ public final class DbleServer {
 
     private void initExecutor(int frontProcessorCount, int backendProcessorCount) {
         frontExecutor = ExecutorUtil.createFixed(FRONT_WORKER_NAME, SystemConfig.getInstance().getFrontWorker(), runnableMap);
+        managerFrontExecutor = ExecutorUtil.createFixed(FRONT_MANAGER_WORKER_NAME, SystemConfig.getInstance().getManagerFrontWorker(), runnableMap);
         backendExecutor = ExecutorUtil.createFixed(BACKEND_WORKER_NAME, SystemConfig.getInstance().getBackendWorker(), runnableMap);
         writeToBackendExecutor = ExecutorUtil.createFixed(WRITE_TO_BACKEND_WORKER_NAME, SystemConfig.getInstance().getWriteToBackendWorker(), runnableMap);
         complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexQueryWorker(), null);
@@ -387,7 +391,11 @@ public final class DbleServer {
             for (int i = 0; i < SystemConfig.getInstance().getFrontWorker(); i++) {
                 frontExecutor.execute(new FrontendBlockRunnable((BlockingDeque<ServiceTask>) frontHandlerQueue));
             }
+        }
 
+        managerFrontHandlerQueue = new LinkedBlockingDeque<>(SystemConfig.getInstance().getManagerFrontWorker() * 3000);
+        for (int i = 0; i < SystemConfig.getInstance().getManagerFrontWorker(); i++) {
+            managerFrontExecutor.execute(new FrontendBlockRunnable((BlockingDeque<ServiceTask>) managerFrontHandlerQueue));
         }
 
         writeToBackendQueue = new LinkedBlockingQueue<>();
@@ -442,6 +450,9 @@ public final class DbleServer {
         return frontHandlerQueue;
     }
 
+    public Deque<ServiceTask> getManagerFrontHandlerQueue() {
+        return managerFrontHandlerQueue;
+    }
 
     // check the closed/overtime connection
     public Runnable processorCheck() {
@@ -665,6 +676,10 @@ public final class DbleServer {
 
     public ExecutorService getFrontExecutor() {
         return frontExecutor;
+    }
+
+    public ExecutorService getManagerFrontExecutor() {
+        return managerFrontExecutor;
     }
 
     public ExecutorService getWriteToBackendExecutor() {

@@ -181,7 +181,7 @@ public class HandlerBuilder {
                 sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
             }
         }
-        return new RouteResultsetNode(routeNode.getName(), ServerParse.SELECT, sql, tableSet);
+        return new RouteResultsetNode(routeNode.getName(), ServerParse.SELECT, sql, tableSet, routeNode.isApNode());
     }
 
     /**

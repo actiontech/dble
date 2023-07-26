@@ -45,6 +45,7 @@
 #-DNIOFrontRW=4
 #-DNIOBackendRW=12
 #-DfrontWorker=4
+#-DmanagerFrontWorker=2
 #-DbackendWorker=12
 #-DcomplexQueryWorker=8
 #-DwriteToBackendWorker=4

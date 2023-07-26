@@ -258,8 +258,8 @@ public class PushDownVisitor extends MysqlVisitor {
                     colNameCount = colNameCount.replace(getMadeAggAlias(funName), getMadeAggAlias("COUNT"));
                     String colNameSum = replaceAll(colName, toReplace, "SUM(");
                     colNameSum = colNameSum.replace(getMadeAggAlias(funName), getMadeAggAlias("SUM"));
-                    String colNameVar = replaceAll(colName, toReplace, "VARIANCE(");
-                    colNameVar = colNameVar.replace(getMadeAggAlias(funName), getMadeAggAlias("VARIANCE"));
+                    String colNameVar = replaceAll(colName, toReplace, "VAR_POP(");
+                    colNameVar = colNameVar.replace(getMadeAggAlias(funName), getMadeAggAlias("VAR_POP"));
                     sqlBuilder.append(colNameCount).append(",").append(colNameSum).append(",").append(colNameVar).append(",");
                     continue;
                 }

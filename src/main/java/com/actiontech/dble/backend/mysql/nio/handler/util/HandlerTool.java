@@ -212,7 +212,7 @@ public final class HandlerTool {
             // variance: v[0]:count,v[1]:sum,v[2]:variance(locally)
             String colNameCount = colName.replace(funName + "(", "COUNT(");
             String colNameSum = colName.replace(funName + "(", "SUM(");
-            String colNameVar = colName.replace(funName + "(", "VARIANCE(");
+            String colNameVar = colName.replace(funName + "(", "VAR_POP(");
             Item sumFuncCount = new ItemField(null, null, colNameCount);
             sumFuncCount.setPushDownName(
                     pdName.replace(MysqlVisitor.getMadeAggAlias(funName), MysqlVisitor.getMadeAggAlias("COUNT")));
@@ -221,7 +221,7 @@ public final class HandlerTool {
                     pdName.replace(MysqlVisitor.getMadeAggAlias(funName), MysqlVisitor.getMadeAggAlias("SUM")));
             Item sumFuncVar = new ItemField(null, null, colNameVar);
             sumFuncVar.setPushDownName(
-                    pdName.replace(MysqlVisitor.getMadeAggAlias(funName), MysqlVisitor.getMadeAggAlias("VARIANCE")));
+                    pdName.replace(MysqlVisitor.getMadeAggAlias(funName), MysqlVisitor.getMadeAggAlias("VAR_POP")));
             Item itemCount = createFieldItem(sumFuncCount, fields, startIndex);
             Item itemSum = createFieldItem(sumFuncSum, fields, startIndex);
             Item itemVar = createFieldItem(sumFuncVar, fields, startIndex);

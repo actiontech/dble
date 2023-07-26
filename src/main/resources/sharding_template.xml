@@ -52,8 +52,8 @@
     <schema name="testdb2" shardingNode="dn5"/>
 
     <schema name="testdb3" apNode="apNode1">
-        <globalTable name="tb_global1" shardingNode="dn1,dn2" sqlMaxLimit="103"/>
-        <globalTable name="tb_global1" shardingNode="dn1,dn2,dn3,dn4" cron="0 0 0 * * ?" checkClass="CHECKSUM"/>
+        <shardingTable name="tb_enum_sharding" shardingNode="dn1,dn2" sqlMaxLimit="200" function="func_enum"
+                       shardingColumn="code"/>
     </schema>
     <shardingNode name="dn1" dbGroup="dbGroup1" database="db_1"/>
     <shardingNode name="dn2" dbGroup="dbGroup2" database="db_2"/>

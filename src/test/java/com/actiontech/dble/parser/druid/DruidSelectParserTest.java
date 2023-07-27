@@ -143,7 +143,8 @@ public class DruidSelectParserTest {
         String origSQL10 = "select VAR_SAMP(id) from sbtest1";
         String origSQL11 = "select id from sbtest1 group by id";
         String origSQL12 = "select id from (select min(id) as id from sbtest1) a";
-        ArrayList<String> list = Lists.newArrayList(origSQL1, origSQL2, origSQL3, origSQL4, origSQL5, origSQL6, origSQL7, origSQL8, origSQL9, origSQL10, origSQL11, origSQL12);
+        String origSQL13 = "select id from sbtest1 where id = (select min(id) from sbtest1)";
+        ArrayList<String> list = Lists.newArrayList(origSQL1, origSQL2, origSQL3, origSQL4, origSQL5, origSQL6, origSQL7, origSQL8, origSQL9, origSQL10, origSQL11, origSQL12, origSQL13);
         for (String sql : list) {
             SQLStatement stmt = DruidUtil.parseSQL(sql);
             MySqlSelectQueryBlock query = (MySqlSelectQueryBlock) ((SQLSelectStatement) stmt).getSelect().getQuery();

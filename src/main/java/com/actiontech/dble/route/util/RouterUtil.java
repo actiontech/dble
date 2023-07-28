@@ -37,10 +37,7 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLSetQuantifier;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
-import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
-import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
-import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.stat.TableStat;
@@ -1394,6 +1391,35 @@ public final class RouterUtil {
         return false;
     }
 
+    private static boolean checkFunctionOfWhere(SQLExpr whereExpr) {
+        if (whereExpr instanceof SQLBinaryOpExpr) {
+            SQLBinaryOpExpr tmp = (SQLBinaryOpExpr) whereExpr;
+            SQLExpr left = tmp.getLeft();
+            boolean isAggregateOfLeft = false;
+            if (left instanceof SQLBinaryOpExpr) {
+                isAggregateOfLeft = checkFunctionOfWhere(left);
+            } else if (left instanceof SQLQueryExpr) {
+                SQLSelectQuery subQuery = ((SQLQueryExpr) left).getSubQuery().getQuery();
+                isAggregateOfLeft = checkFunction(subQuery);
+            }
+            if (isAggregateOfLeft) {
+                return true;
+            }
+            SQLExpr right = tmp.getRight();
+            boolean isAggregateOfRight = false;
+            if (right instanceof SQLBinaryOpExpr) {
+                isAggregateOfRight = checkFunctionOfWhere(right);
+            } else if (right instanceof SQLQueryExpr) {
+                SQLSelectQuery subQuery = ((SQLQueryExpr) right).getSubQuery().getQuery();
+                isAggregateOfRight = checkFunction(subQuery);
+            }
+            if (isAggregateOfRight) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     private static boolean checkSQLNotSupportOfTableSource(SQLTableSource tableSource) {
         if (tableSource instanceof SQLExprTableSource) {
@@ -1447,6 +1473,12 @@ public final class RouterUtil {
                         return true;
                     }
                 }
+            }
+            //where-variables
+            SQLExpr whereExpr = mysqlSelectQuery.getWhere();
+            isAggregate = checkFunctionOfWhere(whereExpr);
+            if (isAggregate) {
+                return true;
             }
             //from
             SQLTableSource tableSource = mysqlSelectQuery.getFrom();

@@ -19,18 +19,15 @@ import com.actiontech.dble.services.manager.response.ChangeItem;
 import com.actiontech.dble.services.manager.response.ChangeItemType;
 import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.CollectionUtil;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.apache.logging.log4j.util.Strings;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 public final class ConfigUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigUtil.class);
@@ -87,128 +84,178 @@ public final class ConfigUtil {
         return schemaList;
     }
 
-    public static String getAndSyncKeyVariables(List<ChangeItem> changeItemList, boolean needSync) throws Exception {
-        TraceManager.TraceObject traceObject = TraceManager.threadTrace("sync-key-variables");
-        try {
-            String msg = null;
-            List<ChangeItem> needCheckItemList = changeItemList.stream()
-                    //add dbInstance or add dbGroup or (update dbInstance and need testConn)
-                    .filter(changeItem -> ((changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE || changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP) &&
-                            changeItem.getType() == ChangeType.ADD) ||
-                            (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectTestConn()))
-                    .collect(Collectors.toList());
-            if (changeItemList.size() == 0 || needCheckItemList == null || needCheckItemList.isEmpty()) {
-                //with no dbGroups, do not check the variables
-                return null;
-            }
-            Map<String, Future<KeyVariables>> keyVariablesTaskMap = Maps.newHashMap();
-            List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
-            getAndSyncKeyVariablesForDataSources(needCheckItemList, keyVariablesTaskMap, needSync, dbInstanceList);
+    public static boolean isAllDbInstancesChange(List<ChangeItem> changeItemList) {
+        if (changeItemList.size() == 0) return false;
 
-            Set<String> diffGroup = new HashSet<>();
-            int minNodePacketSize = Integer.MAX_VALUE;
-            int minVersion = Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1));
-            Boolean lowerCase = DbleServer.getInstance().getConfig().isLowerCase();
-            for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
-                String dataSourceName = entry.getKey();
-                Future<KeyVariables> future = entry.getValue();
-                KeyVariables keyVariables = future.get();
-                if (keyVariables != null) {
-                    if (dbInstanceList.size() == 1 || lowerCase == null) {
-                        lowerCase = keyVariables.isLowerCase();
-                    } else if (keyVariables.isLowerCase() != lowerCase && dbInstanceList.size() > 1) {
-                        diffGroup.add(dataSourceName);
+        Map<String, PhysicalDbInstance> oldDbInstanceMaps = new HashMap<>();
+        DbleServer.getInstance().getConfig().getDbGroups()
+                .values().stream().forEach(group -> group.getAllDbInstanceMap()
+                .values().stream().forEach(db -> {
+                    oldDbInstanceMaps.put(genDataSourceKey(group.getGroupName(), db.getName()), db);
+                }));
+
+        if (CollectionUtil.isEmpty(oldDbInstanceMaps)) return false;
+
+        for (ChangeItem changeItem : changeItemList) {
+            switch (changeItem.getItemType()) {
+                case PHYSICAL_DB_GROUP:
+                    if (changeItem.getType() == ChangeType.DELETE) {
+                        ((PhysicalDbGroup) changeItem.getItem()).getAllDbInstanceMap().values().stream().forEach(db -> {
+                            oldDbInstanceMaps.remove(genDataSourceKey(db.getDbGroupConfig().getName(), db.getName()));
+                        });
                     }
-                    minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
-                    int version = Integer.parseInt(keyVariables.getVersion().substring(0, 1));
-                    minVersion = Math.min(minVersion, version);
-                }
+                    break;
+                case PHYSICAL_DB_INSTANCE:
+                    if ((changeItem.getType() == ChangeType.UPDATE || changeItem.getType() == ChangeType.DELETE)) {
+                        PhysicalDbInstance db = ((PhysicalDbInstance) changeItem.getItem());
+                        oldDbInstanceMaps.remove(genDataSourceKey(db.getDbGroupConfig().getName(), db.getName()));
+                    }
+                    break;
+                default:
+                    break;
             }
-            if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
-                SystemConfig.getInstance().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
-                msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
-                LOGGER.warn(msg);
-            }
-            if (minVersion < Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1))) {
-                throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend mysql node,pls check the backend mysql node.");
-            }
-            if (diffGroup.size() != 0) {
-                // if all datasoure's lower case are not equal, throw exception
-                StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend MySQLs are different.");
-                sb.append("These previous MySQL's value is");
-                sb.append(DbleServer.getInstance().getConfig().isLowerCase() ? " not 0" : " 0");
-                sb.append(".but these MySQL's [");
-                sb.append(Strings.join(diffGroup, ','));
-                sb.append("] value is");
-                sb.append(DbleServer.getInstance().getConfig().isLowerCase() ? " 0" : " not 0");
-                sb.append(".");
-                throw new IOException(sb.toString());
-            }
-            dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
-            DbleTempConfig.getInstance().setLowerCase(lowerCase);
-            return msg;
-        } finally {
-            TraceManager.finishSpan(traceObject);
         }
+        oldDbInstanceMaps.values().removeIf(db -> db.isDisabled() || !db.isTestConnSuccess() || db.isFakeNode());
+        return CollectionUtil.isEmpty(oldDbInstanceMaps);
     }
 
-    public static String getAndSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws Exception {
+    public static List<String> getAndSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("sync-key-variables");
         try {
-            StringBuilder sb = new StringBuilder();
-            Map<String, PhysicalDbGroup> mysqlDbGroups = new HashMap<>();
-            Map<String, PhysicalDbGroup> clickHouseDbGroups = new HashMap<>();
-            dbGroups.forEach((k, v) -> {
-                if (v.getDbGroupConfig().instanceDatabaseType() == DataBaseType.MYSQL) {
-                    mysqlDbGroups.put(k, v);
-                } else {
-                    clickHouseDbGroups.put(k, v);
+            Set<PhysicalDbInstance> mysqlDbInstances = new HashSet<>();
+            Set<PhysicalDbInstance> ckDbInstances = new HashSet<>();
+            for (Map.Entry<String, PhysicalDbGroup> entry : dbGroups.entrySet()) {
+                for (PhysicalDbInstance ds : entry.getValue().getDbInstances(true)) {
+                    if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
+                        continue;
+                    }
+                    if (ds.getConfig().getDataBaseType() == DataBaseType.MYSQL) {
+                        mysqlDbInstances.add(ds);
+                    } else {
+                        ckDbInstances.add(ds);
+                    }
                 }
-            });
-            String mysqlSyncKeyVariables = getMysqlSyncKeyVariables(mysqlDbGroups, needSync);
-            if (!StringUtil.isEmpty(mysqlSyncKeyVariables)) {
-                sb.append(mysqlSyncKeyVariables);
             }
-            String clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(clickHouseDbGroups, needSync);
-            if (!StringUtil.isEmpty(clickHouseSyncKeyVariables)) {
-                sb.append(clickHouseSyncKeyVariables);
-            }
-            return sb.length() == 0 ? null : sb.toString();
+
+            List<String> syncKeyVariables = Lists.newArrayList();
+            List<String> clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(ckDbInstances, true, needSync, !CollectionUtil.isEmpty(mysqlDbInstances));
+            syncKeyVariables.addAll(clickHouseSyncKeyVariables);
+            List<String> mysqlSyncKeyVariables = getMysqlSyncKeyVariables(mysqlDbInstances, true, needSync, !CollectionUtil.isEmpty(ckDbInstances));
+            syncKeyVariables.addAll(mysqlSyncKeyVariables);
+            return syncKeyVariables;
         } finally {
             TraceManager.finishSpan(traceObject);
         }
     }
 
-    @Nullable
-    private static String getMysqlSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws InterruptedException, ExecutionException, IOException {
-        String msg = null;
-        if (dbGroups.size() == 0) {
-            //with no dbGroups, do not check the variables
-            return null;
-        }
-        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
-        List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
-        getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync, dbInstanceList);
+    public static List<String> getAndSyncKeyVariables(List<ChangeItem> changeItemList, boolean needSync) throws Exception {
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("sync-key-variables");
+        try {
+            Set<PhysicalDbInstance> mysqlDbInstances = new HashSet<>();
+            Set<PhysicalDbInstance> ckDbInstances = new HashSet<>();
 
-        boolean lowerCase = false;
-        boolean isFirst = true;
-        Set<String> firstGroup = new HashSet<>();
-        Set<String> secondGroup = new HashSet<>();
+            for (ChangeItem changeItem : changeItemList) {
+                // add dbInstance or add dbGroup or (update dbInstance and need testConn)
+                if (((changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE || changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP) &&
+                        changeItem.getType() == ChangeType.ADD) ||
+                        (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectTestConn())) {
+
+                    // filter not available
+                    if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE) {
+                        PhysicalDbInstance ds = (PhysicalDbInstance) changeItem.getItem();
+                        if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
+                            continue;
+                        }
+                        if (ds.getConfig().getDataBaseType() == DataBaseType.MYSQL) {
+                            mysqlDbInstances.add(ds);
+                        } else {
+                            ckDbInstances.add(ds);
+                        }
+                    } else if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP) {
+                        PhysicalDbGroup dbGroup = (PhysicalDbGroup) changeItem.getItem();
+                        for (PhysicalDbInstance ds : dbGroup.getAllDbInstanceMap().values()) {
+                            if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
+                                continue;
+                            }
+                            if (ds.getConfig().getDataBaseType() == DataBaseType.MYSQL) {
+                                mysqlDbInstances.add(ds);
+                            } else {
+                                ckDbInstances.add(ds);
+                            }
+                        }
+                    }
+                }
+            }
+
+            List<String> syncKeyVariables = Lists.newArrayList();
+            List<String> clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(ckDbInstances, false, needSync, !CollectionUtil.isEmpty(mysqlDbInstances));
+            syncKeyVariables.addAll(clickHouseSyncKeyVariables);
+            List<String> mysqlSyncKeyVariables = getMysqlSyncKeyVariables(mysqlDbInstances, false, needSync, !CollectionUtil.isEmpty(ckDbInstances));
+            syncKeyVariables.addAll(mysqlSyncKeyVariables);
+            return syncKeyVariables;
+        } finally {
+            TraceManager.finishSpan(traceObject);
+        }
+    }
+
+    private static List<String> getMysqlSyncKeyVariables(Set<PhysicalDbInstance> mysqlDbInstances, boolean isAllChange, boolean needSync, boolean existClickHouse) throws InterruptedException, ExecutionException, IOException {
+        if (mysqlDbInstances.size() == 0)
+            return new ArrayList<>();
+        Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(mysqlDbInstances.size());
+        getAndSyncKeyVariablesForDataSources(mysqlDbInstances, keyVariablesTaskMap, needSync);
+        return diffMysqlKeyVariables(keyVariablesTaskMap, mysqlDbInstances, isAllChange, existClickHouse);
+    }
+
+    private static List<String> getClickHouseSyncKeyVariables(Set<PhysicalDbInstance> ckDbInstances, boolean isAllChange, boolean needSync, boolean existMysql) throws InterruptedException, ExecutionException, IOException {
+        if (ckDbInstances.size() == 0)
+            return new ArrayList<>();
+        Boolean lowerCase = (isAllChange && !existMysql) ? null : DbleServer.getInstance().getConfig().isLowerCase();
+        if (lowerCase != null && lowerCase) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("The configuration add Clickhouse. Since clickhouse is not case sensitive, so the values of lower_case_table_names for previous dbInstances must be 0.");
+            throw new IOException(sb.toString());
+        }
+
+        Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(ckDbInstances.size());
+        getAndSyncKeyVariablesForDataSources(ckDbInstances, keyVariablesTaskMap, needSync);
+        return diffClickHouseKeyVariables(keyVariablesTaskMap, ckDbInstances);
+    }
+
+
+    private static List<String> diffMysqlKeyVariables(Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap,
+                                                      Set<PhysicalDbInstance> dbInstanceList,
+                                                      boolean isAllChange,
+                                                      boolean existClickHouse) throws InterruptedException, ExecutionException, IOException { // Mysql
+        List<String> msgList = new ArrayList<>();
+        if (CollectionUtil.isEmpty(keyVariablesTaskMap))
+            return msgList;
+
+        String msg;
+        Boolean lowerCase = isAllChange ? null : DbleServer.getInstance().getConfig().isLowerCase();
+        boolean reInitLowerCase = false;
+        Set<String> leftGroup = new HashSet<>();
+        Set<String> rightGroup = new HashSet<>();
         int minNodePacketSize = Integer.MAX_VALUE;
         int minVersion = VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion());
-        for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
-            String dataSourceName = entry.getKey();
+        for (Map.Entry<VariableMapKey, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
+            VariableMapKey variableMapKey = entry.getKey();
             Future<KeyVariables> future = entry.getValue();
             KeyVariables keyVariables = future.get();
             if (keyVariables != null) {
-                if (isFirst) {
+                // lowerCase
+                if (lowerCase == null) {
+                    reInitLowerCase = true;
                     lowerCase = keyVariables.isLowerCase();
-                    isFirst = false;
-                    firstGroup.add(dataSourceName);
-                } else if (keyVariables.isLowerCase() != lowerCase) {
-                    secondGroup.add(dataSourceName);
+                    leftGroup.add(variableMapKey.getDataSourceName());
+                } else if (keyVariables.isLowerCase() == lowerCase) {
+                    leftGroup.add(variableMapKey.getDataSourceName());
+                } else {
+                    rightGroup.add(variableMapKey.getDataSourceName());
                 }
+
                 minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
+
+                // version
                 Integer majorVersion = VersionUtil.getMajorVersionWithoutDefaultValue(keyVariables.getVersion());
                 if (majorVersion == null) {
                     LOGGER.warn("the backend mysql server version  [{}] is unrecognized, we will treat as default official  mysql version 5.*. ", keyVariables.getVersion());
@@ -217,69 +264,70 @@ public final class ConfigUtil {
                 minVersion = Math.min(minVersion, majorVersion);
             }
         }
+
+        // maxPacketSize
         if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
             SystemConfig.getInstance().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
             msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
+            msgList.add(msg);
             LOGGER.warn(msg);
         }
-        if (minVersion < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
-            throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend mysql node,pls check the backend mysql node.");
-        }
-        if (secondGroup.size() != 0) {
-            // if all datasoure's lower case are not equal, throw exception
-            StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend MySQLs are different.");
-            String firstGroupValue;
-            String secondGroupValue;
-            if (lowerCase) {
-                firstGroupValue = " not 0 :";
-                secondGroupValue = " 0 :";
+
+        // version
+        checkVersion(minVersion, "mysql");
+
+        // if all dbInstance's lower case are not equal, throw exception
+        if (rightGroup.size() != 0) {
+            StringBuilder sb = new StringBuilder();
+            if (existClickHouse) {
+                sb.append("The configuration contains Clickhouse. Since clickhouse is not case sensitive, so the values of lower_case_table_names for dbInstances must be 0. ");
             } else {
-                firstGroupValue = " 0 :";
-                secondGroupValue = " not 0 :";
+                sb.append("The values of lower_case_table_names for dbInstances are different. ");
             }
-            sb.append("These MySQL's value is");
-            sb.append(firstGroupValue);
-            sb.append(Strings.join(firstGroup, ','));
-            sb.append(".And these MySQL's value is");
-            sb.append(secondGroupValue);
-            sb.append(Strings.join(secondGroup, ','));
-            sb.append(".");
+            if (reInitLowerCase) {
+                sb.append("These dbInstances's [");
+                sb.append(Strings.join(leftGroup, ','));
+                sb.append("] value is");
+                sb.append(lowerCase ? " not 0" : " 0");
+                sb.append(". And these dbInstances's [");
+                sb.append(Strings.join(rightGroup, ','));
+                sb.append("] value is");
+                sb.append(lowerCase ? " 0" : " not 0");
+                sb.append(".");
+            } else {
+                sb.append("These previous dbInstances's value is");
+                sb.append(lowerCase ? " not 0" : " 0");
+                sb.append(".but these dbInstances's [");
+                sb.append(Strings.join(rightGroup, ','));
+                sb.append("] value is");
+                sb.append(lowerCase ? " 0" : " not 0");
+                sb.append(".");
+            }
             throw new IOException(sb.toString());
+        }
+
+        if (existClickHouse && (lowerCase != null && lowerCase)) {
+            throw new IOException("The configuration contains Clickhouse. Since clickhouse is not case sensitive, so the values of lower_case_table_names for all dbInstances must be 0. Current all dbInstances are 1.");
         }
         dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
         DbleTempConfig.getInstance().setLowerCase(lowerCase);
-        return msg;
+        return msgList;
     }
 
-    @Nullable
-    private static String getClickHouseSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws InterruptedException, ExecutionException, IOException {
-        String msg = null;
-        if (dbGroups.size() == 0) {
-            //with no dbGroups, do not check the variables
-            return null;
-        }
-        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
-        List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
-        getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync, dbInstanceList);
+    private static List<String> diffClickHouseKeyVariables(Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap,
+                                                           Set<PhysicalDbInstance> dbInstanceList) throws InterruptedException, ExecutionException, IOException { // Mysql
+        List<String> msgList = new ArrayList<>();
+        if (CollectionUtil.isEmpty(keyVariablesTaskMap))
+            return msgList;
 
-        boolean lowerCase = false;
-        boolean isFirst = true;
-        Set<String> firstGroup = new HashSet<>();
-        Set<String> secondGroup = new HashSet<>();
+        String msg;
+        final boolean lowerCaseA = false; // clickhouse is not case sensitive
         int minNodePacketSize = Integer.MAX_VALUE;
         int minVersion = VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion());
-        for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
-            String dataSourceName = entry.getKey();
+        for (Map.Entry<VariableMapKey, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
             Future<KeyVariables> future = entry.getValue();
             KeyVariables keyVariables = future.get();
             if (keyVariables != null) {
-                if (isFirst) {
-                    lowerCase = keyVariables.isLowerCase();
-                    isFirst = false;
-                    firstGroup.add(dataSourceName);
-                } else if (keyVariables.isLowerCase() != lowerCase) {
-                    secondGroup.add(dataSourceName);
-                }
                 minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                 Integer majorVersion = VersionUtil.getMajorVersionWithoutDefaultValue(keyVariables.getVersion());
                 if (majorVersion == null) {
@@ -289,63 +337,36 @@ public final class ConfigUtil {
                 minVersion = Math.min(minVersion, majorVersion);
             }
         }
+        // maxPacketSize
         if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
             SystemConfig.getInstance().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
             msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
+            msgList.add(msg);
             LOGGER.warn(msg);
         }
-        if (minVersion < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
-            throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend clickHouse node,pls check the backend clickHouse node.");
-        }
-        if (secondGroup.size() != 0) {
-            // if all datasoure's lower case are not equal, throw exception
-            StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend clickHouse are different.");
-            String firstGroupValue;
-            String secondGroupValue;
-            if (lowerCase) {
-                firstGroupValue = " not 0 :";
-                secondGroupValue = " 0 :";
-            } else {
-                firstGroupValue = " 0 :";
-                secondGroupValue = " not 0 :";
-            }
-            sb.append("These clickHouse's value is");
-            sb.append(firstGroupValue);
-            sb.append(Strings.join(firstGroup, ','));
-            sb.append(".And these clickHouse's value is");
-            sb.append(secondGroupValue);
-            sb.append(Strings.join(secondGroup, ','));
-            sb.append(".");
-            throw new IOException(sb.toString());
-        }
+        // version
+        checkVersion(minVersion, "clickHouse");
+
         dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
-        DbleTempConfig.getInstance().setLowerCase(lowerCase);
-        return msg;
+        DbleTempConfig.getInstance().setLowerCase(lowerCaseA);
+        return msgList;
+
     }
 
+    private static void checkVersion(int currentMinVersion, String databaseType) throws ConfigException {
+        String fakeMySQLVersion = SystemConfig.getInstance().getFakeMySQLVersion();
+        if (currentMinVersion < VersionUtil.getMajorVersion(fakeMySQLVersion)) {
+            throw new ConfigException("the dble version[=" + fakeMySQLVersion + "] cannot be higher than the minimum version of the backend " + databaseType + " node,pls check the backend " + databaseType + " node.");
+        }
+    }
 
-    private static void getAndSyncKeyVariablesForDataSources(List<ChangeItem> changeItemList, Map<String, Future<KeyVariables>> keyVariablesTaskMap,
-                                                             boolean needSync, List<PhysicalDbInstance> dbInstanceList) throws InterruptedException {
-        ExecutorService service = Executors.newFixedThreadPool(changeItemList.size());
-        for (ChangeItem changeItem : changeItemList) {
-            Object item = changeItem.getItem();
-            if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE) {
-                PhysicalDbInstance ds = (PhysicalDbInstance) item;
-                if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
-                    continue;
-                }
-                getKeyVariablesForDataSource(service, ds, ds.getDbGroupConfig().getName(), keyVariablesTaskMap, needSync);
-                dbInstanceList.add(ds);
-            } else if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP) {
-                PhysicalDbGroup dbGroup = (PhysicalDbGroup) item;
-                for (PhysicalDbInstance ds : dbGroup.getAllDbInstanceMap().values()) {
-                    if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
-                        continue;
-                    }
-                    getKeyVariablesForDataSource(service, ds, ds.getDbGroupConfig().getName(), keyVariablesTaskMap, needSync);
-                    dbInstanceList.add(ds);
-                }
-            }
+    private static void getAndSyncKeyVariablesForDataSources(Set<PhysicalDbInstance> availableDbInstances,
+                                                             Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap,
+                                                             boolean needSync) throws InterruptedException {
+
+        ExecutorService service = Executors.newFixedThreadPool(availableDbInstances.size());
+        for (PhysicalDbInstance ds : availableDbInstances) {
+            getKeyVariablesForDataSource(service, ds, ds.getDbGroupConfig().getName(), keyVariablesTaskMap, needSync);
         }
         service.shutdown();
         int i = 0;
@@ -362,44 +383,45 @@ public final class ConfigUtil {
         }
     }
 
-    private static void getAndSyncKeyVariablesForDataSources(Map<String, PhysicalDbGroup> dbGroups, Map<String, Future<KeyVariables>> keyVariablesTaskMap,
-                                                             boolean needSync, List<PhysicalDbInstance> dbInstanceList) throws InterruptedException {
-        ExecutorService service = Executors.newFixedThreadPool(dbGroups.size());
-        for (Map.Entry<String, PhysicalDbGroup> entry : dbGroups.entrySet()) {
-            String hostName = entry.getKey();
-            PhysicalDbGroup pool = entry.getValue();
-
-            for (PhysicalDbInstance ds : pool.getDbInstances(true)) {
-                if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
-                    continue;
-                }
-                getKeyVariablesForDataSource(service, ds, hostName, keyVariablesTaskMap, needSync);
-                dbInstanceList.add(ds);
-            }
-        }
-        service.shutdown();
-        int i = 0;
-        while (!service.awaitTermination(100, TimeUnit.MILLISECONDS)) {
-            if (LOGGER.isDebugEnabled()) {
-                if (i == 0) {
-                    LOGGER.info("wait to get all dbInstances's get key variable");
-                }
-                i++;
-                if (i == 100) { //log every 10 seconds
-                    i = 0;
-                }
-            }
-        }
-    }
-
-    private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDbInstance ds, String hostName, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) {
-        String dataSourceName = genDataSourceKey(hostName, ds.getName());
+    private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDbInstance ds, String hostName, Map<VariableMapKey, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) {
+        VariableMapKey key = new VariableMapKey(genDataSourceKey(hostName, ds.getName()), ds);
         GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(ds, needSync);
         Future<KeyVariables> future = service.submit(task);
-        keyVariablesTaskMap.put(dataSourceName, future);
+        keyVariablesTaskMap.put(key, future);
     }
 
     private static String genDataSourceKey(String hostName, String dsName) {
         return hostName + ":" + dsName;
+    }
+
+    protected static class VariableMapKey {
+        private final String dataSourceName;
+        private final PhysicalDbInstance dbInstance;
+
+        protected VariableMapKey(String dataSourceName, PhysicalDbInstance dbInstance) {
+            this.dataSourceName = dataSourceName;
+            this.dbInstance = dbInstance;
+        }
+
+        protected String getDataSourceName() {
+            return dataSourceName;
+        }
+
+        protected PhysicalDbInstance getDbInstance() {
+            return dbInstance;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            VariableMapKey that = (VariableMapKey) o;
+            return dataSourceName.equals(that.dataSourceName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(dataSourceName);
+        }
     }
 }

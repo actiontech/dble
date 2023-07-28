@@ -7,6 +7,7 @@ package com.actiontech.dble.server.variables;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
@@ -33,6 +34,7 @@ public class VarsExtractorHandler {
     private Map<String, PhysicalDbGroup> dbGroups;
     private volatile SystemVariables systemVariables = null;
     private volatile boolean fetchFailed = false;
+    private boolean isExistClickHouse = false;
 
     public VarsExtractorHandler(Map<String, PhysicalDbGroup> dbGroups) {
         this.dbGroups = dbGroups;
@@ -44,7 +46,11 @@ public class VarsExtractorHandler {
 
     public SystemVariables execute() {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-system-variables-from-backend");
-        PhysicalDbInstance physicalDbInstance = getPhysicalDbInstance();
+        /**
+         * get system Variables only from available Mysql instances (does not contain ClickHouse instance);
+         * if there is only ClickHouse in the instances, just fake a copy of the system parameters, see tryInitVars().
+         */
+        PhysicalDbInstance physicalDbInstance = getMysqlPhysicalDbInstance();
         try {
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
             if (physicalDbInstance != null) {
@@ -53,7 +59,7 @@ public class VarsExtractorHandler {
                 waitOrRetry(physicalDbInstance);
             } else {
                 tryInitVars();
-                LOGGER.warn("No dbInstance is alive, server can not get 'show variables' result");
+                LOGGER.warn("No Mysql dbInstance is alive, server can not get 'show variables' result");
             }
             return systemVariables;
         } finally {
@@ -62,31 +68,36 @@ public class VarsExtractorHandler {
         }
     }
 
-    private PhysicalDbInstance getPhysicalDbInstance() {
+    private PhysicalDbInstance getMysqlPhysicalDbInstance() {
         if (dbGroups == null || dbGroups.isEmpty()) {
             return null;
         }
         PhysicalDbInstance ds = null;
-        List<PhysicalDbGroup> dbGroupList = dbGroups.values().stream().filter(dbGroup -> dbGroup.getDbGroupConfig().existInstanceProvideVars()).collect(Collectors.toList());
+
+        List<PhysicalDbGroup> dbGroupList = dbGroups.values().stream().collect(Collectors.toList());
         for (PhysicalDbGroup dbGroup : dbGroupList) {
             PhysicalDbInstance dsTest = dbGroup.getWriteDbInstance();
             if (dsTest.isTestConnSuccess()) {
-                ds = dsTest;
-            }
-            if (ds != null) {
-                break;
+                if (dsTest.getConfig().getDataBaseType() == DataBaseType.MYSQL) {
+                    ds = dsTest;
+                    break;
+                } else {
+                    isExistClickHouse = true;
+                }
             }
         }
         if (ds == null) {
+            outLoop:
             for (PhysicalDbGroup dbGroup : dbGroupList) {
                 for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
                     if (dsTest.isTestConnSuccess()) {
-                        ds = dsTest;
-                        break;
+                        if (dsTest.getConfig().getDataBaseType() == DataBaseType.MYSQL) {
+                            ds = dsTest;
+                            break outLoop;
+                        } else {
+                            isExistClickHouse = true;
+                        }
                     }
-                }
-                if (ds != null) {
-                    break;
                 }
             }
         }
@@ -144,11 +155,7 @@ public class VarsExtractorHandler {
     }
 
     private void tryInitVars() {
-        if (dbGroups == null || dbGroups.isEmpty()) {
-            return;
-        }
-        List<PhysicalDbGroup> dbGroupList = dbGroups.values().stream().filter(dbGroup -> dbGroup.getDbGroupConfig().existInstanceProvideVars()).collect(Collectors.toList());
-        if (dbGroupList.isEmpty()) {
+        if (isExistClickHouse) {
             systemVariables = new SystemVariables();
             systemVariables.setDefaultValue("lower_case_table_names", "0");
         }

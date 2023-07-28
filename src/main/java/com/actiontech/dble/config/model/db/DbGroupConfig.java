@@ -151,10 +151,6 @@ public class DbGroupConfig {
         this.disableHA = disableHA;
     }
 
-    public boolean existInstanceProvideVars() {
-        return writeInstanceConfig.provideVars();
-    }
-
     public DataBaseType instanceDatabaseType() {
         return writeInstanceConfig.getDataBaseType();
     }

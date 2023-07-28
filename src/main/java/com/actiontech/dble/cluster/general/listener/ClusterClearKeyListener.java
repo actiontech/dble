@@ -67,7 +67,7 @@ public class ClusterClearKeyListener implements Runnable {
                     LOGGER.info("error in deal with key,may be the ucore is shut down", e);
                 }
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 LOGGER.info("error in deal with key,may be the ucore is shut down", e);
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
             }

@@ -83,6 +83,8 @@ public class PauseResumeClusterLogic extends AbstractClusterLogic {
                                 clusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(), FeedBackType.SUCCESS);
                                 break;
                             }
+                        } catch (Throwable e) {
+                            LOGGER.warn("the ucore pause error: ", e);
                         } finally {
                             lock.unlock();
                         }

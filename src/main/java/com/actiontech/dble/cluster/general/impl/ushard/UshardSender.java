@@ -89,14 +89,14 @@ public class UshardSender extends AbstractConsulSender {
                                     LOGGER.debug("renew lock of session  success:" + sessionId + " " + path);
                                 }
                                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10000));
-                            } catch (Exception e) {
+                            } catch (Throwable e) {
                                 log("renew lock of session  failure:" + sessionId + " " + path, e);
                                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(5000));
                             }
                         }
                     }
 
-                    private void log(String message, Exception e) {
+                    private void log(String message, Throwable e) {
                         if (!Thread.currentThread().isInterrupted()) {
                             if (e == null) {
                                 LOGGER.warn(message);
@@ -302,7 +302,7 @@ public class UshardSender extends AbstractConsulSender {
                         return;
                     } catch (DetachedException e) {
                         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         if (isDetach()) {
                             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
                             continue;

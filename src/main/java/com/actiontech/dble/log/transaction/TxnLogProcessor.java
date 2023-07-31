@@ -41,20 +41,24 @@ public class TxnLogProcessor extends Thread {
         try {
             store.open();
             for (; ; ) {
-                while ((log = queue.poll()) != null) {
-                    writeLog(log);
-                }
-                long interval = TimeUtil.currentTimeMillis() - flushTime;
-                if (interval > 1000) {
-                    store.force(false);
-                    flushTime = TimeUtil.currentTimeMillis();
-                }
                 try {
-                    log = queue.take();
-                } catch (InterruptedException e) {
-                    //ignore error
+                    while ((log = queue.poll()) != null) {
+                        writeLog(log);
+                    }
+                    long interval = TimeUtil.currentTimeMillis() - flushTime;
+                    if (interval > 1000) {
+                        store.force(false);
+                        flushTime = TimeUtil.currentTimeMillis();
+                    }
+                    try {
+                        log = queue.take();
+                    } catch (InterruptedException e) {
+                        //ignore error
+                    }
+                    writeLog(log);
+                } catch (Throwable e) {
+                    LOGGER.info("transaction log error:", e);
                 }
-                writeLog(log);
             }
         } catch (IOException e) {
             LOGGER.info("transaction log error:", e);

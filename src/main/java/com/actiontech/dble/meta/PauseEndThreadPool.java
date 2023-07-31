@@ -141,7 +141,7 @@ public class PauseEndThreadPool {
                 } catch (InterruptedException e) {
                     LOGGER.debug("the pause end thread exit");
                     break;
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     LOGGER.warn("the pause end thread with error", e);
                 }
             }

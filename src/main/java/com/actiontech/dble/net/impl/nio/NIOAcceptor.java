@@ -112,7 +112,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
                 } finally {
                     keys.clear();
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 LOGGER.info(getName(), e);
             }
         }

@@ -162,7 +162,7 @@ public class HandlerBuilder {
                 routeNode = routes[0];
             }
         }
-        if (routeNode == null) return null;
+        if (routeNode == null || routeNode.isApNode()) return null;
 
         Set<String> tableSet = Sets.newHashSet();
         for (RouteResultsetNode routeResultsetNode : rrsNodes) {

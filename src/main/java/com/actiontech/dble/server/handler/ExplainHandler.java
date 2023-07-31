@@ -253,7 +253,7 @@ public final class ExplainHandler {
                 routeNode = routes[0];
             }
         }
-        if (routeNode == null) return null;
+        if (routeNode == null || routeNode.isApNode()) return null;
 
         PlanNode node = builder.getNode();
         String sql = rrs.isHaveHintPlan2Inner() ? routeNode.getStatement() : node.getSql();

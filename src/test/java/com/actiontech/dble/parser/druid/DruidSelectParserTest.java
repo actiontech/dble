@@ -190,6 +190,23 @@ public class DruidSelectParserTest {
     }
 
     @Test
+    public void testOLAP_where_groupby() throws SQLException {
+        String sql = "SELECT o_id AS order_id, o_w_id AS warehouse_id, o_d_id AS district_id, o_ol_cnt AS order_line_count " +
+                "FROM bmsql_oorder " +
+                "WHERE o_w_id = 1 AND o_d_id = 2 AND o_id IN ( " +
+                "  SELECT ol_o_id " +
+                "  FROM bmsql_order_line " +
+                "  WHERE ol_w_id = 1 AND ol_d_id = 2 " +
+                "  GROUP BY ol_o_id " +
+                "  HAVING SUM(ol_amount) > (SELECT AVG(ol_amount) FROM bmsql_order_line WHERE ol_w_id = 1 AND ol_d_id = 2) " +
+                ")";
+        SQLStatement stmt = DruidUtil.parseSQL(sql);
+        MySqlSelectQueryBlock query = (MySqlSelectQueryBlock) ((SQLSelectStatement) stmt).getSelect().getQuery();
+        boolean checkFunction = RouterUtil.checkFunction(query);
+        Assert.assertTrue(checkFunction);
+    }
+
+    @Test
     public void testOLAP_subQuery_join() throws SQLException {
         String sql = "select c.id from (select a.id,min(b.id) from table_1 a join sbtest1 b on a.id = b.id) c";
         SQLStatement stmt = DruidUtil.parseSQL(sql);

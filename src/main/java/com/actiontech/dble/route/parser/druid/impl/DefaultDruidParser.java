@@ -67,7 +67,7 @@ public class DefaultDruidParser implements DruidParser {
     }
 
     public void tryRouteToApNode(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ShardingService service) {
-        if (rrs.getSqlType() == ServerParse.SELECT) {
+        if (rrs.getSqlType() == ServerParse.SELECT && schema != null && schema.getDefaultApNode() != null) {
             //simple query
             boolean inTransaction = service.isInTransaction();
             if (!inTransaction) {
@@ -77,7 +77,7 @@ public class DefaultDruidParser implements DruidParser {
                 if (notSupport) {
                     return;
                 }
-                boolean isAggregate = schema != null && schema.getDefaultApNode() != null && RouterUtil.checkFunction(sqlSelectQuery);
+                boolean isAggregate = RouterUtil.checkFunction(sqlSelectQuery);
                 if (isAggregate) {
                     Set<String> tableSet = ctx.getTables().stream().map(tableEntry -> tableEntry.getKey() + "." + tableEntry.getValue()).collect(Collectors.toSet());
                     rrs.setNeedOptimizer(false);

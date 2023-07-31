@@ -23,6 +23,7 @@ import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DruidSingleUnitSelectParser;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
@@ -213,8 +214,9 @@ public final class RouterUtil {
         }
         rrs.setNodes(nodes);
 
-        if (rrs.getSqlType() == ServerParse.SELECT) {
-            ((DruidSingleUnitSelectParser) druidParser).tryRouteToApNode(schema, rrs, statement, service);
+        if (rrs.getSqlType() == ServerParse.SELECT && schema != null && schema.getDefaultApNode() != null) {
+            SQLStatement currentStatement = DruidUtil.parseSQL(rrs.getStatement());
+            ((DruidSingleUnitSelectParser) druidParser).tryRouteToApNode(schema, rrs, currentStatement, service);
         }
         return rrs;
     }
@@ -1394,30 +1396,31 @@ public final class RouterUtil {
     private static boolean checkFunctionOfWhere(SQLExpr whereExpr) {
         if (whereExpr instanceof SQLBinaryOpExpr) {
             SQLBinaryOpExpr tmp = (SQLBinaryOpExpr) whereExpr;
-            SQLExpr left = tmp.getLeft();
-            boolean isAggregateOfLeft = false;
-            if (left instanceof SQLBinaryOpExpr) {
-                isAggregateOfLeft = checkFunctionOfWhere(left);
-            } else if (left instanceof SQLQueryExpr) {
-                SQLSelectQuery subQuery = ((SQLQueryExpr) left).getSubQuery().getQuery();
-                isAggregateOfLeft = checkFunction(subQuery);
-            }
-            if (isAggregateOfLeft) {
+            boolean isAggregate;
+            isAggregate = checkFunctionOfWhereExpr(tmp.getLeft());
+            if (isAggregate) {
                 return true;
             }
-            SQLExpr right = tmp.getRight();
-            boolean isAggregateOfRight = false;
-            if (right instanceof SQLBinaryOpExpr) {
-                isAggregateOfRight = checkFunctionOfWhere(right);
-            } else if (right instanceof SQLQueryExpr) {
-                SQLSelectQuery subQuery = ((SQLQueryExpr) right).getSubQuery().getQuery();
-                isAggregateOfRight = checkFunction(subQuery);
-            }
-            if (isAggregateOfRight) {
+            isAggregate = checkFunctionOfWhereExpr(tmp.getRight());
+            if (isAggregate) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static boolean checkFunctionOfWhereExpr(SQLExpr sqlExpr) {
+        boolean isAggregate = false;
+        if (sqlExpr instanceof SQLBinaryOpExpr) {
+            isAggregate = checkFunctionOfWhere(sqlExpr);
+        } else if (sqlExpr instanceof SQLQueryExpr) {
+            SQLSelectQuery subQuery = ((SQLQueryExpr) sqlExpr).getSubQuery().getQuery();
+            isAggregate = checkFunction(subQuery);
+        } else if (sqlExpr instanceof SQLInSubQueryExpr) {
+            SQLSelectQuery inSubQuery = ((SQLInSubQueryExpr) sqlExpr).getSubQuery().getQuery();
+            isAggregate = checkFunction(inSubQuery);
+        }
+        return isAggregate;
     }
 
 

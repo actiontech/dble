@@ -270,16 +270,18 @@ public class ServerConfig {
                     delSchema.add(oldSchema);
                     reloadSchema.add(oldSchema);
                 } else {
-                    if (newSchemaConfig.getDefaultShardingNodes() != null || !StringUtil.isBlank(newSchemaConfig.getDefaultApNode())) { // reload config_all
+                    List<String> defaultShardingNodes = newSchemaConfig.getDefaultShardingNodes();
+                    String defaultApNode = newSchemaConfig.getDefaultApNode();
+                    if (defaultShardingNodes != null || !StringUtil.isBlank(defaultApNode)) { // reload config_all
                         //check shardingNode and dbGroup change
-                        List<String> strShardingNodes = newSchemaConfig.getDefaultShardingNodes();
-                        String strApNode = newSchemaConfig.getDefaultApNode();
-                        if (isShardingNodeChanged(strShardingNodes, newShardingNodes) || (!StringUtil.isBlank(strApNode) && isApNodeChanged(strApNode, newApNodes))) {
+                        if ((defaultShardingNodes != null && isShardingNodeChanged(defaultShardingNodes, newShardingNodes)) ||
+                                (!StringUtil.isBlank(defaultApNode) && isApNodeChanged(defaultApNode, newApNodes))) {
                             delSchema.add(oldSchema);
                             reloadSchema.add(oldSchema);
                             continue;
                         } else if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 &&
-                                (isDbGroupChanged(strShardingNodes, newShardingNodes) || (!StringUtil.isBlank(strApNode) && isDbGroupChangedByApNode(strApNode, newApNodes)))) { // reload @@config_all not contains -s
+                                ((defaultShardingNodes != null && isDbGroupChanged(defaultShardingNodes, newShardingNodes)) ||
+                                        (!StringUtil.isBlank(defaultApNode) && isDbGroupChangedByApNode(defaultApNode, newApNodes)))) { // reload @@config_all not contains -s
                             delSchema.add(oldSchema);
                             reloadSchema.add(oldSchema);
                             continue;

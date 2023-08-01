@@ -14,6 +14,7 @@ import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.CollectionUtil;
 import org.apache.logging.log4j.util.Strings;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -81,19 +82,23 @@ public final class ConfigUtil {
     public static String getAndSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("sync-key-variables");
         try {
-            StringBuilder sb = new StringBuilder();
-            Map<String, PhysicalDbGroup> mysqlDbGroups = new HashMap<>();
-            Map<String, PhysicalDbGroup> clickHouseDbGroups = new HashMap<>();
-            dbGroups.forEach((k, v) -> {
-                if (v.getDbGroupConfig().instanceDatabaseType() == DataBaseType.MYSQL) {
-                    mysqlDbGroups.put(k, v);
-                } else {
-                    clickHouseDbGroups.put(k, v);
+            Set<PhysicalDbInstance> mysqlDbInstances = new HashSet<>();
+            Set<PhysicalDbInstance> ckDbInstances = new HashSet<>();
+            for (Map.Entry<String, PhysicalDbGroup> entry : dbGroups.entrySet()) {
+                for (PhysicalDbInstance ds : entry.getValue().getDbInstances(true)) {
+                    if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
+                        continue;
+                    }
+                    if (ds.getConfig().getDataBaseType() == DataBaseType.MYSQL) {
+                        mysqlDbInstances.add(ds);
+                    } else {
+                        ckDbInstances.add(ds);
+                    }
                 }
-            });
-
-            sb.append(getMysqlSyncKeyVariables(mysqlDbGroups, needSync));
-            sb.append(getClickHouseSyncKeyVariables(clickHouseDbGroups, needSync));
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.append(getClickHouseSyncKeyVariables(ckDbInstances, needSync));
+            sb.append(getMysqlSyncKeyVariables(mysqlDbInstances, needSync, !CollectionUtil.isEmpty(ckDbInstances)));
             return sb.toString();
         } finally {
             TraceManager.finishSpan(traceObject);
@@ -101,19 +106,16 @@ public final class ConfigUtil {
     }
 
     @Nullable
-    private static String getMysqlSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws InterruptedException, ExecutionException, IOException {
-        String msg = null;
-        if (dbGroups.size() == 0) {
-            //with no dbGroups, do not check the variables
+    private static String getMysqlSyncKeyVariables(Set<PhysicalDbInstance> mysqlDbInstances, boolean needSync, boolean existClickHouse) throws InterruptedException, ExecutionException, IOException {
+        if (mysqlDbInstances.size() == 0)
             return null;
-        }
-        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
-        getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync);
+        String msg = null;
+        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(mysqlDbInstances.size());
+        getAndSyncKeyVariablesForDataSources(mysqlDbInstances, keyVariablesTaskMap, needSync);
 
-        boolean lowerCase = false;
-        boolean isFirst = true;
-        Set<String> firstGroup = new HashSet<>();
-        Set<String> secondGroup = new HashSet<>();
+        Boolean lowerCase = null;
+        Set<String> leftGroup = new HashSet<>();
+        Set<String> rightGroup = new HashSet<>();
         int minNodePacketSize = Integer.MAX_VALUE;
         int minVersion = VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion());
         for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
@@ -121,12 +123,14 @@ public final class ConfigUtil {
             Future<KeyVariables> future = entry.getValue();
             KeyVariables keyVariables = future.get();
             if (keyVariables != null) {
-                if (isFirst) {
+                // lowerCase
+                if (lowerCase == null) {
                     lowerCase = keyVariables.isLowerCase();
-                    isFirst = false;
-                    firstGroup.add(dataSourceName);
-                } else if (keyVariables.isLowerCase() != lowerCase) {
-                    secondGroup.add(dataSourceName);
+                    leftGroup.add(dataSourceName);
+                } else if (keyVariables.isLowerCase() == lowerCase) {
+                    leftGroup.add(dataSourceName);
+                } else {
+                    rightGroup.add(dataSourceName);
                 }
                 minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                 Integer majorVersion = VersionUtil.getMajorVersionWithoutDefaultValue(keyVariables.getVersion());
@@ -145,58 +149,47 @@ public final class ConfigUtil {
         if (minVersion < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
             throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend mysql node,pls check the backend mysql node.");
         }
-        if (secondGroup.size() != 0) {
-            // if all datasoure's lower case are not equal, throw exception
-            StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend MySQLs are different.");
-            String firstGroupValue;
-            String secondGroupValue;
-            if (lowerCase) {
-                firstGroupValue = " not 0 :";
-                secondGroupValue = " 0 :";
+        if (rightGroup.size() != 0) {
+            // if all dbInstances's lower case are not equal, throw exception
+            StringBuilder sb = new StringBuilder();
+            if (existClickHouse) {
+                sb.append("The configuration contains Clickhouse. Since clickhouse is not case sensitive, so the values of lower_case_table_names for dbInstances must be 0. ");
             } else {
-                firstGroupValue = " 0 :";
-                secondGroupValue = " not 0 :";
+                sb.append("The values of lower_case_table_names for dbInstances are different. ");
             }
-            sb.append("These MySQL's value is");
-            sb.append(firstGroupValue);
-            sb.append(Strings.join(firstGroup, ','));
-            sb.append(".And these MySQL's value is");
-            sb.append(secondGroupValue);
-            sb.append(Strings.join(secondGroup, ','));
+            sb.append("These dbInstances's [");
+            sb.append(Strings.join(leftGroup, ','));
+            sb.append("] value is");
+            sb.append(lowerCase ? " not 0" : " 0");
+            sb.append(". And these dbInstances's [");
+            sb.append(Strings.join(rightGroup, ','));
+            sb.append("] value is");
+            sb.append(lowerCase ? " 0" : " not 0");
             sb.append(".");
             throw new IOException(sb.toString());
+        }
+
+        if (existClickHouse && (lowerCase != null && lowerCase)) {
+            throw new IOException("The configuration contains Clickhouse. Since clickhouse is not case sensitive, so the values of lower_case_table_names for all dbInstances must be 0. Current all dbInstances are 1.");
         }
         return msg;
     }
 
     @Nullable
-    private static String getClickHouseSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws InterruptedException, ExecutionException, IOException {
-        String msg = null;
-        if (dbGroups.size() == 0) {
-            //with no dbGroups, do not check the variables
+    private static String getClickHouseSyncKeyVariables(Set<PhysicalDbInstance> ckDbInstances, boolean needSync) throws InterruptedException, ExecutionException, IOException {
+        if (ckDbInstances.size() == 0)
             return null;
-        }
-        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
-        getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync);
+        String msg = null;
+        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(ckDbInstances.size());
+        getAndSyncKeyVariablesForDataSources(ckDbInstances, keyVariablesTaskMap, needSync);
 
-        boolean lowerCase = false;
-        boolean isFirst = true;
-        Set<String> firstGroup = new HashSet<>();
-        Set<String> secondGroup = new HashSet<>();
+        // clickhouse is not case sensitive, so ignore
         int minNodePacketSize = Integer.MAX_VALUE;
         int minVersion = VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion());
         for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
-            String dataSourceName = entry.getKey();
             Future<KeyVariables> future = entry.getValue();
             KeyVariables keyVariables = future.get();
             if (keyVariables != null) {
-                if (isFirst) {
-                    lowerCase = keyVariables.isLowerCase();
-                    isFirst = false;
-                    firstGroup.add(dataSourceName);
-                } else if (keyVariables.isLowerCase() != lowerCase) {
-                    secondGroup.add(dataSourceName);
-                }
                 minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                 Integer majorVersion = VersionUtil.getMajorVersionWithoutDefaultValue(keyVariables.getVersion());
                 if (majorVersion == null) {
@@ -214,43 +207,17 @@ public final class ConfigUtil {
         if (minVersion < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
             throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend clickHouse node,pls check the backend clickHouse node.");
         }
-        if (secondGroup.size() != 0) {
-            // if all datasoure's lower case are not equal, throw exception
-            StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend clickHouse are different.");
-            String firstGroupValue;
-            String secondGroupValue;
-            if (lowerCase) {
-                firstGroupValue = " not 0 :";
-                secondGroupValue = " 0 :";
-            } else {
-                firstGroupValue = " 0 :";
-                secondGroupValue = " not 0 :";
-            }
-            sb.append("These clickHouse's value is");
-            sb.append(firstGroupValue);
-            sb.append(Strings.join(firstGroup, ','));
-            sb.append(".And these clickHouse's value is");
-            sb.append(secondGroupValue);
-            sb.append(Strings.join(secondGroup, ','));
-            sb.append(".");
-            throw new IOException(sb.toString());
-        }
         return msg;
     }
 
 
-    private static void getAndSyncKeyVariablesForDataSources(Map<String, PhysicalDbGroup> dbGroups, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) throws InterruptedException {
-        ExecutorService service = Executors.newFixedThreadPool(dbGroups.size());
-        for (Map.Entry<String, PhysicalDbGroup> entry : dbGroups.entrySet()) {
-            String hostName = entry.getKey();
-            PhysicalDbGroup pool = entry.getValue();
+    private static void getAndSyncKeyVariablesForDataSources(Set<PhysicalDbInstance> availableDbInstances,
+                                                             Map<String, Future<KeyVariables>> keyVariablesTaskMap,
+                                                             boolean needSync) throws InterruptedException {
 
-            for (PhysicalDbInstance ds : pool.getDbInstances(true)) {
-                if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
-                    continue;
-                }
-                getKeyVariablesForDataSource(service, ds, hostName, keyVariablesTaskMap, needSync);
-            }
+        ExecutorService service = Executors.newFixedThreadPool(availableDbInstances.size());
+        for (PhysicalDbInstance ds : availableDbInstances) {
+            getKeyVariablesForDataSource(service, ds, ds.getDbGroupConfig().getName(), keyVariablesTaskMap, needSync);
         }
         service.shutdown();
         int i = 0;

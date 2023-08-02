@@ -183,20 +183,26 @@ public class ManagerParserTest {
 
     @Test
     public void testShowSQL() {
-        Assert.assertEquals(ManagerParseShow.SQL, ManagerParseShow.parse("show @@sql where id = -1079800749", 5));
-        Assert.assertEquals(ManagerParseShow.SQL, ManagerParseShow.parse("SHOW @@SQL WHERE ID = -1079800749", 5));
-        Assert.assertEquals(ManagerParseShow.SQL, ManagerParseShow.parse("show @@Sql WHERE ID = -1079800749", 5));
-        Assert.assertEquals(ManagerParseShow.SQL, ManagerParseShow.parse("show @@sql where id=-1079800749", 5));
-        Assert.assertEquals(ManagerParseShow.SQL, ManagerParseShow.parse("show @@sql where id   =-1079800749 ", 5));
-        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@sql where id   :-1079800749 ", 5));
-        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@sql whereid   =-1079800749 ", 5));
-    }
-
-    @Test
-    public void testShowSQLSlow() {
+        Assert.assertEquals(ManagerParseShow.SQL, ManagerParseShow.parse("show @@sql", 5));
+        Assert.assertEquals(ManagerParseShow.SQL, ManagerParseShow.parse("SHOW @@SQL", 5));
         Assert.assertEquals(ManagerParseShow.SQL_SLOW, ManagerParseShow.parse("show @@sql.slow", 5));
         Assert.assertEquals(ManagerParseShow.SQL_SLOW, ManagerParseShow.parse("SHOW @@SQL.SLOW", 5));
         Assert.assertEquals(ManagerParseShow.SQL_SLOW, ManagerParseShow.parse("SHOW @@sql.slow", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_SLOW, ManagerParseShow.parse("show @@sql.slow", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_SLOW, ManagerParseShow.parse("SHOW @@SQL.SLOW", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_SLOW, ManagerParseShow.parse("SHOW @@sql.slow", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_LARGE, ManagerParseShow.parse("show @@sql.large", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_LARGE, ManagerParseShow.parse("SHOW @@SQL.LARGE", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_LARGE, ManagerParseShow.parse("SHOW @@sql.large", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_RESULTSET, ManagerParseShow.parse("show @@sql.resultset", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_RESULTSET, ManagerParseShow.parse("SHOW @@SQL.RESULTSET", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_RESULTSET, ManagerParseShow.parse("SHOW @@sql.resultset", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_SUM_USER, ManagerParseShow.parse("show @@sql.sum", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_SUM_USER, ManagerParseShow.parse("show @@sql.SUM", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_SUM_USER, ManagerParseShow.parse("show @@sql.SUM.user", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_SUM_USER, ManagerParseShow.parse("SHOW @@SQL.SUM.USER", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_SUM_TABLE, ManagerParseShow.parse("SHOW @@sql.sum.table", 5));
+        Assert.assertEquals(ManagerParseShow.SQL_SUM_TABLE, ManagerParseShow.parse("SHOW @@SQL.SUM.TABLE", 5));
     }
 
 

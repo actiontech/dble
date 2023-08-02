@@ -94,9 +94,7 @@ public final class ConfigUtil {
         Map<String, PhysicalDbInstance> oldDbInstanceMaps = new HashMap<>();
         DbleServer.getInstance().getConfig().getDbGroups()
                 .values().stream().forEach(group -> group.getAllDbInstanceMap()
-                .values().stream().forEach(db -> {
-                    oldDbInstanceMaps.put(genDataSourceKey(group.getGroupName(), db.getName()), db);
-                }));
+                        .values().stream().forEach(db -> oldDbInstanceMaps.put(genDataSourceKey(group.getGroupName(), db.getName()), db)));
 
         if (CollectionUtil.isEmpty(oldDbInstanceMaps)) return false;
 
@@ -143,7 +141,7 @@ public final class ConfigUtil {
             }
 
             List<String> syncKeyVariables = Lists.newArrayList();
-            List<String> clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(ckDbInstances, true, needSync, !CollectionUtil.isEmpty(mysqlDbInstances));
+            List<String> clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(ckDbInstances, true, false, !CollectionUtil.isEmpty(mysqlDbInstances));
             syncKeyVariables.addAll(clickHouseSyncKeyVariables);
             List<String> mysqlSyncKeyVariables = getMysqlSyncKeyVariables(mysqlDbInstances, true, needSync, !CollectionUtil.isEmpty(ckDbInstances));
             syncKeyVariables.addAll(mysqlSyncKeyVariables);
@@ -194,7 +192,7 @@ public final class ConfigUtil {
             }
 
             List<String> syncKeyVariables = Lists.newArrayList();
-            List<String> clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(ckDbInstances, false, needSync, !CollectionUtil.isEmpty(mysqlDbInstances));
+            List<String> clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(ckDbInstances, false, false, !CollectionUtil.isEmpty(mysqlDbInstances));
             syncKeyVariables.addAll(clickHouseSyncKeyVariables);
             List<String> mysqlSyncKeyVariables = getMysqlSyncKeyVariables(mysqlDbInstances, false, needSync, !CollectionUtil.isEmpty(ckDbInstances));
             syncKeyVariables.addAll(mysqlSyncKeyVariables);
@@ -450,8 +448,10 @@ public final class ConfigUtil {
                 if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
                     continue;
                 }
-                //check mysql version
-                checkMysqlVersion(ds.getDsVersion(), ds, true);
+                if (ds.getConfig().getDataBaseType() == DataBaseType.MYSQL) {
+                    //only check mysql version
+                    checkMysqlVersion(ds.getDsVersion(), ds, true);
+                }
             } else if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP) {
                 PhysicalDbGroup dbGroup = (PhysicalDbGroup) item;
                 checkDbGroupVersion(dbGroup);
@@ -484,11 +484,14 @@ public final class ConfigUtil {
     }
 
     public static void checkDbGroupVersion(PhysicalDbGroup dbGroup) {
+        //only check mysql version
+        if (dbGroup.getDbGroupConfig().instanceDatabaseType() != DataBaseType.MYSQL) {
+            return;
+        }
         for (PhysicalDbInstance ds : dbGroup.getAllDbInstanceMap().values()) {
             if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
                 continue;
             }
-            //check mysql version
             checkMysqlVersion(ds.getDsVersion(), ds, true);
         }
     }

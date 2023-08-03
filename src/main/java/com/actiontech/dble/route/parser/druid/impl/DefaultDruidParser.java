@@ -81,7 +81,7 @@ public class DefaultDruidParser implements DruidParser {
                 if (isAggregate) {
                     Set<String> tableSet = ctx.getTables().stream().map(tableEntry -> tableEntry.getKey() + "." + tableEntry.getValue()).collect(Collectors.toSet());
                     rrs.setNeedOptimizer(false);
-                    RouterUtil.routeToApNode(rrs, schema.getDefaultApNode(), tableSet);
+                    RouterUtil.routeToApNode(rrs, schema.getDefaultApNode(), tableSet, ctx.getTableAliasMap());
                 }
             }
         }
@@ -117,7 +117,7 @@ public class DefaultDruidParser implements DruidParser {
             return null;
         }
 
-        Map<String, String> tableAliasMap = new HashMap<>(originTableAliasMap);
+        Map<String, String> tableAliasMap = new LinkedHashMap<>(originTableAliasMap);
         for (Map.Entry<String, String> entry : originTableAliasMap.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();

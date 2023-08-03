@@ -65,7 +65,7 @@ public class RwTrackProbe extends AbstractTrackProbe {
     }
 
     public void setExit() {
-        sqlTracking(t -> t.setExit(System.nanoTime()));
+        sqlTracking(t -> t.setExit());
     }
 
     private void sqlTracking(Consumer<RwTraceResult> consumer) {

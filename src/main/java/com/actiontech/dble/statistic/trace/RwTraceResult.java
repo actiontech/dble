@@ -143,12 +143,7 @@ public class RwTraceResult implements Cloneable {
         }
     }
 
-    public void setExit(long time) {
-        long timeMs = System.currentTimeMillis();
-        StatisticFrontendSqlEntry f = new StatisticFrontendSqlEntry(frontendInfo, time, timeMs,
-                null, "exit", currentSession.getService().getTxId(), 0, 0,
-                0, 0, time, timeMs);
-        StatisticManager.getInstance().push(f);
+    public void setExit() {
         reset();
         frontendInfo = null;
     }

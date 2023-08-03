@@ -6,6 +6,10 @@
 package com.actiontech.dble.config.helper;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.ApNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -98,10 +102,10 @@ public class TestSchemasTaskForClickHouse extends Thread {
                 String key = "dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getConfig().getInstanceName() + "],ap_node[" + nodeName + "],schema[" + node.getKey() + "]";
                 LOGGER.warn("SelfCheck### test " + key + " database connection fail ");
                 if (needAlert) {
-                   /* Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getDbGroupConfig().getName() + "-" + ds.getConfig().getInstanceName());
+                    Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getDbGroupConfig().getName() + "-" + ds.getConfig().getInstanceName());
                     labels.put("ap_node", nodeName);
                     AlertUtil.alert(AlarmCode.AP_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
-                    ToResolveContainer.AP_NODE_LACK.add(key);*/
+                    ToResolveContainer.AP_NODE_LACK.add(key);
                 }
             }
         }

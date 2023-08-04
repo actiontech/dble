@@ -347,8 +347,8 @@ public final class ReloadConfig {
             ConfigUtil.checkDbleAndMysqlVersion(changeItemList, loader);
             //check packetSize/lowerCase
             ConfigUtil.getAndSyncKeyVariables(changeItemList, true);
-            //get system variables
-            newSystemVariables = getSystemVariablesFromdbGroup(loader, loader.getDbGroups());
+            //keep the original system variables
+            newSystemVariables = DbleServer.getInstance().getSystemVariables();
         }
         ReloadLogHelper.briefInfo("check and get system variables from random node end");
         return newSystemVariables;

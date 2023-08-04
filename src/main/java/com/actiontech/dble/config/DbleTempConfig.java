@@ -17,7 +17,6 @@ public final class DbleTempConfig {
     private RawJson shardingConfig;
     private RawJson userConfig;
     private RawJson sequenceConfig;
-    private Boolean lowerCase;
 
     public RawJson getDbConfig() {
         return dbConfig;
@@ -49,14 +48,6 @@ public final class DbleTempConfig {
 
     public void setSequenceConfig(RawJson sequenceConfig) {
         this.sequenceConfig = sequenceConfig;
-    }
-
-    public Boolean isLowerCase() {
-        return lowerCase;
-    }
-
-    public void setLowerCase(Boolean lowerCase) {
-        this.lowerCase = lowerCase;
     }
 
     public static DbleTempConfig getInstance() {

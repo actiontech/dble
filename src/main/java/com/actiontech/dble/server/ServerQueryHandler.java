@@ -52,7 +52,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 sql = sql.substring(0, ParseUtil.findNextBreak(sql));
             }
             String finalSql = sql;
-            this.service.getSession2().trace(t -> t.setQuery(finalSql));
+
             this.service.setExecuteSql(sql);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("{} query sql: {}", service.toString3(), (sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql));
@@ -61,6 +61,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             int rs = serverParse.parse(sql);
             boolean isWithHint = serverParse.startWithHint(sql);
             int sqlType = rs & 0xff;
+            this.service.getSession2().trace(t -> t.setQuery(finalSql, sqlType));
             if (isWithHint) {
                 service.controlTx(TransactionOperate.QUERY);
                 if (sqlType == ServerParse.INSERT || sqlType == ServerParse.DELETE || sqlType == ServerParse.UPDATE ||

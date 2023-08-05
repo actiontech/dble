@@ -23,6 +23,7 @@ import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
@@ -53,6 +54,9 @@ public class DefaultDruidParser implements DruidParser {
         ctx = new DruidShardingParseInfo();
         schema = visitorParse(schema, rrs, stmt, schemaStatVisitor, service, isExplain);
         changeSql(schema, rrs, stmt);
+        if (!CollectionUtil.isEmpty(ctx.getTables())) {
+            service.getSession2().trace(t -> t.addTable(ctx.getTables()));
+        }
         return schema;
     }
 

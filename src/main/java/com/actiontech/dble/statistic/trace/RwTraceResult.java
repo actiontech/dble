@@ -4,16 +4,14 @@ import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.statistic.sql.StatisticManager;
-import com.actiontech.dble.statistic.sql.entry.BackendInfo;
-import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
 import com.actiontech.dble.statistic.sql.entry.StatisticBackendSqlEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class RwTraceResult implements Cloneable {
@@ -24,24 +22,26 @@ public class RwTraceResult implements Cloneable {
     protected long requestEnd;
     protected long requestEndMs;
     protected String sql;
+    protected int sqlType = -1;
     protected String schema;
     protected long sqlRows;
     protected volatile long examinedRows;
     protected long netOutBytes;
     protected long resultSize;
-    protected FrontendInfo frontendInfo;
     final RWSplitNonBlockingSession currentSession;
     protected List<ActualRoute> actualRouteList = Lists.newCopyOnWriteArrayList();
     protected volatile long previousTxId = 0;
 
+    // only samplingRate=100
+    protected boolean pureRecordSql = true;
 
     public RwTraceResult(RWSplitNonBlockingSession currentSession) {
         this.currentSession = currentSession;
-        this.frontendInfo = new FrontendInfo(currentSession.getService());
     }
 
     public void setRequestTime(long time, long timeMs) {
         reset();
+        this.pureRecordSql = StatisticManager.getInstance().isPureRecordSql();
         this.requestStart = time;
         this.requestStartMs = timeMs;
     }
@@ -50,14 +50,20 @@ public class RwTraceResult implements Cloneable {
         this.parseStart = time;
     }
 
-    public void setQuery(String sql0) {
+    public void setQuery(String sql0, int sqlType0) {
         this.schema = currentSession.getService().getSchema();
         this.sql = sql0;
+        this.sqlType = sqlType0;
         // multi-query
         if (currentSession.getIsMultiStatement().get() && currentSession.getMultiQueryHandler() != null) {
-            Optional<ActualRoute> find = actualRouteList.stream().filter(f -> (f.handler == currentSession.getMultiQueryHandler())).findFirst();
-            if (find.isPresent()) {
-                ActualRoute ar = find.get();
+            ActualRoute ar = null;
+            for (ActualRoute a : actualRouteList) {
+                if (a.handler == currentSession.getMultiQueryHandler()) {
+                    ar = a;
+                    break;
+                }
+            }
+            if (ar != null) {
                 ar.setSql(sql0);
                 ar.setRow(0);
                 ar.setFinished(0);
@@ -70,9 +76,15 @@ public class RwTraceResult implements Cloneable {
     public void setBackendRequestTime(MySQLResponseService service, long time) {
         final ResponseHandler responseHandler = service.getResponseHandler();
         if (responseHandler != null && sql != null) {
-            Optional<ActualRoute> find = actualRouteList.stream().filter(f -> (f.handler == responseHandler)).findFirst();
-            if (!find.isPresent()) {
-                ActualRoute ar = new ActualRoute(responseHandler, sql, time);
+            ActualRoute ar = null;
+            for (ActualRoute a : actualRouteList) {
+                if (a.handler == responseHandler) {
+                    ar = a;
+                    break;
+                }
+            }
+            if (ar == null) {
+                ar = new ActualRoute(responseHandler, sql, time);
                 actualRouteList.add(ar);
             }
         }
@@ -82,9 +94,14 @@ public class RwTraceResult implements Cloneable {
     public void setBackendSqlAddRows(MySQLResponseService service, Long num) {
         final ResponseHandler responseHandler = service.getResponseHandler();
         if (responseHandler != null && sql != null) {
-            Optional<ActualRoute> find = actualRouteList.stream().filter(f -> (f.handler == responseHandler)).findFirst();
-            if (find.isPresent()) {
-                ActualRoute ar = find.get();
+            ActualRoute ar = null;
+            for (ActualRoute a : actualRouteList) {
+                if (a.handler == responseHandler) {
+                    ar = a;
+                    break;
+                }
+            }
+            if (ar != null) {
                 if (num == null) {
                     ar.addRow();
                 } else {
@@ -97,16 +114,21 @@ public class RwTraceResult implements Cloneable {
     public void setBackendResponseEndTime(MySQLResponseService service, long time) {
         ResponseHandler responseHandler = service.getResponseHandler();
         if (responseHandler != null && sql != null) {
-            Optional<ActualRoute> find = actualRouteList.stream().filter(f -> (f.handler == responseHandler && f.finished == 0)).findFirst();
-            if (find.isPresent()) {
-                ActualRoute ar = find.get();
+            ActualRoute ar = null;
+            for (ActualRoute a : actualRouteList) {
+                if (a.handler == responseHandler && a.finished == 0) {
+                    ar = a;
+                    break;
+                }
+            }
+            if (ar != null) {
                 ar.setFinished(time);
-
                 examinedRows += ar.getRow();
+                if (pureRecordSql) return;
                 StatisticBackendSqlEntry bEntry = new StatisticBackendSqlEntry(
-                        frontendInfo,
-                        new BackendInfo(service.getConnection(), "-"),
-                        ar.getRequestTime(), ar.getSql(), -99, ar.getRow(), ar.getFinished());
+                        currentSession.getTraceFrontendInfo(),
+                        service.getConnection().getTraceBackendInfo(), "-",
+                        ar.getRequestTime(), ar.getSql(), sqlType, ar.getRow(), ar.getFinished());
                 bEntry.setNeedToTx(isNeedToTx());
                 StatisticManager.getInstance().push(bEntry);
             }
@@ -114,10 +136,11 @@ public class RwTraceResult implements Cloneable {
     }
 
     public void setBackendResponseTxEnd(MySQLResponseService service, long time) {
+        if (pureRecordSql) return;
         if (!isNeedToTx()) {
             StatisticBackendSqlEntry bEntry = new StatisticBackendSqlEntry(
-                    new FrontendInfo(currentSession.getService()),
-                    new BackendInfo(service.getConnection(), "-"),
+                    currentSession.getTraceFrontendInfo(),
+                    service.getConnection().getTraceBackendInfo(), "-",
                     time, "/** txEnd **/", 0, 0, time);
             bEntry.setNeedToTx(true);
             StatisticManager.getInstance().push(bEntry);
@@ -135,9 +158,9 @@ public class RwTraceResult implements Cloneable {
             this.requestEnd = time;
             this.requestEndMs = timeMs;
             if (this.isCompletedV1() && isSuccess) {
-                StatisticFrontendSqlEntry f = new StatisticFrontendSqlEntry(frontendInfo, requestStart, requestStartMs,
-                        schema, sql, currentSession.getService().getTxId(), examinedRows, sqlRows,
-                        netOutBytes, resultSize, requestEnd, requestEndMs);
+                StatisticFrontendSqlEntry f = new StatisticFrontendSqlEntry(currentSession.getTraceFrontendInfo(), requestStart, requestStartMs,
+                        schema, sql, sqlType, currentSession.getService().getTxId(), examinedRows, sqlRows,
+                        netOutBytes, resultSize, requestEnd, requestEndMs, new ArrayList<>());
                 StatisticManager.getInstance().push(f);
             }
         }
@@ -145,7 +168,6 @@ public class RwTraceResult implements Cloneable {
 
     public void setExit() {
         reset();
-        frontendInfo = null;
     }
 
     public boolean isNeedToTx() {
@@ -170,6 +192,7 @@ public class RwTraceResult implements Cloneable {
         requestEnd = 0;
         requestEndMs = 0;
         sql = null;
+        sqlType = -1;
         schema = null;
         sqlRows = 0;
         examinedRows = 0;

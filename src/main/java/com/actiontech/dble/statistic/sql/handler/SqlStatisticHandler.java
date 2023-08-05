@@ -16,11 +16,13 @@ import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SqlStatisticHandler implements StatisticDataHandler {
 
     private final ConcurrentSkipListMap<Long, TxRecord> txRecords = new ConcurrentSkipListMap<>();
+    private AtomicLong txRecordSize = new AtomicLong(0);
     private volatile BitSet sampleDecisions;
 
     public SqlStatisticHandler() {
@@ -32,16 +34,20 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         if (StatisticManager.getInstance().getSamplingRate() == 0) {
             return;
         }
+        handle(statisticEvent.getEntry());
+    }
 
-        StatisticEntry entry = statisticEvent.getEntry();
+    public void handle(StatisticEntry entry) {
         if (entry instanceof StatisticFrontendSqlEntry) {
             StatisticFrontendSqlEntry frontendSqlEntry = (StatisticFrontendSqlEntry) entry;
             if (sampleDecisions.get((int) (frontendSqlEntry.getTxId() % 100))) {
                 if (null == txRecords.get(frontendSqlEntry.getTxId())) {
-                    if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
+                    if (txRecordSize.intValue() >= StatisticManager.getInstance().getSqlLogSize()) {
                         txRecords.pollFirstEntry();
+                        txRecordSize.decrementAndGet();
                     }
                     txRecords.put(frontendSqlEntry.getTxId(), new TxRecord(frontendSqlEntry));
+                    txRecordSize.incrementAndGet();
                     checkEliminate();
                 } else {
                     txRecords.get(frontendSqlEntry.getTxId()).getSqls().add(new SQLRecord(frontendSqlEntry));
@@ -52,9 +58,10 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
     private void checkEliminate() {
         int removeIndex;
-        if ((removeIndex = txRecords.size() - StatisticManager.getInstance().getSqlLogSize()) > 0) {
+        if ((removeIndex = txRecordSize.intValue() - StatisticManager.getInstance().getSqlLogSize()) > 0) {
             while (removeIndex-- > 0) {
                 txRecords.pollFirstEntry();
+                txRecordSize.decrementAndGet();
             }
         }
     }
@@ -68,6 +75,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
     @Override
     public void clear() {
         txRecords.clear();
+        txRecordSize.set(0);
     }
 
     private BitSet randomBitSet(int cardinality, Random rnd) {
@@ -149,18 +157,11 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         private long duration;
         private long startTime;
 
+        private AtomicBoolean init = new AtomicBoolean(false);
+
         public SQLRecord(StatisticFrontendSqlEntry entry) {
             this.sqlId = SQL_ID_GENERATOR.incrementAndGet();
             this.stmt = entry.getSql();
-            if (stmt.equalsIgnoreCase("begin")) {
-                this.sqlDigest = "begin";
-            } else {
-                try {
-                    this.sqlDigest = ParameterizedOutputVisitorUtils.parameterize(this.stmt, DbType.mysql).replaceAll("[\\t\\n\\r]", " ");
-                } catch (RuntimeException e) {
-                    this.sqlDigest = "Other";
-                }
-            }
             this.sqlType = entry.getSqlType();
             this.txId = entry.getTxId();
 
@@ -228,6 +229,18 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         }
 
         public String getSqlDigest() {
+            if (init.compareAndSet(false, true)) {
+                try {
+                    if (stmt.equalsIgnoreCase("begin")) {
+                        this.sqlDigest = "begin";
+                    } else {
+                        String tmpStmt = ParameterizedOutputVisitorUtils.parameterize(this.stmt, DbType.mysql);
+                        this.sqlDigest = tmpStmt.replaceAll("[\\t\\n\\r]", " ");
+                    }
+                } catch (RuntimeException e) {
+                    this.sqlDigest = "Other";
+                }
+            }
             return sqlDigest;
         }
 

@@ -207,6 +207,10 @@ public final class StatisticManager {
         }
     }
 
+    public boolean isPureRecordSql() {
+        return !enable && (samplingRate > 0 || enableAnalysis);
+    }
+
     public boolean isEnableAnalysis() {
         return enableAnalysis;
     }

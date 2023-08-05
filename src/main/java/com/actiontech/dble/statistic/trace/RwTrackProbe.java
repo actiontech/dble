@@ -30,8 +30,8 @@ public class RwTrackProbe extends AbstractTrackProbe {
         sqlTracking(t -> t.startProcess(System.nanoTime()));
     }
 
-    public void setQuery(String sql) {
-        sqlTracking(t -> t.setQuery(sql));
+    public void setQuery(String sql, int sqlType) {
+        sqlTracking(t -> t.setQuery(sql, sqlType));
     }
 
     public void setBackendRequestTime(MySQLResponseService service) {

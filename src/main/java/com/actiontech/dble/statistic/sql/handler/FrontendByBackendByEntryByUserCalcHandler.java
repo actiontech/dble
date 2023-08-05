@@ -51,10 +51,11 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                 boolean isNew = currRecord == null;
                 if (isNew) {
                     checkEliminate();
-                    currRecord = new Record(entry.getFrontend().getUserId(), entry.getFrontend(), backendSqlEntry.getBackend());
+                    currRecord = new Record(entry.getFrontend().getUserId(), entry.getFrontend(), backendSqlEntry.getBackend(), backendSqlEntry.getNode());
                 }
-                if (backendSqlEntry.getSqlType() == 4 || backendSqlEntry.getSqlType() == 11 || backendSqlEntry.getSqlType() == 3 || backendSqlEntry.getSqlType() == 7) {
-                    switch (backendSqlEntry.getSqlType()) {
+                int sqlType = backendSqlEntry.getSqlType();
+                if (sqlType == 4 || sqlType == 11 || sqlType == 3 || sqlType == 7) {
+                    switch (sqlType) {
                         case ServerParse.INSERT:
                             currRecord.addInsert(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
                             break;
@@ -102,6 +103,7 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
         int entry;
         FrontendInfo frontend;
         BackendInfo backend;
+        String node;
 
         int txCount = 0;
         long txRows = 0L;
@@ -125,10 +127,11 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
 
         long lastUpdateTime = 0L;
 
-        public Record(int entry, FrontendInfo frontend, BackendInfo backend) {
+        public Record(int entry, FrontendInfo frontend, BackendInfo backend, String node) {
             this.entry = entry;
             this.frontend = frontend;
             this.backend = backend;
+            this.node = node;
         }
 
         public void incrementTx() {
@@ -183,6 +186,10 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
 
         public BackendInfo getBackend() {
             return backend;
+        }
+
+        public String getNode() {
+            return node;
         }
 
         public long getUpdateTime() {

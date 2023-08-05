@@ -8,18 +8,24 @@ package com.actiontech.dble.statistic.sql.entry;
 public final class StatisticBackendSqlEntry extends StatisticEntry {
     private BackendInfo backend;
     private boolean isNeedToTx;
+    private String node; // sharding_node
 
     public StatisticBackendSqlEntry(
             FrontendInfo frontendInfo,
-            BackendInfo backendInfo, long startTime,
+            BackendInfo backendInfo, String node, long startTime,
             String sql, int sqlType, long rows, long endTime) {
-        super(frontendInfo, startTime, sql, rows, endTime);
+        super(frontendInfo, startTime, sql, sqlType, rows, endTime);
         this.backend = backendInfo;
+        this.node = node;
         this.sqlType = sqlType;
     }
 
     public BackendInfo getBackend() {
         return backend;
+    }
+
+    public String getNode() {
+        return node;
     }
 
     public String getSql() {
@@ -35,14 +41,14 @@ public final class StatisticBackendSqlEntry extends StatisticEntry {
     }
 
     public String getKey() {
-        StringBuffer key = new StringBuffer();
+        StringBuilder key = new StringBuilder();
         key.append(getFrontend().getUserId());
         key.append(":");
         key.append(getFrontend().getUser());
         key.append(":");
         key.append(getFrontend().getHost());
         key.append("|");
-        key.append(getBackend().getNode());
+        key.append(getNode());
         key.append(":");
         key.append(getBackend().getName());
         key.append(":");

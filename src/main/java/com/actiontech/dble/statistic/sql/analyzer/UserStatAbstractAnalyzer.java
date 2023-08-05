@@ -30,10 +30,10 @@ public final class UserStatAbstractAnalyzer implements AbstractAnalyzer {
 
     @Override
     public void toAnalyzing(final StatisticFrontendSqlEntry fEntry) {
-        UserStat newUserStat = new UserStat(fEntry.getFrontend());
-        UserStat userStat = userStatMap.putIfAbsent(fEntry.getFrontend().getUser(), newUserStat);
-        if (userStat == null) {
-            userStat = newUserStat;
+        UserStat userStat;
+        if ((userStat = userStatMap.get(fEntry.getFrontend().getUser())) == null) {
+            userStat = new UserStat(fEntry.getFrontend());
+            userStatMap.put(fEntry.getFrontend().getUser(), userStat);
         }
         userStat.update(fEntry);
     }

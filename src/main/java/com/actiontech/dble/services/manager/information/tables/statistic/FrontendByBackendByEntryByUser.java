@@ -139,7 +139,7 @@ public class FrontendByBackendByEntryByUser extends ManagerBaseTable {
                     map.put(COLUMN_FRONTEND_HOST, v.getValue().getFrontend().getHost());
                     map.put(COLUMN_BACKEND_HOST, v.getValue().getBackend().getHost());
                     map.put(COLUMN_BACKEND_PORT, String.valueOf(v.getValue().getBackend().getPort()));
-                    map.put(COLUMN_SHARDING_NODE, v.getValue().getBackend().getNode());
+                    map.put(COLUMN_SHARDING_NODE, v.getValue().getNode());
                     map.put(COLUMN_DB_INSTANCE, v.getValue().getBackend().getName());
 
                     map.put(COLUMN_TX_COUNT, String.valueOf(v.getValue().getTxCount()));

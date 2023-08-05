@@ -36,6 +36,10 @@ public final class SqlStringUtil {
         String type;
         switch (sqlType) {
             case ServerParse.DDL:
+            case ServerParse.CREATE_DATABASE:
+            case ServerParse.CREATE_VIEW:
+            case ServerParse.DROP_VIEW:
+            case ServerParse.DROP_TABLE:
                 type = "DDL";
                 break;
             case ServerParse.INSERT:

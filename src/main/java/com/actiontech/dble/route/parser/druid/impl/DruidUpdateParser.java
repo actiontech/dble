@@ -98,6 +98,7 @@ public class DruidUpdateParser extends DruidModifyParser {
             super.visitorParse(originSchema, rrs, stmt, visitor, service, isExplain);
 
             String tableName = schemaInfo.getTable();
+            service.getSession2().trace(t -> t.addTable(Collections.singletonList(new Pair<>(schemaInfo.getSchema(), tableName))));
             BaseTableConfig tc = schema.getTables().get(tableName);
             String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
 

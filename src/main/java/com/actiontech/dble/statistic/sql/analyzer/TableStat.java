@@ -46,8 +46,8 @@ public class TableStat implements Comparable<TableStat> {
         this.lastExecuteTime = 0;
     }
 
-    public void update(int sqlType, long endTime, List<String> relationTables) {
-        switch (AbstractServerParse.getBusinessType(sqlType)) {
+    public void update(AbstractServerParse.BusinessType businessType, long endTime, List<String> relationTables) {
+        switch (businessType) {
             case R:
                 this.rCount.incrementAndGet();
                 break;

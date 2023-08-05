@@ -39,10 +39,10 @@ public final class RWSplitMultiQueryHandler extends RWSplitQueryHandler {
             }
             String finalSql = sql.trim();
             session.getService().setExecuteSql(finalSql);
-            session.trace(t -> t.setQuery(finalSql));
             DbleHintParser.HintInfo hintInfo = DbleHintParser.parseRW(finalSql);
             int rs = serverParse.parse(finalSql);
             int sqlType = rs & 0xff;
+            session.trace(t -> t.setQuery(finalSql, sqlType));
             Callback callback = null;
             if (hintInfo != null) {
                 session.getService().controlTx(TransactionOperate.QUERY);

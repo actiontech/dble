@@ -59,7 +59,8 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         }
 
         schema = schemaInfo.getSchemaConfig();
-        visitor.setCurrentTable(schemaInfo.getTable());
+        String tableName = schemaInfo.getTable();
+        service.getSession2().trace(t -> t.addTable(Collections.singletonList(new Pair<>(schemaInfo.getSchema(), tableName))));
         if (insert.getQuery() != null) {
             tryRouteInsertQuery(service, rrs, stmt, visitor, schemaInfo);
             return schema;
@@ -70,7 +71,6 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             throw new SQLNonTransientException(msg);
         }
 
-        String tableName = schemaInfo.getTable();
         if (parserNoSharding(service, schemaName, schemaInfo, rrs, insert)) {
             return schema;
         }

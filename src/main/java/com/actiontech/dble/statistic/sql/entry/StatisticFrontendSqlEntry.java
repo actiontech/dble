@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.statistic.sql.entry;
 
+import java.util.ArrayList;
+
 public class StatisticFrontendSqlEntry extends StatisticEntry {
 
     private String schema;
@@ -14,11 +16,12 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
     private long resultSize;
     private long startTimeMs;
     private long endTimeMs;
+    private ArrayList<String> tableList;
 
     public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long startTime, long startTimeMs,
-                                     String schema, String sql, long txId, long examinedRows, long rows,
-                                     long netOutBytes, long resultSize, long endTime, long endTimeMs) {
-        super(frontendInfo, startTime, sql, rows, endTime);
+                                     String schema, String sql, int sqlType, long txId, long examinedRows, long rows,
+                                     long netOutBytes, long resultSize, long endTime, long endTimeMs, ArrayList<String> tableList) {
+        super(frontendInfo, startTime, sql, sqlType, rows, endTime);
         this.schema = schema;
         this.txId = txId;
         this.examinedRows = examinedRows;
@@ -26,6 +29,7 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
         this.resultSize = resultSize;
         this.startTimeMs = startTimeMs;
         this.endTimeMs = endTimeMs;
+        this.tableList = tableList;
     }
 
     public long getStartTimeMs() {
@@ -58,5 +62,9 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
 
     public long getResultSize() {
         return resultSize;
+    }
+
+    public ArrayList<String> getTables() {
+        return tableList;
     }
 }

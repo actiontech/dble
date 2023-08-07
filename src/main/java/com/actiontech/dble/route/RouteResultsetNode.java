@@ -9,6 +9,8 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 
 import java.io.Serializable;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -32,6 +34,10 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
     private AtomicLong multiplexNum;
     //included table
     private Set<String> tableSet;
+    /**
+     * key table alias, value table real name;
+     */
+    private Map<String, String> tableAliasMap = new LinkedHashMap<>();
     private AtomicLong repeatTableIndex;
     private boolean isForUpdate = false;
     private volatile byte loadDataRrnStatus;
@@ -65,7 +71,7 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
         this.tableSet = tableSet;
     }
 
-    public RouteResultsetNode(String name, int sqlType, String srcStatement, Set<String> tableSet, boolean isApNode) {
+    public RouteResultsetNode(String name, int sqlType, String srcStatement, Set<String> tableSet, Map<String, String> tableAliasMap, boolean isApNode) {
         this.name = name;
         this.limitStart = 0;
         this.limitSize = -1;
@@ -77,7 +83,12 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
         this.repeatTableIndex = new AtomicLong(0);
         loadDataRrnStatus = 0;
         this.tableSet = tableSet;
+        this.tableAliasMap = tableAliasMap;
         this.isApNode = isApNode;
+    }
+
+    public void setApNode(boolean apNode) {
+        isApNode = apNode;
     }
 
     public byte getLoadDataRrnStatus() {
@@ -198,8 +209,8 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
         return isApNode;
     }
 
-    public void setApNode(boolean apNode) {
-        isApNode = apNode;
+    public Map<String, String> getTableAliasMap() {
+        return tableAliasMap;
     }
 
     @Override

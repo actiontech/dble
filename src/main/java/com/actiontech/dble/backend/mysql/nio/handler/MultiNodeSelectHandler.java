@@ -254,7 +254,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                 session.releaseConnectionIfSafe(entry.getKey(), false);
                 iterator.remove();
             }
-            session.trace(t -> t.doSqlStat(selectRows, netOutBytes, resultSize));
+            session.trace(t -> t.doSqlStat(selectRows, netOutBytes.intValue(), resultSize.intValue()));
             assert service != null;
             if (!isFail()) {
                 nextHandler.rowEofResponse(null, false, service);

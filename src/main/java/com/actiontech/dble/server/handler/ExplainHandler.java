@@ -246,25 +246,25 @@ public final class ExplainHandler {
         ByteBuffer buffer = service.allocate();
         // writeDirectly header
         ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-        byte packetId = header.getPacketId();
+        header.setPacketId(service.nextPacketId());
         buffer = header.write(buffer, service, true);
 
         // writeDirectly fields
         for (FieldPacket field : FIELDS) {
-            field.setPacketId(++packetId);
+            field.setPacketId(service.nextPacketId());
             buffer = field.write(buffer, service, true);
         }
 
         // writeDirectly eof
         EOFPacket eof = new EOFPacket();
-        eof.setPacketId(++packetId);
+        eof.setPacketId(service.nextPacketId());
         buffer = eof.write(buffer, service, true);
 
         if (!rrs.isNeedOptimizer()) {
             // writeDirectly rows
             for (RouteResultsetNode node : rrs.getNodes()) {
                 RowDataPacket row = getRow(node, service.getCharset().getResults());
-                row.setPacketId(++packetId);
+                row.setPacketId(service.nextPacketId());
                 buffer = row.write(buffer, service, true);
             }
         } else {
@@ -272,7 +272,7 @@ public final class ExplainHandler {
             RouteResultsetNode routeSingleNode = getTryRouteSingleNode(builder, rrs);
             if (routeSingleNode != null) {
                 RowDataPacket row = getRow(routeSingleNode, service.getCharset().getResults());
-                row.setPacketId(++packetId);
+                row.setPacketId(service.nextPacketId());
                 buffer = row.write(buffer, service, true);
             } else {
                 List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
@@ -281,14 +281,14 @@ public final class ExplainHandler {
                     row.add(StringUtil.encode(result.getName(), service.getCharset().getResults()));
                     row.add(StringUtil.encode(result.getType(), service.getCharset().getResults()));
                     row.add(StringUtil.encode(result.getRefOrSQL(), service.getCharset().getResults()));
-                    row.setPacketId(++packetId);
+                    row.setPacketId(service.nextPacketId());
                     buffer = row.write(buffer, service, true);
                 }
             }
         }
         // writeDirectly last eof
         EOFRowPacket lastEof = new EOFRowPacket();
-        lastEof.setPacketId(++packetId);
+        lastEof.setPacketId(service.nextPacketId());
         lastEof.write(buffer, service);
     }
 }

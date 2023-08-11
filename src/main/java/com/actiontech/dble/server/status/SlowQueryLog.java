@@ -70,6 +70,10 @@ public final class SlowQueryLog {
 
     public void setFlushPeriod(int flushPeriod) {
         this.flushPeriod = flushPeriod;
+        if (this.enableSlowLog && processor != null) {
+            processor.cancelFlushLogTask();
+            processor.initFlushLogTask();
+        }
     }
 
     public int getFlushSize() {

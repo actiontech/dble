@@ -25,7 +25,6 @@ import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -240,10 +239,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
 
         List<Pair<String, String>> tables = ctx.getTables();
-        int index = 0;
-        AbstractPartitionAlgorithm firstRule = null;
-        boolean directRoute = true;
-        Set<String> firstDataNodes = new HashSet<>();
+        Set<String> intersectionNodeSet = new HashSet<>();
         Map<String, BaseTableConfig> tableConfigMap = schemaConfig.getTables() == null ? null : schemaConfig.getTables();
 
         if (tableConfigMap != null) {
@@ -257,33 +253,21 @@ public class DruidSelectParser extends DefaultDruidParser {
                     }
                 }
 
-                if (index == 0) {
-                    if (tc != null) {
-                        if (!(tc instanceof ShardingTableConfig)) {
-                            continue;
-                        }
-                        firstRule = ((ShardingTableConfig) tc).getFunction();
-                        firstDataNodes.addAll(tc.getShardingNodes());
-                    }
-                } else {
-                    if (tc != null) {
-                        if (!(tc instanceof ShardingTableConfig)) {
-                            continue;
-                        }
-                        AbstractPartitionAlgorithm ruleCfg = ((ShardingTableConfig) tc).getFunction();
-                        Set<String> dataNodes = new HashSet<>(tc.getShardingNodes());
-                        if (firstRule != null && ((!ruleCfg.equals(firstRule)) || !dataNodes.equals(firstDataNodes))) {
-                            directRoute = false;
-                            break;
-                        }
+                //intersection of shardnodes
+                if (tc != null) {
+                    if (intersectionNodeSet.isEmpty()) {
+                        intersectionNodeSet.addAll(tc.getShardingNodes());
+                    } else {
+                        List<String> shardingNodes = tc.getShardingNodes();
+                        Set<String> otherDataNode = Sets.newHashSet(shardingNodes);
+                        intersectionNodeSet = Sets.intersection(intersectionNodeSet, otherDataNode);
                     }
                 }
-                index++;
             }
         }
 
         RouteResultset rrsResult = rrs;
-        if (directRoute) {
+        if (!intersectionNodeSet.isEmpty()) {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaConfig.getName()));
             rrsResult = tryRoute(schemaConfig, rrs);
         }

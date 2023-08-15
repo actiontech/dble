@@ -47,6 +47,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.LongAdder;
 
 import static com.actiontech.dble.net.mysql.StatusFlags.SERVER_STATUS_CURSOR_EXISTS;
 
@@ -60,8 +61,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     private long affectedRows;
     long selectRows;
     protected List<MySQLResponseService> errConnection;
-    private long netOutBytes;
-    private long resultSize;
+    private LongAdder netOutBytes = new LongAdder();
+    private LongAdder resultSize = new LongAdder();
     protected ErrorPacket err;
     protected int fieldCount = 0;
     volatile boolean fieldsReturned;
@@ -98,8 +99,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     protected void reset() {
         super.reset();
         connRrns.clear();
-        this.netOutBytes = 0;
-        this.resultSize = 0;
+        this.netOutBytes.reset();
+        this.resultSize.reset();
         dnSet.clear();
         packet = null;
         errorCount = 0;
@@ -380,7 +381,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     public void okResponse(byte[] data, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
-        this.netOutBytes += data.length;
+        this.netOutBytes.add(data.length);
         if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
             return;
         }
@@ -390,7 +391,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         }
         if (executeResponse) {
             pauseTime((MySQLResponseService) service);
-            this.resultSize += data.length;
+            this.resultSize.add(data.length);
             session.trace(t -> t.setBackendResponseEndTime((MySQLResponseService) service));
             ShardingService shardingService = session.getShardingService();
             OkPacket ok = new OkPacket();
@@ -444,7 +445,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                         shardingService.getLoadDataInfileHandler().clear();
                         shardingService.getLoadDataInfileHandler().cleanLoadDataFile();
                         transformOkPackage(ok, shardingService);
-                        session.trace(t -> t.doSqlStat(ok.getAffectedRows(), netOutBytes, resultSize));
+                        session.trace(t -> t.doSqlStat(ok.getAffectedRows(), netOutBytes.intValue(), resultSize.intValue()));
                         deleteErrorFile();
                         handleEndPacket(ok, AutoTxOperation.COMMIT, true);
                         cleanBuffer();
@@ -461,11 +462,11 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketList, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
-        this.netOutBytes += header.length;
+        this.netOutBytes.add(header.length);
         for (byte[] field : fields) {
-            this.netOutBytes += field.length;
+            this.netOutBytes.add(field.length);
         }
-        this.netOutBytes += eof.length;
+        this.netOutBytes.add(eof.length);
         if (fieldsReturned) {
             return;
         }
@@ -482,11 +483,11 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             if (byteBuffer == null && ServerParse.LOAD_DATA_INFILE_SQL == rrs.getSqlType()) {
                 byteBuffer = session.getSource().allocate();
             }
-            this.resultSize += header.length;
+            this.resultSize.add(header.length);
             for (byte[] field : fields) {
-                this.resultSize += field.length;
+                this.resultSize.add(field.length);
             }
-            this.resultSize += eof.length;
+            this.resultSize.add(eof.length);
             fieldsReturned = true;
             executeFieldEof(header, fields, eof);
         } catch (Exception e) {

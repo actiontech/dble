@@ -39,6 +39,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.net.mysql.StatusFlags.SERVER_STATUS_CURSOR_EXISTS;
@@ -53,8 +54,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private long affectedRows;
     long selectRows;
     protected List<MySQLResponseService> errConnection;
-    protected long netOutBytes;
-    protected long resultSize;
+    protected LongAdder netOutBytes = new LongAdder();
+    protected LongAdder resultSize = new LongAdder();
     protected ErrorPacket err;
     protected int fieldCount = 0;
     volatile boolean fieldsReturned;
@@ -101,8 +102,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     protected void reset() {
         super.reset();
         connRrns.clear();
-        this.netOutBytes = 0;
-        this.resultSize = 0;
+        this.netOutBytes.reset();
+        this.resultSize.reset();
         loadDataErrorCount = 0;
         this.readOnlyErrorCount = 0;
     }
@@ -293,7 +294,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     public void okResponse(byte[] data, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
-        this.netOutBytes += data.length;
+        this.netOutBytes.add(data.length);
 
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (LOGGER.isDebugEnabled()) {
@@ -301,7 +302,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         if (executeResponse) {
             pauseTime((MySQLResponseService) service);
-            this.resultSize += data.length;
+            this.resultSize.add(data.length);
             session.trace(t -> t.setBackendResponseEndTime((MySQLResponseService) service));
             ShardingService shardingService = session.getShardingService();
             OkPacket ok = new OkPacket();
@@ -344,7 +345,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     ok.setInsertId(insertId);
                     shardingService.setLastInsertId(insertId);
                 }
-                session.trace(t -> t.doSqlStat(ok.getAffectedRows(), netOutBytes, resultSize));
+                session.trace(t -> t.doSqlStat(ok.getAffectedRows(), netOutBytes.intValue(), resultSize.intValue()));
                 if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
                     return;
                 }
@@ -359,11 +360,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, @NotNull AbstractService service) {
-        this.netOutBytes += header.length;
+        this.netOutBytes.add(header.length);
         for (byte[] field : fields) {
-            this.netOutBytes += field.length;
+            this.netOutBytes.add(field.length);
         }
-        this.netOutBytes += eof.length;
+        this.netOutBytes.add(eof.length);
         if (fieldsReturned) {
             return;
         }
@@ -380,11 +381,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (fieldsReturned) {
                 return;
             }
-            this.resultSize += header.length;
+            this.resultSize.add(header.length);
             for (byte[] field : fields) {
-                this.resultSize += field.length;
+                this.resultSize.add(field.length);
             }
-            this.resultSize += eof.length;
+            this.resultSize.add(eof.length);
             fieldsReturned = true;
             executeFieldEof(header, fields, eof);
         } catch (Exception e) {
@@ -403,7 +404,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             LOGGER.debug("on row end response " + service);
         }
 
-        this.netOutBytes += eof.length;
+        this.netOutBytes.add(eof.length);
 
         if (errorResponse.get()) {
             return;
@@ -436,7 +437,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     session.getShardingService().writeDirectly(byteBuffer, WriteFlags.QUERY_END, ResultFlag.EOF_ROW);
                     return;
                 }
-                this.resultSize += eof.length;
+                this.resultSize.add(eof.length);
                 if (!rrs.isCallStatement()) {
                     if (this.sessionAutocommit && !session.getShardingService().isTxStart() && !session.getShardingService().isLockTable()) { // clear all connections
                         session.releaseConnections(false);
@@ -476,7 +477,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     @Override
     public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, @NotNull AbstractService service) {
-        this.netOutBytes += row.length;
+        this.netOutBytes.add(row.length);
         if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
             return false;
         }
@@ -502,7 +503,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     return false;
                 }
             }
-            this.resultSize += row.length;
+            this.resultSize.add(row.length);
 
             if (!errorResponse.get() && byteBuffer != null) {
                 RowDataPacket rowDataPk = new RowDataPacket(fieldCount);
@@ -587,7 +588,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("last packet id:" + (byte) session.getShardingService().getPacketId().get());
         }
-        session.trace(t -> t.doSqlStat(selectRows, netOutBytes, resultSize));
+        session.trace(t -> t.doSqlStat(selectRows, netOutBytes.intValue(), resultSize.intValue()));
         eofRowPacket.write(byteBuffer, source);
     }
 

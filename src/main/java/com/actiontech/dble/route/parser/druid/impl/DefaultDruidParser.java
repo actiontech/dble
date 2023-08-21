@@ -77,11 +77,28 @@ public class DefaultDruidParser implements DruidParser {
                 if (notSupport) {
                     return;
                 }
+                boolean containNode = rrs.getNodes().length > 0;
+                if (containNode) {
+                    Set<String> tableSet = rrs.getNodes()[0].getTableSet();
+                    long distinctCount = tableSet.stream().map(table -> {
+                        int index;
+                        if ((index = table.indexOf('.')) >= 0) {
+                            return table.substring(0, index);
+                        } else {
+                            return table;
+                        }
+                    }).distinct().count();
+                    if (distinctCount != 1) {
+                        //operation across clickhouse libraries is not supported
+                        LOGGER.debug("there are cross-library operations:{}", rrs.getSrcStatement());
+                        return;
+                    }
+                }
                 boolean isAggregate = RouterUtil.checkFunction(sqlSelectQuery);
                 if (isAggregate) {
                     Set<String> tableSet = ctx.getTables().stream().map(tableEntry -> tableEntry.getKey() + "." + tableEntry.getValue()).collect(Collectors.toSet());
                     rrs.setNeedOptimizer(false);
-                    RouterUtil.routeToApNode(rrs, schema.getDefaultApNode(), tableSet);
+                    RouterUtil.routeToApNode(rrs, schema.getDefaultApNode(), tableSet, ctx.getTableAliasMap());
                 }
             }
         }
@@ -117,7 +134,7 @@ public class DefaultDruidParser implements DruidParser {
             return null;
         }
 
-        Map<String, String> tableAliasMap = new HashMap<>(originTableAliasMap);
+        Map<String, String> tableAliasMap = new LinkedHashMap<>(originTableAliasMap);
         for (Map.Entry<String, String> entry : originTableAliasMap.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();

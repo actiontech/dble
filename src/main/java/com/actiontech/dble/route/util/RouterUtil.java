@@ -221,13 +221,12 @@ public final class RouterUtil {
         return rrs;
     }
 
-    public static RouteResultset routeToApNode(RouteResultset rrs, String apNode, Set<String> tableSet) {
+    public static RouteResultset routeToApNode(RouteResultset rrs, String apNode, Set<String> tableSet, Map<String, String> tableAliasMap) {
         if (apNode == null) {
             return rrs;
         }
         RouteResultsetNode[] nodes = new RouteResultsetNode[1];
-        nodes[0] = new RouteResultsetNode(apNode, rrs.getSqlType(), rrs.getStatement(), tableSet);
-        nodes[0].setApNode(true);
+        nodes[0] = new RouteResultsetNode(apNode, rrs.getSqlType(), rrs.getStatement(), tableSet, tableAliasMap, true);
         rrs.setNodes(nodes);
         rrs.setFinishedRoute(true);
         return rrs;
@@ -330,6 +329,10 @@ public final class RouterUtil {
         }
         RouteResultsetNode[] nodes = new RouteResultsetNode[1];
         nodes[0] = new RouteResultsetNode(shardingNode, rrs.getSqlType(), rrs.getStatement(), tableSet);
+        if (rrs.getSqlType() == ServerParse.SELECT) {
+            boolean isApNode = DbleServer.getInstance().getConfig().getApNodes().containsKey(shardingNode);
+            nodes[0].setApNode(isApNode);
+        }
         rrs.setNodes(nodes);
         rrs.setFinishedRoute(true);
         if (rrs.getCanRunInReadDB() != null) {

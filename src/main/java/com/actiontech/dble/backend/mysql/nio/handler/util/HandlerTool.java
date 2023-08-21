@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler.util;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.ApNode;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.MysqlVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
@@ -349,6 +350,14 @@ public final class HandlerTool {
         if (schemaConfig.isNoSharding()) {
             ShardingNode dbNode = DbleServer.getInstance().getConfig().getShardingNodes().get(schemaConfig.getDefaultSingleNode());
             return dbNode.getDatabase().equals(sourceSchema);
+        }
+        //for ap node
+        String defaultApNode = schemaConfig.getDefaultApNode();
+        if (!StringUtil.isEmpty(defaultApNode)) {
+            ApNode apNode = DbleServer.getInstance().getConfig().getApNodes().get(defaultApNode);
+            if (null != apNode && apNode.getDatabase().equals(sourceSchema)) {
+                return true;
+            }
         }
         BaseTableConfig tbConfig = schemaConfig.getTables().get(table);
         if (tbConfig == null) {

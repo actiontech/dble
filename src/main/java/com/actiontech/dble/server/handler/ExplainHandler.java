@@ -253,7 +253,7 @@ public final class ExplainHandler {
                 routeNode = routes[0];
             }
         }
-        if (routeNode == null || routeNode.isApNode()) return null;
+        if (routeNode == null) return null;
 
         PlanNode node = builder.getNode();
         String sql = rrs.isHaveHintPlan2Inner() ? routeNode.getStatement() : node.getSql();
@@ -266,7 +266,7 @@ public final class ExplainHandler {
                 sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
             }
         }
-        return new RouteResultsetNode(routeNode.getName(), rrs.getSqlType(), sql);
+        return new RouteResultsetNode(routeNode.getName(), rrs.getSqlType(), sql, routeNode.getTableSet(), routeNode.getTableAliasMap(), routeNode.isApNode());
     }
 
     public static void writeOutHeadAndEof(ShardingService service, RouteResultset rrs) {

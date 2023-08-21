@@ -162,7 +162,7 @@ public class HandlerBuilder {
                 routeNode = routes[0];
             }
         }
-        if (routeNode == null || routeNode.isApNode()) return null;
+        if (routeNode == null) return null;
 
         Set<String> tableSet = Sets.newHashSet();
         for (RouteResultsetNode routeResultsetNode : rrsNodes) {
@@ -181,7 +181,7 @@ public class HandlerBuilder {
                 sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
             }
         }
-        return new RouteResultsetNode(routeNode.getName(), ServerParse.SELECT, sql, tableSet, routeNode.isApNode());
+        return new RouteResultsetNode(routeNode.getName(), ServerParse.SELECT, sql, tableSet, routeNode.getTableAliasMap(), routeNode.isApNode());
     }
 
     /**

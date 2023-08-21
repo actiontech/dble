@@ -199,7 +199,7 @@ public final class ConditionUtil {
         return table;
     }
 
-    private static Pair<String, String> getTableInfo(Map<String, String> tableAliasMap, String tableFullName, String defaultSchema) {
+    public static Pair<String, String> getTableInfo(Map<String, String> tableAliasMap, String tableFullName, String defaultSchema) {
         if (tableAliasMap != null && tableAliasMap.get(tableFullName) != null &&
                 !tableAliasMap.get(tableFullName).equals(tableFullName)) {
             tableFullName = tableAliasMap.get(tableFullName);

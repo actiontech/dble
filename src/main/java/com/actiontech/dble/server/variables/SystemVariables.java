@@ -15,7 +15,7 @@ import java.util.Map;
 public final class SystemVariables {
 
     private Map<String, String> sessionVariables;
-    private volatile boolean lowerCase = true;
+    private volatile Boolean lowerCase = null;
 
     public SystemVariables() {
         sessionVariables = new HashMap<>();
@@ -23,6 +23,13 @@ public final class SystemVariables {
     }
 
     public boolean isLowerCaseTableNames() {
+        if (lowerCase == null)
+            // if uninitialized, the default is case-insensitive, so return true
+            return true;
+        return lowerCase;
+    }
+
+    public Boolean getLowerCase() {
         return lowerCase;
     }
 

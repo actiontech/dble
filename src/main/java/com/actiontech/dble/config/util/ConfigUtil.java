@@ -9,7 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.*;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.ConfigInitializer;
-import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.MysqlVersion;
@@ -94,7 +93,7 @@ public final class ConfigUtil {
         Map<String, PhysicalDbInstance> oldDbInstanceMaps = new HashMap<>();
         DbleServer.getInstance().getConfig().getDbGroups()
                 .values().stream().forEach(group -> group.getAllDbInstanceMap()
-                        .values().stream().forEach(db -> oldDbInstanceMaps.put(genDataSourceKey(group.getGroupName(), db.getName()), db)));
+                .values().stream().forEach(db -> oldDbInstanceMaps.put(genDataSourceKey(group.getGroupName(), db.getName()), db)));
 
         if (CollectionUtil.isEmpty(oldDbInstanceMaps)) return false;
 
@@ -213,7 +212,7 @@ public final class ConfigUtil {
     private static List<String> getClickHouseSyncKeyVariables(Set<PhysicalDbInstance> ckDbInstances, boolean isAllChange, boolean needSync, boolean existMysql) throws Exception {
         if (ckDbInstances.size() == 0)
             return new ArrayList<>();
-        Boolean lowerCase = (isAllChange && !existMysql) ? null : DbleServer.getInstance().getConfig().isLowerCase();
+        Boolean lowerCase = (isAllChange && !existMysql) ? null : DbleServer.getInstance().getSystemVariables().getLowerCase();
         if (lowerCase != null && lowerCase) {
             StringBuilder sb = new StringBuilder();
             sb.append("The configuration add Clickhouse. Since clickhouse is not case sensitive, so the values of lower_case_table_names for previous dbInstances must be 0.");
@@ -234,7 +233,7 @@ public final class ConfigUtil {
             return msgList;
 
         String msg;
-        Boolean lowerCase = isAllChange ? null : DbleServer.getInstance().getConfig().isLowerCase();
+        Boolean lowerCase = isAllChange ? null : DbleServer.getInstance().getSystemVariables().getLowerCase();
         boolean reInitLowerCase = false;
         Set<String> leftGroup = new HashSet<>();
         Set<String> rightGroup = new HashSet<>();
@@ -310,7 +309,6 @@ public final class ConfigUtil {
             throw new IOException("The configuration contains Clickhouse. Since clickhouse is not case sensitive, so the values of lower_case_table_names for all dbInstances must be 0. Current all dbInstances are 1.");
         }
         dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
-        DbleTempConfig.getInstance().setLowerCase(lowerCase);
         return msgList;
     }
 
@@ -340,7 +338,6 @@ public final class ConfigUtil {
             LOGGER.warn(msg);
         }
         dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
-        DbleTempConfig.getInstance().setLowerCase(lowerCaseA);
         return msgList;
     }
 

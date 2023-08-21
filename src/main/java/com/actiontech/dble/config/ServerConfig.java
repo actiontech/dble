@@ -77,7 +77,6 @@ public class ServerConfig {
     private RawJson shardingConfig;
     private RawJson userConfig;
     private RawJson sequenceConfig;
-    private Boolean lowerCase;
 
     public ServerConfig() {
         //read sharding.xml,db.xml and user.xml
@@ -166,7 +165,6 @@ public class ServerConfig {
     public void getAndSyncKeyVariables() throws Exception {
         ConfigUtil.checkDbleAndMysqlVersion(confInitNew.getDbGroups());
         ConfigUtil.getAndSyncKeyVariables(confInitNew.getDbGroups(), true);
-        DbleServer.getInstance().getConfig().setLowerCase(DbleTempConfig.getInstance().isLowerCase());
     }
 
     public boolean isFullyConfigured() {
@@ -464,7 +462,6 @@ public class ServerConfig {
             this.dbConfig = dbJsonConfig;
             this.shardingConfig = shardingJsonConfig;
             this.sequenceConfig = sequenceJsonConfig;
-            this.lowerCase = DbleTempConfig.getInstance().isLowerCase();
 
             try {
                 ReloadLogHelper.briefInfo("ha config init ...");
@@ -994,14 +991,6 @@ public class ServerConfig {
 
     public RawJson getSequenceConfig() {
         return sequenceConfig;
-    }
-
-    public Boolean isLowerCase() {
-        return lowerCase;
-    }
-
-    public void setLowerCase(Boolean lowerCase) {
-        this.lowerCase = lowerCase;
     }
 }
 

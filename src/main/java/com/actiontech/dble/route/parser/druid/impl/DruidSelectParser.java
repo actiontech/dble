@@ -12,7 +12,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
-import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
@@ -26,7 +25,6 @@ import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -241,66 +239,38 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
 
         List<Pair<String, String>> tables = ctx.getTables();
+        Set<String> intersectionNodeSet = new HashSet<>();
         Map<String, BaseTableConfig> tableConfigMap = schemaConfig.getTables() == null ? null : schemaConfig.getTables();
+        if (tableConfigMap != null) {
+            for (Pair<String, String> table : tables) {
+                String tableName = table.getValue();
+                BaseTableConfig tc = tableConfigMap.get(tableName);
+                if (tc == null) {
+                    Map<String, String> tableAliasMap = ctx.getTableAliasMap();
+                    if (tableAliasMap != null && tableAliasMap.get(tableName) != null) {
+                        tc = tableConfigMap.get(tableAliasMap.get(tableName));
+                    }
+                }
+
+                //intersection of shardnodes
+                if (tc != null) {
+                    if (intersectionNodeSet.isEmpty()) {
+                        intersectionNodeSet.addAll(tc.getShardingNodes());
+                    } else {
+                        List<String> shardingNodes = tc.getShardingNodes();
+                        Set<String> otherDataNode = Sets.newHashSet(shardingNodes);
+                        intersectionNodeSet = Sets.intersection(intersectionNodeSet, otherDataNode);
+                    }
+                }
+            }
+        }
 
         RouteResultset rrsResult = rrs;
-        if (canDirectRoute(tables, tableConfigMap)) {
+        if (!intersectionNodeSet.isEmpty()) {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaConfig.getName()));
             rrsResult = tryRoute(schemaConfig, rrs);
         }
         return rrsResult;
-    }
-
-    private boolean canDirectRoute(List<Pair<String, String>> tables, Map<String, BaseTableConfig> tableConfigMap) {
-        if (CollectionUtil.isEmpty(tableConfigMap) || CollectionUtil.isEmpty(tables)) {
-            return true;
-        }
-        boolean directRoute = true;
-        AbstractPartitionAlgorithm firstRule = null;
-        Set<String> firstShardingDataNodes = null;
-        for (Pair<String, String> table : tables) {
-            String tableName = table.getValue();
-            BaseTableConfig tc = tableConfigMap.get(tableName);
-            if (tc == null) {
-                Map<String, String> tableAliasMap = ctx.getTableAliasMap();
-                if (tableAliasMap != null && tableAliasMap.get(tableName) != null) {
-                    tc = tableConfigMap.get(tableAliasMap.get(tableName));
-                }
-            }
-            if (tc != null) {
-                AbstractPartitionAlgorithm ruleCfg = null;
-                Set<String> dataNodes;
-                if (tc instanceof ShardingTableConfig) {
-                    ruleCfg = ((ShardingTableConfig) tc).getFunction();
-                    dataNodes = new HashSet<>(tc.getShardingNodes());
-                } else if (tc instanceof ChildTableConfig) {
-                    ruleCfg = ((ChildTableConfig) tc).getDirectRouteTC().getFunction();
-                    dataNodes = new HashSet<>(tc.getShardingNodes());
-                } else if (tc instanceof GlobalTableConfig) {
-                    dataNodes = new HashSet<>(tc.getShardingNodes());
-                } else {
-                    directRoute = false;
-                    break;
-                }
-                if (firstRule == null && ruleCfg != null) {
-                    firstRule = ruleCfg;
-                }
-                if (firstShardingDataNodes == null) {
-                    firstShardingDataNodes = dataNodes;
-                }
-
-                if (firstRule != null && ruleCfg != null && ((!ruleCfg.equals(firstRule)) || !dataNodes.equals(firstShardingDataNodes))) {
-                    //sharding/child
-                    directRoute = false;
-                    break;
-                } else if ((firstRule == null || ruleCfg == null) && !dataNodes.equals(firstShardingDataNodes)) {
-                    //global
-                    directRoute = false;
-                    break;
-                }
-            }
-        }
-        return directRoute;
     }
 
     private RouteResultset tryRoute(SchemaConfig schema, RouteResultset rrs) throws SQLException {

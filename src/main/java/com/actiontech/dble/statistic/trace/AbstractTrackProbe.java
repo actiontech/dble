@@ -6,12 +6,14 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 public abstract class AbstractTrackProbe {
@@ -23,7 +25,10 @@ public abstract class AbstractTrackProbe {
     public void startProcess() {
     }
 
-    public void setQuery(String sql) {
+    public void setQuery(String sql, int sqlType) {
+    }
+
+    public void addTable(List<Pair<String, String>> tables) {
     }
 
     public void endParse() {

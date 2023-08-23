@@ -201,7 +201,7 @@ public class RWSplitNonBlockingSession extends Session {
             if ((originPacket != null && originPacket.length > 4 && originPacket[4] == MySQLPacket.COM_STMT_EXECUTE)) {
                 long statementId = ByteUtil.readUB4(originPacket, 5);
                 PreparedStatementHolder holder = rwSplitService.getPrepareStatement(statementId);
-                trace(t -> t.setQuery(holder.getPrepareSql()));
+                trace(t -> t.setQuery(holder.getPrepareSql(), holder.getSqlType()));
                 if (holder.isMustMaster() && conn.getInstance().isReadInstance()) {
                     holder.setExecuteOrigin(originPacket);
                     PSHandler psHandler = new PSHandler(rwSplitService, holder);
@@ -225,6 +225,7 @@ public class RWSplitNonBlockingSession extends Session {
 
     /**
      * jdbc compatible pre-delivery statements
+     *
      * @param master
      * @param originPacket
      * @param callback

@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class QueryTimeCost implements Cloneable {
     public static final Logger LOGGER = LoggerFactory.getLogger(QueryTimeCost.class);
 
-    private final CostTimeProvider provider;
-    private final ComplexQueryProvider xProvider;
+    private volatile CostTimeProvider provider;
+    private volatile ComplexQueryProvider xProvider;
 
     private long connId = 0;
     private long requestTime = 0;
@@ -38,11 +38,11 @@ public class QueryTimeCost implements Cloneable {
 
     public QueryTimeCost(long connId) {
         this.connId = connId;
-        this.xProvider = new ComplexQueryProvider();
-        this.provider = new CostTimeProvider();
     }
 
     public void setRequestTime(long requestTime) {
+        if (this.xProvider == null) this.xProvider = new ComplexQueryProvider();
+        if (this.provider == null) this.provider = new CostTimeProvider();
         reset();
         this.requestTime = requestTime;
         provider.beginRequest(connId);

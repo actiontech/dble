@@ -302,7 +302,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                         if (isSuccess) {
                             long statementId = ByteUtil.readUB4(resp, 5);
                             int paramCount = ByteUtil.readUB2(resp, 11);
-                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql));
+                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql, sqlType));
                         }
                     });
                 } else {
@@ -310,7 +310,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                         if (isSuccess) {
                             long statementId = ByteUtil.readUB4(resp, 5);
                             int paramCount = ByteUtil.readUB2(resp, 11);
-                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false, finalSql));
+                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false, finalSql, sqlType));
                         }
                     });
                 }
@@ -319,7 +319,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                     if (isSuccess) {
                         long statementId = ByteUtil.readUB4(resp, 5);
                         int paramCount = ByteUtil.readUB2(resp, 11);
-                        psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql));
+                        psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql, sqlType));
                     }
                 });
             }

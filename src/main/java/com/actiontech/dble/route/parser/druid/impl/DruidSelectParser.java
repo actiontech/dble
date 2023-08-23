@@ -124,6 +124,9 @@ public class DruidSelectParser extends DefaultDruidParser {
                     mysqlFrom instanceof SQLJoinTableSource ||
                     mysqlFrom instanceof SQLUnionQueryTableSource) {
                 super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
+                if (!CollectionUtil.isEmpty(ctx.getTables())) {
+                    service.getSession2().trace(t -> t.addTable(ctx.getTables()));
+                }
                 return executeComplexSQL(schemaName, schema, rrs, selectStmt, service, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {

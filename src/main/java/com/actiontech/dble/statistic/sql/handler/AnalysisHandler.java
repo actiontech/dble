@@ -35,7 +35,10 @@ public class AnalysisHandler implements StatisticDataHandler {
         if (!StatisticManager.getInstance().isEnableAnalysis()) {
             return;
         }
-        StatisticEntry entry = statisticEvent.getEntry();
+        handle(statisticEvent.getEntry());
+    }
+
+    public void handle(StatisticEntry entry) {
         if (entry instanceof StatisticFrontendSqlEntry) {
             StatisticFrontendSqlEntry frontendSqlEntry = (StatisticFrontendSqlEntry) entry;
             for (AbstractAnalyzer listener : listeners) {

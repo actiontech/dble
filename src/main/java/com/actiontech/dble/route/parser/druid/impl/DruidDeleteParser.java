@@ -12,6 +12,7 @@ import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -28,6 +29,7 @@ import com.google.common.collect.Sets;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -95,6 +97,8 @@ public class DruidDeleteParser extends DruidModifyParser {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
+
+            service.getSession2().trace(t -> t.addTable(Collections.singletonList(new Pair<>(schemaInfo.getSchema(), schemaInfo.getTable()))));
             SchemaConfig originSchema = schema;
             schema = schemaInfo.getSchemaConfig();
             BaseTableConfig tc = schema.getTables().get(schemaInfo.getTable());

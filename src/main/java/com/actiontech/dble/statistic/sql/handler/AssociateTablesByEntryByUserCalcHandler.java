@@ -11,6 +11,7 @@ import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
 import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
+import com.actiontech.dble.util.CollectionUtil;
 
 import java.util.*;
 
@@ -43,7 +44,11 @@ public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHan
             if (entry instanceof StatisticFrontendSqlEntry) {
                 StatisticFrontendSqlEntry fEntry = ((StatisticFrontendSqlEntry) entry);
                 if (fEntry.getSqlType() == 7) {
-                    List<String> tableList = ManagerTableUtil.getTables(fEntry.getSchema(), fEntry.getSql());
+                    List<String> tableList = new ArrayList<>(fEntry.getTables());
+                    if (CollectionUtil.isEmpty(tableList) ||
+                            (tableList.size() > 1 && tableList.size() != tableList.stream().distinct().count())) {
+                        tableList = ManagerTableUtil.getTables(fEntry.getSchema(), fEntry.getSql());
+                    }
                     if (!tableList.isEmpty() && tableList.size() > 1) {
                         Collections.sort(tableList);
                         String tables = String.join(",", tableList);

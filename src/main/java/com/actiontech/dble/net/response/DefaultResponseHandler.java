@@ -67,7 +67,8 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         beforeError();
 
         if (respHand != null) {
-            Optional.ofNullable(service.getOriginSession()).ifPresent(p -> p.trace(t -> t.setBackendResponseEndTime(service)));
+            if (service.getOriginSession() != null)
+                service.getOriginSession().trace(t -> t.setBackendResponseEndTime(service));
             IODelayProvider.beforeErrorResponse(service);
             respHand.errorResponse(data, service);
         } else {
@@ -127,7 +128,8 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     protected void closeNoHandler() {
         if (!service.getConnection().isClosed()) {
             LOGGER.info("no handler bind in this service " + service);
-            Optional.ofNullable(service.getOriginSession()).ifPresent(p -> p.trace(t -> t.setBackendResponseEndTime(service)));
+            if (service.getOriginSession() != null)
+                service.getOriginSession().trace(t -> t.setBackendResponseEndTime(service));
             service.getConnection().close("no handler");
         }
     }
@@ -146,7 +148,8 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         //LOGGER.info("get into rowing data " + data.length);
         ResponseHandler respHand = service.getResponseHandler();
         if (respHand != null) {
-            Optional.ofNullable(service.getOriginSession()).ifPresent(p -> p.trace(t -> t.setBackendSqlAddRows(service)));
+            if (service.getOriginSession() != null)
+                service.getOriginSession().trace(t -> t.setBackendSqlAddRows(service));
             respHand.rowResponse(data, null, false, service);
         } else {
             closeNoHandler();

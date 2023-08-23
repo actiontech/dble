@@ -7,13 +7,11 @@ public class BackendInfo {
     String name; // db_instance
     String host;
     int port;
-    String node; // sharding_node
 
-    public BackendInfo(BackendConnection bConn, String node) {
+    public BackendInfo(BackendConnection bConn) {
         this.name = ((MySQLInstance) bConn.getInstance()).getName();
         this.host = bConn.getHost();
         this.port = bConn.getPort();
-        this.node = node;
     }
 
     public String getName() {
@@ -26,9 +24,5 @@ public class BackendInfo {
 
     public int getPort() {
         return port;
-    }
-
-    public String getNode() {
-        return node;
     }
 }

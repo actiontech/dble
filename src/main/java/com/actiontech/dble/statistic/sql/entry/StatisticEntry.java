@@ -11,13 +11,14 @@ public class StatisticEntry {
     private FrontendInfo frontend;
     protected long rows;
     protected String sql;
-    protected int sqlType = -99;
+    protected int sqlType;
     protected long duration;
 
     public StatisticEntry(FrontendInfo frontendInfo, long startTime,
-                          String sql, long rows, long endTime) {
+                          String sql, int sqlType, long rows, long endTime) {
         this.frontend = frontendInfo;
-        this.sql = sql.replaceAll("[\\t\\n\\r]", " ").trim();
+        this.sql = sql;
+        this.sqlType = sqlType;
         this.rows = rows;
         this.duration = endTime - startTime;
     }
@@ -35,10 +36,7 @@ public class StatisticEntry {
     }
 
     public int getSqlType() {
-        if (null == sql) {
-            return sqlType;
-        }
-        if (sqlType == -99) {
+        if (sqlType == -99 && sql != null) {
             this.sqlType = ServerParseFactory.getShardingParser().parse(sql) & 0xff;
         }
         return sqlType;

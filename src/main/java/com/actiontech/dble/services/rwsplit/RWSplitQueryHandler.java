@@ -40,10 +40,10 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
         try {
             session.getService().queryCount();
             session.getService().setExecuteSql(sql);
-            session.trace(t -> t.setQuery(sql));
             DbleHintParser.HintInfo hintInfo = DbleHintParser.parseRW(sql);
             int rs = serverParse.parse(sql);
             int sqlType = rs & 0xff;
+            session.trace(t -> t.setQuery(sql, sqlType));
             if (hintInfo != null) {
                 session.executeHint(hintInfo, sqlType, sql, null);
                 session.getService().controlTx(TransactionOperate.QUERY);

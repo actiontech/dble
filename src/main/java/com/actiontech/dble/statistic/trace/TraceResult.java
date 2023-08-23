@@ -11,13 +11,11 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.statistic.sql.StatisticManager;
-import com.actiontech.dble.statistic.sql.entry.BackendInfo;
-import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
 import com.actiontech.dble.statistic.sql.entry.StatisticBackendSqlEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
 import com.google.common.collect.Lists;
@@ -25,9 +23,9 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,12 +58,13 @@ public class TraceResult implements Cloneable {
     protected boolean subQuery = false;
 
     protected String sql;
+    protected int sqlType = -1;
     protected String schema;
+    protected ArrayList<String> tableList = new ArrayList<>();
     protected long sqlRows = 0;
     protected long netOutBytes;
     protected long resultSize;
     protected TraceResult previous = null;
-    protected FrontendInfo frontendInfo;
     protected NonBlockingSession currentSession;
     /*
      * when 'set trace = 1' or 'enableSlowLog==true', need to record the time spent in each phase;
@@ -77,17 +76,18 @@ public class TraceResult implements Cloneable {
      *
      */
     protected boolean isDetailTrace = false;
+    // only samplingRate=100
+    protected boolean pureRecordSql = true;
 
     public TraceResult(NonBlockingSession session0) {
         this.currentSession = session0;
-        ShardingService shardingService = currentSession.getShardingService();
-        this.frontendInfo = new FrontendInfo(shardingService);
     }
 
     public void setRequestTime(long time, long timeMs) {
         copyToPrevious();
         reset();
         this.isDetailTrace = currentSession.isTraceEnable() || SlowQueryLog.getInstance().isEnableSlowLog();
+        this.pureRecordSql = !isDetailTrace && StatisticManager.getInstance().isPureRecordSql();
         this.requestStart = time;
         this.requestStartMs = timeMs;
     }
@@ -98,9 +98,16 @@ public class TraceResult implements Cloneable {
         this.parseStart = time;
     }
 
-    public void setQuery(String sql0) {
+    public void setQuery(String sql0, int sqlType0) {
         this.schema = currentSession.getShardingService().getSchema();
         this.sql = sql0;
+        this.sqlType = sqlType0;
+    }
+
+    public void addTable(List<Pair<String, String>> tables) { // schema.table
+        for (Pair<String, String> p : tables) {
+            tableList.add(p.getKey() + "." + p.getValue());
+        }
     }
 
     public void endParse(long time) {
@@ -130,10 +137,16 @@ public class TraceResult implements Cloneable {
         final ResponseHandler responseHandler = service.getResponseHandler();
         if (responseHandler != null) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
-            String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
-            Optional<BackendRoute> find = backendRouteList.stream().filter(f -> (f.handler == responseHandler && f.routeKey.equals(key))).findFirst();
-            if (!find.isPresent()) {
-                BackendRoute ar = new BackendRoute(responseHandler, key, node.getName(), node.getStatement(), time);
+            String key = service.getTraceRouteKey();
+            BackendRoute ar = null;
+            for (BackendRoute b : backendRouteList) {
+                if (b.handler == responseHandler && b.routeKey.equals(key)) {
+                    ar = b;
+                    break;
+                }
+            }
+            if (ar == null) {
+                ar = new BackendRoute(responseHandler, key, node.getName(), node.getStatement(), time);
                 backendRouteList.add(ar);
             }
         }
@@ -142,11 +155,15 @@ public class TraceResult implements Cloneable {
     public void setBackendResponseTime(MySQLResponseService service, long time) {
         final ResponseHandler responseHandler = service.getResponseHandler();
         if (responseHandler != null) {
-            RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
-            String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
-            Optional<BackendRoute> find = backendRouteList.stream().filter(f -> (f.handler == responseHandler && f.routeKey.equals(key) && f.firstRevTime == 0)).findFirst();
-            if (find.isPresent()) {
-                BackendRoute ar = find.get();
+            String key = service.getTraceRouteKey();
+            BackendRoute ar = null;
+            for (BackendRoute b : backendRouteList) {
+                if (b.handler == responseHandler && b.routeKey.equals(key) && b.firstRevTime == 0) {
+                    ar = b;
+                    break;
+                }
+            }
+            if (ar != null) {
                 ar.setFirstRevTime(time);
                 ar.setMysqlResponseService(service);
             }
@@ -156,11 +173,15 @@ public class TraceResult implements Cloneable {
     public void setBackendSqlAddRows(MySQLResponseService service, Long num) {
         final ResponseHandler responseHandler = service.getResponseHandler();
         if (responseHandler != null) {
-            RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
-            String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
-            Optional<BackendRoute> find = backendRouteList.stream().filter(f -> (f.handler == responseHandler && f.routeKey.equals(key) && f.firstRevTime != 0)).findFirst();
-            if (find.isPresent()) {
-                BackendRoute ar = find.get();
+            String key = service.getTraceRouteKey();
+            BackendRoute ar = null;
+            for (BackendRoute b : backendRouteList) {
+                if (b.handler == responseHandler && b.routeKey.equals(key) && b.firstRevTime != 0) {
+                    ar = b;
+                    break;
+                }
+            }
+            if (ar != null) {
                 if (num == null) {
                     ar.getRow().incrementAndGet();
                 } else {
@@ -174,15 +195,21 @@ public class TraceResult implements Cloneable {
         ResponseHandler responseHandler = service.getResponseHandler();
         if (responseHandler != null) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
-            String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
-            Optional<BackendRoute> find = backendRouteList.stream().filter(f -> (f.handler == responseHandler && f.routeKey.equals(key) && f.firstRevTime != 0 && f.finished == 0)).findFirst();
-            if (find.isPresent()) {
-                BackendRoute ar = find.get();
+            String key = service.getTraceRouteKey();
+            BackendRoute ar = null;
+            for (BackendRoute b : backendRouteList) {
+                if (b.handler == responseHandler && b.routeKey.equals(key) && b.firstRevTime != 0 && b.finished == 0) {
+                    ar = b;
+                    break;
+                }
+            }
+            if (ar != null) {
                 ar.setFinished(time);
                 ar.setAutocommit(service.isAutocommit());
+                if (pureRecordSql) return;
                 StatisticBackendSqlEntry bEntry = new StatisticBackendSqlEntry(
-                        frontendInfo,
-                        new BackendInfo(service.getConnection(), node.getName()),
+                        currentSession.getTraceFrontendInfo(),
+                        service.getConnection().getTraceBackendInfo(), node.getName(),
                         ar.getRequestTime(), ar.getSql(), node.getSqlType(), ar.getRow().get(), ar.getFinished());
                 bEntry.setNeedToTx(ar.isAutocommit());
                 StatisticManager.getInstance().push(bEntry);
@@ -192,18 +219,24 @@ public class TraceResult implements Cloneable {
 
     public void setBackendTerminateByComplex(MultiNodeMergeHandler mergeHandler, long time) {
         for (BaseDMLHandler handler : mergeHandler.getExeHandlers()) {
-            Optional<BackendRoute> find = backendRouteList.stream().filter(f -> (f.handler == handler && f.firstRevTime != 0 && f.finished == 0)).findFirst();
-            if (find.isPresent()) {
-                BackendRoute ar = find.get();
+            BackendRoute ar = null;
+            for (BackendRoute b : backendRouteList) {
+                if (b.handler == handler && b.firstRevTime != 0 && b.finished == 0) {
+                    ar = b;
+                    break;
+                }
+            }
+            if (ar != null) {
                 ar.setFinished(time);
+                if (pureRecordSql) return;
                 MySQLResponseService service;
                 if ((service = ar.getMysqlResponseService()) != null) {
                     RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
                     if (node != null) {
                         ar.setAutocommit(service.isAutocommit());
                         StatisticBackendSqlEntry bEntry = new StatisticBackendSqlEntry(
-                                frontendInfo,
-                                new BackendInfo(service.getConnection(), node.getName()),
+                                currentSession.getTraceFrontendInfo(),
+                                service.getConnection().getTraceBackendInfo(), node.getName(),
                                 ar.getRequestTime(), ar.getSql(), node.getSqlType(), ar.getRow().get(), ar.getFinished());
                         bEntry.setNeedToTx(ar.isAutocommit());
                         StatisticManager.getInstance().push(bEntry);
@@ -215,11 +248,12 @@ public class TraceResult implements Cloneable {
 
     // commit、rollback、quit
     public void setBackendResponseTxEnd(MySQLResponseService service, long time) {
+        if (pureRecordSql) return;
         if (!service.isAutocommit()) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             StatisticBackendSqlEntry bEntry = new StatisticBackendSqlEntry(
-                    new FrontendInfo(currentSession.getShardingService()),
-                    new BackendInfo(service.getConnection(), node.getName()),
+                    currentSession.getTraceFrontendInfo(),
+                    service.getConnection().getTraceBackendInfo(), node.getName(),
                     time, "/** txEnd **/", 0, 0, time);
             bEntry.setNeedToTx(true);
             StatisticManager.getInstance().push(bEntry);
@@ -245,10 +279,10 @@ public class TraceResult implements Cloneable {
             this.requestEnd = time;
             this.requestEndMs = timeMs;
             if (this.isCompletedV1() && isSuccess) {
-                long examinedRows = backendRouteList.stream().filter(f -> f.finished != 0).mapToLong(m -> m.getRow().get()).sum();
-                StatisticFrontendSqlEntry f = new StatisticFrontendSqlEntry(frontendInfo, requestStart, requestStartMs,
-                        schema, sql, currentSession.getShardingService().getTxId(), examinedRows, sqlRows,
-                        netOutBytes, resultSize, requestEnd, requestEndMs);
+                long examinedRows = getExaminedRows();
+                StatisticFrontendSqlEntry f = new StatisticFrontendSqlEntry(currentSession.getTraceFrontendInfo(), requestStart, requestStartMs,
+                        schema, sql, sqlType, currentSession.getShardingService().getTxId(), examinedRows, sqlRows,
+                        netOutBytes, resultSize, requestEnd, requestEndMs, new ArrayList<String>(tableList));
                 StatisticManager.getInstance().push(f);
                 if (isDetailTrace) {
                     SlowQueryLog.getInstance().putSlowQueryLog(currentSession.getShardingService(), this.clone());
@@ -260,10 +294,19 @@ public class TraceResult implements Cloneable {
         }
     }
 
+    private long getExaminedRows() {
+        long examinedRows = 0;
+        for (BackendRoute backendRoute : backendRouteList) {
+            if (backendRoute.finished != 0) {
+                examinedRows += backendRoute.getRow().get();
+            }
+        }
+        return examinedRows;
+    }
+
     public void setExit() {
         reset();
         previous = null;
-        frontendInfo = null;
     }
 
     public void setShardingNodes(RouteResultsetNode[] shardingNodes) {
@@ -324,7 +367,9 @@ public class TraceResult implements Cloneable {
         adtCommitBegin = 0;
         adtCommitEnd = 0;
         sql = null;
+        sqlType = -1;
         schema = null;
+        tableList.clear();
         sqlRows = 0;
         netOutBytes = 0;
         resultSize = 0;

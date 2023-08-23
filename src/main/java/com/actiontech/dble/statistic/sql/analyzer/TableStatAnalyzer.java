@@ -5,15 +5,10 @@
 
 package com.actiontech.dble.statistic.sql.analyzer;
 
+import com.actiontech.dble.server.parser.AbstractServerParse;
+import com.actiontech.dble.services.manager.information.ManagerTableUtil;
 import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
-import com.actiontech.dble.util.StringUtil;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.*;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.druid.sql.parser.SQLParserUtils;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
-import com.alibaba.druid.sql.visitor.SQLASTVisitorAdapter;
-import com.alibaba.druid.util.JdbcConstants;
+import com.actiontech.dble.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,9 +28,6 @@ public final class TableStatAnalyzer implements AbstractAnalyzer {
     private Map<String, TableStat> tableStatMap = new ConcurrentHashMap<>();
     private ReentrantLock lock = new ReentrantLock();
 
-    //PARSER SQL TO GET NAME
-    private SQLParser sqlParser = new SQLParser();
-
     private static final TableStatAnalyzer INSTANCE = new TableStatAnalyzer();
 
     private TableStatAnalyzer() {
@@ -47,21 +39,27 @@ public final class TableStatAnalyzer implements AbstractAnalyzer {
 
     @Override
     public void toAnalyzing(StatisticFrontendSqlEntry fEntry) {
-        String masterTable = null;
-        List<String> relationTables = new ArrayList<>();
-        List<String> tables = sqlParser.parseTableNames(fEntry.getSql());
-        for (int i = 0; i < tables.size(); i++) {
-            String table = tables.get(i);
-            if (i == 0) {
-                masterTable = table;
-            } else {
-                relationTables.add(table);
-            }
-        }
-
-        if (masterTable != null) {
-            TableStat tableStat = getTableStat(masterTable);
-            tableStat.update(fEntry.getSqlType(), fEntry.getEndTimeMs(), relationTables);
+        AbstractServerParse.BusinessType businessType = AbstractServerParse.getBusinessType(fEntry.getSqlType());
+        switch (businessType) {
+            case R:
+            case W:
+                List<String> tableList = new ArrayList<>(fEntry.getTables());
+                if (CollectionUtil.isEmpty(tableList) ||
+                        (tableList.size() > 1 && tableList.size() != tableList.stream().distinct().count())) {
+                    tableList = ManagerTableUtil.getTables(fEntry.getSchema(), fEntry.getSql());
+                }
+                String masterTable = null;
+                if (tableList.size() >= 1) {
+                    masterTable = tableList.get(0);
+                }
+                if (masterTable != null) {
+                    tableList.remove(0);
+                    TableStat tableStat = getTableStat(masterTable);
+                    tableStat.update(businessType, fEntry.getEndTimeMs(), tableList);
+                }
+                break;
+            default:
+                break;
         }
     }
 
@@ -95,83 +93,6 @@ public final class TableStatAnalyzer implements AbstractAnalyzer {
 
     public void clearTable() {
         tableStatMap.clear();
-    }
-
-
-    /**
-     * PARSER table name
-     */
-    private static class SQLParser {
-
-        private SQLStatement parseStmt(String sql) {
-            SQLStatementParser statParser = SQLParserUtils.createSQLStatementParser(sql, "mysql");
-            SQLStatement stmt = statParser.parseStatement();
-            return stmt;
-        }
-
-        /**
-         * fix SCHEMA,`
-         *
-         * @param tableName
-         * @return
-         */
-        private String fixName(String tableName) {
-            if (tableName != null) {
-                tableName = tableName.replace("`", "");
-                int dotIdx = tableName.indexOf(".");
-                if (dotIdx > 0) {
-                    tableName = tableName.substring(1 + dotIdx).trim();
-                }
-            }
-            return tableName;
-        }
-
-        /**
-         * PARSER SQL table name
-         */
-        public List<String> parseTableNames(String sql) {
-            final List<String> tables = new ArrayList<>();
-            try {
-                SQLStatement stmt = parseStmt(sql);
-                if (stmt instanceof SQLReplaceStatement) {
-                    String table = ((SQLReplaceStatement) stmt).getTableName().getSimpleName();
-                    tables.add(fixName(table));
-                } else if (stmt instanceof SQLInsertStatement) {
-                    String table = ((SQLInsertStatement) stmt).getTableName().getSimpleName();
-                    tables.add(fixName(table));
-                } else if (stmt instanceof SQLUpdateStatement) {
-                    addTableName(tables, stmt);
-                } else if (stmt instanceof SQLDeleteStatement) {
-                    String table = ((SQLDeleteStatement) stmt).getTableName().getSimpleName();
-                    tables.add(fixName(table));
-                } else if (stmt instanceof SQLSelectStatement) {
-                    addTableName(tables, stmt);
-                }
-            } catch (Exception e) {
-                LOGGER.info("TableStatAnalyzer err:" + e.toString());
-            }
-            return tables;
-        }
-
-        private void addTableName(List<String> tables, SQLStatement stmt) {
-            String dbType = stmt.getDbType().name();
-            if (!StringUtil.isEmpty(dbType) && JdbcConstants.MYSQL.equals(dbType)) {
-                stmt.accept(new MySqlASTVisitorAdapter() {
-                    public boolean visit(SQLExprTableSource x) {
-                        tables.add(fixName(x.toString()));
-                        return super.visit(x);
-                    }
-                });
-
-            } else {
-                stmt.accept(new SQLASTVisitorAdapter() {
-                    public boolean visit(SQLExprTableSource x) {
-                        tables.add(fixName(x.toString()));
-                        return super.visit(x);
-                    }
-                });
-            }
-        }
     }
 
 }

@@ -888,6 +888,53 @@ public final class RouterUtil {
     /**
      * tryRouteFor multiTables
      */
+    public static RouteResultset tryDirectRouteForTables(
+            SchemaConfig schema, DruidShardingParseInfo ctx, RouteCalculateUnit routeUnit, RouteResultset rrs,
+            boolean isSelect, String clientCharset) throws SQLException {
+        List<Pair<String, String>> tables = ctx.getTables();
+        Pair<String, String> firstTable = tables.get(0);
+        if (tables.size() == 1) {
+            return RouterUtil.tryRouteForOneTable(schema, routeUnit, firstTable.getValue(), rrs, isSelect, clientCharset);
+        }
+
+        /*
+         * multi-table it must be ER OR   global* normal , global* er
+         */
+        //map <table,sharding_nodes>
+        Map<Pair<String, String>, Set<String>> tablesRouteMap = new HashMap<>();
+
+        Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = routeUnit.getTablesAndConditions();
+        if (tablesAndConditions != null && tablesAndConditions.size() > 0) {
+            //findRouter for shard-ing table
+            RouterUtil.findRouterForTablesInOneSchema(schema, rrs, tablesAndConditions, tablesRouteMap, false, clientCharset);
+            if (rrs.isFinishedRoute()) {
+                return rrs;
+            }
+        }
+
+        //findRouter for singe table global table will not change the result
+        // if global table and normal table has no intersection ,they had treat as normal join
+        Set<String> tableSet = Sets.newHashSet();
+        for (Pair<String, String> table : tables) {
+            String tableName = table.getValue();
+            tableSet.add(schema.getName() + "." + tableName);
+            BaseTableConfig tableConfig = schema.getTables().get(tableName);
+            if (tableConfig != null && !(tableConfig instanceof GlobalTableConfig) && tablesRouteMap.get(table) == null) { //the other is single table
+                tablesRouteMap.put(table, new HashSet<>());
+                tablesRouteMap.get(table).addAll(tableConfig.getShardingNodes());
+            }
+        }
+
+        Set<String> retNodesSet = retainRouteMap(tablesRouteMap);
+        if (retNodesSet.size() == 0 && DTRACE_LOGGER.isTraceEnabled()) {
+            DTRACE_LOGGER.trace("this RouteCalculateUnit is always false, so ignore:" + routeUnit);
+        }
+        routeToMultiNode(isSelect, rrs, retNodesSet, tableSet);
+        return rrs;
+
+    }
+
+
     public static RouteResultset tryRouteForTables(
             SchemaConfig schema, DruidShardingParseInfo ctx, RouteCalculateUnit routeUnit, RouteResultset rrs,
             boolean isSelect, String clientCharset) throws SQLException {

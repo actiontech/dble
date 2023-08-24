@@ -300,7 +300,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         boolean isAllGlobalTable = RouterUtil.isAllGlobalTable(ctx, schema);
         for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-            RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, true, null);
+            RouteResultset rrsTmp = RouterUtil.tryDirectRouteForTables(schema, ctx, unit, rrs, true, null);
             if (rrsTmp != null && rrsTmp.getNodes() != null) {
                 nodeSet.addAll(Arrays.asList(rrsTmp.getNodes()));
             }

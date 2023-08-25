@@ -9,7 +9,7 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.statistic.stat.QueryConditionAnalyzer;
+import com.actiontech.dble.statistic.sql.analyzer.QueryConditionAnalyzer;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 

@@ -15,10 +15,9 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.parser.ShardingServerParse;
 import com.actiontech.dble.services.TransactionOperate;
-import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.sql.StatisticListener;
+import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 sql = sql.substring(0, ParseUtil.findNextBreak(sql));
             }
             String finalSql = sql;
-            StatisticListener.getInstance().record(service.getSession2(), r -> r.onFrontendSetSql(service.getSchema(), finalSql));
+
             this.service.setExecuteSql(sql);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("{} query sql: {}", service.toString3(), (sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql));
@@ -62,6 +61,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             int rs = serverParse.parse(sql);
             boolean isWithHint = serverParse.startWithHint(sql);
             int sqlType = rs & 0xff;
+            this.service.getSession2().trace(t -> t.setQuery(finalSql, sqlType));
             if (isWithHint) {
                 service.controlTx(TransactionOperate.QUERY);
                 if (sqlType == ServerParse.INSERT || sqlType == ServerParse.DELETE || sqlType == ServerParse.UPDATE ||

@@ -35,7 +35,6 @@ import com.actiontech.dble.services.VariablesService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.collect.ImmutableMap;
@@ -46,10 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -73,6 +69,8 @@ public class MySQLResponseService extends BackendService {
     private final AtomicBoolean logResponse = new AtomicBoolean(false);
     private static final CommandPacket COMMIT = new CommandPacket();
     private static final CommandPacket ROLLBACK = new CommandPacket();
+
+    private volatile String traceRouteKey = null;
 
     static {
         COMMIT.setPacketId(0);
@@ -169,6 +167,8 @@ public class MySQLResponseService extends BackendService {
         }
 
         StringBuilder synSQL = getSynSql(service.isAutocommit(), service);
+        if (getOriginSession() != null)
+            getOriginSession().trace(t -> t.setBackendRequestTime(this));
         if (synSQL != null) {
             sendQueryCmd(synSQL.toString(), service.getCharset());
         }
@@ -249,9 +249,8 @@ public class MySQLResponseService extends BackendService {
 
         if (synSQL == null) {
             // not need syn connection
-            if (session != null) {
-                session.setBackendRequestTime(this);
-            }
+            if (getOriginSession() != null)
+                getOriginSession().trace(t -> t.setBackendRequestTime(this));
             DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
             return;
         }
@@ -263,9 +262,8 @@ public class MySQLResponseService extends BackendService {
         if (apNode) {
             // clickhouse does not support multi-statements
             // syn and execute others
-            if (session != null) {
-                session.setBackendRequestTime(this);
-            }
+            if (getOriginSession() != null)
+                getOriginSession().trace(t -> t.setBackendRequestTime(this));
             // syn sharding
             List<WriteToBackendTask> taskList = new ArrayList<>(2);
             taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
@@ -276,9 +274,8 @@ public class MySQLResponseService extends BackendService {
             // and our query sql to multi command at last
             synSQL.append(rrn.getStatement()).append(";");
             // syn and execute others
-            if (session != null) {
-                session.setBackendRequestTime(this);
-            }
+            if (getOriginSession() != null)
+                getOriginSession().trace(t -> t.setBackendRequestTime(this));
             // syn sharding
             List<WriteToBackendTask> taskList = new ArrayList<>(1);
             taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
@@ -295,9 +292,8 @@ public class MySQLResponseService extends BackendService {
         try {
             if (synSQL == null) {
                 // not need syn connection
-                if (session != null) {
-                    session.setBackendRequestTime(this);
-                }
+                if (getOriginSession() != null)
+                    getOriginSession().trace(t -> t.setBackendRequestTime(this));
                 sendQueryCmd(sql, clientCharset);
                 return;
             }
@@ -308,9 +304,8 @@ public class MySQLResponseService extends BackendService {
             if (apNode) {
                 // clickhouse does not support multi-statements
                 // syn and execute others
-                if (session != null) {
-                    session.setBackendRequestTime(this);
-                }
+                if (getOriginSession() != null)
+                    getOriginSession().trace(t -> t.setBackendRequestTime(this));
                 List<String> sqlList = Lists.newArrayList(synSQL.toString(), sql);
                 for (String statement : sqlList) {
                     this.sendQueryCmd(statement, clientCharset);
@@ -320,9 +315,8 @@ public class MySQLResponseService extends BackendService {
                 // and our query sql to multi command at last
                 synSQL.append(sql).append(";");
                 // syn and execute others
-                if (session != null) {
-                    session.setBackendRequestTime(this);
-                }
+                if (getOriginSession() != null)
+                    getOriginSession().trace(t -> t.setBackendRequestTime(this));
                 this.sendQueryCmd(synSQL.toString(), clientCharset);
                 // waiting syn result...
             }
@@ -408,7 +402,8 @@ public class MySQLResponseService extends BackendService {
     protected boolean innerRelease() {
         if (isRowDataFlowing) {
             if (logResponse.compareAndSet(false, true)) {
-                session.setBackendResponseEndTime(this);
+                if (getOriginSession() != null)
+                    getOriginSession().trace(t -> t.setBackendResponseEndTime(this));
             }
             if (SystemConfig.getInstance().getEnableAsyncRelease() == 1) {
                 DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
@@ -433,7 +428,10 @@ public class MySQLResponseService extends BackendService {
     public void onConnectionClose(String reason) {
         final ResponseHandler handler = responseHandler;
         final MySQLResponseService responseService = this;
-        StatisticListener.getInstance().record(session, r -> r.onBackendSqlEnd(responseService));
+        if (getOriginSession() != null) {
+            getOriginSession().trace(t -> t.setBackendResponseEndTime(responseService));
+            getOriginSession().trace(t -> t.setBackendResponseClose(responseService));
+        }
         DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
             try {
                 responseService.backendSpecialCleanUp();
@@ -477,9 +475,8 @@ public class MySQLResponseService extends BackendService {
         }
         if (synSQL == null) {
             // not need syn connection
-            if (session != null) {
-                session.setBackendRequestTime(this);
-            }
+            if (getOriginSession() != null)
+                getOriginSession().trace(t -> t.setBackendRequestTime(this));
             DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
             waitSyncResult(rrn, clientCharset);
             return;
@@ -489,9 +486,8 @@ public class MySQLResponseService extends BackendService {
         // and our query sql to multi command at last
         // syn and execute others
         synSQL.append(rrn.getStatement()).append(";");
-        if (session != null) {
-            session.setBackendRequestTime(this);
-        }
+        if (getOriginSession() != null)
+            getOriginSession().trace(t -> t.setBackendRequestTime(this));
         taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
         DbleServer.getInstance().getWriteToBackendQueue().add(taskList);
         // waiting syn result...
@@ -526,11 +522,15 @@ public class MySQLResponseService extends BackendService {
     }
 
     public void rollback() {
+        if (getOriginSession() != null)
+            getOriginSession().trace(t -> t.setBackendResponseTxEnd(this));
         executeSql = "rollback";
         ROLLBACK.write(this);
     }
 
     public void commit() {
+        if (getOriginSession() != null)
+            getOriginSession().trace(t -> t.setBackendResponseTxEnd(this));
         executeSql = "commit";
         COMMIT.write(this);
     }
@@ -556,9 +556,8 @@ public class MySQLResponseService extends BackendService {
         if (task.getType() == ServiceTaskType.CLOSE) {
             return;
         }
-        if (session != null) {
-            session.setBackendResponseTime(this);
-        }
+        if (getOriginSession() != null)
+            getOriginSession().trace(t -> t.setBackendResponseTime(this));
     }
 
     @Override
@@ -674,6 +673,20 @@ public class MySQLResponseService extends BackendService {
 
     public AtomicBoolean getLogResponse() {
         return logResponse;
+    }
+
+    public String getTraceRouteKey() {
+        if (traceRouteKey == null) {
+            RouteResultsetNode node;
+            if (this.getAttachment() instanceof RouteResultsetNode) {
+                node = (RouteResultsetNode) this.getAttachment();
+                traceRouteKey = new StringBuilder().
+                        append(this.getConnection().getId()).
+                        append(":").append(node.getName()).
+                        append(":").append(node.getStatementHash()).toString();
+            }
+        }
+        return traceRouteKey;
     }
 
     @Override

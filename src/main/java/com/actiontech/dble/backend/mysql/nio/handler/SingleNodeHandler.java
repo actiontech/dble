@@ -24,7 +24,6 @@ import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -254,10 +253,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.setRowCount(ok.getAffectedRows());
             ok.setServerStatus(shardingService.isAutocommit() ? 2 : 1);
             shardingService.setLastInsertId(ok.getInsertId());
-            session.setBackendResponseEndTime((MySQLResponseService) service);
+            session.trace(t -> t.setBackendResponseEndTime((MySQLResponseService) service));
             session.releaseConnectionIfSafe((MySQLResponseService) service, false);
             session.multiStatementPacket(ok);
-            QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
+            session.trace(t -> t.doSqlStat(ok.getAffectedRows(), netOutBytes, resultSize));
             if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
                 return;
             }
@@ -294,7 +293,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         eofRowPacket.read(eof);
 
         ShardingService shardingService = session.getShardingService();
-        QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
+        session.trace(t -> t.doSqlStat(selectRows, netOutBytes, resultSize));
         if (requestScope.isUsingCursor()) {
             requestScope.getCurrentPreparedStatement().getCursorCache().done();
             session.getShardingService().writeDirectly(buffer, WriteFlags.QUERY_END, ResultFlag.EOF_ROW);

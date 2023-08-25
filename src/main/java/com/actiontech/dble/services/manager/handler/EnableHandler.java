@@ -35,6 +35,9 @@ public final class EnableHandler {
             case ManagerParseOnOff.STATISTIC:
                 StatisticCf.OnOff.execute(service, true);
                 break;
+            case ManagerParseOnOff.STATISTIC_ANALYSIS:
+                StatisticCf.AnalysisOnOff.execute(service, true);
+                break;
             case ManagerParseOnOff.LOAD_DATA_BATCH:
                 OnOffLoadDataBatch.execute(service, true);
                 break;

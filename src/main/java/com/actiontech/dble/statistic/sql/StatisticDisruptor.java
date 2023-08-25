@@ -9,10 +9,7 @@ import com.actiontech.dble.btrace.provider.StatisticProvider;
 import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
 import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.EventTranslatorOneArg;
-import com.lmax.disruptor.ExceptionHandler;
-import com.lmax.disruptor.LiteBlockingWaitStrategy;
+import com.lmax.disruptor.*;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import org.slf4j.Logger;
@@ -30,7 +27,7 @@ public class StatisticDisruptor {
         eventFactory = EVENTFACTORY;
         translator = TRANSLATOR;
         disruptor = new Disruptor<>(eventFactory, ringBufferSize, new ThreadFactoryBuilder().setNameFormat("STATISTIC-%d").build(), ProducerType.MULTI, new LiteBlockingWaitStrategy());
-        disruptor.handleEventsWith(dataHandler);
+        disruptor.handleEventsWith(dataHandler).then(new EventClearingEventHandler());
         disruptor.setDefaultExceptionHandler(new StatisticExceptionHandler());
         disruptor.start();
     }
@@ -89,6 +86,14 @@ public class StatisticDisruptor {
         @Override
         public void handleOnShutdownException(Throwable ex) {
             LOGGER.error("Exception during onShutdown for statistic's disruptor ,exception：", ex);
+        }
+    }
+
+    public static final class EventClearingEventHandler implements EventHandler<StatisticEvent> {
+
+        @Override
+        public void onEvent(StatisticEvent event, long sequence, boolean endOfBatch) throws Exception {
+            event.setEntry(null);
         }
     }
 }

@@ -5,17 +5,19 @@
 
 package com.actiontech.dble.statistic.sql.entry;
 
+import com.actiontech.dble.services.FrontendService;
+
 public class FrontendInfo {
     int userId;
     String user;
     String host;
     int port;
 
-    public FrontendInfo(int userId, String user, String host, int port) {
-        this.userId = userId;
-        this.user = user;
-        this.host = host;
-        this.port = port;
+    public FrontendInfo(FrontendService service) {
+        this.userId = service.getUserConfig().getId();
+        this.user = service.getUser().getFullName();
+        this.host = service.getConnection().getHost();
+        this.port = service.getConnection().getPort();
     }
 
     public int getUserId() {

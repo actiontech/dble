@@ -19,6 +19,7 @@ import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.FlowController;
+import com.actiontech.dble.statistic.sql.entry.BackendInfo;
 import com.actiontech.dble.util.TimeUtil;
 
 import java.nio.ByteBuffer;
@@ -37,6 +38,7 @@ public class BackendConnection extends PooledConnection {
     private volatile boolean backendWriteFlowControlled;
 
     private volatile String bindFront;
+    private volatile BackendInfo traceBackendInfo;
 
     public BackendConnection(NetworkChannel channel, SocketWR socketWR, ReadTimeStatusInstance instance, ResponseHandler handler, String schema) {
         super(channel, socketWR);
@@ -240,6 +242,12 @@ public class BackendConnection extends PooledConnection {
 
     public boolean isFromSlaveDB() {
         return instance.isReadInstance();
+    }
+
+    public BackendInfo getTraceBackendInfo() {
+        if (traceBackendInfo == null)
+            traceBackendInfo = new BackendInfo(this);
+        return traceBackendInfo;
     }
 
     @Override

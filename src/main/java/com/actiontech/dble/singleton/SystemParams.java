@@ -116,11 +116,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("bufferPoolPageSize", sysConfig.getBufferPoolPageSize() + "B", "The page size of memory bufferPool. The max direct memory used for allocating"));
         readOnlyParams.add(new ParamInfo("bufferPoolPageNumber", sysConfig.getBufferPoolPageNumber() + "", "The page number of memory bufferPool. The All bufferPool size is PageNumber * PageSize"));
         readOnlyParams.add(new ParamInfo("mappedFileSize", sysConfig.getMappedFileSize() + "B", "The Memory linked file size,when complex query resultSet is too large the Memory will be turned to file temporary"));
-        readOnlyParams.add(new ParamInfo("useSqlStat", sysConfig.getUseSqlStat() + "", "Whether the SQL statistics function is enable or not. The default value is 1"));
-        readOnlyParams.add(new ParamInfo("sqlRecordCount", sysConfig.getSqlRecordCount() + "", "The slow SQL statistics limit,if the slow SQL record is large than the size, the record will be clear. The default value is 10"));
         readOnlyParams.add(new ParamInfo("maxResultSet", sysConfig.getMaxResultSet() + "B", "The large resultSet SQL standard. The default value is 524288B(means 512*1024)"));
-        readOnlyParams.add(new ParamInfo("bufferUsagePercent", sysConfig.getBufferUsagePercent() + "%", "Large result set cleanup trigger percentage. The default value is 80"));
-        readOnlyParams.add(new ParamInfo("clearBigSQLResultSetMapMs", sysConfig.getClearBigSQLResultSetMapMs() + "ms", "The period for clear the large resultSet SQL statistics. The default value is 6000000ms"));
         readOnlyParams.add(new ParamInfo("frontSocketSoRcvbuf", sysConfig.getFrontSocketSoRcvbuf() + "B", "The buffer size of frontend receive socket. The default value is 1048576B(means 1024*1024)"));
         readOnlyParams.add(new ParamInfo("frontSocketSoSndbuf", sysConfig.getFrontSocketSoSndbuf() + "B", "The buffer size of frontend send socket. The default value is 4194304B(means 1024*1024*4)"));
         readOnlyParams.add(new ParamInfo("frontSocketNoDelay", sysConfig.getFrontSocketNoDelay() + "", "The frontend nagle is disabled. The default value is 1"));
@@ -201,11 +197,12 @@ public final class SystemParams {
         params.add(new ParamInfo("enableGeneralLog", GeneralLog.getInstance().isEnableGeneralLog() ? "1" : "0", "Enable general log"));
         params.add(new ParamInfo("generalLogFile", GeneralLog.getInstance().getGeneralLogFile(), "The path of general log, the default value is ./general/general.log"));
         params.add(new ParamInfo("enableStatistic", StatisticManager.getInstance().isEnable() ? "1" : "0", "Enable statistic sql, the default is 0(false)"));
+        params.add(new ParamInfo("enableStatisticAnalysis", StatisticManager.getInstance().isEnableAnalysis() ? "1" : "0", "Enable statistic analysis sql('show @@sql.sum.user/table' or 'show @@sql.condition'), the default is 0(false)"));
         params.add(new ParamInfo("associateTablesByEntryByUserTableSize", StatisticManager.getInstance().getAssociateTablesByEntryByUserTableSize() + "", "AssociateTablesByEntryByUser table size, the default is 1024"));
         params.add(new ParamInfo("frontendByBackendByEntryByUserTableSize", StatisticManager.getInstance().getFrontendByBackendByEntryByUserTableSize() + "", "FrontendByBackendByEntryByUser table size, the default is 1024"));
         params.add(new ParamInfo("tableByUserByEntryTableSize", StatisticManager.getInstance().getTableByUserByEntryTableSize() + "", "TableByUserByEntry table size, the default is 1024"));
         params.add(new ParamInfo("sqlLogTableSize", StatisticManager.getInstance().getSqlLogSize() + "", "SqlLog table size, the default is 1024"));
-        params.add(new ParamInfo("samplingRate", StatisticManager.getInstance().getSamplingRate() + "", "Sampling rate, the default is 0, it is a percentage"));
+        params.add(new ParamInfo("samplingRate", StatisticManager.getInstance().getSamplingRate() + "", "Sampling rate, the default is 100, it is a percentage"));
         params.add(new ParamInfo("xaIdCheckPeriod", XaCheckHandler.getXaIdCheckPeriod() + "s", "The period for check xaId, the default is 300 second"));
         params.add(new ParamInfo("enableSqlDumpLog", SqlDumpLog.getInstance().getEnableSqlDumpLog() + "", "Whether enable sqlDumpLog, the default value is 0(off)"));
 

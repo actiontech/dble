@@ -24,7 +24,6 @@ import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceHelper;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.StringUtil;
 import org.apache.curator.shaded.com.google.common.collect.Maps;
 import org.apache.logging.log4j.util.Strings;
@@ -37,6 +36,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -62,8 +62,8 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
     protected RouteResultset oriRrs;
     protected final boolean sessionAutocommit;
 
-    private long netOutBytes = 0;
-    private long resultSize = 0;
+    private LongAdder netOutBytes = new LongAdder();
+    private LongAdder resultSize = new LongAdder();
 
     protected final ReentrantLock lock = new ReentrantLock();
     protected HashMap<RouteResultsetNode, Integer> nodeResponseStatus = Maps.newHashMap();
@@ -220,7 +220,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
 
-        this.netOutBytes += data.length;
+        this.netOutBytes.add(data.length);
         MySQLResponseService responseService = (MySQLResponseService) service;
         boolean executeResponse = responseService.syncAndExecute();
 
@@ -229,8 +229,8 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
         }
 
         if (executeResponse) {
-            this.resultSize += data.length;
-            session.setBackendResponseEndTime(responseService);
+            this.resultSize.add(data.length);
+            session.trace(t -> t.setBackendResponseEndTime(responseService));
             final RouteResultsetNode node = (RouteResultsetNode) responseService.getAttachment();
             final ShardingService shardingService = session.getShardingService();
             lock.lock();
@@ -264,7 +264,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
                             err0.setMessage(StringUtil.encode(msg, shardingService.getCharset().getResults()));
                             packet = err0;
                         }
-                        QueryResultDispatcher.doSqlStat(rrs, session, 0, netOutBytes, resultSize);
+                        session.trace(t -> t.doSqlStat(0, netOutBytes.intValue(), resultSize.intValue()));
                         handleEndPacket(packet);
                     }
                 }

@@ -42,7 +42,6 @@ import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.alibaba.druid.wall.WallCheckResult;
@@ -91,7 +90,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         session.setRowCount(0);
         this.protoLogicHandler = new MySQLProtoLogicHandler(this);
         this.shardingSQLHandler = new MySQLShardingSQLHandler(this);
-        StatisticListener.getInstance().register(session);
     }
 
     public RequestScope getRequestScope() {
@@ -106,7 +104,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 session.getTransactionManager().setXaTxEnabled(Boolean.parseBoolean(val), this);
                 break;
             case TRACE:
-                session.setTrace(Boolean.parseBoolean(val));
+                session.setTraceEnable(Boolean.parseBoolean(val));
                 break;
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
@@ -116,7 +114,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                             getClusterDelayService().markDoingOrDelay(true);
                         }
                         session.commit(() -> {
-                            StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                             TxnLogHelper.putTxnLog(session.getShardingService(), executeSql);
                             controlTx(TransactionOperate.AUTOCOMMIT);
                         });
@@ -124,9 +121,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                     }
                 } else {
                     if (autocommit) {
-                        if (!isTxStart()) {
-                            StatisticListener.getInstance().record(this, r -> r.onTxStart());
-                        }
                         controlTx(TransactionOperate.UNAUTOCOMMIT);
                         TxnLogHelper.putTxnLog(this, executeSql);
                         writeOkPacket();
@@ -145,7 +139,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     public List<MysqlVariable> getAllVars() {
         List<MysqlVariable> variables = super.getAllVars();
         variables.add(new MysqlVariable("xa", session.getTransactionManager().getSessionXaID() == null ? "false" : "true", VariableType.SYSTEM_VARIABLES));
-        variables.add(new MysqlVariable("trace", session.isTrace() + "", VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable("trace", session.isTraceEnable() + "", VariableType.SYSTEM_VARIABLES));
         return variables;
     }
 
@@ -198,29 +192,18 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     }
 
     @Override
-    protected boolean beforeHandlingTask(@NotNull ServiceTask task) {
-        if (task.getType() == ServiceTaskType.NORMAL) {
-            final int packetType = ((NormalServiceTask) task).getPacketType();
-            if (packetType == MySQLPacket.COM_STMT_PREPARE || packetType == MySQLPacket.COM_STMT_EXECUTE || packetType == MySQLPacket.COM_QUERY) {
-                StatisticListener.getInstance().record(this, r -> r.onFrontendSqlStart());
-            }
-        }
-        return true;
-    }
-
-    @Override
     protected void beforeInsertServiceTask(@NotNull ServiceTask task) {
         super.beforeInsertServiceTask(task);
         if (task.getType() == ServiceTaskType.CLOSE) {
             return;
         }
         TraceManager.sessionStart(this, "sharding-server-start");
-        session.setRequestTime();
+        session.trace(t -> t.setRequestTime());
     }
 
     @Override
     protected void handleInnerData(byte[] data) {
-        getSession2().startProcess();
+        session.trace(t -> t.startProcess());
         try (RequestScope requestScope = new RequestScope()) {
             if (data[4] != MySQLPacket.COM_STMT_EXECUTE) {
                 GeneralLogHelper.putGLog(this, data);
@@ -332,8 +315,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
                 return;
             }
-            session.setQueryStartTime(System.currentTimeMillis());
-
             String db = this.schema;
 
             SchemaConfig schemaConfig = null;
@@ -469,16 +450,13 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                     getClusterDelayService().markDoingOrDelay(true);
                 }
                 session.commit(() -> {
-                    StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                     controlTx(TransactionOperate.BEGIN);
                     TxnLogHelper.putTxnLog(this, stmt);
-                    StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly());
                 });
             }
         } else {
             controlTx(TransactionOperate.BEGIN);
             TxnLogHelper.putTxnLog(this, stmt);
-            StatisticListener.getInstance().record(this, r -> r.onTxStart());
             this.writeOkPacket();
         }
     }
@@ -492,11 +470,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             }
             session.commit(() -> {
                 if (isInTransaction()) {
-                    StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                     TxnLogHelper.putTxnLog(session.getShardingService(), logReason);
-                    if (!isAutocommit()) {
-                        StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly());
-                    }
                 }
                 controlTx(TransactionOperate.END);
             });
@@ -512,11 +486,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         }
         session.rollback(() -> {
             if (isInTransaction()) {
-                StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                 TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
-                if (!isAutocommit()) {
-                    StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly());
-                }
             }
             controlTx(TransactionOperate.END);
         });
@@ -566,7 +536,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         } else if (writeFlags.contains(WriteFlag.END_OF_SESSION)) {
             TraceManager.sessionFinish(this);
         }
-        session.setResponseTime((resultFlag == ResultFlag.OK || resultFlag == ResultFlag.EOF_ROW));
         if (session.isDiscard() || session.isKilled()) {
             session.setKilled(false);
             session.setDiscard(false);
@@ -590,7 +559,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     @Override
     public void beforePacket(MySQLPacket packet) {
         if (packet instanceof OkPacket) {
-            StatisticListener.getInstance().record(session, r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
+            session.trace(t -> t.setFrontendSetRows(((OkPacket) packet).getAffectedRows()));
         }
         session.multiStatementPacket(packet);
     }
@@ -618,7 +587,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     @Override
     public void killAndClose(String reason) {
         connection.close(reason);
-        StatisticListener.getInstance().remove(session);
         if (!isInTransaction() || session.getTransactionManager().getXAStage() == null) {
             //not a xa transaction ,close it
             session.kill();

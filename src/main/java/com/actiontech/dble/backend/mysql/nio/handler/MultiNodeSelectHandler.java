@@ -26,7 +26,6 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.factorys.FinalHandlerFactory;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.CollectionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -255,7 +254,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                 session.releaseConnectionIfSafe(entry.getKey(), false);
                 iterator.remove();
             }
-            QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
+            session.trace(t -> t.doSqlStat(selectRows, netOutBytes.intValue(), resultSize.intValue()));
             assert service != null;
             if (!isFail()) {
                 nextHandler.rowEofResponse(null, false, service);

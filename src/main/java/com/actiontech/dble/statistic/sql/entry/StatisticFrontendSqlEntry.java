@@ -5,101 +5,66 @@
 
 package com.actiontech.dble.statistic.sql.entry;
 
-import com.actiontech.dble.server.parser.ServerParseFactory;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.ArrayList;
 
 public class StatisticFrontendSqlEntry extends StatisticEntry {
 
     private String schema;
-    private int sqlType = -99;
-    private String sql;
-    private volatile ConcurrentHashMap<String, StatisticBackendSqlEntry> backendSqlEntrys = new ConcurrentHashMap<>(8);
-    private volatile LongAdder examinedRows = new LongAdder();
-    private boolean isNeedToTx;
+    private long txId;
+    private long examinedRows;
+    private long netOutBytes;
+    private long resultSize;
+    private long startTimeMs;
+    private long endTimeMs;
+    private ArrayList<String> tableList;
 
-    public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long startTime) {
-        super(frontendInfo, startTime);
+    public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long startTime, long startTimeMs,
+                                     String schema, String sql, int sqlType, long txId, long examinedRows, long rows,
+                                     long netOutBytes, long resultSize, long endTime, long endTimeMs, ArrayList<String> tableList) {
+        super(frontendInfo, startTime, sql, sqlType, rows, endTime);
+        this.schema = schema;
+        this.txId = txId;
+        this.examinedRows = examinedRows;
+        this.netOutBytes = netOutBytes;
+        this.resultSize = resultSize;
+        this.startTimeMs = startTimeMs;
+        this.endTimeMs = endTimeMs;
+        this.tableList = tableList;
     }
 
-    public LongAdder getExaminedRows() {
-        return examinedRows;
+    public long getStartTimeMs() {
+        return startTimeMs;
     }
 
-    public void addExaminedRows(long row) {
-        examinedRows.add(row);
-    }
-
-    public void addExaminedRows() {
-        examinedRows.increment();
-    }
-
-    public void put(String key, StatisticBackendSqlEntry backendSqlEntry) {
-        this.backendSqlEntrys.put(key, backendSqlEntry);
-    }
-
-    public StatisticBackendSqlEntry getBackendSqlEntry(String key) {
-        return this.backendSqlEntrys.get(key);
-    }
-
-    public void clear() {
-        backendSqlEntrys.clear();
-    }
-
-    public Map<String, StatisticBackendSqlEntry> getBackendSqlEntrys() {
-        return backendSqlEntrys;
+    public long getEndTimeMs() {
+        return endTimeMs;
     }
 
     public String getSchema() {
         return schema;
     }
 
-    public void setSchema(String schema) {
-        this.schema = schema;
+    public long getTxId() {
+        return txId;
     }
 
-    public int getSqlType() {
-        if (null == sql) {
-            return sqlType;
-        }
-        if (sqlType == -99) {
-            this.sqlType = ServerParseFactory.getShardingParser().parse(sql) & 0xff;
-        }
-        return sqlType;
+    public long getExaminedRows() {
+        return examinedRows;
     }
 
-    public String getSql() {
-        return sql;
+    public long getNetInBytes() {
+        return sql.getBytes().length;
     }
 
-    public void setSql(String sql) {
-        this.sql = sql.replaceAll("[\\t\\n\\r]", " ");
+    public long getNetOutBytes() {
+        return netOutBytes;
     }
 
-    public void setRowsAndExaminedRows(long rows) {
-        super.rows = rows;
-        examinedRows.add(rows);
+    public long getResultSize() {
+        return resultSize;
     }
 
-    public boolean isNeedToTx() {
-        return isNeedToTx;
-    }
-
-    public void setNeedToTx(boolean needToTx) {
-        isNeedToTx = needToTx;
-    }
-
-    @Override
-    public String toString() {
-        StringBuffer sb = new StringBuffer();
-        sb.append("StatisticFrontendSqlEntry==>[");
-        sb.append("sql='" + getSql() + "',");
-        sb.append("txId='" + getTxId() + "',");
-        sb.append("frontend=[userId=" + getFrontend().getUserId() + ",user=" + getFrontend().getUser() + ",host&port=" + getFrontend().getHost() + ":" + getFrontend().getPort() + "]");
-        sb.append("time=[start=" + getStartTime() + ",end=" + getAllEndTime() + "],");
-        sb.append("sendClientRows=" + getRows() + "]");
-        return sb.toString();
+    public ArrayList<String> getTables() {
+        return tableList;
     }
 }

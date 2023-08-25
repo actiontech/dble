@@ -32,11 +32,9 @@ import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.TransactionOperate;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
-import com.actiontech.dble.services.mysqlsharding.LoadDataProtoHandlerImpl;
 import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.alibaba.druid.wall.WallCheckResult;
 import com.alibaba.druid.wall.WallProvider;
 import org.jetbrains.annotations.NotNull;
@@ -86,7 +84,6 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         this.session.setRwGroup(DbleServer.getInstance().getConfig().getDbGroups().get(userConfig.getDbGroup()));
         this.queryHandler = new RWSplitQueryHandler(session);
         this.multiQueryHandler = new RWSplitMultiQueryHandler(session);
-        StatisticListener.getInstance().register(session);
     }
 
     @Override
@@ -110,24 +107,18 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
     }
 
     @Override
-    protected boolean beforeHandlingTask(@NotNull ServiceTask task) {
-        TraceManager.sessionStart(this, "rwSplit-server-start");
-        if (task.getType() == ServiceTaskType.NORMAL) {
-            NormalServiceTask task0 = ((NormalServiceTask) task);
-            // Filter Load Data's empty package
-            if (this.isInLoadData() && LoadDataProtoHandlerImpl.isEndOfDataFile(task0.getOrgData()))
-                return true;
-
-            final int packetType = task0.getPacketType();
-            if (packetType == MySQLPacket.COM_STMT_PREPARE || packetType == MySQLPacket.COM_STMT_EXECUTE || packetType == MySQLPacket.COM_QUERY) {
-                StatisticListener.getInstance().record(session, r -> r.onFrontendSqlStart());
-            }
+    protected void beforeInsertServiceTask(@NotNull ServiceTask task) {
+        super.beforeInsertServiceTask(task);
+        if (task.getType() == ServiceTaskType.CLOSE) {
+            return;
         }
-        return true;
+        TraceManager.sessionStart(this, "rwSplit-server-start");
+        session.trace(t -> t.setRequestTime());
     }
 
     @Override
     protected void handleInnerData(byte[] data) {
+        session.trace(t -> t.startProcess());
         // TODO need to consider COM_STMT_EXECUTE
         GeneralLogHelper.putGLog(this, data);
         // if the statement is load data, directly push down
@@ -311,7 +302,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                         if (isSuccess) {
                             long statementId = ByteUtil.readUB4(resp, 5);
                             int paramCount = ByteUtil.readUB2(resp, 11);
-                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql));
+                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql, sqlType));
                         }
                     });
                 } else {
@@ -319,7 +310,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                         if (isSuccess) {
                             long statementId = ByteUtil.readUB4(resp, 5);
                             int paramCount = ByteUtil.readUB2(resp, 11);
-                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false, finalSql));
+                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false, finalSql, sqlType));
                         }
                     });
                 }
@@ -328,7 +319,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                     if (isSuccess) {
                         long statementId = ByteUtil.readUB4(resp, 5);
                         int paramCount = ByteUtil.readUB2(resp, 11);
-                        psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql));
+                        psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql, sqlType));
                     }
                 });
             }
@@ -355,12 +346,6 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
     }
 
     public void implicitlyDeal() {
-        if (isInTransaction()) {
-            StatisticListener.getInstance().record(session, r -> r.onTxEnd());
-            if (!isAutocommit()) {
-                StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly());
-            }
-        }
         controlTx(TransactionOperate.IMPLICITLY_COMMIT);
     }
 
@@ -442,7 +427,6 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
     public void killAndClose(String reason) {
         session.close(reason);
         connection.close(reason);
-        StatisticListener.getInstance().remove(session);
     }
 
     @Override

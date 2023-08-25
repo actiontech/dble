@@ -113,7 +113,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
                 nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, service);
             }
             if (++reachedConCount == route.length) {
-                session.allBackendConnReceive();
+                session.trace(t -> t.allBackendConnReceive());
                 startOwnThread();
             }
         } finally {

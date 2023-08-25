@@ -58,7 +58,7 @@ public class FieldListResponseHandler implements ProtocolResponseHandler {
     public void data(byte[] data) {
         if (status == INITIAL) {
             if (service.getSession() != null) {
-                service.getSession().startExecuteBackend();
+                service.getSession().trace(t -> t.startExecuteBackend());
             }
             status = FIELD;
             header = data;

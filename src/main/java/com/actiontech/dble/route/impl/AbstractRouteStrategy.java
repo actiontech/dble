@@ -51,8 +51,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
                 rrs = routeNormalSqlWithAST(schema, origSQL, rrs, service, isExplain);
             }
         }
-
-        service.getSession2().endParse();
+        service.getSession2().trace(t -> t.endParse());
         return rrs;
     }
 

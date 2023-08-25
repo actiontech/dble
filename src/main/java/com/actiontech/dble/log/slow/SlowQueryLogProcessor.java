@@ -12,7 +12,7 @@ import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.DailyRotateLogStore;
 import com.actiontech.dble.server.status.SlowQueryLog;
-import com.actiontech.dble.server.trace.TraceResult;
+import com.actiontech.dble.statistic.trace.TraceResult;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;

@@ -45,4 +45,5 @@ public final class AlarmCode {
     public static final String DB_MASTER_INSTANCE_DELAY_FAIL = "DB_MASTER_INSTANCE_DELAY_FAIL";
     public static final String SLOW_QUERY_QUEUE_POLICY_ABORT = "SLOW_QUERY_QUEUE_POLICY_ABORT";
     public static final String SLOW_QUERY_QUEUE_POLICY_WAIT = "SLOW_QUERY_QUEUE_POLICY_WAIT";
+    public static final String THREAD_SUSPECTED_HANG = "DBLE_THREAD_SUSPECTED_HANG"; //Resolve by trigger
 }

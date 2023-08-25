@@ -509,6 +509,11 @@ public class DbleDbInstance extends ManagerWritableTable {
                 throw new ConfigException("all dbInstance database type need to be consistent");
             }
         }
+        if (values.containsKey(COLUMN_DATABASE_TYPE)) {
+            if (null == values.get(COLUMN_DATABASE_TYPE)) {
+                throw new ConfigException("Column '" + COLUMN_DATABASE_TYPE + "' values only support " + Arrays.toString(DataBaseType.values()) + ".");
+            }
+        }
     }
 
     public void checkInsertDbInstanceType(List<LinkedHashMap<String, String>> insertRows) {

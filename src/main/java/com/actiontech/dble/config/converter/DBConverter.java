@@ -276,6 +276,12 @@ public class DBConverter {
         } else {
             conf.setId(id);
         }
+        //check flowHighLevel/flowLowLevel
+        if (poolConfig.getFlowHighLevel() <= 0 || poolConfig.getFlowLowLevel() <= 0) {
+            throw new ConfigException("The flowHighLevel & flowLowLevel must be positive integer");
+        } else if (poolConfig.getFlowLowLevel() >= poolConfig.getFlowHighLevel()) {
+            throw new ConfigException("The flowHighLevel must bigger than flowLowLevel");
+        }
         conf.setPoolConfig(poolConfig);
         return conf;
     }

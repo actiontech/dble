@@ -25,6 +25,7 @@ import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -242,8 +243,12 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
 
         List<Pair<String, String>> tables = ctx.getTables();
-        Set<String> intersectionNodeSet = new HashSet<>();
+        int index = 0;
+        AbstractPartitionAlgorithm firstRule = null;
+        boolean directRoute = true;
+        Set<String> firstDataNodes = new HashSet<>();
         Map<String, BaseTableConfig> tableConfigMap = schemaConfig.getTables() == null ? null : schemaConfig.getTables();
+
         if (tableConfigMap != null) {
             for (Pair<String, String> table : tables) {
                 String tableName = table.getValue();
@@ -255,21 +260,33 @@ public class DruidSelectParser extends DefaultDruidParser {
                     }
                 }
 
-                //intersection of shardnodes
-                if (tc != null) {
-                    if (intersectionNodeSet.isEmpty()) {
-                        intersectionNodeSet.addAll(tc.getShardingNodes());
-                    } else {
-                        List<String> shardingNodes = tc.getShardingNodes();
-                        Set<String> otherDataNode = Sets.newHashSet(shardingNodes);
-                        intersectionNodeSet = Sets.intersection(intersectionNodeSet, otherDataNode);
+                if (index == 0) {
+                    if (tc != null) {
+                        if (!(tc instanceof ShardingTableConfig)) {
+                            continue;
+                        }
+                        firstRule = ((ShardingTableConfig) tc).getFunction();
+                        firstDataNodes.addAll(tc.getShardingNodes());
+                    }
+                } else {
+                    if (tc != null) {
+                        if (!(tc instanceof ShardingTableConfig)) {
+                            continue;
+                        }
+                        AbstractPartitionAlgorithm ruleCfg = ((ShardingTableConfig) tc).getFunction();
+                        Set<String> dataNodes = new HashSet<>(tc.getShardingNodes());
+                        if (firstRule != null && ((!ruleCfg.equals(firstRule)) || !dataNodes.equals(firstDataNodes))) {
+                            directRoute = false;
+                            break;
+                        }
                     }
                 }
+                index++;
             }
         }
 
         RouteResultset rrsResult = rrs;
-        if (!intersectionNodeSet.isEmpty()) {
+        if (directRoute) {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaConfig.getName()));
             rrsResult = tryRoute(schemaConfig, rrs);
         }
@@ -286,7 +303,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         boolean isAllGlobalTable = RouterUtil.isAllGlobalTable(ctx, schema);
         for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-            RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, true, null);
+            RouteResultset rrsTmp = RouterUtil.tryDirectRouteForTables(schema, ctx, unit, rrs, true, null);
             if (rrsTmp != null && rrsTmp.getNodes() != null) {
                 nodeSet.addAll(Arrays.asList(rrsTmp.getNodes()));
             }

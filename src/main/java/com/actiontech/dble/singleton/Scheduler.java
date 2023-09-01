@@ -18,10 +18,7 @@ import com.actiontech.dble.util.TimeUtil;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import java.util.Iterator;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static com.actiontech.dble.server.NonBlockingSession.LOGGER;
 
@@ -40,7 +37,7 @@ public final class Scheduler {
     private ScheduledExecutorService scheduledExecutor;
 
     private Scheduler() {
-        this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
+        this.scheduledExecutor = Executors.newScheduledThreadPool(2, new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
     }
 
     public void init(ExecutorService executor) {
@@ -84,26 +81,29 @@ public final class Scheduler {
         return new Runnable() {
             @Override
             public void run() {
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
+                try {
+                    timerExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
 
-                        long sqlTimeout = SystemConfig.getInstance().getSqlExecuteTimeout() * 1000L;
-                        //close connection if now -lastTime>sqlExecuteTimeout
-                        long currentTime = TimeUtil.currentTimeMillis();
-                        Iterator<PooledConnection> iterator = IOProcessor.BACKENDS_OLD.iterator();
-                        while (iterator.hasNext()) {
-                            PooledConnection con = iterator.next();
-                            long lastTime = con.getLastTime();
-                            if (con.isClosed() || con.getState() != PooledConnection.STATE_IN_USE || currentTime - lastTime > sqlTimeout) {
-                                con.close("clear old backend connection ...");
-                                iterator.remove();
+                            long sqlTimeout = SystemConfig.getInstance().getSqlExecuteTimeout() * 1000L;
+                            //close connection if now -lastTime>sqlExecuteTimeout
+                            long currentTime = TimeUtil.currentTimeMillis();
+                            Iterator<PooledConnection> iterator = IOProcessor.BACKENDS_OLD.iterator();
+                            while (iterator.hasNext()) {
+                                PooledConnection con = iterator.next();
+                                long lastTime = con.getLastTime();
+                                if (con.isClosed() || con.getState() != PooledConnection.STATE_IN_USE || currentTime - lastTime > sqlTimeout) {
+                                    con.close("clear old backend connection ...");
+                                    iterator.remove();
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                } catch (RejectedExecutionException e) {
+                    ThreadChecker.getInstance().timerExecuteError(e, "dbInstanceOldConsClear()");
+                }
             }
-
         };
     }
 
@@ -111,35 +111,53 @@ public final class Scheduler {
      * after reload @@config_all ,clean old dbGroup
      */
     private Runnable oldDbGroupClear() {
-        return () -> timerExecutor.execute(() -> {
-            Iterator<PhysicalDbGroup> iterator = IOProcessor.BACKENDS_OLD_GROUP.iterator();
-            while (iterator.hasNext()) {
-                PhysicalDbGroup dbGroup = iterator.next();
-                boolean isStop = dbGroup.stopOfBackground("[background task]reload config, recycle old group");
-                LOGGER.info("[background task]recycle old group:{},result:{}", dbGroup.getGroupName(), isStop);
-                if (isStop) {
-                    iterator.remove();
+        return new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    timerExecutor.execute(() -> {
+                        Iterator<PhysicalDbGroup> iterator = IOProcessor.BACKENDS_OLD_GROUP.iterator();
+                        while (iterator.hasNext()) {
+                            PhysicalDbGroup dbGroup = iterator.next();
+                            boolean isStop = dbGroup.stopOfBackground("[background task]reload config, recycle old group");
+                            LOGGER.info("[background task]recycle old group:{},result:{}", dbGroup.getGroupName(), isStop);
+                            if (isStop) {
+                                iterator.remove();
+                            }
+                        }
+                    });
+                } catch (RejectedExecutionException e) {
+                    ThreadChecker.getInstance().timerExecuteError(e, "oldDbGroupClear()");
                 }
             }
-        });
+        };
     }
 
     /**
      * after reload @@config_all ,clean old dbInstance
      */
     private Runnable oldDbInstanceClear() {
-        return () -> timerExecutor.execute(() -> {
-            Iterator<PhysicalDbInstance> iterator = IOProcessor.BACKENDS_OLD_INSTANCE.iterator();
-            while (iterator.hasNext()) {
-                PhysicalDbInstance dbInstance = iterator.next();
-                boolean isStop = dbInstance.stopOfBackground("[background task]reload config, recycle old dbInstance");
-                LOGGER.info("[background task]recycle old dbInstance:{},result:{}", dbInstance, isStop);
-                if (isStop) {
-                    iterator.remove();
-                    dbInstance.getDbGroup().setState(PhysicalDbGroup.INITIAL);
+        return new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    timerExecutor.execute(() -> {
+                        Iterator<PhysicalDbInstance> iterator = IOProcessor.BACKENDS_OLD_INSTANCE.iterator();
+                        while (iterator.hasNext()) {
+                            PhysicalDbInstance dbInstance = iterator.next();
+                            boolean isStop = dbInstance.stopOfBackground("[background task]reload config, recycle old dbInstance");
+                            LOGGER.info("[background task]recycle old dbInstance:{},result:{}", dbInstance, isStop);
+                            if (isStop) {
+                                iterator.remove();
+                                dbInstance.getDbGroup().setState(PhysicalDbGroup.INITIAL);
+                            }
+                        }
+                    });
+                } catch (RejectedExecutionException e) {
+                    ThreadChecker.getInstance().timerExecuteError(e, "oldDbInstanceClear()");
                 }
             }
-        });
+        };
     }
 
 
@@ -148,12 +166,16 @@ public final class Scheduler {
         return new Runnable() {
             @Override
             public void run() {
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        XASessionCheck.getInstance().checkSessions();
-                    }
-                });
+                try {
+                    timerExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            XASessionCheck.getInstance().checkSessions();
+                        }
+                    });
+                } catch (RejectedExecutionException e) {
+                    ThreadChecker.getInstance().timerExecuteError(e, "xaSessionCheck()");
+                }
             }
         };
     }
@@ -162,12 +184,16 @@ public final class Scheduler {
         return new Runnable() {
             @Override
             public void run() {
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        XAStateLog.cleanCompleteRecoveryLog();
-                    }
-                });
+                try {
+                    timerExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            XAStateLog.cleanCompleteRecoveryLog();
+                        }
+                    });
+                } catch (RejectedExecutionException e) {
+                    ThreadChecker.getInstance().timerExecuteError(e, "xaLogClean()");
+                }
             }
         };
     }

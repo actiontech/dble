@@ -45,6 +45,7 @@ import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
+import com.actiontech.dble.singleton.ThreadChecker;
 import com.actiontech.dble.util.ExecutorUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.collect.Maps;
@@ -293,6 +294,7 @@ public final class DbleServer {
         LOGGER.info(server.getName() + " is started and listening on " + server.getPort());
         LOGGER.info("=====================================Server started success=======================================");
 
+        ThreadCheckerScheduler.getInstance().init();
         Scheduler.getInstance().init(timerExecutor);
         LOGGER.info("=======================================Scheduler started==========================================");
 
@@ -337,7 +339,7 @@ public final class DbleServer {
         backendExecutor = ExecutorUtil.createFixed(BACKEND_WORKER_NAME, SystemConfig.getInstance().getBackendWorker(), runnableMap);
         writeToBackendExecutor = ExecutorUtil.createFixed(WRITE_TO_BACKEND_WORKER_NAME, SystemConfig.getInstance().getWriteToBackendWorker(), runnableMap);
         complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexQueryWorker(), null);
-        timerExecutor = ExecutorUtil.createFixed(TIMER_WORKER_NAME, 1);
+        timerExecutor = ExecutorUtil.createCached(TIMER_WORKER_NAME, 1, 2, ThreadChecker.getInstance());
         nioFrontExecutor = ExecutorUtil.createFixed(NIO_FRONT_RW, frontProcessorCount, runnableMap);
         nioBackendExecutor = ExecutorUtil.createFixed(NIO_BACKEND_RW, backendProcessorCount, runnableMap);
     }
@@ -459,30 +461,34 @@ public final class DbleServer {
         return new Runnable() {
             @Override
             public void run() {
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            for (IOProcessor p : backendProcessors) {
-                                p.checkBackendCons();
+                try {
+                    timerExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                for (IOProcessor p : backendProcessors) {
+                                    p.checkBackendCons();
+                                }
+                            } catch (Exception e) {
+                                LOGGER.info("checkBackendCons caught err:", e);
                             }
-                        } catch (Exception e) {
-                            LOGGER.info("checkBackendCons caught err:", e);
                         }
-                    }
-                });
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            for (IOProcessor p : frontProcessors) {
-                                p.checkFrontCons();
+                    });
+                    timerExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                for (IOProcessor p : frontProcessors) {
+                                    p.checkFrontCons();
+                                }
+                            } catch (Exception e) {
+                                LOGGER.info("checkFrontCons caught err:", e);
                             }
-                        } catch (Exception e) {
-                            LOGGER.info("checkFrontCons caught err:", e);
                         }
-                    }
-                });
+                    });
+                } catch (RejectedExecutionException e) {
+                    ThreadChecker.getInstance().timerExecuteError(e, "processorCheck()");
+                }
             }
         };
     }

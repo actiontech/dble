@@ -45,8 +45,8 @@ import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
-import com.actiontech.dble.singleton.ThreadChecker;
 import com.actiontech.dble.util.ExecutorUtil;
+import com.actiontech.dble.util.NameableScheduledThreadPoolExecutor;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -77,6 +77,7 @@ public final class DbleServer {
     public static final String WRITE_TO_BACKEND_WORKER_NAME = "writeToBackendWorker";
     public static final String COMPLEX_QUERY_EXECUTOR_NAME = "complexQueryWorker";
     public static final String TIMER_WORKER_NAME = "Timer";
+    public static final String TIMER_SCHEDULER_WORKER_NAME = "TimerScheduler";
     public static final String NIO_FRONT_RW = "NIOFrontRW";
     public static final String NIO_BACKEND_RW = "NIOBackendRW";
     public static final String AIO_EXECUTOR_NAME = "AIO";
@@ -113,7 +114,8 @@ public final class DbleServer {
     private ExecutorService backendExecutor;
     private ExecutorService writeToBackendExecutor;
     private ExecutorService complexQueryExecutor;
-    private ExecutorService timerExecutor;
+    private volatile ExecutorService timerExecutor;
+    private volatile NameableScheduledThreadPoolExecutor timerSchedulerExecutor;
     private Map<String, ThreadWorkUsage> threadUsedMap = new ConcurrentHashMap<>();
 
     private Deque<ServiceTask> frontHandlerQueue;
@@ -295,7 +297,7 @@ public final class DbleServer {
         LOGGER.info("=====================================Server started success=======================================");
 
         ThreadCheckerScheduler.getInstance().init();
-        Scheduler.getInstance().init(timerExecutor);
+        Scheduler.getInstance().init();
         LOGGER.info("=======================================Scheduler started==========================================");
 
         XaCheckHandler.initXaIdCheckPeriod();
@@ -340,6 +342,7 @@ public final class DbleServer {
         writeToBackendExecutor = ExecutorUtil.createFixed(WRITE_TO_BACKEND_WORKER_NAME, SystemConfig.getInstance().getWriteToBackendWorker(), runnableMap);
         complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexQueryWorker(), null);
         timerExecutor = ExecutorUtil.createCached(TIMER_WORKER_NAME, 1, 2, ThreadChecker.getInstance());
+        timerSchedulerExecutor = ExecutorUtil.createFixedScheduled(TIMER_SCHEDULER_WORKER_NAME, 2, ThreadChecker.getInstance());
         nioFrontExecutor = ExecutorUtil.createFixed(NIO_FRONT_RW, frontProcessorCount, runnableMap);
         nioBackendExecutor = ExecutorUtil.createFixed(NIO_BACKEND_RW, backendProcessorCount, runnableMap);
     }
@@ -488,6 +491,10 @@ public final class DbleServer {
                     });
                 } catch (RejectedExecutionException e) {
                     ThreadChecker.getInstance().timerExecuteError(e, "processorCheck()");
+                } catch (Throwable e) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("scheduled task processorCheck() happen exception: ", e);
+                    }
                 }
             }
         };
@@ -621,6 +628,17 @@ public final class DbleServer {
         return timerExecutor;
     }
 
+    public NameableScheduledThreadPoolExecutor getTimerSchedulerExecutor() {
+        return timerSchedulerExecutor;
+    }
+
+    public void setTimerExecutor(ExecutorService timerExecutor) {
+        this.timerExecutor = timerExecutor;
+    }
+
+    public void setTimerSchedulerExecutor(NameableScheduledThreadPoolExecutor timerSchedulerExecutor) {
+        this.timerSchedulerExecutor = timerSchedulerExecutor;
+    }
 
     public ExecutorService getComplexQueryExecutor() {
         return complexQueryExecutor;

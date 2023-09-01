@@ -233,6 +233,9 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                                 if (!itemToDiscard.isNullItem()) {
                                     BlockingQueue<HeapItem> discardQueue = queues.get(itemToDiscard.getIndex());
                                     while (true) {
+                                        if (Thread.currentThread().isInterrupted()) {
+                                            throw new InterruptedException("manual interrupted");
+                                        }
                                         if (discardQueue.take().isNullItem() || isFail()) {
                                             break;
                                         }
@@ -245,15 +248,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                     nextHandler.rowResponse(top.getRowData(), top.getRowPacket(), false, top.getIndex());
                 }
             }
-            Iterator<Map.Entry<MySQLResponseService, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
-            MySQLResponseService service = null;
-            while (iterator.hasNext()) {
-                Map.Entry<MySQLResponseService, BlockingQueue<HeapItem>> entry = iterator.next();
-                service = entry.getKey();
-                entry.getValue().clear();
-                session.releaseConnectionIfSafe(entry.getKey(), false);
-                iterator.remove();
-            }
+            MySQLResponseService service = clearQueueAndReleaseConnection();
             session.trace(t -> t.doSqlStat(selectRows, netOutBytes.intValue(), resultSize.intValue()));
             assert service != null;
             if (!isFail()) {
@@ -268,5 +263,18 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             LOGGER.info(msg, e);
             session.onQueryError(msg.getBytes());
         }
+    }
+
+    private MySQLResponseService clearQueueAndReleaseConnection() {
+        Iterator<Map.Entry<MySQLResponseService, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
+        MySQLResponseService service = null;
+        while (iterator.hasNext()) {
+            Map.Entry<MySQLResponseService, BlockingQueue<HeapItem>> entry = iterator.next();
+            service = entry.getKey();
+            entry.getValue().clear();
+            session.releaseConnectionIfSafe(entry.getKey(), false);
+            iterator.remove();
+        }
+        return service;
     }
 }

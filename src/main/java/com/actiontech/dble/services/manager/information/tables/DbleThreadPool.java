@@ -13,13 +13,17 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.connection.AbstractConnection;
-import com.actiontech.dble.net.executor.*;
+import com.actiontech.dble.net.executor.BackendCurrentRunnable;
+import com.actiontech.dble.net.executor.FrontendBlockRunnable;
+import com.actiontech.dble.net.executor.FrontendCurrentRunnable;
+import com.actiontech.dble.net.executor.WriteToBackendRunnable;
 import com.actiontech.dble.net.impl.nio.RW;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.NameableExecutor;
+import com.actiontech.dble.util.NameableScheduledThreadPoolExecutor;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -75,6 +79,7 @@ public final class DbleThreadPool extends ManagerWritableTable {
         DbleServer server = DbleServer.getInstance();
         List<LinkedHashMap<String, String>> lst = new ArrayList<>(5);
         lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getTimerExecutor())));
+        lst.add(getRow(new ThreadPoolInfo((server.getTimerSchedulerExecutor()))));
         lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getFrontExecutor())));
         lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getManagerFrontExecutor())));
         lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getBackendExecutor())));
@@ -370,6 +375,14 @@ public final class DbleThreadPool extends ManagerWritableTable {
             this.corePoolSize = nameableExecutor.getCorePoolSize();
             this.activeCount = nameableExecutor.getActiveCount();
             this.queueSize = nameableExecutor.getQueue().size();
+        }
+
+        ThreadPoolInfo(NameableScheduledThreadPoolExecutor executor) {
+            this.name = executor.getName();
+            this.poolSize = executor.getPoolSize();
+            this.corePoolSize = executor.getCorePoolSize();
+            this.activeCount = executor.getActiveCount();
+            this.queueSize = executor.getQueue().size();
         }
 
         ThreadPoolInfo(String name, int poolSize, int corePoolSize, int activeCount, int queueSize) {

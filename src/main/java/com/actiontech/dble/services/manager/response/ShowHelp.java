@@ -251,6 +251,9 @@ public final class ShowHelp {
         HELPS.put("enable @@memory_buffer_monitor", "Turn on memory buffer monitor");
         HELPS.put("disable @@memory_buffer_monitor", "Turn off memory buffer monitor");
 
+        HELPS.put("thread @@kill [name|poolname] ='？'", "Gracefully interrupt a single thread or thread pool");
+        HELPS.put("thread @@recover [name|poolname] ='？'", "Restoring a single thread or thread pool");
+
         // list sort
         KEYS.addAll(HELPS.keySet());
     }

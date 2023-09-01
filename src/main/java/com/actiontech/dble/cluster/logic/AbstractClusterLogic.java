@@ -103,6 +103,10 @@ public class AbstractClusterLogic extends GeneralClusterLogic {
             Map<String, OnlineType> expectedMap = ClusterHelper.getOnlineMap();
             StringBuilder errorMsg = new StringBuilder();
             for (; ; ) {
+                if (Thread.currentThread().isInterrupted()) {
+                    errorMsg.append("manual interrupted");
+                    break;
+                }
                 errorMsg.setLength(0);
                 if (checkResponseForOneTime(path, expectedMap, errorMsg)) {
                     break;

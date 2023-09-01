@@ -14,11 +14,12 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.statistic.stat.FrontActiveRatioStat;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
+import com.actiontech.dble.util.NameableScheduledThreadPoolExecutor;
 import com.actiontech.dble.util.TimeUtil;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import java.util.Iterator;
 import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.actiontech.dble.server.NonBlockingSession.LOGGER;
 
@@ -31,17 +32,9 @@ public final class Scheduler {
     private static final long TIME_UPDATE_PERIOD = 20L;
     private static final long DDL_EXECUTE_CHECK_PERIOD = 60L;
     private static final long DEFAULT_OLD_CONNECTION_CLEAR_PERIOD = 5 * 1000L;
-    private static final long DEFAULT_SQL_STAT_RECYCLE_PERIOD = 5 * 1000L;
-    private static final int DEFAULT_CHECK_XAID = 5;
-    private ExecutorService timerExecutor;
-    private ScheduledExecutorService scheduledExecutor;
 
-    private Scheduler() {
-        this.scheduledExecutor = Executors.newScheduledThreadPool(2, new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
-    }
-
-    public void init(ExecutorService executor) {
-        this.timerExecutor = executor;
+    public void init() {
+        NameableScheduledThreadPoolExecutor scheduledExecutor = DbleServer.getInstance().getTimerSchedulerExecutor();
         scheduledExecutor.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD, TimeUnit.MILLISECONDS);
         scheduledExecutor.scheduleWithFixedDelay(DbleServer.getInstance().processorCheck(), 0L, SystemConfig.getInstance().getProcessorCheckPeriod(), TimeUnit.MILLISECONDS);
         scheduledExecutor.scheduleAtFixedRate(dbInstanceOldConsClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
@@ -60,7 +53,11 @@ public final class Scheduler {
         return new Runnable() {
             @Override
             public void run() {
-                DDLTraceHelper.printDDLOutOfLimit();
+                try {
+                    DDLTraceHelper.printDDLOutOfLimit();
+                } catch (Throwable e) {
+                    LOGGER.warn("scheduled task printLongTimeDDL() happen exception:{} ", e.getMessage());
+                }
             }
         };
     }
@@ -82,7 +79,7 @@ public final class Scheduler {
             @Override
             public void run() {
                 try {
-                    timerExecutor.execute(new Runnable() {
+                    DbleServer.getInstance().getTimerExecutor().execute(new Runnable() {
                         @Override
                         public void run() {
 
@@ -102,6 +99,8 @@ public final class Scheduler {
                     });
                 } catch (RejectedExecutionException e) {
                     ThreadChecker.getInstance().timerExecuteError(e, "dbInstanceOldConsClear()");
+                } catch (Throwable e) {
+                    LOGGER.warn("scheduled task dbInstanceOldConsClear() happen exception:{} ", e.getMessage());
                 }
             }
         };
@@ -115,7 +114,7 @@ public final class Scheduler {
             @Override
             public void run() {
                 try {
-                    timerExecutor.execute(() -> {
+                    DbleServer.getInstance().getTimerExecutor().execute(() -> {
                         Iterator<PhysicalDbGroup> iterator = IOProcessor.BACKENDS_OLD_GROUP.iterator();
                         while (iterator.hasNext()) {
                             PhysicalDbGroup dbGroup = iterator.next();
@@ -128,6 +127,8 @@ public final class Scheduler {
                     });
                 } catch (RejectedExecutionException e) {
                     ThreadChecker.getInstance().timerExecuteError(e, "oldDbGroupClear()");
+                } catch (Throwable e) {
+                    LOGGER.warn("scheduled task oldDbGroupClear() happen exception:{} ", e.getMessage());
                 }
             }
         };
@@ -141,7 +142,7 @@ public final class Scheduler {
             @Override
             public void run() {
                 try {
-                    timerExecutor.execute(() -> {
+                    DbleServer.getInstance().getTimerExecutor().execute(() -> {
                         Iterator<PhysicalDbInstance> iterator = IOProcessor.BACKENDS_OLD_INSTANCE.iterator();
                         while (iterator.hasNext()) {
                             PhysicalDbInstance dbInstance = iterator.next();
@@ -155,11 +156,12 @@ public final class Scheduler {
                     });
                 } catch (RejectedExecutionException e) {
                     ThreadChecker.getInstance().timerExecuteError(e, "oldDbInstanceClear()");
+                } catch (Throwable e) {
+                    LOGGER.warn("scheduled task oldDbInstanceClear() happen exception:{} ", e.getMessage());
                 }
             }
         };
     }
-
 
     // XA session check job
     private Runnable xaSessionCheck() {
@@ -167,7 +169,7 @@ public final class Scheduler {
             @Override
             public void run() {
                 try {
-                    timerExecutor.execute(new Runnable() {
+                    DbleServer.getInstance().getTimerExecutor().execute(new Runnable() {
                         @Override
                         public void run() {
                             XASessionCheck.getInstance().checkSessions();
@@ -175,6 +177,8 @@ public final class Scheduler {
                     });
                 } catch (RejectedExecutionException e) {
                     ThreadChecker.getInstance().timerExecuteError(e, "xaSessionCheck()");
+                } catch (Throwable e) {
+                    LOGGER.warn("scheduled task xaSessionCheck() happen exception:{} ", e.getMessage());
                 }
             }
         };
@@ -185,7 +189,7 @@ public final class Scheduler {
             @Override
             public void run() {
                 try {
-                    timerExecutor.execute(new Runnable() {
+                    DbleServer.getInstance().getTimerExecutor().execute(new Runnable() {
                         @Override
                         public void run() {
                             XAStateLog.cleanCompleteRecoveryLog();
@@ -193,6 +197,8 @@ public final class Scheduler {
                     });
                 } catch (RejectedExecutionException e) {
                     ThreadChecker.getInstance().timerExecuteError(e, "xaLogClean()");
+                } catch (Throwable e) {
+                    LOGGER.warn("scheduled task xaLogClean() happen exception:{} ", e.getMessage());
                 }
             }
         };
@@ -202,8 +208,12 @@ public final class Scheduler {
         return new Runnable() {
             @Override
             public void run() {
-                for (ThreadWorkUsage obj : DbleServer.getInstance().getThreadUsedMap().values()) {
-                    obj.switchToNew();
+                try {
+                    for (ThreadWorkUsage obj : DbleServer.getInstance().getThreadUsedMap().values()) {
+                        obj.switchToNew();
+                    }
+                } catch (Throwable e) {
+                    LOGGER.warn("scheduled task threadStatRenew() happen exception:{} ", e.getMessage());
                 }
             }
         };
@@ -213,17 +223,13 @@ public final class Scheduler {
         return new Runnable() {
             @Override
             public void run() {
-                FrontActiveRatioStat.getInstance().compress();
+                try {
+                    FrontActiveRatioStat.getInstance().compress();
+                } catch (Throwable e) {
+                    LOGGER.warn("scheduled task compressionsActiveStat() happen exception:{} ", e.getMessage());
+                }
             }
         };
-    }
-
-    public ExecutorService getTimerExecutor() {
-        return timerExecutor;
-    }
-
-    public ScheduledExecutorService getScheduledExecutor() {
-        return scheduledExecutor;
     }
 
     public static Scheduler getInstance() {

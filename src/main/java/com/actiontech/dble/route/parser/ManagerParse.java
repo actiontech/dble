@@ -56,6 +56,7 @@ public final class ManagerParse {
     public static final int CLUSTER = 38;
     public static final int SPLIT_LOAD_DATA = 39;
     public static final int KILL_CLUSTER_RENEW_THREAD = 40;
+    public static final int THREAD = 41;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -109,10 +110,26 @@ public final class ManagerParse {
         return OTHER;
     }
 
-    // truncate table
+    // t
     private static int tCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 8) {
-            char c1 = stmt.charAt(++offset);
+        if (stmt.length() > offset++) {
+            switch (stmt.charAt(offset)) {
+                case 'H':
+                case 'h':
+                    return thCheck(stmt, offset);
+                case 'R':
+                case 'r':
+                    return trCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // truncate table
+    private static int trCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 7) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
@@ -120,8 +137,7 @@ public final class ManagerParse {
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
             char c8 = stmt.charAt(++offset);
-            if ((c1 == 'R' || c1 == 'r') &&
-                    (c2 == 'U' || c2 == 'u') &&
+            if ((c2 == 'U' || c2 == 'u') &&
                     (c3 == 'N' || c3 == 'n') &&
                     (c4 == 'C' || c4 == 'c') &&
                     (c5 == 'A' || c5 == 'a') &&
@@ -129,6 +145,25 @@ public final class ManagerParse {
                     (c7 == 'E' || c7 == 'e') &&
                     (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
                 return TRUNCATE_TABLE;
+            }
+        }
+        return OTHER;
+    }
+
+    // thread
+    private static int thCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c1 == 'R' || c1 == 'r') &&
+                    (c2 == 'E' || c2 == 'e') &&
+                    (c3 == 'A' || c3 == 'a') &&
+                    (c4 == 'D' || c4 == 'd') &&
+                    ParseUtil.isSpace(c5)) {
+                return offset << 8 | THREAD;
             }
         }
         return OTHER;

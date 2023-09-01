@@ -348,12 +348,20 @@ public final class ReloadConfig {
             //check packetSize/lowerCase
             ConfigUtil.getAndSyncKeyVariables(changeItemList, true);
             //keep the original system variables
-            newSystemVariables = DbleServer.getInstance().getSystemVariables();
+            SystemVariables memorySystemVariables = DbleServer.getInstance().getSystemVariables();
+            SystemVariables currentSystemVariables = getSystemVariablesFromdbGroup(loader, loader.getDbGroups());
+            int memoryLowerCase = memorySystemVariables.isLowerCaseTableNames() ? 1 : 0;
+            if (memorySystemVariables.isLowerCaseTableNames() != currentSystemVariables.isLowerCaseTableNames()) { // check if the lowerCase of the backend has changed
+                throw new Exception("Dble memory's lowercase value is " + memoryLowerCase + ", " +
+                        "But it was found that the lower_case_table_names value of the dbInstance is not " + memoryLowerCase + ". " +
+                        "Please unify dbInstances's lower_case_table_names or use 'reload @@config_all -r;'");
+            } else {
+                newSystemVariables = memorySystemVariables;
+            }
         }
         ReloadLogHelper.briefInfo("check and get system variables from random node end");
         return newSystemVariables;
     }
-
 
 
     /**

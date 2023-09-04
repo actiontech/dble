@@ -21,6 +21,8 @@ public class DbInstanceConfig {
     private volatile int minCon = -1;
     private volatile PoolConfig poolConfig;
     private final boolean usingDecrypt;
+    private String dbDistrict;
+    private String dbDataCenter;
 
     public DbInstanceConfig(String instanceName, String ip, int port, String url,
                             String user, String password, boolean disabled, boolean primary, boolean usingDecrypt) {
@@ -131,6 +133,22 @@ public class DbInstanceConfig {
 
     public boolean isUsingDecrypt() {
         return usingDecrypt;
+    }
+
+    public String getDbDistrict() {
+        return dbDistrict;
+    }
+
+    public void setDbDistrict(String dbDistrict) {
+        this.dbDistrict = dbDistrict;
+    }
+
+    public String getDbDataCenter() {
+        return dbDataCenter;
+    }
+
+    public void setDbDataCenter(String dbDataCenter) {
+        this.dbDataCenter = dbDataCenter;
     }
 
     @Override

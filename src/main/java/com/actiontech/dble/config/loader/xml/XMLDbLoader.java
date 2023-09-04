@@ -20,12 +20,14 @@ import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.base.Strings;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,7 +40,7 @@ public class XMLDbLoader {
     private final Map<String, DbGroupConfig> dbGroupConfigs;
     private ProblemReporter problemReporter;
     private final Map<String, PhysicalDbGroup> dbGroups;
-    private static final Pattern PATTERN_DB = Pattern.compile("([" + DB_NAME_FORMAT + "]+)", Pattern.CASE_INSENSITIVE);
+    public static final Pattern PATTERN_DB = Pattern.compile("([" + DB_NAME_FORMAT + "]+)", Pattern.CASE_INSENSITIVE);
 
     public XMLDbLoader(String dbFile, ProblemReporter problemReporter) {
         this.dbGroupConfigs = new LinkedHashMap<>();
@@ -210,6 +212,13 @@ public class XMLDbLoader {
             throw new ConfigException("readWeight attribute in dbInstance[" + name + "] can't be less than 0!");
         }
         conf.setReadWeight(readWeight);
+        String dbDistrict = node.hasAttribute("dbDistrict") ? node.getAttribute("dbDistrict") : null;
+        checkChineseAndRules(dbDistrict, "dbDistrict");
+        String dbDataCenter = node.hasAttribute("dbDataCenter") ? node.getAttribute("dbDataCenter") : null;
+        checkChineseAndRules(dbDataCenter, "dbDataCenter");
+        conf.setDbDistrict(dbDistrict);
+        conf.setDbDataCenter(dbDataCenter);
+
         // id
         String id = node.getAttribute("id");
         if (StringUtil.isEmpty(id)) {
@@ -228,6 +237,26 @@ public class XMLDbLoader {
         conf.setPoolConfig(poolConfig);
 
         return conf;
+    }
+
+    private void checkChineseAndRules(String val, String name) {
+        if (Objects.nonNull(val)) {
+            if (StringUtil.isBlank(val)) {
+                throw new ConfigException("property [ " + name + " ] " + val + " is illegal, the value not be empty");
+            }
+            int length = 11;
+            if (val.length() > length) {
+                throw new ConfigException("property [ " + name + " ] " + val + " is illegal, the value contains a maximum of  " + length + "  characters");
+            }
+            String chinese = val.replaceAll(PATTERN_DB.toString(), "");
+            if (Strings.isNullOrEmpty(chinese)) {
+                return;
+            }
+            if (!StringUtil.isChinese(chinese)) {
+                throw new ConfigException("properties of system may not recognized:" + val + "the " + Charset.defaultCharset().name() + " encoding is recommended, dbInstance name " + name + " show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
+            }
+        }
+
     }
 
     private Map<String, PhysicalDbGroup> initDbGroups(Map<String, DbGroupConfig> nodeConf) {

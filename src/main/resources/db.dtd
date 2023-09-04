@@ -40,7 +40,9 @@
                 readWeight NMTOKEN #IMPLIED
                 id CDATA #IMPLIED
                 usingDecrypt NMTOKEN #IMPLIED
-                disabled NMTOKEN #IMPLIED>
+                disabled NMTOKEN #IMPLIED
+                dbDistrict CDATA #IMPLIED
+                dbDataCenter CDATA #IMPLIED>
 
         <!ELEMENT heartbeat (#PCDATA)>
         <!ATTLIST heartbeat errorRetryCount NMTOKEN #IMPLIED>

@@ -52,6 +52,12 @@ public class DBInstance implements Propertied {
     @XmlAttribute
     protected Boolean primary;
 
+    @XmlAttribute
+    protected String dbDistrict;
+
+    @XmlAttribute
+    protected String dbDataCenter;
+
     protected List<Property> property;
 
     protected transient String dbGroup;
@@ -60,7 +66,7 @@ public class DBInstance implements Propertied {
     }
 
     public DBInstance(String name, String url, String password, String user, Integer maxCon, Integer minCon, String disabled, String id, String readWeight,
-                      Boolean primary, List<Property> property, String usingDecrypt) {
+                      Boolean primary, List<Property> property, String usingDecrypt, String dbDistrict, String dbDataCenter) {
         this.name = name;
         this.url = url;
         this.password = password;
@@ -73,6 +79,8 @@ public class DBInstance implements Propertied {
         this.primary = primary;
         this.property = property;
         this.usingDecrypt = usingDecrypt;
+        this.dbDistrict = dbDistrict;
+        this.dbDataCenter = dbDataCenter;
     }
 
     @Override
@@ -190,6 +198,23 @@ public class DBInstance implements Propertied {
     public String getDbGroup() {
         return dbGroup;
     }
+
+    public String getDbDistrict() {
+        return dbDistrict;
+    }
+
+    public void setDbDistrict(String dbDistrict) {
+        this.dbDistrict = dbDistrict;
+    }
+
+    public String getDbDataCenter() {
+        return dbDataCenter;
+    }
+
+    public void setDbDataCenter(String dbDataCenter) {
+        this.dbDataCenter = dbDataCenter;
+    }
+
     @Override
     public String toString() {
         return "dbInstance [name=" +
@@ -211,7 +236,12 @@ public class DBInstance implements Propertied {
                 ", usingDecrypt=" +
                 usingDecrypt +
                 ", weight=" +
-                readWeight + ",property=" +
+                readWeight +
+                ", dbDistrict=" +
+                dbDistrict +
+                ", dbDataCenter=" +
+                dbDataCenter +
+                ",property=" +
                 property +
                 "]";
     }

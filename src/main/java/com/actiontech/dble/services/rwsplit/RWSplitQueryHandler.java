@@ -56,14 +56,14 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setSchema(schema));
                         break;
                     case RwSplitServerParse.SHOW:
-                        session.execute(true, null, false);
+                        session.execute(true, null, false, true);
                         break;
                     case RwSplitServerParse.SELECT:
                         int rs2 = RwSplitServerParse.parseSpecial(sqlType, sql);
                         if (rs2 == RwSplitServerParse.SELECT_FOR_UPDATE || rs2 == RwSplitServerParse.LOCK_IN_SHARE_MODE) {
-                            session.execute(true, null, false);
+                            session.execute(true, null, false, true);
                         } else {
-                            session.execute(null, null, false);
+                            session.execute(null, null, false, true);
                         }
                         break;
                     case RwSplitServerParse.SET:

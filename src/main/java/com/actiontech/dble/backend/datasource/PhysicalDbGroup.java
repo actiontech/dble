@@ -52,6 +52,7 @@ public class PhysicalDbGroup {
     private final int rwSplitMode;
     protected String[] schemas;
     private final LoadBalancer loadBalancer = new RandomLoadBalancer();
+    private final LocalReadLoadBalancer localReadLoadBalancer = new LocalReadLoadBalancer();
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
 
     private boolean shardingUseless = true;
@@ -229,8 +230,32 @@ public class PhysicalDbGroup {
         return readSources;
     }
 
-    public PhysicalDbInstance rwSelect(Boolean master, boolean write) throws IOException {
-        return select(master, false, write);
+    /**
+     * rwsplit user
+     *
+     * @param master
+     * @param writeStatistical
+     * @return
+     * @throws IOException
+     */
+    public PhysicalDbInstance rwSelect(Boolean master, Boolean writeStatistical) throws IOException {
+        return rwSelect(master, writeStatistical, false);
+    }
+
+    /**
+     * rwsplit user
+     *
+     * @param master
+     * @param writeStatistical
+     * @param localRead        only the SELECT and show statements attempt to localRead
+     * @return
+     * @throws IOException
+     */
+    public PhysicalDbInstance rwSelect(Boolean master, Boolean writeStatistical, boolean localRead) throws IOException {
+        if (Objects.nonNull(writeStatistical)) {
+            return select(master, false, writeStatistical, localRead);
+        }
+        return select(master, false, Objects.nonNull(master) ? master : false, localRead);
     }
 
     /**
@@ -262,7 +287,21 @@ public class PhysicalDbGroup {
         return select(master, isForUpdate, false);
     }
 
-    public PhysicalDbInstance select(Boolean master, boolean isForUpdate, boolean write) throws IOException {
+    public PhysicalDbInstance select(Boolean master, boolean isForUpdate, boolean writeStatistical) throws IOException {
+        return select(master, isForUpdate, writeStatistical, false);
+    }
+
+    /**
+     * Select an instance
+     *
+     * @param master
+     * @param isForUpdate
+     * @param writeStatistical
+     * @param localRead        only the SELECT and show statements attempt to localRead
+     * @return
+     * @throws IOException
+     */
+    public PhysicalDbInstance select(Boolean master, boolean isForUpdate, boolean writeStatistical, boolean localRead) throws IOException {
         if (rwSplitMode == RW_SPLIT_OFF && (master != null && !master)) {
             LOGGER.warn("force slave,but the dbGroup[{}] doesn't contains active slave dbInstance", groupName);
             throw new IOException("force slave,but the dbGroup[" + groupName + "] doesn't contain active slave dbInstance");
@@ -273,7 +312,7 @@ public class PhysicalDbGroup {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("select write {}", writeDbInstance);
                 }
-                if (write) {
+                if (writeStatistical) {
                     writeDbInstance.incrementWriteCount();
                 } else {
                     writeDbInstance.incrementReadCount();
@@ -287,6 +326,20 @@ public class PhysicalDbGroup {
         List<PhysicalDbInstance> instances = getRWDbInstances(master == null);
         if (instances.size() == 0) {
             throw new IOException("the dbGroup[" + groupName + "] doesn't contain active dbInstance.");
+        }
+
+        if (localRead) {
+            PhysicalDbInstance selectInstance = localReadLoadBalancer.select(instances);
+            selectInstance.incrementReadCount();
+            if (selectInstance.isAlive()) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("select {}", selectInstance);
+                }
+                return selectInstance;
+            } else {
+                reportHeartbeatError(selectInstance);
+                return selectInstance;
+            }
         }
         PhysicalDbInstance selectInstance = loadBalancer.select(instances);
         selectInstance.incrementReadCount();

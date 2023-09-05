@@ -128,7 +128,8 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("closeHeartBeatRecord", sysConfig.isCloseHeartBeatRecord() + "", "close heartbeat record. if closed, `show @@dbinstance.synstatus`,`show @@dbinstance.syndetail`,`show @@heartbeat.detail` will be empty and `show @@heartbeat`'s EXECUTE_TIME will be '-' .The default value is false"));
         readOnlyParams.add(new ParamInfo("enableAsyncRelease", sysConfig.getEnableAsyncRelease() + "", "Whether enable async release . default value is 1(off)."));
         readOnlyParams.add(new ParamInfo("releaseTimeout", sysConfig.getReleaseTimeout() + "", "time wait for release ,unit is ms,  default value is 10 ms"));
-
+        readOnlyParams.add(new ParamInfo("district", sysConfig.getDistrict() + "", "The location of the DBLE"));
+        readOnlyParams.add(new ParamInfo("dataCenter", sysConfig.getDataCenter() + "", "The data center where the DBLE resides"));
 
     }
 

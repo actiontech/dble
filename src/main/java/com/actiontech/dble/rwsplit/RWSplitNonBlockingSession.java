@@ -33,30 +33,34 @@ public class RWSplitNonBlockingSession {
         execute(master, null, callback);
     }
 
-    public void execute(Boolean master, Callback callback, boolean write) {
-        execute(master, null, callback, write);
+    public void execute(Boolean master, Callback callback, boolean writeStatistical) {
+        execute(master, null, callback, writeStatistical, false);
     }
+
+    /**
+     * @param master
+     * @param callback
+     * @param writeStatistical
+     * @param localRead        only the SELECT and show statements attempt to localRead
+     */
+    public void execute(Boolean master, Callback callback, boolean writeStatistical, boolean localRead) {
+        execute(master, null, callback, writeStatistical, localRead && !rwGroup.isRwSplitUseless());
+    }
+
 
     public void execute(Boolean master, byte[] originPacket, Callback callback) {
-        try {
-            RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
-            if (handler == null) return;
-            PhysicalDbInstance instance = rwGroup.select(canRunOnMaster(master));
-            checkDest(!instance.isReadInstance());
-            instance.getConnection(rwSplitService.getSchema(), handler, null, false);
-        } catch (IOException e) {
-            LOGGER.warn("select conn error", e);
-            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
-        } catch (SQLSyntaxErrorException se) {
-            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
-        }
+        execute(master, originPacket, callback, false, false);
     }
 
-    public void execute(Boolean master, byte[] originPacket, Callback callback, boolean write) {
+    public void execute(Boolean master, byte[] originPacket, Callback callback, boolean writeStatistical) {
+        execute(master, originPacket, callback, writeStatistical, false);
+    }
+
+    public void execute(Boolean master, byte[] originPacket, Callback callback, boolean writeStatistical, boolean localRead) {
         try {
             RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
             if (handler == null) return;
-            PhysicalDbInstance instance = rwGroup.rwSelect(canRunOnMaster(master), isWrite(write));
+            PhysicalDbInstance instance = rwGroup.rwSelect(canRunOnMaster(master), isWriteStatistical(writeStatistical), localRead);
             checkDest(!instance.isReadInstance());
             instance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (IOException e) {
@@ -89,11 +93,11 @@ public class RWSplitNonBlockingSession {
         return master;
     }
 
-    private boolean isWrite(boolean write) {
+    private boolean isWriteStatistical(boolean writeStatistical) {
         if (!rwSplitService.isAutocommit() || rwSplitService.isTxStart()) {
             return true;
         }
-        return write;
+        return writeStatistical;
     }
 
     private void checkDest(boolean isMaster) throws SQLSyntaxErrorException {

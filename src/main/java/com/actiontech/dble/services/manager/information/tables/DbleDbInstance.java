@@ -496,7 +496,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         }
 
         if (!StringUtil.isChinese(chinese)) {
-            throw new ConfigException("Column [ " + name + " ] " + val + " is illegal，the " + Charset.defaultCharset().name() + " encoding is recommended, Column [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
+            throw new ConfigException("Column [ " + name + " ] " + val + " is illegal,the " + Charset.defaultCharset().name() + " encoding is recommended, Column [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
         }
     }
 

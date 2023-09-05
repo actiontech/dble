@@ -71,7 +71,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
                 if (!await) {
                     fail = true;
                     isFinish = true;
-                    LOGGER.warn("test conn timeout，TCP connection may be lost");
+                    LOGGER.warn("test conn timeout,TCP connection may be lost");
                 }
             }
         } catch (InterruptedException e) {

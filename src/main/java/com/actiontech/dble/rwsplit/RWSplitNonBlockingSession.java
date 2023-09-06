@@ -42,6 +42,9 @@ public class RWSplitNonBlockingSession extends Session {
     public static final Logger LOGGER = LoggerFactory.getLogger(RWSplitNonBlockingSession.class);
 
     private volatile BackendConnection conn;
+
+    //previous preserve conn
+    private volatile BackendConnection backupConn;
     private final RWSplitService rwSplitService;
     private PhysicalDbGroup rwGroup;
 
@@ -314,9 +317,20 @@ public class RWSplitNonBlockingSession extends Session {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("route sql {} to {}", sql, dbInstance);
             }
+            if (rwSplitService.isInTransaction()) {
+                if (conn != null) {
+                    backupConn = conn;
+                    conn = null;
+                }
+                rwSplitService.setForceUseAutoCommit(true);
+            }
             RWSplitHandler handler = new RWSplitHandler(rwSplitService, false, null, callback);
             dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (Exception e) {
+            if (rwSplitService.isForceUseAutoCommit()) {
+                conn = backupConn;
+                backupConn = null;
+            }
             rwSplitService.executeException(e, sql);
         }
     }
@@ -350,8 +364,11 @@ public class RWSplitNonBlockingSession extends Session {
 
     public void unbindIfSafe() {
         final BackendConnection tmp = conn;
-        if (tmp != null && rwSplitService.isKeepBackendConn()) {
+        if (tmp != null && !rwSplitService.isKeepBackendConn()) {
             this.conn = null;
+            conn = backupConn;
+            backupConn = null;
+
             if (rwSplitService.isFlowControlled()) {
                 releaseConnectionFromFlowControlled(tmp);
             }
@@ -363,16 +380,28 @@ public class RWSplitNonBlockingSession extends Session {
 
     public void unbind() {
         this.conn = null;
+        conn = backupConn;
+        backupConn = null;
     }
 
     public void close(String reason) {
         if (null != rwGroup) {
             rwGroup.unBindRwSplitSession(this);
         }
-        final BackendConnection tmp = this.conn;
-        this.conn = null;
-        if (tmp != null) {
-            tmp.close(reason);
+        {
+            final BackendConnection tmp = this.conn;
+            this.conn = null;
+            if (tmp != null) {
+                tmp.close(reason);
+            }
+        }
+
+        {
+            final BackendConnection tmp = this.backupConn;
+            this.backupConn = null;
+            if (tmp != null) {
+                tmp.close(reason);
+            }
         }
     }
 

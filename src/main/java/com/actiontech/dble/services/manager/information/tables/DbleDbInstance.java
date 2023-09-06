@@ -482,21 +482,23 @@ public class DbleDbInstance extends ManagerWritableTable {
     }
 
     private void checkChineseProperty(String val, String name) {
-        if (StringUtil.isBlank(val)) {
-            throw new ConfigException("Column [ " + name + " ] " + val + " is illegal, the value not be null or empty");
-        }
-        int length = 11;
-        if (val.length() > length) {
-            throw new ConfigException("Column [ " + name + " ] " + val + " is illegal, the value contains a maximum of  " + length + "  characters");
-        }
+        if (Objects.nonNull(val)) {
+            if (StringUtil.isBlank(val)) {
+                throw new ConfigException("Column [ " + name + " ] " + val + " is illegal, the value not be null or empty");
+            }
+            int length = 11;
+            if (val.length() > length) {
+                throw new ConfigException("Column [ " + name + " ] " + val + " is illegal, the value contains a maximum of  " + length + "  characters");
+            }
 
-        String chinese = val.replaceAll(XMLDbLoader.PATTERN_DB.toString(), "");
-        if (Strings.isNullOrEmpty(chinese)) {
-            return;
-        }
+            String chinese = val.replaceAll(XMLDbLoader.PATTERN_DB.toString(), "");
+            if (Strings.isNullOrEmpty(chinese)) {
+                return;
+            }
 
-        if (!StringUtil.isChinese(chinese)) {
-            throw new ConfigException("Column [ " + name + " ] " + val + " is illegal,the " + Charset.defaultCharset().name() + " encoding is recommended, Column [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
+            if (!StringUtil.isChinese(chinese)) {
+                throw new ConfigException("Column [ " + name + " ] " + val + " is illegal,the " + Charset.defaultCharset().name() + " encoding is recommended, Column [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
+            }
         }
     }
 

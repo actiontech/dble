@@ -70,7 +70,20 @@
               <DefaultRolloverStrategy max="10"/>
           </RollingFile>
           -->
+        <RollingFile name="ThreadChecker" fileName="logs/thread.log"
+                     filePattern="logs/$${date:yyyy-MM}/thread-%d{MM-dd}-%i.log.gz">
+            <PatternLayout>
+                <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] (%l) - %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <OnStartupTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="250 MB"/>
+                <TimeBasedTriggeringPolicy/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
     </Appenders>
+
     <Loggers>
         <!--  independent log file for new ha interface, for use useOuterHa only
        <Logger name="ha_log" additivity="false" includeLocation="false" >
@@ -87,7 +100,9 @@
         <!--            <AppenderRef ref="DumpFileLog" />-->
         <!--            <AppenderRef ref="RollingFile"/>-->
         <!--        </Logger>-->
-
+        <Logger name="ThreadChecker" additivity="false" includeLocation="false">
+            <AppenderRef ref="ThreadChecker"/>
+        </Logger>
         <asyncRoot level="info" includeLocation="true">
             <!--<AppenderRef ref="Console" />-->
             <AppenderRef ref="RollingFile"/>

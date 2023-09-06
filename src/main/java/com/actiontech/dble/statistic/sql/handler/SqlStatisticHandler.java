@@ -229,7 +229,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         }
 
         public String getSqlDigest() {
-            if (init.compareAndSet(false, true)) {
+            if (init.compareAndSet(false, true) || this.sqlDigest == null) {
                 try {
                     if (stmt.equalsIgnoreCase("begin")) {
                         this.sqlDigest = "begin";

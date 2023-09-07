@@ -253,6 +253,7 @@ public final class ShowHelp {
 
         HELPS.put("thread @@kill [name|poolname] ='？'", "Gracefully interrupt a single thread or thread pool");
         HELPS.put("thread @@recover [name|poolname] ='？'", "Restoring a single thread or thread pool");
+        HELPS.put("thread @@print [name ='?']", "Print the status and stack of a single or all threads");
 
         // list sort
         KEYS.addAll(HELPS.keySet());

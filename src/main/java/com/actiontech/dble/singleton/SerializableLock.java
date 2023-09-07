@@ -58,7 +58,7 @@ public final class SerializableLock {
     }
 
     private String printTrace() {
-        StackTraceElement[] st = Thread.currentThread().getStackTrace();
+        StackTraceElement[] st = Thread.currentThread().getStackTrace(); // here is the currentThread, STW won't happen
         StringBuilder sbf = new StringBuilder();
         for (StackTraceElement e : st) {
             if (sbf.length() > 0) {

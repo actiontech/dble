@@ -71,7 +71,7 @@ public class ThreadChecker {
                 long timeDiff = nowTime - current.getStartTime();
                 if (timeDiff > checkTimeNs) { // more than 10s will log
                     String msg = "Thread[" + key + "] suspected hang, execute time:[{" + timeDiff / 1000000L + "ms}] more than 10s, currentState:[" + current.getState() + "]";
-                    LOGGER.info(msg + ", stackTrace: {}", getStackTrace(key));
+                    LOGGER.info(msg);
                     // if there is task accumulation in the queue, it means that all threads are hang
                     if (previous.getCompletedTask() == current.getCompletedTask() && current.getActiveTaskCount() == previous.getActiveTaskCount()) {
                         LOGGER.info("The thread pool where the thread[" + key + "] is located is in the hang state and cannot work. Trigger alarm");
@@ -120,21 +120,6 @@ public class ThreadChecker {
             AlertUtil.alertSelf(AlarmCode.THREAD_SUSPECTED_HANG, Alert.AlertLevel.WARN, msg + ", For details, see logs/thread.log", labels);
             ToResolveContainer.THREAD_SUSPECTED_HANG.add(key);
         }
-    }
-
-    private String getStackTrace(String threadName) {
-        for (Map.Entry<Thread, TimeRecord> entry : timeRecords.entrySet()) {
-            StackTraceElement[] st = entry.getKey().getStackTrace();
-            if (threadName.equals(entry.getKey().getName())) {
-                StringBuilder sbf = new StringBuilder();
-                for (StackTraceElement e : st) {
-                    sbf.append("\n\tat ");
-                    sbf.append(e);
-                }
-                return sbf.toString();
-            }
-        }
-        return "empty";
     }
 
     private LastRecordInfo getInfo(String name, Thread th, long lastExecTime, long lastFinishTime) {

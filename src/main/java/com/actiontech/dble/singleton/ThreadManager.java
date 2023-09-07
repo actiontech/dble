@@ -170,7 +170,7 @@ public final class ThreadManager {
                 }
                 LOGGER.info("manual recover threadPool[{}] ... start ...", TIMER_WORKER_NAME);
                 DbleServer.getInstance().setTimerExecutor(
-                        ExecutorUtil.createCached(TIMER_WORKER_NAME, 1, 2, ThreadChecker.getInstance()));
+                        ExecutorUtil.createTimer(TIMER_WORKER_NAME, 1, 2, ThreadChecker.getInstance()));
                 LOGGER.info("manual recover threadPool[{}] ... end ...", TIMER_WORKER_NAME);
                 break;
             case TIMER_SCHEDULER_WORKER_NAME:
@@ -201,6 +201,62 @@ public final class ThreadManager {
                 break;
             default:
                 throw new Exception("The recover operation of threadPool[" + threadName + "] is not supported");
+        }
+    }
+
+    public static void printAll() {
+        Thread[] threads = getAllThread();
+        StringBuilder sbf = new StringBuilder();
+        sbf.append("============== select all thread ============== start");
+        for (Thread thread : threads) {
+            sbf.append("\n \"");
+            sbf.append(thread.getName());
+            sbf.append("\" ");
+            sbf.append("#");
+            sbf.append(thread.getId());
+            sbf.append(", state: ");
+            sbf.append(thread.getState());
+            sbf.append(", stackTrace: ");
+            StackTraceElement[] st = thread.getStackTrace();
+            for (StackTraceElement e : st) {
+                sbf.append("\n\tat ");
+                sbf.append(e);
+            }
+        }
+        sbf.append("\n============== select all thread ============== end");
+        LOGGER.info(sbf.toString());
+    }
+
+    public static void printSingleThread(String threadName) throws Exception {
+        if (threadName != null && threadName.length() > 0) {
+            Thread[] threads = getAllThread();
+            StringBuilder sbf = null;
+            for (Thread thread : threads) {
+                if (thread.getName().equals(threadName)) {
+                    sbf = new StringBuilder();
+                    sbf.append("============== select thread[{" + threadName + "}] ============== start");
+                    sbf.append("\n \"");
+                    sbf.append(thread.getName());
+                    sbf.append("\" ");
+                    sbf.append("#");
+                    sbf.append(thread.getId());
+                    sbf.append(", state: ");
+                    sbf.append(thread.getState());
+                    sbf.append(", stackTrace: ");
+                    StackTraceElement[] st = thread.getStackTrace();
+                    for (StackTraceElement e : st) {
+                        sbf.append("\n\tat ");
+                        sbf.append(e);
+                    }
+                    sbf.append("\n============== select thread[{" + threadName + "}] ============== end");
+                    break;
+                }
+            }
+            if (sbf == null) {
+                throw new Exception("Thread[" + threadName + "] does not exist");
+            } else {
+                LOGGER.info(sbf.toString());
+            }
         }
     }
 

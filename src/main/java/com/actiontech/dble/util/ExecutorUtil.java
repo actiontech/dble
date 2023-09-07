@@ -61,12 +61,12 @@ public final class ExecutorUtil {
      * When the size number of threads takes a long time to execute or hangs, and the queue is full,
      * create a new thread to continue working, and the number of newly created threads does not exceed maxSize
      * <p>
-     * If maxSize threads are all hanging, only 1024 tasks will be stored in the queue (this avoids memory leaks),
+     * If maxSize threads are all hanging, only 65535 tasks will be stored in the queue (this avoids memory leaks),
      * and subsequent tasks will be discarded by default
      */
-    public static NameableExecutor createCached(String name, int size, int maxSize, ThreadChecker checker) {
+    public static NameableExecutor createTimer(String name, int size, int maxSize, ThreadChecker checker) {
         NameableThreadFactory factory = new NameableThreadFactory(name, true);
-        return new NameableExecutor(name, size, maxSize, 60, new LinkedBlockingQueue<>(1024), factory, null, checker);
+        return new NameableExecutor(name, size, maxSize, 60, new LinkedBlockingQueue<>(65535), factory, null, checker);
     }
 
     public static NameableScheduledThreadPoolExecutor createFixedScheduled(String name, int size, ThreadChecker checker) {

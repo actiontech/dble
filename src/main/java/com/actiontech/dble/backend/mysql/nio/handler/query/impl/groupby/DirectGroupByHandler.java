@@ -155,6 +155,9 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         try {
             int eofCount = 0;
             for (; ; ) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new InterruptedException("manual interrupted");
+                }
                 RowDataPacket row = outQueue.take();
                 if (row.getFieldCount() == 0) {
                     eofCount++;

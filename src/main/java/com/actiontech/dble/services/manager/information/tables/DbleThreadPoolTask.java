@@ -22,6 +22,7 @@ import com.actiontech.dble.services.BackendService;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.util.NameableExecutor;
+import com.actiontech.dble.util.NameableScheduledThreadPoolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +30,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.actiontech.dble.DbleServer.TIMER_SCHEDULER_WORKER_NAME;
 
 public final class DbleThreadPoolTask extends ManagerBaseTable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DbleThreadPoolTask.class);
@@ -74,6 +77,7 @@ public final class DbleThreadPoolTask extends ManagerBaseTable {
         DbleServer server = DbleServer.getInstance();
         List<LinkedHashMap<String, String>> lst = new ArrayList<>(5);
         lst.add(getRow((NameableExecutor) server.getTimerExecutor()));
+        lst.add(getRow(server.getTimerSchedulerExecutor()));
         lst.add(getRow((NameableExecutor) server.getFrontExecutor()));
         lst.add(getRow((NameableExecutor) server.getManagerFrontExecutor()));
         lst.add(getRow((NameableExecutor) server.getBackendExecutor()));
@@ -92,6 +96,20 @@ public final class DbleThreadPoolTask extends ManagerBaseTable {
         row.put(COLUMN_COMPLETED_TASK_COUNT, rowData.getCompletedTask() + "");
         row.put(COLUMN_TOTAL_TASK_COUNT, rowData.getTotalTaskCount() + "");
         return row;
+    }
+
+    private LinkedHashMap<String, String> getRow(NameableScheduledThreadPoolExecutor exec) {
+        LinkedHashMap<String, String> row = new LinkedHashMap<>();
+        if (exec.getName().equals(TIMER_SCHEDULER_WORKER_NAME)) {
+            row.put(COLUMN_NAME, exec.getName());
+            row.put(COLUMN_POOL_SIZE, exec.getPoolSize() + "");
+            row.put(COLUMN_ACTIVE_TASK_COUNT, exec.getActiveCount() + "");
+            row.put(COLUMN_TASK_QUEUE_SIZE, exec.getQueue().size() + "");
+            row.put(COLUMN_COMPLETED_TASK_COUNT, exec.getCompletedTaskCount() + "");
+            row.put(COLUMN_TOTAL_TASK_COUNT, exec.getTaskCount() + "");
+            return row;
+        }
+        return null;
     }
 
     public static synchronized Row calculateRow(NameableExecutor exec) {

@@ -138,6 +138,9 @@ public class NotInHandler extends OwnThreadDMLHandler {
             leftLocal = takeFirst(leftQueue);
             rightLocal = takeFirst(rightQueue);
             while (true) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new InterruptedException("manual interrupted");
+                }
                 RowDataPacket leftRow = leftLocal.getLastRow();
                 RowDataPacket rightRow = rightLocal.getLastRow();
                 if (leftRow.getFieldCount() == 0) {

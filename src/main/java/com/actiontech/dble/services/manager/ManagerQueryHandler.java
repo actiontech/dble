@@ -171,6 +171,9 @@ public class ManagerQueryHandler {
                 case ManagerParse.CLUSTER:
                     ClusterManageHandler.handle(sql, service, rs >>> SHIFT);
                     break;
+                case ManagerParse.THREAD:
+                    ThreadHandler.handle(sql, service, rs >>> SHIFT);
+                    break;
                 default:
                     service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
             }

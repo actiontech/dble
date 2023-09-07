@@ -15,7 +15,6 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
-import com.actiontech.dble.singleton.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,10 +167,10 @@ public final class XaCheckHandler {
         }
     }
 
-    private static void startXaIdCheckPeriod() {
+    public static void startXaIdCheckPeriod() {
         synchronized (INSTANCE) {
             if (INSTANCE.xaIdCheckPeriod > 0) {
-                INSTANCE.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleWithFixedDelay(() -> {
+                INSTANCE.scheduledFuture = DbleServer.getInstance().getTimerSchedulerExecutor().scheduleWithFixedDelay(() -> {
                     (new XAAnalysisHandler()).checkResidualTask();
                 }, 0, INSTANCE.xaIdCheckPeriod, TimeUnit.SECONDS);
                 LOGGER.info("====================================Start XaIdCheckPeriod[{}]=========================================", INSTANCE.xaIdCheckPeriod);
@@ -179,7 +178,7 @@ public final class XaCheckHandler {
         }
     }
 
-    private static void stopXaIdCheckPeriod() {
+    public static void stopXaIdCheckPeriod() {
         synchronized (INSTANCE) {
             ScheduledFuture future = INSTANCE.scheduledFuture;
             if (future != null) {

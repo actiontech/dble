@@ -99,6 +99,9 @@ public class OrderByHandler extends OwnThreadDMLHandler {
         recordElapsedTime("order writeDirectly start :");
         try {
             while (true) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new InterruptedException("manual interrupted");
+                }
                 if (terminate.get()) {
                     return;
                 }
@@ -110,13 +113,16 @@ public class OrderByHandler extends OwnThreadDMLHandler {
                     }
                     localResult.add(row);
                 } catch (InterruptedException e) {
-                    //ignore error
+                    throw e;
                 }
             }
             recordElapsedTime("order writeDirectly end :");
             localResult.done();
             recordElapsedTime("order read start :");
             while (true) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new InterruptedException("manual interrupted");
+                }
                 if (terminate.get()) {
                     return;
                 }

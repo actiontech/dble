@@ -6,6 +6,7 @@
 package com.actiontech.dble.util;
 
 import com.actiontech.dble.singleton.ThreadChecker;
+
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
@@ -65,6 +66,11 @@ public final class ExecutorUtil {
      */
     public static NameableExecutor createCached(String name, int size, int maxSize, ThreadChecker checker) {
         NameableThreadFactory factory = new NameableThreadFactory(name, true);
-        return new NameableExecutor(name, size, maxSize, 60, new LinkedBlockingQueue<>(256), factory, null, checker);
+        return new NameableExecutor(name, size, maxSize, 60, new LinkedBlockingQueue<>(1024), factory, null, checker);
+    }
+
+    public static NameableScheduledThreadPoolExecutor createFixedScheduled(String name, int size, ThreadChecker checker) {
+        NameableThreadFactory factory = new NameableThreadFactory(name, true);
+        return new NameableScheduledThreadPoolExecutor(name, size, factory, checker);
     }
 }

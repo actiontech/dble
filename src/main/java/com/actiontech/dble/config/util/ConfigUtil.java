@@ -87,16 +87,35 @@ public final class ConfigUtil {
         return schemaList;
     }
 
-    public static boolean isAllDbInstancesChange(List<ChangeItem> changeItemList) {
+    public static boolean isAllDbInstancesChange(List<ChangeItem> changeItemList, Map<String, PhysicalDbGroup> newDbGroups) {
         if (changeItemList.size() == 0) return false;
+        /*
+        filter ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()
+        1、old:null -> new:not null, return true;
+        2、old:not null -> new:null, return true;
+        3、old:not null -> new:not null, some db changes，return false;
+        4、old:not null -> new:not null, all db changes，return true;
+        */
 
         Map<String, PhysicalDbInstance> oldDbInstanceMaps = new HashMap<>();
         DbleServer.getInstance().getConfig().getDbGroups()
                 .values().stream().forEach(group -> group.getAllDbInstanceMap()
-                .values().stream().forEach(db -> oldDbInstanceMaps.put(genDataSourceKey(group.getGroupName(), db.getName()), db)));
+                .values().stream().filter(db -> !db.isDisabled() && !db.isFakeNode() && db.isTestConnSuccess()).
+                        forEach(db -> oldDbInstanceMaps.put(genDataSourceKey(group.getGroupName(), db.getName()), db)));
 
-        if (CollectionUtil.isEmpty(oldDbInstanceMaps)) return false;
+        Map<String, PhysicalDbInstance> newDbInstanceMaps = new HashMap<>();
+        newDbGroups.values().stream().forEach(group -> group.getAllDbInstanceMap()
+                .values().stream().filter(db -> !db.isDisabled() && !db.isFakeNode() && db.isTestConnSuccess()).
+                        forEach(db -> newDbInstanceMaps.put(genDataSourceKey(group.getGroupName(), db.getName()), db)));
+        // 1、2
+        if (oldDbInstanceMaps.size() == 0 && newDbInstanceMaps.size() > 0 ||
+                oldDbInstanceMaps.size() > 0 && newDbInstanceMaps.size() == 0) {
+            return true;
+        } else if (oldDbInstanceMaps.size() == 0 || newDbInstanceMaps.size() == 0) { // no change
+            return false;
+        }
 
+        // 3、4
         for (ChangeItem changeItem : changeItemList) {
             switch (changeItem.getItemType()) {
                 case PHYSICAL_DB_GROUP:
@@ -116,7 +135,6 @@ public final class ConfigUtil {
                     break;
             }
         }
-        oldDbInstanceMaps.values().removeIf(db -> db.isDisabled() || !db.isTestConnSuccess() || db.isFakeNode());
         return CollectionUtil.isEmpty(oldDbInstanceMaps);
     }
 

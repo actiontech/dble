@@ -209,10 +209,10 @@ public final class IOProcessor {
                 continue;
             }
 
-            // a connection in change user
             if (c.getService() instanceof MySQLBackAuthService) {
                 //when the connection creation time is greater than the connectionTimeout, it is a network timeout
-                if (cost >= c.getConnectionTimeout()) {
+                //except for the scenario of changing user,see it:com.actiontech.dble.services.mysqlsharding.MySQLResponseService.changeUser
+                if (c.getState() != PooledConnection.STATE_IN_USE && cost >= c.getConnectionTimeout()) {
                     c.close("Create connection timed out");
                 }
                 continue;

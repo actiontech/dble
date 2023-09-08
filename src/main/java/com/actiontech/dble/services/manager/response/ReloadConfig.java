@@ -335,7 +335,7 @@ public final class ReloadConfig {
     private static SystemVariables checkVersionAGetSystemVariables(ConfigInitializer loader, Map<String, PhysicalDbGroup> newDbGroups, List<ChangeItem> changeItemList, boolean forceAllReload) throws Exception {
         ReloadLogHelper.briefInfo("check and get system variables from random node start");
         SystemVariables newSystemVariables;
-        if (forceAllReload || ConfigUtil.isAllDbInstancesChange(changeItemList)) {
+        if (forceAllReload || ConfigUtil.isAllDbInstancesChange(changeItemList, newDbGroups)) {
             //check version
             ConfigUtil.checkDbleAndMysqlVersion(newDbGroups);
             //check packetSize/lowerCase

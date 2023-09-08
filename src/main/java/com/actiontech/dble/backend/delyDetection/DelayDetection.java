@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.delyDetection;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
@@ -13,7 +14,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.net.connection.BackendConnection;
-import com.actiontech.dble.singleton.Scheduler;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -105,7 +105,7 @@ public class DelayDetection {
             //avoid concurrency with the master
             initialDelay = initialDelay >> 1;
         }
-        this.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> execute(),
+        this.scheduledFuture = DbleServer.getInstance().getTimerSchedulerExecutor().scheduleAtFixedRate(() -> execute(),
                 initialDelay, this.delayPeriodMillis, TimeUnit.MILLISECONDS);
     }
 

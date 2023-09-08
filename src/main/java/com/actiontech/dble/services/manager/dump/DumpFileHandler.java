@@ -52,6 +52,10 @@ public final class DumpFileHandler implements Runnable {
     public void run() {
 
         while (true) {
+            if (Thread.currentThread().isInterrupted()) {
+                LOGGER.info("dump file handler was manual interrupted.");
+                break;
+            }
             try {
                 String stmts = handleQueue.take();
                 SplitFileProvider.getHandleQueueSizeOfTake(handleQueue.size());

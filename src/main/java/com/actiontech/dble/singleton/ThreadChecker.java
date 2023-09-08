@@ -6,6 +6,7 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.util.NameableExecutor;
+import com.actiontech.dble.util.NameableScheduledThreadPoolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,6 +144,9 @@ public class ThreadChecker {
                 case TIMER_WORKER_NAME:
                     NameableExecutor exec = (NameableExecutor) DbleServer.getInstance().getTimerExecutor();
                     return new LastRecordInfo(name, th.getState(), lastExecTime, lastFinishTime, exec.getActiveCount(), exec.getQueue().size(), exec.getCompletedTaskCount());
+                case DbleServer.TIMER_SCHEDULER_WORKER_NAME:
+                    NameableScheduledThreadPoolExecutor exec1 = DbleServer.getInstance().getTimerSchedulerExecutor();
+                    return new LastRecordInfo(name, th.getState(), lastExecTime, lastFinishTime, exec1.getActiveCount(), exec1.getQueue().size(), exec1.getCompletedTaskCount());
                 default:
                     return null;
             }

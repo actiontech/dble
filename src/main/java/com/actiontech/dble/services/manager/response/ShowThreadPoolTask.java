@@ -12,14 +12,10 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.tables.DbleThreadPoolTask;
-import com.actiontech.dble.util.LongUtil;
-import com.actiontech.dble.util.NameableExecutor;
-import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.*;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 /**
  * ShowThreadPool status
@@ -82,13 +78,19 @@ public final class ShowThreadPoolTask {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        List<ExecutorService> executors = getExecutors();
-        for (ExecutorService exec : executors) {
-            if (exec != null) {
-                RowDataPacket row = getRow((NameableExecutor) exec, service.getCharset().getResults());
-                row.setPacketId(++packetId);
-                buffer = row.write(buffer, service, true);
-            }
+        DbleServer server = DbleServer.getInstance();
+        LinkedList<RowDataPacket> rows = new LinkedList<>();
+        rows.add(getRow((NameableExecutor) server.getTimerExecutor(), service.getCharset().getResults()));
+        rows.add(getRow(server.getTimerSchedulerExecutor(), service.getCharset().getResults()));
+        rows.add(getRow((NameableExecutor) server.getFrontExecutor(), service.getCharset().getResults()));
+        rows.add(getRow((NameableExecutor) server.getManagerFrontExecutor(), service.getCharset().getResults()));
+        rows.add(getRow((NameableExecutor) server.getBackendExecutor(), service.getCharset().getResults()));
+        rows.add(getRow((NameableExecutor) server.getComplexQueryExecutor(), service.getCharset().getResults()));
+        rows.add(getRow((NameableExecutor) server.getWriteToBackendExecutor(), service.getCharset().getResults()));
+
+        for (RowDataPacket row : rows) {
+            row.setPacketId(++packetId);
+            buffer = row.write(buffer, service, true);
         }
 
         // write last eof
@@ -111,17 +113,14 @@ public final class ShowThreadPoolTask {
         return row;
     }
 
-
-    private static List<ExecutorService> getExecutors() {
-        List<ExecutorService> list = new LinkedList<>();
-        DbleServer server = DbleServer.getInstance();
-        list.add(server.getTimerExecutor());
-        list.add(server.getFrontExecutor());
-        list.add(server.getManagerFrontExecutor());
-        list.add(server.getBackendExecutor());
-        list.add(server.getComplexQueryExecutor());
-        list.add(server.getWriteToBackendExecutor());
-        return list;
+    private static RowDataPacket getRow(NameableScheduledThreadPoolExecutor exec, String charset) {
+        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+        row.add(StringUtil.encode(exec.getName(), charset));
+        row.add(IntegerUtil.toBytes(exec.getPoolSize()));
+        row.add(IntegerUtil.toBytes(exec.getActiveCount()));
+        row.add(IntegerUtil.toBytes(exec.getQueue().size()));
+        row.add(LongUtil.toBytes(exec.getCompletedTaskCount()));
+        row.add(LongUtil.toBytes(exec.getTaskCount()));
+        return row;
     }
-
 }

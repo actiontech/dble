@@ -86,6 +86,9 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
     private void loadInstanceIdByZK() {
         int execCount = 1;
         while (true) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new RuntimeException("instanceId allocate error when using zk, reason: manual interrupted");
+            }
             if (execCount > this.retryCount) {
                 throw new RuntimeException("instanceId allocate error when using zk, reason: no available instanceId found");
             }

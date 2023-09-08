@@ -195,6 +195,9 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
                             if (!itemToDiscard.isNullItem()) {
                                 BlockingQueue<HeapItem> discardQueue = queues.get(itemToDiscard.getIndex());
                                 while (true) {
+                                    if (Thread.currentThread().isInterrupted()) {
+                                        throw new InterruptedException("manual interrupted");
+                                    }
                                     if (discardQueue.take().isNullItem() || terminate.get()) {
                                         break;
                                     }
@@ -238,6 +241,10 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
             Entry<MySQLResponseService, BlockingQueue<HeapItem>> entry = iterator.next();
             // fair lock queue,poll for clear
             while (true) {
+                if (Thread.currentThread().isInterrupted()) {
+                    LOGGER.info("manual interrupted");
+                    break;
+                }
                 if (entry.getValue().poll() == null) {
                     break;
                 }

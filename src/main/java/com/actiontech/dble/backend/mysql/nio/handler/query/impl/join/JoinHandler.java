@@ -187,6 +187,9 @@ public class JoinHandler extends OwnThreadDMLHandler {
             leftLocal = takeFirst(leftQueue);
             rightLocal = takeFirst(rightQueue);
             while (true) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new InterruptedException("manual interrupted");
+                }
                 if (terminate.get())
                     return;
                 RowDataPacket leftRow = leftLocal.getLastRow();
@@ -228,15 +231,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
             if (!nestLoopDependOn) {
                 HandlerTool.terminateHandlerTree(this);
             }
-            // for trace, when join end before all rows return ,the handler should mark as finished
-            for (DMLResponseHandler mergeHandler : this.getMerges()) {
-                DMLResponseHandler handler = mergeHandler;
-                while (handler != null && handler != this) {
-                    session.setHandlerEnd(handler);
-                    handler = handler.getNextHandler();
-                }
-            }
-            session.setHandlerEnd(this);
+            makeFinishedOfHandler();
             nextHandler.rowEofResponse(null, isLeft, service);
         } catch (MySQLOutPutException e) {
             String msg = e.getLocalizedMessage();
@@ -252,6 +247,18 @@ public class JoinHandler extends OwnThreadDMLHandler {
             if (rightLocal != null)
                 rightLocal.close();
         }
+    }
+
+    // for trace, when join end before all rows return ,the handler should mark as finished
+    private void makeFinishedOfHandler() {
+        for (DMLResponseHandler mergeHandler : this.getMerges()) {
+            DMLResponseHandler handler = mergeHandler;
+            while (handler != null && handler != this) {
+                session.setHandlerEnd(handler);
+                handler = handler.getNextHandler();
+            }
+        }
+        session.setHandlerEnd(this);
     }
 
     private LocalResult takeFirst(FairLinkedBlockingDeque<LocalResult> deque) throws InterruptedException {

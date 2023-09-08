@@ -11,7 +11,6 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.meta.ReloadLogHelper;
-import com.actiontech.dble.singleton.Scheduler;
 import com.actiontech.dble.statistic.DbInstanceSyncRecorder;
 import com.actiontech.dble.statistic.HeartbeatRecorder;
 import com.actiontech.dble.util.TimeUtil;
@@ -94,7 +93,7 @@ public class MySQLHeartbeat {
             if (LOGGER.isDebugEnabled()) {
                 ReloadLogHelper.debug("start heartbeat :{}", this.toString());
             }
-            this.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
+            this.scheduledFuture = DbleServer.getInstance().getTimerSchedulerExecutor().scheduleAtFixedRate(() -> {
                 if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
                     if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
                         return;

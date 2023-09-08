@@ -217,6 +217,9 @@ public class ProxyMetaManager {
         TraceManager.log(ImmutableMap.of("schema", schema, "table", tbName), traceObject);
         try {
             while (true) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new SQLNonTransientException("manual interrupted");
+                }
                 int oldVersion = version.get();
                 if (metaCount.get() == 0) {
                     TableMeta meta = getTableMeta(schema, tbName);
@@ -248,6 +251,9 @@ public class ProxyMetaManager {
         TraceManager.log(ImmutableMap.of("schema", schema, "table", vName), traceObject);
         try {
             while (true) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new SQLNonTransientException("manual interrupted");
+                }
                 int oldVersion = version.get();
                 if (catalogs.get(schema) == null) {
                     return null;

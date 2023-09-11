@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 
 public final class ThreadHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ThreadHandler.class);
+    private static final Pattern THREAD_PRINT = Pattern.compile("^\\s*@@print\\s*(name\\s*=\\s*'([a-zA-Z_0-9\\-]+)')?$", Pattern.CASE_INSENSITIVE);
     private static final Pattern THREAD_KILL = Pattern.compile("^\\s*@@kill\\s*(name|poolname)\\s*=\\s*'([a-zA-Z_0-9\\-]+)'?$", Pattern.CASE_INSENSITIVE);
     private static final Pattern THREAD_RECOVER = Pattern.compile("^\\s*@@recover\\s*(name|poolname)\\s*=\\s*'([a-zA-Z_0-9\\-]+)'?$", Pattern.CASE_INSENSITIVE);
 
@@ -19,10 +20,13 @@ public final class ThreadHandler {
 
     public static void handle(String stmt, ManagerService service, int offset) {
         String sql = stmt.substring(offset).trim();
+        Matcher print = THREAD_PRINT.matcher(sql);
         Matcher kill = THREAD_KILL.matcher(sql);
         Matcher recover = THREAD_RECOVER.matcher(sql);
         try {
-            if (kill.matches()) {
+            if (print.matches()) {
+                printTread(service, print.group(2));
+            } else if (kill.matches()) {
                 String type = kill.group(1);
                 String name = kill.group(2);
                 kill(service, type, name);
@@ -37,6 +41,15 @@ public final class ThreadHandler {
             LOGGER.info("thread command happen exception:", e);
             service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
         }
+    }
+
+    public static void printTread(ManagerService service, String name) throws Exception {
+        if (name == null) {
+            ThreadManager.printAll();
+        } else {
+            ThreadManager.printSingleThread(name);
+        }
+        service.writeOkPacket("Please see logs in logs/thread.log");
     }
 
     public static void kill(ManagerService service, String type, String name) throws Exception {

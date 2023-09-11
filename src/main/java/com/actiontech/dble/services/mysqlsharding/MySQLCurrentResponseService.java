@@ -23,6 +23,7 @@ public class MySQLCurrentResponseService extends MySQLResponseService {
         if (isComplexQuery()) {
             super.doHandle(null);
         } else {
+            if (task == null) return;
             if (isHandling.compareAndSet(false, true)) {
                 DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
             }

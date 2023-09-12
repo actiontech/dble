@@ -137,7 +137,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration"));
         readOnlyParams.add(new ParamInfo("enableAsyncRelease", sysConfig.getEnableAsyncRelease() + "", "Whether enable async release . default value is 1(off)."));
         readOnlyParams.add(new ParamInfo("releaseTimeout", sysConfig.getReleaseTimeout() + "", "time wait for release ,unit is ms,  default value is 10 ms"));
-
+        readOnlyParams.add(new ParamInfo("enableCheckSchema", sysConfig.getEnableCheckSchema() + "", "Whether enable check schema, default value is 1(on)"));
 
     }
 

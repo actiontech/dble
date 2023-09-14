@@ -118,7 +118,7 @@ public final class ThreadManager {
                     throw new Exception("The recover operation of threadPool[" + threadName + "] is not supported");
             }
         } else {
-            throw new Exception("The recover operation of threadPool[" + threadName + "] is not supported");
+            throw new Exception("The recover operation of thread[" + threadName + "] is not supported");
         }
     }
 
@@ -157,13 +157,21 @@ public final class ThreadManager {
                 XaCheckHandler.stopXaIdCheckPeriod();
                 LOGGER.info("manual shutdown threadPool[{}] ... end ...", TIMER_SCHEDULER_WORKER_NAME);
                 break;
+            case FRONT_WORKER_NAME:
+            case FRONT_MANAGER_WORKER_NAME:
+            case BACKEND_WORKER_NAME:
+            case WRITE_TO_BACKEND_WORKER_NAME:
+            case COMPLEX_QUERY_EXECUTOR_NAME:
+            case NIO_FRONT_RW:
+            case NIO_BACKEND_RW:
+                throw new Exception("The recover operation of threadPool[" + threadPoolName + "] is not supported");
             default:
-                throw new Exception("The shutdown operation of thread[" + TIMER_SCHEDULER_WORKER_NAME + "] is not supported");
+                throw new Exception("The threadPool[" + threadPoolName + "] does not exist");
         }
     }
 
-    public static void recoverThreadPool(String threadName) throws Exception {
-        switch (threadName) {
+    public static void recoverThreadPool(String threadPoolName) throws Exception {
+        switch (threadPoolName) {
             case TIMER_WORKER_NAME:
                 if (!DbleServer.getInstance().getTimerExecutor().isShutdown()) {
                     throw new Exception("threadPool[" + TIMER_WORKER_NAME + "] is not shutdown, no need to recover");
@@ -199,8 +207,16 @@ public final class ThreadManager {
                 XaCheckHandler.startXaIdCheckPeriod();
                 LOGGER.info("manual recover threadPool[{}] ... end ...", TIMER_SCHEDULER_WORKER_NAME);
                 break;
+            case FRONT_WORKER_NAME:
+            case FRONT_MANAGER_WORKER_NAME:
+            case BACKEND_WORKER_NAME:
+            case WRITE_TO_BACKEND_WORKER_NAME:
+            case COMPLEX_QUERY_EXECUTOR_NAME:
+            case NIO_FRONT_RW:
+            case NIO_BACKEND_RW:
+                throw new Exception("The recover operation of threadPool[" + threadPoolName + "] is not supported");
             default:
-                throw new Exception("The recover operation of threadPool[" + threadName + "] is not supported");
+                throw new Exception("The threadPool[" + threadPoolName + "] does not exist");
         }
     }
 

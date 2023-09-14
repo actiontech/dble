@@ -51,7 +51,7 @@
 #-DwriteToBackendWorker=4
 
 
--DfakeMySQLVersion=5.7.11
+-DfakeMySQLVersion=5.7.21
 
 # serverBacklog size,default 2048
 -DserverBacklog=2048

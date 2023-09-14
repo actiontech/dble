@@ -11,7 +11,7 @@
 -Xmx4G
 -Xms1G
 -Xss256k
--XX:MaxDirectMemorySize=1G
+-XX:MaxDirectMemorySize=2G
 -XX:MetaspaceSize=100M
 # GC Log
 -XX:+PrintHeapAtGC
@@ -50,7 +50,7 @@
 #-DwriteToBackendExecutor=4
 
 
--DfakeMySQLVersion=5.7.11
+-DfakeMySQLVersion=5.7.21
 #-DtraceEndPoint=http://10.186.60.96:14268/api/traces
 
 # serverBacklog size,default 2048

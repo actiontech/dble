@@ -115,7 +115,7 @@ public final class ThreadManager {
                     }
                     break;
                 default:
-                    throw new Exception("The recover operation of threadPool[" + threadName + "] is not supported");
+                    throw new Exception("The recover operation of thread[" + threadName + "] is not supported");
             }
         } else {
             throw new Exception("The recover operation of thread[" + threadName + "] is not supported");

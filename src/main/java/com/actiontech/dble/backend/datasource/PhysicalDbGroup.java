@@ -330,7 +330,7 @@ public class PhysicalDbGroup {
 
     public void startDelayDetection() {
         for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-            if (dbInstance.delayDetection.isStop()) {
+            if (dbInstance.delayDetection != null && dbInstance.delayDetection.isStop()) {
                 dbInstance.delayDetection = new DelayDetection(dbInstance);
             }
             dbInstance.startDelayDetection();

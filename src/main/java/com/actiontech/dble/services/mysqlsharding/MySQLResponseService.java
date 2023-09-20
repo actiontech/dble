@@ -125,6 +125,7 @@ public class MySQLResponseService extends BackendService {
 
         write(originPacket, WriteFlags.QUERY_END);
     }
+
     public void execute(BusinessService service, String sql) {
         execute(service, sql, false);
     }
@@ -419,6 +420,7 @@ public class MySQLResponseService extends BackendService {
         }
         complexQuery = false;
         attachment = null;
+        traceRouteKey = null;
         statusSync = null;
         isDDL = false;
         testing = false;

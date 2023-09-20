@@ -39,6 +39,11 @@ public final class ThreadManager {
         }
         if (find == null)
             throw new Exception("Thread[" + threadName + "] does not exist");
+
+        String[] array = threadName.split("-");
+        if (array.length == 2 && array[1].equals(NIO_FRONT_RW)) {
+            throw new Exception("The kill operation of thread[" + threadName + "] is not supported");
+        }
         find.interrupt();
         LOGGER.info("exec interrupt Thread[{}]", find.getName());
     }
@@ -87,19 +92,7 @@ public final class ThreadManager {
                     }
                     break;
                 case NIO_FRONT_RW:
-                    if (SystemConfig.getInstance().getUsingAIO() != 1) {
-                        try {
-                            NameableExecutor nameableExecutor4 = (NameableExecutor) server.getNioFrontExecutor();
-                            if (nameableExecutor4.getPoolSize() > nameableExecutor4.getActiveCount()) {
-                                nameableExecutor4.execute(new RW(server.getFrontRegisterQueue()));
-                            } else {
-                                throw new Exception("threadPool[{" + NIO_FRONT_RW + "}] does not need to be recover");
-                            }
-                        } catch (IOException e) {
-                            throw new Exception("recover threadPool[{" + NIO_FRONT_RW + "}] fail", e);
-                        }
-                    }
-                    break;
+                    throw new Exception("The recover operation of thread[" + threadName + "] is not supported");
                 case NIO_BACKEND_RW:
                     if (SystemConfig.getInstance().getUsingAIO() != 1) {
                         try {

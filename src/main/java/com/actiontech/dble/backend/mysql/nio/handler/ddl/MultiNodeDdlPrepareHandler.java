@@ -110,13 +110,16 @@ public class MultiNodeDdlPrepareHandler extends BaseDDLHandler {
     }
 
     @Override
-    protected boolean checkIsAlreadyClosed(final RouteResultsetNode node) {
+    protected boolean checkIsAlreadyClosed(final RouteResultsetNode node, final MySQLResponseService mysqlResponseService) {
         lock.lock();
         try {
             if (finishedTest) return true;
-            if (nodeResponseStatus.get(node) == null || nodeResponseStatus.get(node) == STATUS_CONN_CLOSE) return true;
-            nodeResponseStatus.put(node, STATUS_CONN_CLOSE);
-            session.getTargetMap().remove(node);
+            if (closedConnSet.contains(mysqlResponseService)) {
+                nodeResponseStatus.put(node, STATUS_CONN_CLOSE);
+                return true;
+            } else {
+                closedConnSet.add(mysqlResponseService);
+            }
             return false;
         } finally {
             lock.unlock();

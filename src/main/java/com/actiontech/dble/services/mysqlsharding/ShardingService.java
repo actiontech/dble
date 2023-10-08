@@ -41,7 +41,6 @@ import com.actiontech.dble.services.TransactionOperate;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.exception.NeedDelayedException;
@@ -589,7 +588,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     @Override
     public void cleanup() {
         super.cleanup();
-        TsQueriesCounter.getInstance().addToHistory(this);
         session.terminate();
         if (getLoadDataInfileHandler() != null) {
             getLoadDataInfileHandler().clear();

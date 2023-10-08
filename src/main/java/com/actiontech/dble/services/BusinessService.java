@@ -13,6 +13,7 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.server.variables.MysqlVariable;
+import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.statistic.CommandCount;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,6 +49,10 @@ public abstract class BusinessService<T extends UserConfig> extends TransactionS
     public void resetCounter() {
         queriesCounter.set(Long.MIN_VALUE);
         resetTxId();
+    }
+
+    public void addHisQueriesCount() {
+        TsQueriesCounter.getInstance().addToHistory(this);
     }
 
     public void executeContextSetTask(MysqlVariable[] contextTask) {

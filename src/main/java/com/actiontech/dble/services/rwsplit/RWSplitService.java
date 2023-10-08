@@ -30,7 +30,6 @@ import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
 import com.actiontech.dble.services.mysqlsharding.LoadDataProtoHandlerImpl;
 import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.alibaba.druid.wall.WallCheckResult;
 import com.alibaba.druid.wall.WallProvider;
@@ -458,7 +457,6 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
     public void cleanup() {
         super.cleanup();
         if (session != null) {
-            TsQueriesCounter.getInstance().addToHistory(this);
             session.close("clean up");
         }
     }

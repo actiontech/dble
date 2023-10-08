@@ -159,8 +159,11 @@ public abstract class AbstractConnection implements Connection {
 
     private void closeImmediatelyInner(String reason) {
         if (isClosed.compareAndSet(false, true)) {
-            if (service instanceof BusinessService)
-                ((BusinessService) service).transactionsCountInTx();
+            if (service instanceof BusinessService) {
+                BusinessService bService = (BusinessService) service;
+                bService.transactionsCountInTx();
+                bService.addHisQueriesCount();
+            }
             StatisticListener.getInstance().record(service, r -> r.onExit(reason));
             StatisticListener.getInstance().remove(service);
             closeSocket();

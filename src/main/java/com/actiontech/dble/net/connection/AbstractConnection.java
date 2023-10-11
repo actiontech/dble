@@ -170,7 +170,9 @@ public abstract class AbstractConnection implements Connection {
     private void closeImmediatelyInner(String reason) {
         if (isClosed.compareAndSet(false, true)) {
             if (service instanceof BusinessService) {
-                ((BusinessService) service).controlTx(TransactionOperate.QUIT);
+                BusinessService bService = (BusinessService) service;
+                bService.addHisQueriesCount();
+                bService.controlTx(TransactionOperate.QUIT);
                 AbstractTrackProbe.trace(service, t -> t.setExit());
             }
             FrontActiveRatioStat.getInstance().remove(this);

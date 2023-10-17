@@ -212,6 +212,8 @@ public class StatisticRecord {
     protected void pushBackendSql(StatisticBackendSqlEntry backendSqlEntry) {
         if (backendSqlEntry != null && !backendSqlEntry.isEnd()) {
             backendSqlEntry.setEnd(true);
+            if (backendSqlEntry.getSql() == null)
+                return;
             StatisticManager.getInstance().push(backendSqlEntry);
         }
     }

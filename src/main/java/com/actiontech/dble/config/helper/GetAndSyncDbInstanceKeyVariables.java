@@ -69,9 +69,11 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
             while (!isFinish) {
                 boolean await = finishCond.await(ds.getConfig().getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS);
                 if (!await) {
-                    fail = true;
-                    isFinish = true;
-                    LOGGER.warn("test conn timeout，TCP connection may be lost");
+                    if (!isFinish) {
+                        fail = true;
+                        isFinish = true;
+                        LOGGER.warn("test conn timeout,TCP connection may be lost");
+                    }
                 }
             }
         } catch (InterruptedException e) {
@@ -86,86 +88,93 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
     private class GetDbInstanceKeyVariablesListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
-            if (result.isSuccess()) {
-                keyVariables = new KeyVariables();
-                keyVariables.setLowerCase(!result.getResult().get(COLUMN_LOWER_CASE).equals("0"));
+            boolean isSuccess = result.isSuccess();
+            ds.setTestConnSuccess(isSuccess);
+            if (isFinish) {
+                if (fail)
+                    LOGGER.info("test conn timeout, need to resynchronize");
+                return;
+            }
+            KeyVariables keyVariablesTmp = null;
+            if (isSuccess) {
+                keyVariablesTmp = new KeyVariables();
+                keyVariablesTmp.setLowerCase(!result.getResult().get(COLUMN_LOWER_CASE).equals("0"));
 
-                keyVariables.setAutocommit(result.getResult().get(COLUMN_AUTOCOMMIT).equals("1"));
-                keyVariables.setTargetAutocommit(SystemConfig.getInstance().getAutocommit() == 1);
+                keyVariablesTmp.setAutocommit(result.getResult().get(COLUMN_AUTOCOMMIT).equals("1"));
+                keyVariablesTmp.setTargetAutocommit(SystemConfig.getInstance().getAutocommit() == 1);
 
                 String isolation = result.getResult().get(columnIsolation);
                 switch (isolation) {
                     case "READ-COMMITTED":
-                        keyVariables.setIsolation(Isolations.READ_COMMITTED);
+                        keyVariablesTmp.setIsolation(Isolations.READ_COMMITTED);
                         break;
                     case "READ-UNCOMMITTED":
-                        keyVariables.setIsolation(Isolations.READ_UNCOMMITTED);
+                        keyVariablesTmp.setIsolation(Isolations.READ_UNCOMMITTED);
                         break;
                     case "REPEATABLE-READ":
-                        keyVariables.setIsolation(Isolations.REPEATABLE_READ);
+                        keyVariablesTmp.setIsolation(Isolations.REPEATABLE_READ);
                         break;
                     case "SERIALIZABLE":
-                        keyVariables.setIsolation(Isolations.SERIALIZABLE);
+                        keyVariablesTmp.setIsolation(Isolations.SERIALIZABLE);
                         break;
                     default:
                         break;
                 }
-                keyVariables.setTargetIsolation(SystemConfig.getInstance().getTxIsolation());
-                keyVariables.setMaxPacketSize(Integer.parseInt(result.getResult().get(COLUMN_MAX_PACKET)));
-                keyVariables.setTargetMaxPacketSize(SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE);
-                keyVariables.setReadOnly(result.getResult().get(COLUMN_READONLY).equals("1"));
+                keyVariablesTmp.setTargetIsolation(SystemConfig.getInstance().getTxIsolation());
+                keyVariablesTmp.setMaxPacketSize(Integer.parseInt(result.getResult().get(COLUMN_MAX_PACKET)));
+                keyVariablesTmp.setTargetMaxPacketSize(SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE);
+                keyVariablesTmp.setReadOnly(result.getResult().get(COLUMN_READONLY).equals("1"));
 
                 if (needSync) {
                     boolean checkNeedSync = false;
-                    if (keyVariables.getTargetMaxPacketSize() > keyVariables.getMaxPacketSize()) {
+                    if (keyVariablesTmp.getTargetMaxPacketSize() > keyVariablesTmp.getMaxPacketSize()) {
                         checkNeedSync = true;
                     }
-                    if (keyVariables.isTargetAutocommit() != keyVariables.isAutocommit()) {
+                    if (keyVariablesTmp.isTargetAutocommit() != keyVariablesTmp.isAutocommit()) {
                         checkNeedSync = true;
                     } else {
                         ds.setAutocommitSynced(true);
                     }
-                    if (keyVariables.getTargetIsolation() != keyVariables.getIsolation()) {
+                    if (keyVariablesTmp.getTargetIsolation() != keyVariablesTmp.getIsolation()) {
                         checkNeedSync = true;
                     } else {
                         ds.setIsolationSynced(true);
                     }
 
                     if (checkNeedSync) {
-                        SyncDbInstanceKeyVariables task = new SyncDbInstanceKeyVariables(keyVariables, ds);
+                        SyncDbInstanceKeyVariables task = new SyncDbInstanceKeyVariables(keyVariablesTmp, ds);
                         boolean synced = false;
                         try {
                             synced = task.call();
                         } catch (Exception e) {
                             LOGGER.warn("SyncDbInstanceKeyVariables error", e);
                         }
+
                         if (synced) {
                             ds.setAutocommitSynced(true);
                             ds.setIsolationSynced(true);
-                            keyVariables.setMaxPacketSize(keyVariables.getTargetMaxPacketSize());
+                            keyVariablesTmp.setMaxPacketSize(keyVariablesTmp.getTargetMaxPacketSize());
                         }
                     }
                 }
-            } else {
-                ds.setTestConnSuccess(false);
             }
-
-            handleFinished();
+            handleFinished(keyVariablesTmp);
         }
 
-        private void handleFinished() {
+        private void handleFinished(KeyVariables keyVariablesTmp) {
             lock.lock();
             try {
-                isFinish = true;
-                finishCond.signal();
-                if (fail) {
-                    keyVariables = null;
-                    LOGGER.info("test conn timeout, need to resynchronize");
+                if (isFinish) {
+                    if (fail)
+                        LOGGER.info("test conn timeout, need to resynchronize");
+                } else {
+                    keyVariables = keyVariablesTmp;
+                    isFinish = true;
                 }
+                finishCond.signal();
             } finally {
                 lock.unlock();
             }
         }
     }
-
 }

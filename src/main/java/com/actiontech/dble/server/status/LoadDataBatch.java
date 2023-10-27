@@ -4,14 +4,18 @@ import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public final class LoadDataBatch {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadDataBatch.class);
     private volatile int size;
     private volatile boolean enableBatchLoadData;
-    private Set<String> successFileNames = new HashSet<>();
+    private Set<String> successFileNames = ConcurrentHashMap.newKeySet();
     private int currentNodeSize = 0;
     private Map<String, List<String>> warnings = new HashMap<>();
 

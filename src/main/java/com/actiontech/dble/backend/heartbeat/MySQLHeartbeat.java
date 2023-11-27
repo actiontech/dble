@@ -108,10 +108,10 @@ public class MySQLHeartbeat {
 
     public void stop(String reason) {
         if (isStop) {
-            LOGGER.warn("heartbeat[{}] had been stop", source.getConfig().getUrl());
+            LOGGER.warn("heartbeat[{}] had been stop", source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl());
             return;
         }
-        LOGGER.info("stop heartbeat of instance[{}], due to {}", source.getConfig().getUrl(), reason);
+        LOGGER.info("stop heartbeat of instance[{}], due to {}", source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl(), reason);
         isStop = true;
         scheduledFuture.cancel(false);
         initHeartbeat.set(false);
@@ -164,7 +164,7 @@ public class MySQLHeartbeat {
     }
 
     void setErrorResult(String errMsg) {
-        LOGGER.warn("heartbeat to [" + source.getConfig().getUrl() + "] setError");
+        LOGGER.warn("heartbeat to [" + source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl() + "] setError");
         // should continue checking error status
         if (detector != null) {
             detector.quit();
@@ -203,7 +203,7 @@ public class MySQLHeartbeat {
 
     private void setOk() {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("heartbeat to [" + source.getConfig().getUrl() + "] setOK");
+            LOGGER.debug("heartbeat to [" + source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl() + "] setOK");
         }
         MySQLHeartbeatStatus previousStatus = status;
         switch (status) {
@@ -212,17 +212,17 @@ public class MySQLHeartbeat {
                 this.errorCount.set(0);
                 this.startErrorTime.set(-1);
                 if (isStop) {
-                    LOGGER.warn("heartbeat[{}] had been stop", source.getConfig().getUrl());
+                    LOGGER.warn("heartbeat[{}] had been stop", source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl());
                     detector.quit();
                 } else {
-                    LOGGER.info("heartbeat to [{}] setOk, previous status is timeout", source.getConfig().getUrl());
+                    LOGGER.info("heartbeat to [{}] setOk, previous status is timeout", source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl());
                     heartbeat(); // timeout, heart beat again
                 }
                 break;
             case OK:
                 break;
             default:
-                LOGGER.info("heartbeat to [{}] setOk, previous status is {}", source.getConfig().getUrl(), status);
+                LOGGER.info("heartbeat to [{}] setOk, previous status is {}", source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl(), status);
                 this.status = MySQLHeartbeatStatus.OK;
                 this.errorCount.set(0);
                 this.startErrorTime.set(-1);
@@ -236,7 +236,7 @@ public class MySQLHeartbeat {
             source.updatePoolCapacity();
         }
         if (isStop) {
-            LOGGER.warn("heartbeat[{}] had been stop", source.getConfig().getUrl());
+            LOGGER.warn("heartbeat[{}] had been stop", source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl());
             detector.quit();
         }
     }
@@ -253,10 +253,10 @@ public class MySQLHeartbeat {
 
     private void setTimeout() {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("heartbeat to [" + source.getConfig().getUrl() + "] setTimeout");
+            LOGGER.debug("heartbeat to [" + source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl() + "] setTimeout");
         }
         if (status != MySQLHeartbeatStatus.TIMEOUT) {
-            LOGGER.warn("heartbeat to [{}] setTimeout, previous status is {}", source.getConfig().getUrl(), status);
+            LOGGER.warn("heartbeat to [{}] setTimeout, previous status is {}", source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl(), status);
             status = MySQLHeartbeatStatus.TIMEOUT;
         }
     }

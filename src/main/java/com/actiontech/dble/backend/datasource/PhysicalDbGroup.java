@@ -685,7 +685,7 @@ public class PhysicalDbGroup {
 
     private void reportDisableError(PhysicalDbInstance ins) throws IOException {
         final DbInstanceConfig config = ins.getConfig();
-        String disableError = "the dbInstance[" + config.getUrl() + "] is disable. Please check the dbInstance disable status";
+        String disableError = "the dbInstance[" + dbGroupConfig.getName() + ":" + config.getInstanceName() + ":" + config.getUrl() + "] is disable. Please check the dbInstance disable status";
         LOGGER.warn(disableError);
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());
         AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, disableError, "mysql", config.getId(), labels);
@@ -694,7 +694,7 @@ public class PhysicalDbGroup {
 
     private void reportFakeNodeError(PhysicalDbInstance ins) throws IOException {
         final DbInstanceConfig config = ins.getConfig();
-        String fakeNodeError = "the dbInstance[" + config.getUrl() + "] is fake node. Please check the dbInstance whether or not it is used";
+        String fakeNodeError = "the dbInstance[" + dbGroupConfig.getName() + ":" + config.getInstanceName() + ":" + config.getUrl() + "] is fake node. Please check the dbInstance whether or not it is used";
         LOGGER.warn(fakeNodeError);
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());
         AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, fakeNodeError, "mysql", config.getId(), labels);
@@ -703,7 +703,7 @@ public class PhysicalDbGroup {
 
     private void reportHeartbeatError(PhysicalDbInstance ins) throws IOException {
         final DbInstanceConfig config = ins.getConfig();
-        String heartbeatError = "the dbInstance[" + config.getUrl() + "] can't reach. Please check the dbInstance is accessible";
+        String heartbeatError = "the dbInstance[" + dbGroupConfig.getName() + ":" + config.getInstanceName() + ":" + config.getUrl() + "] can't reach. Please check the dbInstance is accessible";
         if (dbGroupConfig.isShowSlaveSql()) {
             heartbeatError += " and the privileges of user is sufficient (NOTE:heartbeat[show slave status] need grant the SUPER or REPLICATION CLIENT privilege(s) to db user,and then restart the dble or fresh conn).";
         }

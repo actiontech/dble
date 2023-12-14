@@ -424,11 +424,11 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                     }
                     String filePath = rrn.getLoadData().getFileName();
                     LoadDataBatch.getInstance().setFileName(filePath);
-                    handlerCommit(rrn);
                     FileUtils.deleteFile(filePath);
                     rrn.setLoadDataRrnStatus((byte) 1);
                     decrementToZero((MySQLResponseService) service);
                     if (unResponseRrns.size() != 0) {
+                        handlerCommit(rrn);
                         return;
                     }
                     if (rrs.isGlobalTable()) {

@@ -260,4 +260,12 @@ public class ViewMeta {
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
+
+    public String getSchema() {
+        return schema;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
 }

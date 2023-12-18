@@ -233,6 +233,8 @@ public class PhysicalDbGroup {
         if (getBindingCount() != 0) {
             state = STATE_DELETING;
             IOProcessor.BACKENDS_OLD_GROUP.add(this);
+            long time = System.nanoTime();
+            allSourceMap.values().forEach(f -> f.setAsyncExecStopTime(time));
             return false;
         }
         state = STATE_ABANDONED;
@@ -283,7 +285,7 @@ public class PhysicalDbGroup {
     public boolean stopOfBackground(String reason) {
         if (state.intValue() == STATE_DELETING && getBindingCount() == 0) {
             for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-                dbInstance.stopDirectly(reason, false, false);
+                dbInstance.stopOfBackground(reason);
             }
             return true;
         }

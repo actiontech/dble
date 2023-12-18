@@ -67,6 +67,8 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     private volatile boolean needSkipEvit = false;
     private volatile boolean needSkipHeartTest = false;
     private volatile int logCount;
+    private volatile long lastExecTime; // stop、start
+    private volatile long asyncExecStopTime;
 
 
     public PhysicalDbInstance(DbInstanceConfig config, DbGroupConfig dbGroupConfig, boolean isReadNode) {
@@ -431,6 +433,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     }
 
     void start(String reason, boolean isStartHeartbeat, boolean delayDetectionStart) {
+        lastExecTime = System.nanoTime();
         startPool(reason);
         if (isStartHeartbeat) {
             startHeartbeat();
@@ -454,6 +457,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         if (dbGroup.getBindingCount() != 0) {
             dbGroup.setState(PhysicalDbGroup.STATE_DELETING);
             IOProcessor.BACKENDS_OLD_INSTANCE.add(this);
+            setAsyncExecStopTime(System.nanoTime());
             return false;
         }
         if (dbGroup.isStop()) {
@@ -462,6 +466,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         if (dbGroup.getBindingCount() != 0) {
             dbGroup.setState(PhysicalDbGroup.STATE_DELETING);
             IOProcessor.BACKENDS_OLD_INSTANCE.add(this);
+            setAsyncExecStopTime(System.nanoTime());
             return false;
         }
         return true;
@@ -469,6 +474,10 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public boolean stopOfBackground(String reason) {
         if (dbGroup.getState() == PhysicalDbGroup.STATE_DELETING && dbGroup.getBindingCount() == 0) {
+            if (asyncExecStopTime <= lastExecTime) { // In extreme cases (equal cases), in extreme cases there may be problems,
+                LOGGER.info("discard expired stop() operations");
+                return true;
+            }
             stopDirectly(reason, false, false);
             return true;
         }
@@ -496,6 +505,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     }
 
     protected void stop(String reason, boolean closeFront, boolean isStopHeartbeat, boolean isStopPool, boolean delayDetectionStop) {
+        lastExecTime = System.nanoTime();
         if (isStopHeartbeat) {
             stopHeartbeat(reason);
         }
@@ -574,6 +584,22 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
             return true;
         }
         return false;
+    }
+
+    public long getLastExecTime() {
+        return lastExecTime;
+    }
+
+    public void setLastExecTime(long lastExecTime) {
+        this.lastExecTime = lastExecTime;
+    }
+
+    public long getAsyncExecStopTime() {
+        return asyncExecStopTime;
+    }
+
+    public void setAsyncExecStopTime(long asyncExecStopTime) {
+        this.asyncExecStopTime = asyncExecStopTime;
     }
 
     public final int getActiveConnections() {

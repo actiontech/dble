@@ -111,7 +111,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
      */
     private boolean checkRecoverFail(PhysicalDbInstance source) {
         if (heartbeat.isStop()) {
-            LOGGER.warn("heartbeat[{}] had been stop", source.getConfig().getUrl());
+            LOGGER.warn("heartbeat[{}] had been stop", source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl());
             return true;
         }
         if (heartbeat.getStatus() == MySQLHeartbeatStatus.OK) { // ok->ok

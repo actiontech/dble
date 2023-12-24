@@ -135,14 +135,14 @@ public final class ReloadConfig {
                 lock.writeLock().lock();
                 try {
                     //step 2 reload the local config file
-                    boolean reloadResult;
+                    ReloadResult reloadResult;
                     if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
                             confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
                         reloadResult = reloadByConfig(loadAllMode, true);
                     } else {
                         reloadResult = reloadByLocalXml(loadAllMode);
                     }
-                    if (!reloadResult) {
+                    if (!reloadResult.isSuccess()) {
                         packetResult.setSuccess(false);
                         packetResult.setErrorMsg("Reload Failure.The reason is reload interruputed by others,config should be reload");
                         packetResult.setErrorCode(ErrorCode.ER_RELOAD_INTERRUPUTED);
@@ -152,7 +152,7 @@ public final class ReloadConfig {
                     ClusterDelayProvider.delayAfterMasterLoad();
 
                     //step 3 if the reload with no error ,than write the config file into cluster center remote
-                    ClusterHelper.writeConfToCluster();
+                    ClusterHelper.writeConfToCluster(reloadResult);
                     ReloadLogHelper.info("reload config: sent config file to cluster center", LOGGER);
 
                     //step 4 write the reload flag and self reload result into cluster center,notify the other dble to reload
@@ -203,17 +203,17 @@ public final class ReloadConfig {
                 packetResult.setErrorCode(ErrorCode.ER_YES);
                 return;
             }
-            boolean reloadResult;
+            ReloadResult reloadResult;
             if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
                     confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
                 reloadResult = reloadByConfig(loadAllMode, true);
             } else {
                 reloadResult = reloadByLocalXml(loadAllMode);
             }
-            if (reloadResult && returnFlag) {
+            if (reloadResult.isSuccess() && returnFlag) {
                 // ok package
                 return;
-            } else if (!reloadResult) {
+            } else if (!reloadResult.isSuccess()) {
                 packetResult.setSuccess(false);
                 packetResult.setErrorMsg("Reload Failure.The reason is reload interruputed by others,metadata should be reload");
                 packetResult.setErrorCode(ErrorCode.ER_RELOAD_INTERRUPUTED);
@@ -232,11 +232,11 @@ public final class ReloadConfig {
     }
 
     @Deprecated
-    public static boolean reloadByLocalXml(final int loadAllMode) throws Exception {
+    public static ReloadResult reloadByLocalXml(final int loadAllMode) throws Exception {
         return reload(loadAllMode, null, null, null, null);
     }
 
-    public static boolean reloadByConfig(final int loadAllMode, boolean isWriteToLocal) throws Exception {
+    public static ReloadResult reloadByConfig(final int loadAllMode, boolean isWriteToLocal) throws Exception {
         RawJson userConfig = DbleTempConfig.getInstance().getUserConfig();
         userConfig = userConfig == null ? DbleServer.getInstance().getConfig().getUserConfig() : userConfig;
         RawJson dbConfig = DbleTempConfig.getInstance().getDbConfig();
@@ -245,14 +245,14 @@ public final class ReloadConfig {
         shardingConfig = shardingConfig == null ? DbleServer.getInstance().getConfig().getShardingConfig() : shardingConfig;
         RawJson sequenceConfig = DbleTempConfig.getInstance().getSequenceConfig();
         sequenceConfig = sequenceConfig == null ? DbleServer.getInstance().getConfig().getSequenceConfig() : sequenceConfig;
-        boolean reloadResult = reload(loadAllMode, userConfig, dbConfig, shardingConfig, sequenceConfig);
+        ReloadResult reloadResult = reload(loadAllMode, userConfig, dbConfig, shardingConfig, sequenceConfig);
         DbleTempConfig.getInstance().clean();
         //sync json to local
         DbleServer.getInstance().getConfig().syncJsonToLocal(isWriteToLocal);
         return reloadResult;
     }
 
-    private static boolean reload(final int loadAllMode, RawJson userConfig, RawJson dbConfig, RawJson shardingConfig, RawJson sequenceConfig) throws Exception {
+    private static ReloadResult reload(final int loadAllMode, RawJson userConfig, RawJson dbConfig, RawJson shardingConfig, RawJson sequenceConfig) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("self-reload");
         try {
             /*
@@ -299,7 +299,7 @@ public final class ReloadConfig {
         }
     }
 
-    private static boolean intelligentReloadAll(int loadAllMode, ConfigInitializer loader) throws Exception {
+    private static ReloadResult intelligentReloadAll(int loadAllMode, ConfigInitializer loader) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("self-intelligent-reload");
         try {
             /* 2.1.1 get diff of dbGroups */
@@ -372,7 +372,7 @@ public final class ReloadConfig {
                     if (!loader.isFullyConfigured()) {
                         recycleServerConnections();
                     }
-                    return result;
+                    return new ReloadResult(result, addOrChangeHosts, recycleHosts);
                 } catch (Exception e) {
                     initFailed(newDbGroups);
                     throw e;
@@ -407,7 +407,7 @@ public final class ReloadConfig {
         }
     }
 
-    private static boolean forceReloadAll(final int loadAllMode, ConfigInitializer loader) throws Exception {
+    private static ReloadResult forceReloadAll(final int loadAllMode, ConfigInitializer loader) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("self-force-reload");
         try {
             ServerConfig config = DbleServer.getInstance().getConfig();
@@ -457,7 +457,8 @@ public final class ReloadConfig {
                 ReloadLogHelper.info("reload config: apply new config start", LOGGER);
                 boolean result;
                 try {
-                    result = config.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, config.getDbGroups(), newErRelations, newFuncNodeERMap,
+                    Map<String, PhysicalDbGroup> oldDbGroupMap = config.getDbGroups();
+                    result = config.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, oldDbGroupMap, newErRelations, newFuncNodeERMap,
                             newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions,
                             loader.getUserConfig(), loader.getSequenceConfig(), loader.getShardingConfig(), loader.getDbConfig());
                     CronScheduler.getInstance().init(config.getSchemas());
@@ -469,7 +470,7 @@ public final class ReloadConfig {
                     if (!loader.isFullyConfigured()) {
                         recycleServerConnections();
                     }
-                    return result;
+                    return new ReloadResult(result, newDbGroups, oldDbGroupMap);
                 } catch (Exception e) {
                     initFailed(newDbGroups);
                     throw e;
@@ -610,6 +611,30 @@ public final class ReloadConfig {
         } else {
             LOGGER.warn(errorMsg);
             service.writeErrMessage(errorCode, errorMsg);
+        }
+    }
+
+    public static class ReloadResult { // dbGroup
+        private final boolean success;
+        private final Map<String, PhysicalDbGroup> addOrChangeHostMap;
+        private final Map<String, PhysicalDbGroup> recycleHostMap;
+
+        public ReloadResult(boolean success, Map<String, PhysicalDbGroup> addOrChangeHostMap, Map<String, PhysicalDbGroup> recycleHostMap) {
+            this.success = success;
+            this.addOrChangeHostMap = addOrChangeHostMap;
+            this.recycleHostMap = recycleHostMap;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public Map<String, PhysicalDbGroup> getAddOrChangeHostMap() {
+            return addOrChangeHostMap;
+        }
+
+        public Map<String, PhysicalDbGroup> getRecycleHostMap() {
+            return recycleHostMap;
         }
     }
 }

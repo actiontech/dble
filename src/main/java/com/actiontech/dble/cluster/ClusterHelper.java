@@ -11,6 +11,7 @@ import com.actiontech.dble.cluster.logic.ClusterOperation;
 import com.actiontech.dble.cluster.path.ChildPathMeta;
 import com.actiontech.dble.cluster.path.PathMeta;
 import com.actiontech.dble.cluster.values.*;
+import com.actiontech.dble.services.manager.response.ReloadConfig;
 import org.apache.logging.log4j.util.Strings;
 
 import javax.annotation.Nonnull;
@@ -114,12 +115,12 @@ public final class ClusterHelper {
         return ClusterGeneralConfig.getInstance().getClusterSender().getOnlineMap();
     }
 
-    public static void writeConfToCluster() throws Exception {
+    public static void writeConfToCluster(ReloadConfig.ReloadResult reloadResult) throws Exception {
         ClusterLogic.forConfig().syncSequenceJsonToCluster();
         ClusterLogic.forConfig().syncDbJsonToCluster();
         ClusterLogic.forConfig().syncShardingJsonToCluster();
         ClusterLogic.forConfig().syncUseJsonToCluster();
-        ClusterLogic.forHA().syncDbGroupStatusToCluster();
+        ClusterLogic.forHA().syncDbGroupStatusToCluster(reloadResult);
     }
 
     @Nullable

@@ -229,14 +229,14 @@ public class DelayDetection {
     }
 
     private void setTimeout() {
-        LOGGER.warn("delayDetection to [" + source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl() + "] setTimeout");
+        LOGGER.warn("delayDetection to [" + source.getDbGroupConfig().getName() + ":" + source.getConfig().getInstanceName() + ":" + source.getConfig().getUrl() + "] setTimeout");
         delayDetectionStatus = DelayDetectionStatus.TIMEOUT;
         source.setDelayDetectionStatus(delayDetectionStatus);
         alert(AlarmCode.DB_SLAVE_INSTANCE_DELAY, errorMessage, dbGroupConfig.instanceDatabaseType().name().toLowerCase());
     }
 
     private void setError() {
-        LOGGER.warn("delayDetection to [" + source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl() + "] setError");
+        LOGGER.warn("delayDetection to [" + source.getDbGroupConfig().getName() + ":" + source.getConfig().getInstanceName() + ":" + source.getConfig().getUrl() + "] setError");
         delayDetectionStatus = DelayDetectionStatus.ERROR;
         source.setDelayDetectionStatus(delayDetectionStatus);
         if (!source.isReadInstance()) {
@@ -245,7 +245,7 @@ public class DelayDetection {
     }
 
     private void setOk() {
-        LOGGER.debug("delayDetection to [" + source.getDbGroupConfig().getName() + ":" + source.getConfig().getUrl() + ":" + source.getConfig().getUrl() + "] setOK");
+        LOGGER.debug("delayDetection to [" + source.getDbGroupConfig().getName() + ":" + source.getConfig().getInstanceName() + ":" + source.getConfig().getUrl() + "] setOK");
         if (errorCount.get() > 0) {
             errorCount.set(0);
         }

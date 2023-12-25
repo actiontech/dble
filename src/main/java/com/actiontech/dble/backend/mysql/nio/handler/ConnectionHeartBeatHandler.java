@@ -88,9 +88,10 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
             }
             return;
         }
-
         heartbeatTimeout.cancel();
-        listener.onHeartbeatSuccess((PooledConnection) service.getConnection());
+        if (!heartbeatTimeout.isExpired()) {
+            listener.onHeartbeatSuccess((PooledConnection) service.getConnection());
+        }
     }
 
     @Override

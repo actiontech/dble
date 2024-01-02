@@ -12,6 +12,7 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -49,8 +50,16 @@ public final class SlowQueryLog {
             }
             processor = new SlowQueryLogProcessor();
             processor.setName("SlowQueryLogProcessor");
+            CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
+                processor.start();
+                return true;
+            });
+            try {
+                future.get();
+            } catch (Exception e) {
+                throw new RuntimeException("EnableSlowLog error", e);
+            }
             this.enableSlowLog = true;
-            processor.start();
         } else {
             this.enableSlowLog = false;
         }

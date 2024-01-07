@@ -180,6 +180,13 @@ public class NonBlockingSession extends Session {
         provider.startProcess(shardingService.getConnection().getId());
     }
 
+    public void endParseTCL() {
+        if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.ready();
+            traceResult.setTCL();
+        }
+    }
+
     public void endParse() {
         sessionStage = SessionStage.Route_Calculation;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {

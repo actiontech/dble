@@ -14,6 +14,7 @@ public final class RollBackHandler {
     }
 
     public static void handle(String stmt, ShardingService service) {
+        service.getSession2().endParseTCL();
         if (service.isTxStart() || !service.isAutocommit()) {
             StatisticListener.getInstance().record(service, r -> r.onTxEnd());
             TxnLogHelper.putTxnLog(service, stmt);

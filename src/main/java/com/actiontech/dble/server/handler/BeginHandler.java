@@ -14,6 +14,7 @@ public final class BeginHandler {
     }
 
     public static void handle(String stmt, ShardingService service) {
+        service.getSession2().endParseTCL();
         if (service.isTxStart() || !service.isAutocommit()) {
             service.beginInTx(stmt);
         } else {
@@ -21,6 +22,7 @@ public final class BeginHandler {
             StatisticListener.getInstance().record(service, r -> r.onTxStart(service));
             TxnLogHelper.putTxnLog(service, stmt);
             service.writeOkPacket();
+            service.getSession2().setResponseTime(true);
         }
     }
 }

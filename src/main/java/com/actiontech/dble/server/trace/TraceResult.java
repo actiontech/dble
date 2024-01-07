@@ -24,7 +24,7 @@ public class TraceResult implements Cloneable {
 
 
     public enum SqlTraceType {
-        SINGLE_NODE_QUERY, MULTI_NODE_QUERY, MULTI_NODE_GROUP, COMPLEX_QUERY;
+        SINGLE_NODE_QUERY, MULTI_NODE_QUERY, MULTI_NODE_GROUP, COMPLEX_QUERY, SIMPLE_QUERY;
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TraceResult.class);
@@ -53,11 +53,17 @@ public class TraceResult implements Cloneable {
     private long veryEnd;
     private SqlTraceType type;
     private boolean subQuery = false;
+    private volatile boolean isTCL = false;
 
     public void setVeryStartPrepare(long veryStartPrepare) {
         prepareFinished = false;
         this.veryStartPrepare = veryStartPrepare;
         this.requestStartPrepare = new TraceRecord(veryStartPrepare);
+        this.isTCL = false;
+    }
+
+    public void setTCL() {
+        this.isTCL = true;
     }
 
     public void setRouteStart(TraceRecord routeStart) {
@@ -260,6 +266,7 @@ public class TraceResult implements Cloneable {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("start genTraceResult");
         }
+        List<String[]> lst = new ArrayList<>();
         if (!isCompleted()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("collect info not in pairs,veryEnd:" + veryEnd + ",connFlagMap.size:" + connFlagMap.size() +
@@ -267,19 +274,23 @@ public class TraceResult implements Cloneable {
                         ",recordStartMap.size:" + recordStartMap.size() + ",recordEndMap.size:" + recordEndMap.size());
             }
             return null;
-        }
-        List<String[]> lst = new ArrayList<>();
-        lst.add(genTraceRecord("Read_SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
-        lst.add(genTraceRecord("Parse_SQL", parseStart.getTimestamp(), routeStart.getTimestamp()));
-        if (simpleHandler != null) {
-            if (genSimpleResults(lst)) return null;
-        } else if (builder != null) {
-            if (genComplexQueryResults(lst)) return null;
+        } else if (isTCL) {
+            lst.add(genTraceRecord("Read_SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
+            lst.add(genTraceRecord("Parse_SQL", parseStart.getTimestamp(), routeStart.getTimestamp()));
+            lst.add(genTraceRecord("Write_to_Client", routeStart.getTimestamp(), veryEnd));
         } else {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("not support trace this query");
+            lst.add(genTraceRecord("Read_SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
+            lst.add(genTraceRecord("Parse_SQL", parseStart.getTimestamp(), routeStart.getTimestamp()));
+            if (simpleHandler != null) {
+                if (genSimpleResults(lst)) return null;
+            } else if (builder != null) {
+                if (genComplexQueryResults(lst)) return null;
+            } else {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("not support trace this query");
+                }
+                return null;
             }
-            return null;
         }
         lst.add(genTraceRecord("Over_All", veryStart, veryEnd));
         if (LOGGER.isDebugEnabled()) {
@@ -572,10 +583,13 @@ public class TraceResult implements Cloneable {
     }
 
     public boolean isCompleted() {
-        return veryStart != 0 && veryEnd != 0 && connFlagMap.size() != 0 && connReceivedMap.size() == connFinishedMap.size() && recordStartMap.size() == recordEndMap.size();
+        return veryStart != 0 && veryEnd != 0 && (isTCL) || (connFlagMap.size() != 0 && connReceivedMap.size() == connFinishedMap.size() && recordStartMap.size() == recordEndMap.size());
     }
 
     public SqlTraceType getType() {
+        if (this.type == null) {
+            return SqlTraceType.SIMPLE_QUERY;
+        }
         return this.type;
     }
 
@@ -590,6 +604,12 @@ public class TraceResult implements Cloneable {
                         ",recordStartMap.size:" + connReceivedMap.size() + ",recordEndMap.size:" + connFinishedMap.size());
             }
             return null;
+        } else if (isTCL) {
+            List<String[]> lst = new ArrayList<>();
+            lst.add(genLogRecord("Read_SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
+            lst.add(genLogRecord("Inner_Execute", parseStart.getTimestamp(), veryEnd));
+            lst.add(genLogRecord("Write_Client", veryEnd, veryEnd));
+            return lst;
         }
         List<String[]> lst = new ArrayList<>();
         lst.add(genLogRecord("Read_SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));

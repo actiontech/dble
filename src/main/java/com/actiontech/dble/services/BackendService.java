@@ -102,8 +102,8 @@ public abstract class BackendService extends AbstractService {
                     handleDataError(e);
                 } finally {
                     isHandling.set(false);
-                    if (taskQueue.size() > 0) {
-                        doHandle(null);
+                    if (!taskQueue.isEmpty()) {
+                        doHandle(taskQueue.peek());
                     }
                 }
             });
@@ -125,7 +125,7 @@ public abstract class BackendService extends AbstractService {
             handleDataError(e);
         } finally {
             isHandling.set(false);
-            if (taskQueue.size() > 0) {
+            if (!taskQueue.isEmpty()) {
                 doHandle(task);
             }
         }
@@ -215,7 +215,7 @@ public abstract class BackendService extends AbstractService {
     protected void handleDataError(Exception e) {
         LOGGER.warn(this.toString() + " handle data error:", e);
         connection.close("handle data error:" + e.getMessage());
-        while (taskQueue.size() > 0) {
+        while (!taskQueue.isEmpty()) {
             clearTaskQueue();
             // clear all data from the client
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));

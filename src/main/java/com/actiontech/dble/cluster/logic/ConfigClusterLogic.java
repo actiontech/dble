@@ -87,8 +87,8 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
                     return;
                 }
                 try {
-                    boolean result = ReloadConfig.reloadByConfig(Integer.parseInt(params), false);
-                    if (!checkLocalResult(result)) {
+                    ReloadConfig.ReloadResult result = ReloadConfig.reloadByConfig(Integer.parseInt(params), false);
+                    if (!checkLocalResult(result.isSuccess())) {
                         return;
                     }
                 } catch (Exception e) {

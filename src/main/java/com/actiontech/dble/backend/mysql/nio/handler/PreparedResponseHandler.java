@@ -15,9 +15,7 @@ import java.util.List;
  */
 public interface PreparedResponseHandler {
 
-    void preparedOkResponse(byte[] ok, MySQLResponseService service);
+    void preparedOkResponse(byte[] ok, List<byte[]> fields, List<byte[]> params, MySQLResponseService service);
 
-    void paramEofResponse(List<byte[]> params, byte[] eof, MySQLResponseService service);
-
-    void fieldEofResponse(List<byte[]> fields, byte[] eof, MySQLResponseService service);
+    void preparedExecuteResponse(byte[] header, List<byte[]> fields, byte[] eof, MySQLResponseService service);
 }

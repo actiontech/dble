@@ -144,19 +144,6 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         }
     }
 
-    // this for prepared statement ok
-    @Override
-    public void fieldEofResponse(List<byte[]> fields, byte[] eof, MySQLResponseService service) {
-        synchronized (this) {
-            for (byte[] field : fields) {
-                field[3] = (byte) rwSplitService.nextPacketId();
-                buffer = frontedConnection.writeToBuffer(field, buffer);
-            }
-            eof[3] = (byte) rwSplitService.nextPacketId();
-            buffer = frontedConnection.writeToBuffer(eof, buffer);
-            frontedConnection.write(buffer);
-        }
-    }
 
 
     @Override
@@ -229,31 +216,54 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     }
 
     @Override
-    public void preparedOkResponse(byte[] ok, MySQLResponseService service) {
-        boolean executeResponse = service.syncAndExecute();
-        if (executeResponse) {
-            synchronized (this) {
-                if (buffer == null) {
-                    buffer = frontedConnection.allocate();
+    public void preparedOkResponse(byte[] ok, List<byte[]> fields, List<byte[]> params, MySQLResponseService service) {
+        synchronized (this) {
+            if (buffer == null) {
+                buffer = frontedConnection.allocate();
+            }
+            if (!write2Client) {
+                ok[3] = (byte) rwSplitService.nextPacketId();
+                buffer = frontedConnection.writeToBuffer(ok, buffer);
+                if (fields != null) {
+                    for (byte[] field : fields) {
+                        field[3] = (byte) rwSplitService.nextPacketId();
+                        buffer = frontedConnection.writeToBuffer(field, buffer);
+                    }
                 }
-                if (!write2Client) {
-                    ok[3] = (byte) rwSplitService.nextPacketId();
-                    frontedConnection.write(ok);
-                    write2Client = true;
+                if (params != null) {
+                    for (byte[] param : params) {
+                        param[3] = (byte) rwSplitService.nextPacketId();
+                        buffer = frontedConnection.writeToBuffer(param, buffer);
+                    }
                 }
+                frontedConnection.write(buffer);
+                write2Client = true;
+                buffer = null;
             }
         }
     }
 
     @Override
-    public void paramEofResponse(List<byte[]> params, byte[] eof, MySQLResponseService service) {
+    public void preparedExecuteResponse(byte[] header, List<byte[]> fields, byte[] eof, MySQLResponseService service) {
         synchronized (this) {
-            for (byte[] field : params) {
-                field[3] = (byte) rwSplitService.nextPacketId();
-                buffer = frontedConnection.writeToBuffer(field, buffer);
+            if (buffer == null) {
+                buffer = frontedConnection.allocate();
             }
-            eof[3] = (byte) rwSplitService.nextPacketId();
-            buffer = frontedConnection.writeToBuffer(eof, buffer);
+            if (!write2Client) {
+                header[3] = (byte) rwSplitService.nextPacketId();
+                buffer = frontedConnection.writeToBuffer(header, buffer);
+                if (fields != null) {
+                    for (byte[] field : fields) {
+                        field[3] = (byte) rwSplitService.nextPacketId();
+                        buffer = frontedConnection.writeToBuffer(field, buffer);
+                    }
+                }
+                eof[3] = (byte) rwSplitService.nextPacketId();
+                buffer = frontedConnection.writeToBuffer(eof, buffer);
+                frontedConnection.write(buffer);
+                write2Client = true;
+                buffer = null;
+            }
         }
     }
 

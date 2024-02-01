@@ -5,6 +5,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.PreparedResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.MysqlBackendLogicHandler;
 import org.slf4j.Logger;
@@ -18,7 +19,7 @@ import java.util.List;
  */
 public class MysqlPrepareLogicHandler extends MysqlBackendLogicHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MysqlPrepareLogicHandler.class);
-
+    private volatile byte[] ok;
     private volatile List<byte[]> params;
     private volatile List<byte[]> fields;
 
@@ -35,65 +36,77 @@ public class MysqlPrepareLogicHandler extends MysqlBackendLogicHandler {
             }
             return;
         }
-        switch (resultStatus) {
-            case PREPARED_OK:
-                boolean executeResponse = service.syncAndExecute();
-                if (executeResponse) {
-                    // Prepare ok
-                    handleOkPacket(data);
-                    int fieldCount = ByteUtil.readUB2(data, 9);
-                    int paramCount = ByteUtil.readUB2(data, 11);
-                    if (fieldCount > 0) {
-                        fields = new ArrayList<>(fieldCount);
-                        resultStatus = PREPARED_FIELD;
-                    }
-                    if (paramCount > 0) {
-                        params = new ArrayList<>(paramCount);
-                        resultStatus = PREPARED_PARAM;
-                    }
-                }
-                break;
-            case PREPARED_PARAM:
-                if (data[4] == EOFPacket.FIELD_COUNT) {
+        byte type = data[4];
+        if (type == OkPacket.FIELD_COUNT) {
+            boolean executeResponse = service.syncAndExecute();
+            if (executeResponse) {
+                final int fieldCount = (int) ByteUtil.readLength(data, 9);
+                final int paramCount = (int) ByteUtil.readLength(data, 11);
+                if (fieldCount > 0) {
+                    fields = new ArrayList<>(fieldCount + 1);
                     resultStatus = PREPARED_FIELD;
-                    handleParamEofPacket(data);
-                } else {
-                    params.add(data);
                 }
-                break;
-            case PREPARED_FIELD:
-                if (data[4] == EOFPacket.FIELD_COUNT) {
-                    resultStatus = RESULT_STATUS_INIT;
-                    handleFieldEofPacket(data);
-                } else {
-                    fields.add(data);
+                if (paramCount > 0) {
+                    params = new ArrayList<>(paramCount + 1);
+                    resultStatus = PREPARED_PARAM;
                 }
-                break;
-            default:
-                super.handleInnerData(data);
-        }
-    }
-
-    private void handleOkPacket(byte[] data) {
-        ResponseHandler respHand = service.getResponseHandler();
-        if (respHand instanceof PreparedResponseHandler) {
-            ((PreparedResponseHandler) respHand).preparedOkResponse(data, service);
-        }
-    }
-
-    private void handleParamEofPacket(byte[] data) {
-        ResponseHandler respHand = service.getResponseHandler();
-        if (respHand instanceof PreparedResponseHandler) {
-            ((PreparedResponseHandler) respHand).paramEofResponse(params, data, service);
+                if (fieldCount == 0 && paramCount == 0) {
+                    // handle ok packet
+                    handleOkPacket(data);
+                    return;
+                }
+                ok = data;
+            }
+        } else if (type == ErrorPacket.FIELD_COUNT) {
+            if (resultStatus == PREPARED_FIELD) {
+                fields.add(data);
+                // handle field eof
+                handleOkPacket(ok);
+            } else {
+                params.add(data);
+                if (fields != null) {
+                    resultStatus = PREPARED_FIELD;
+                } else {
+                    // handle param eof
+                    handleOkPacket(ok);
+                }
+            }
+        } else if (type == EOFPacket.FIELD_COUNT) {
+            if (resultStatus == PREPARED_FIELD) {
+                fields.add(data);
+                // handle field eof
+                handleOkPacket(ok);
+            } else {
+                params.add(data);
+                if (fields != null) {
+                    resultStatus = PREPARED_FIELD;
+                } else {
+                    // handle param eof
+                    handleOkPacket(ok);
+                }
+            }
         } else {
-            closeNoHandler();
+            data(data);
         }
     }
 
-    private void handleFieldEofPacket(byte[] data) {
+
+    public void data(byte[] data) {
+        if (resultStatus == PREPARED_FIELD) {
+            fields.add(data);
+        } else {
+            params.add(data);
+        }
+    }
+
+    private void handleOkPacket(byte[] okPacket) {
         ResponseHandler respHand = service.getResponseHandler();
         if (respHand instanceof PreparedResponseHandler) {
-            ((PreparedResponseHandler) respHand).fieldEofResponse(fields, data, service);
+            ((PreparedResponseHandler) respHand).preparedOkResponse(okPacket, fields, params, service);
+            ok = null;
+            params = null;
+            fields = null;
+            resultStatus = PREPARED_FIELD;
         } else {
             closeNoHandler();
         }

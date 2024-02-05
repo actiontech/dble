@@ -293,7 +293,6 @@ public final class ExplainHandler {
                     row.add(StringUtil.encode(result.getName(), service.getCharset().getResults()));
                     row.add(StringUtil.encode(result.getType(), service.getCharset().getResults()));
                     row.add(StringUtil.encode(result.getRefOrSQL(), service.getCharset().getResults()));
-                    row.setPacketId(service.nextPacketId());
                     rows.add(row);
                 }
             }

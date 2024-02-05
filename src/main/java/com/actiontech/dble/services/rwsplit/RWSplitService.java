@@ -58,7 +58,7 @@ public class RWSplitService extends BusinessService {
                     return;
                 }
                 if (!autocommit && Boolean.parseBoolean(ac)) {
-                    session.execute(true, (isSuccess, rwSplitService) -> {
+                    session.execute(true, (isSuccess, resp, rwSplitService) -> {
                         session.getConn().getBackendService().setAutocommit(true);
                         rwSplitService.setAutocommit(true);
                         txStarted = false;
@@ -89,7 +89,7 @@ public class RWSplitService extends BusinessService {
     protected void handleInnerData(byte[] data) {
         // if the statement is load data, directly push down
         if (inLoadData) {
-            session.execute(true, data, (isSuccess, rwSplitService) -> {
+            session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
                 rwSplitService.setInLoadData(false);
             });
             return;
@@ -123,7 +123,7 @@ public class RWSplitService extends BusinessService {
                 break;
             case MySQLPacket.COM_STMT_CLOSE:
                 commands.doStmtClose();
-                session.execute(true, data, (isSuccess, rwSplitService) -> {
+                session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
                     rwSplitService.setInPrepare(false);
                 });
                 break;
@@ -163,7 +163,7 @@ public class RWSplitService extends BusinessService {
         String switchSchema;
         try {
             switchSchema = mm.readString(getCharset().getClient());
-            session.execute(true, data, (isSuccess, rwSplitService) -> {
+            session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
                 if (isSuccess) rwSplitService.setSchema(switchSchema);
             });
         } catch (UnsupportedEncodingException e) {

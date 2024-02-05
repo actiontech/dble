@@ -77,7 +77,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         MySQLResponseService mysqlService = (MySQLResponseService) service;
         boolean syncFinished = mysqlService.syncAndExecute();
         if (callback != null) {
-            callback.callback(false, rwSplitService);
+            callback.callback(false, null, rwSplitService);
         }
         if (!syncFinished) {
             mysqlService.getConnection().businessClose("unfinished sync");
@@ -111,7 +111,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             packet.read(data);
             if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
                 if (callback != null) {
-                    callback.callback(true, rwSplitService);
+                    callback.callback(true, null, rwSplitService);
                 }
                 rwSplitService.getSession().unbindIfSafe();
             }
@@ -143,7 +143,6 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             buffer = frontedConnection.writeToBuffer(eof, buffer);
         }
     }
-
 
 
     @Override
@@ -224,17 +223,20 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             if (!write2Client) {
                 ok[3] = (byte) rwSplitService.nextPacketId();
                 buffer = frontedConnection.writeToBuffer(ok, buffer);
+                if (params != null) {
+                    for (byte[] param : params) {
+                        param[3] = (byte) rwSplitService.nextPacketId();
+                        buffer = frontedConnection.writeToBuffer(param, buffer);
+                    }
+                }
                 if (fields != null) {
                     for (byte[] field : fields) {
                         field[3] = (byte) rwSplitService.nextPacketId();
                         buffer = frontedConnection.writeToBuffer(field, buffer);
                     }
                 }
-                if (params != null) {
-                    for (byte[] param : params) {
-                        param[3] = (byte) rwSplitService.nextPacketId();
-                        buffer = frontedConnection.writeToBuffer(param, buffer);
-                    }
+                if (callback != null) {
+                    callback.callback(true, ok, rwSplitService);
                 }
                 frontedConnection.write(buffer);
                 write2Client = true;

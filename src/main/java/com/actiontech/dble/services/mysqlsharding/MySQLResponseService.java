@@ -22,7 +22,6 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.VariablesService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
-import com.actiontech.dble.services.rwsplit.MysqlExecuteResponseHandler;
 import com.actiontech.dble.services.rwsplit.MysqlPrepareLogicHandler;
 import com.actiontech.dble.services.rwsplit.MysqlStatisticsLogicHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
@@ -69,7 +68,6 @@ public class MySQLResponseService extends VariablesService {
     private volatile boolean isDDL = false;
     private volatile boolean prepareOK = false;
     private volatile boolean statisticResponse = false;
-    private volatile boolean executeResponse = false;
     private volatile boolean testing = false;
     private volatile StatusSync statusSync;
     private volatile boolean isRowDataFlowing = false;
@@ -82,7 +80,6 @@ public class MySQLResponseService extends VariablesService {
     private MysqlBackendLogicHandler baseLogicHandler;
     private MysqlPrepareLogicHandler prepareLogicHandler;
     private MysqlStatisticsLogicHandler statisticsLogicHandler;
-    private MysqlExecuteResponseHandler executeResponseHandler;
 
     private static final CommandPacket COMMIT = new CommandPacket();
     private static final CommandPacket ROLLBACK = new CommandPacket();
@@ -154,8 +151,6 @@ public class MySQLResponseService extends VariablesService {
                 prepareLogicHandler.handleInnerData(data);
             } else if (statisticResponse) {
                 statisticsLogicHandler.handleInnerData(data);
-            } else if (executeResponse) {
-                executeResponseHandler.handleInnerData(data);
             } else {
                 baseLogicHandler.handleInnerData(data);
             }
@@ -644,10 +639,6 @@ public class MySQLResponseService extends VariablesService {
             if (originPacket.length > 4) {
                 prepareOK = originPacket[4] == MySQLPacket.COM_STMT_PREPARE;
                 statisticResponse = originPacket[4] == MySQLPacket.COM_STATISTICS;
-                if (originPacket[4] == MySQLPacket.COM_STMT_EXECUTE) {
-                    this.executeResponseHandler = new MysqlExecuteResponseHandler(this, originPacket[9] == (byte) 0x01);
-                    executeResponse = true;
-                }
             }
 
             isExecuting = true;

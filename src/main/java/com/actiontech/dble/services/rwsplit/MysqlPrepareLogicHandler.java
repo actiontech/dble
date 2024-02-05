@@ -58,18 +58,12 @@ public class MysqlPrepareLogicHandler extends MysqlBackendLogicHandler {
                 ok = data;
             }
         } else if (type == ErrorPacket.FIELD_COUNT) {
-            if (resultStatus == PREPARED_FIELD) {
-                fields.add(data);
-                // handle field eof
-                handleOkPacket(ok);
+            final ResponseHandler respHand = service.getResponseHandler();
+            service.backendSpecialCleanUp();
+            if (respHand != null) {
+                respHand.errorResponse(data, service);
             } else {
-                params.add(data);
-                if (fields != null) {
-                    resultStatus = PREPARED_FIELD;
-                } else {
-                    // handle param eof
-                    handleOkPacket(ok);
-                }
+                closeNoHandler();
             }
         } else if (type == EOFPacket.FIELD_COUNT) {
             if (resultStatus == PREPARED_FIELD) {

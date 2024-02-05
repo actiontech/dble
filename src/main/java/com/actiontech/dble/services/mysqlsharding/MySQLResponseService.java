@@ -105,6 +105,7 @@ public class MySQLResponseService extends VariablesService {
         this.proto = new MySQLProtoHandlerImpl();
         this.baseLogicHandler = new MysqlBackendLogicHandler(this);
         this.statisticsLogicHandler = new MysqlStatisticsLogicHandler(this);
+        this.prepareLogicHandler = new MysqlPrepareLogicHandler(this);
     }
 
 

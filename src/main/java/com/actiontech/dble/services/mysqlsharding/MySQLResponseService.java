@@ -211,7 +211,7 @@ public class MySQLResponseService extends VariablesService {
     @Override
     public void taskToTotalQueue(ServiceTask task) {
         Executor executor;
-        if (this.isComplexQuery()) {
+        if (this.isComplexQuery() || SystemConfig.getInstance().getUsePerformanceMode() == 1) {
             executor = DbleServer.getInstance().getComplexQueryExecutor();
         } else {
             executor = DbleServer.getInstance().getBackendBusinessExecutor();
@@ -227,8 +227,8 @@ public class MySQLResponseService extends VariablesService {
                         handleDataError(e);
                     } finally {
                         isHandling.set(false);
-                        if (taskQueue.size() > 0) {
-                            taskToTotalQueue(null);
+                        if (!taskQueue.isEmpty()) {
+                            taskToTotalQueue(taskQueue.peek());
                         }
                     }
                 }
@@ -238,7 +238,7 @@ public class MySQLResponseService extends VariablesService {
 
     protected void handleDataError(Exception e) {
         LOGGER.info(this.toString() + " handle data error:", e);
-        while (taskQueue.size() > 0) {
+        while (!taskQueue.isEmpty()) {
             clearTaskQueue();
             // clear all data from the client
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));

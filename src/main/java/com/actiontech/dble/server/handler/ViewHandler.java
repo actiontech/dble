@@ -75,9 +75,9 @@ public final class ViewHandler {
         checkSchema(vm.getSchema());
         // if the sql can push down nosharding schema
         if (vm.getViewQuery() instanceof TableNode) {
-            RouteResultset rrs = new RouteResultset(RouterUtil.removeSchema(sql, schema), sqlType);
-            rrs.setSchema(schema);
-            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(schema).getDataNode());
+            RouteResultset rrs = new RouteResultset(RouterUtil.removeSchema(sql, vm.getSchema()), sqlType);
+            rrs.setSchema(vm.getSchema());
+            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(vm.getSchema()).getDataNode());
             MysqlCreateViewHandler handler = new MysqlCreateViewHandler(c.getSession2(), rrs, vm);
             handler.execute();
             return;
@@ -92,11 +92,11 @@ public final class ViewHandler {
         vm.init(isReplace);
         checkSchema(vm.getSchema());
         // if exist
-        PlanNode oldViewNode = ProxyMeta.getInstance().getTmManager().getSyncView(schema, vm.getViewName());
+        PlanNode oldViewNode = ProxyMeta.getInstance().getTmManager().getSyncView(vm.getSchema(), vm.getViewName());
         if (oldViewNode instanceof TableNode && vm.getViewQuery() instanceof QueryNode) {
             RouteResultset rrs = new RouteResultset("drop view `" + vm.getViewName() + "`", sqlType);
-            rrs.setSchema(schema);
-            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(schema).getDataNode());
+            rrs.setSchema(vm.getSchema());
+            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(vm.getSchema()).getDataNode());
             MysqlDropViewHandler handler = new MysqlDropViewHandler(c.getSession2(), rrs, 1);
             handler.setVm(vm);
             handler.execute();
@@ -104,9 +104,9 @@ public final class ViewHandler {
         }
 
         if (vm.getViewQuery() instanceof TableNode) {
-            RouteResultset rrs = new RouteResultset(RouterUtil.removeSchema(sql, schema), sqlType);
-            rrs.setSchema(schema);
-            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(schema).getDataNode());
+            RouteResultset rrs = new RouteResultset(RouterUtil.removeSchema(sql, vm.getSchema()), sqlType);
+            rrs.setSchema(vm.getSchema());
+            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(vm.getSchema()).getDataNode());
             MysqlCreateViewHandler handler = new MysqlCreateViewHandler(c.getSession2(), rrs, vm);
             handler.execute();
             return;

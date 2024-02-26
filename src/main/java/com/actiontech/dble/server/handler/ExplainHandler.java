@@ -45,6 +45,7 @@ import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.sql.SQLSyntaxErrorException;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -202,6 +203,7 @@ public final class ExplainHandler {
     }
 
     public static void writeOutHeadAndEof(ShardingService service, RouteResultset rrs) {
+        final List<RowDataPacket> rows = getRows(service, rrs);
         ByteBuffer buffer = service.allocate();
         // writeDirectly header
         ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
@@ -219,12 +221,23 @@ public final class ExplainHandler {
         eof.setPacketId(service.nextPacketId());
         buffer = eof.write(buffer, service, true);
 
+        // writeDirectly rows
+        for (RowDataPacket row : rows) {
+            row.setPacketId(service.nextPacketId());
+            buffer = row.write(buffer, service, true);
+        }
+
+        // writeDirectly last eof
+        EOFRowPacket lastEof = new EOFRowPacket();
+        lastEof.setPacketId(service.nextPacketId());
+        lastEof.write(buffer, service);
+    }
+
+    private static List<RowDataPacket> getRows(ShardingService service, RouteResultset rrs) {
+        LinkedList<RowDataPacket> rows = new LinkedList<>();
         if (!rrs.isNeedOptimizer()) {
-            // writeDirectly rows
             for (RouteResultsetNode node : rrs.getNodes()) {
-                RowDataPacket row = getRow(node, service.getCharset().getResults());
-                row.setPacketId(service.nextPacketId());
-                buffer = row.write(buffer, service, true);
+                rows.add(getRow(node, service.getCharset().getResults()));
             }
         } else {
             BaseHandlerBuilder builder = buildNodes(rrs, service);
@@ -238,9 +251,7 @@ public final class ExplainHandler {
             if (!StringUtil.isBlank(routeNode)) {
                 RouteResultsetNode[] nodes = {new RouteResultsetNode(routeNode, rrs.getSqlType(), builder.getNode().getSql())};
                 for (RouteResultsetNode node : nodes) {
-                    RowDataPacket row = getRow(node, service.getCharset().getResults());
-                    row.setPacketId(service.nextPacketId());
-                    buffer = row.write(buffer, service, true);
+                    rows.add(getRow(node, service.getCharset().getResults()));
                 }
             } else {
                 List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
@@ -249,14 +260,10 @@ public final class ExplainHandler {
                     row.add(StringUtil.encode(result.getName(), service.getCharset().getResults()));
                     row.add(StringUtil.encode(result.getType(), service.getCharset().getResults()));
                     row.add(StringUtil.encode(result.getRefOrSQL(), service.getCharset().getResults()));
-                    row.setPacketId(service.nextPacketId());
-                    buffer = row.write(buffer, service, true);
+                    rows.add(row);
                 }
             }
         }
-        // writeDirectly last eof
-        EOFRowPacket lastEof = new EOFRowPacket();
-        lastEof.setPacketId(service.nextPacketId());
-        lastEof.write(buffer, service);
+        return rows;
     }
 }

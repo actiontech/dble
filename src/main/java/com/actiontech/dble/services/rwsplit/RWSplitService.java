@@ -1,6 +1,7 @@
 package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,6 +41,11 @@ public class RWSplitService extends BusinessService {
 
     private final RWSplitQueryHandler queryHandler;
     private final RWSplitNonBlockingSession session;
+
+    public static final int LOCK_READ = 2;
+
+    // prepare statement
+    private ConcurrentHashMap<Long, PreparedStatementHolder> psHolder = new ConcurrentHashMap<>();
 
     public RWSplitService(AbstractConnection connection) {
         super(connection);
@@ -123,11 +130,14 @@ public class RWSplitService extends BusinessService {
                 break;
             case MySQLPacket.COM_STMT_CLOSE:
                 commands.doStmtClose();
-                session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
-                    rwSplitService.setInPrepare(false);
-                });
+                session.execute(true, data, null);
+                // COM_STMT_CLOSE No response is sent back to the client.
+                inPrepare = false;
+                long statementId = ByteUtil.readUB4(data, 5);
+                psHolder.remove(statementId);
+                session.unbindIfSafe();
                 break;
-            // connection
+                // connection
             case MySQLPacket.COM_QUIT:
                 commands.doQuit();
                 session.close("quit cmd");
@@ -198,19 +208,42 @@ public class RWSplitService extends BusinessService {
         try {
             inPrepare = true;
             String sql = mm.readString(getCharset().getClient());
+            if (sql.endsWith(";")) {
+                sql = sql.substring(0, sql.length() - 1).trim();
+            }
+            sql = sql.trim();
+            final String finalSql = sql;
             int rs = ServerParse.parse(sql);
             int sqlType = rs & 0xff;
             switch (sqlType) {
                 case ServerParse.SELECT:
                     int rs2 = ServerParse.parseSpecial(sqlType, sql);
-                    if (rs2 == ServerParse.SELECT_FOR_UPDATE || rs2 == ServerParse.LOCK_IN_SHARE_MODE) {
-                        session.execute(true, data, null);
+                    if (rs2 == LOCK_READ) {
+                        session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
+                            if (isSuccess) {
+                                long statementId = ByteUtil.readUB4(resp, 5);
+                                int paramCount = ByteUtil.readUB2(resp, 11);
+                                psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql));
+                            }
+                        }, false);
                     } else {
-                        session.execute(null, data, null);
+                        session.execute(null, data, (isSuccess, resp, rwSplitService) -> {
+                            if (isSuccess) {
+                                long statementId = ByteUtil.readUB4(resp, 5);
+                                int paramCount = ByteUtil.readUB2(resp, 11);
+                                psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false, finalSql));
+                            }
+                        }, false);
                     }
                     break;
                 default:
-                    session.execute(true, data, null);
+                    session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
+                        if (isSuccess) {
+                            long statementId = ByteUtil.readUB4(resp, 5);
+                            int paramCount = ByteUtil.readUB2(resp, 11);
+                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true, finalSql));
+                        }
+                    });
                     break;
             }
         } catch (IOException e) {
@@ -259,6 +292,7 @@ public class RWSplitService extends BusinessService {
     public byte[] getExecuteSqlBytes() {
         return executeSqlBytes;
     }
+
     public boolean isInPrepare() {
         return inPrepare;
     }
@@ -289,4 +323,14 @@ public class RWSplitService extends BusinessService {
             session.close("clean up");
         }
     }
+
+
+    public PreparedStatementHolder getPrepareStatement(long id) {
+        return psHolder.get(id);
+    }
+
+    public ConcurrentHashMap<Long, PreparedStatementHolder> getPsHolder() {
+        return psHolder;
+    }
+
 }

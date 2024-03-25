@@ -15,6 +15,8 @@ public abstract class BusinessService extends FrontEndService {
     protected volatile boolean txStarted;
     protected final AtomicLong queriesCounter = new AtomicLong(0);
     protected final AtomicLong transactionsCounter = new AtomicLong(0);
+    private volatile boolean isLockTable;
+
 
     public BusinessService(AbstractConnection connection) {
         super(connection);
@@ -60,6 +62,15 @@ public abstract class BusinessService extends FrontEndService {
         queriesCounter.set(Long.MIN_VALUE);
         transactionsCounter.set(Long.MIN_VALUE);
     }
+
+    public boolean isLockTable() {
+        return isLockTable;
+    }
+
+    public void setLockTable(boolean locked) {
+        isLockTable = locked;
+    }
+
 
 
     public void executeContextSetTask(MysqlVariable[] contextTask) {

@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -85,6 +86,9 @@ public class MySQLResponseService extends VariablesService {
     private static final CommandPacket ROLLBACK = new CommandPacket();
 
     protected BackendConnection connection;
+
+    private volatile boolean prepare = false;
+
 
     static {
         COMMIT.setPacketId(0);
@@ -147,7 +151,9 @@ public class MySQLResponseService extends VariablesService {
                 }
                 return;
             }
-            if (prepareOK) {
+            if (prepareOK && prepare) {
+                baseLogicHandler.handleInnerData(data);
+            } else if (prepareOK) {
                 prepareLogicHandler.handleInnerData(data);
             } else if (statisticResponse) {
                 statisticsLogicHandler.handleInnerData(data);
@@ -537,6 +543,7 @@ public class MySQLResponseService extends VariablesService {
         statusSync = null;
         isDDL = false;
         testing = false;
+        setPrepare(false);
         setResponseHandler(null);
         setSession(null);
         logResponse.set(false);
@@ -645,6 +652,18 @@ public class MySQLResponseService extends VariablesService {
             connection.setLastTime(TimeUtil.currentTimeMillis());
             writeDirectly(originPacket);
         }
+    }
+
+    // only for com_stmt_execute
+    public void execute(ByteBuffer buffer) {
+        setPrepare(true);
+        writeDirectly(buffer);
+    }
+
+    // only for com_stmt_execute
+    public void execute(byte[] originPacket) {
+        setPrepare(true);
+        writeDirectly(originPacket);
     }
 
     //  the purpose is to set old schema to null
@@ -848,6 +867,10 @@ public class MySQLResponseService extends VariablesService {
 
     public void setExecuting(boolean executing) {
         isExecuting = executing;
+    }
+
+    public void setPrepare(boolean prepare) {
+        this.prepare = prepare;
     }
 
     public String toString() {

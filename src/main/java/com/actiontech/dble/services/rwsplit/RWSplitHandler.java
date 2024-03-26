@@ -37,7 +37,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     /**
      * If there are more packets next.This flag in would be set.
      */
-    private static final int HAS_MORE_RESULTS = 0x08;
+    private static final int HAS_MORE_RESULTS = 0x0008;
 
     public RWSplitHandler(RWSplitService service, byte[] originPacket, Callback callback, boolean isHint) {
         this.rwSplitService = service;

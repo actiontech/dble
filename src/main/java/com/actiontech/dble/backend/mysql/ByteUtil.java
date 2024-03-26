@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.backend.mysql;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author mycat
  */
@@ -105,5 +107,18 @@ public final class ByteUtil {
 
     public static void writeUB3(byte[] packet, int length) {
         writeUB3(packet, length, 0);
+    }
+
+    public static void writeUB3(ByteBuffer buffer, int val, int offset) {
+        buffer.put(offset, (byte) (val & 0xff));
+        buffer.put(offset + 1, (byte) (val >>> 8));
+        buffer.put(offset + 2, (byte) (val >>> 16));
+    }
+
+    public static void writeUB4(byte[] packet, long l, int offset) {
+        packet[offset] = (byte) (l & 0xff);
+        packet[offset + 1] = (byte) (l >>> 8);
+        packet[offset + 2] = (byte) (l >>> 16);
+        packet[offset + 3] = (byte) (l >>> 24);
     }
 }

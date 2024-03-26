@@ -66,6 +66,7 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
         lock.lock();
         try {
             service.setRowDataFlowing(false);
+            service.setPrepare(false);
             condRelease.signal();
         } finally {
             lock.unlock();

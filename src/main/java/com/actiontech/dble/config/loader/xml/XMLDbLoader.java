@@ -192,7 +192,8 @@ public class XMLDbLoader {
         int port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
         String usingDecryptStr = ConfigUtil.checkAndGetAttribute(node, "usingDecrypt", "false", problemReporter);
         boolean usingDecrypt = Boolean.parseBoolean(usingDecryptStr);
-        password = DecryptUtil.dbHostDecrypt(usingDecrypt, name, user, password);
+        //password = DecryptUtil.dbHostDecrypt(usingDecrypt, name, user, password);
+        password = DecryptUtil.dbHostDecryptSM4(usingDecrypt, name, user, password);
         String disabledStr = ConfigUtil.checkAndGetAttribute(node, "disabled", "false", problemReporter);
         boolean disabled = Boolean.parseBoolean(disabledStr);
         String primaryStr = ConfigUtil.checkAndGetAttribute(node, "primary", "false", problemReporter);

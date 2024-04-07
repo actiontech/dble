@@ -300,7 +300,8 @@ public class DbleDbInstance extends ManagerWritableTable {
     public int updateRows(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws SQLException {
         affectPks.forEach(affectPk -> {
             if (Boolean.FALSE.toString().equalsIgnoreCase(affectPk.get(COLUMN_ENCRYPT_CONFIGURED))) {
-                String password = DecryptUtil.dbHostDecrypt(true, affectPk.get(COLUMN_NAME), affectPk.get(COLUMN_USER), affectPk.get(COLUMN_PASSWORD_ENCRYPT));
+                //String password = DecryptUtil.dbHostDecrypt(true, affectPk.get(COLUMN_NAME), affectPk.get(COLUMN_USER), affectPk.get(COLUMN_PASSWORD_ENCRYPT));
+                String password = DecryptUtil.dbHostDecryptSM4(true, affectPk.get(COLUMN_NAME), affectPk.get(COLUMN_USER), affectPk.get(COLUMN_PASSWORD_ENCRYPT));
                 affectPk.put(COLUMN_PASSWORD_ENCRYPT, password);
             }
             affectPk.putAll(values);
@@ -475,7 +476,9 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     public static String getPasswordEncrypt(String instanceName, String name, String password) {
         try {
-            return DecryptUtil.encrypt("1:" + instanceName + ":" + name + ":" + password);
+            //return DecryptUtil.encrypt("1:" + instanceName + ":" + name + ":" + password);
+            // sm4
+            return DecryptUtil.encryptSM4("3:" + instanceName + ":" + name + ":" + password);
         } catch (Exception e) {
             return "******";
         }

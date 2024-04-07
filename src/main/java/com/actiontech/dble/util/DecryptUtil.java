@@ -6,9 +6,16 @@
 package com.actiontech.dble.util;
 
 import com.actiontech.dble.config.util.ConfigException;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
+import java.security.Security;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -27,10 +34,22 @@ public final class DecryptUtil {
     private static final String DEFAULT_PRIVATE_KEY_STRING = "MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAocbCrurZGbC5GArEHKlAfDSZi7gFBnd4yxOt0rwTqKBFzGyhtQLu5PRKjEiOXVa95aeIIBJ6OhC2f8FjqFUpawIDAQABAkAPejKaBYHrwUqUEEOe8lpnB6lBAsQIUFnQI/vXU4MV+MhIzW0BLVZCiarIQqUXeOhThVWXKFt8GxCykrrUsQ6BAiEA4vMVxEHBovz1di3aozzFvSMdsjTcYRRo82hS5Ru2/OECIQC2fAPoXixVTVY7bNMeuxCP4954ZkXp7fEPDINCjcQDywIgcc8XLkkPcs3Jxk7uYofaXaPbg39wuJpEmzPIxi3k0OECIGubmdpOnin3HuCP/bbjbJLNNoUdGiEmFL5hDI4UdwAdAiEAtcAwbm08bKN7pwwvyqaCBC//VnEWaq39DCzxr+Z2EIk=";
     @SuppressWarnings("SpellCheckingInspection")
     private static final String DEFAULT_PUBLIC_KEY_STRING = "MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKHGwq7q2RmwuRgKxBypQHw0mYu4BQZ3eMsTrdK8E6igRcxsobUC7uT0SoxIjl1WveWniCASejoQtn/BY6hVKWsCAwEAAQ==";
+    //SM4
+    private static final String SM4_ALGORITHM_NAME = "SM4";
+    private static final String SM4_KEY_STRING = "TVMvGp6rbgaBbWTU";
+    private static final byte[] VI_BYTE = new byte[16];
+    private static final String SM4_ALGORITHM_NAME_CBC_PADDING = "SM4/CBC/PKCS7Padding";
+
+    static {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
 
     public static void main(String[] args) throws Exception {
         String password = args[0];
-        System.out.println(encrypt(password));
+        //System.out.println(encrypt(password));
+        System.out.println(encryptSM4(password));
     }
 
     public static String decrypt(boolean usingDecrypt, String user, String password) {
@@ -179,6 +198,77 @@ public final class DecryptUtil {
         keyPairs[1] = Base64.byteArrayToBase64(keyPairBytes[1]);
 
         return keyPairs;
+    }
+
+    public static String encryptSM4(String plainText) throws Exception {
+        byte[] encryptedBytes = encryptCBCPadding(SM4_KEY_STRING.getBytes(), VI_BYTE, plainText.getBytes());
+        return Base64.byteArrayToBase64(encryptedBytes);
+    }
+
+    private static String decryptSM4(String cipherText) throws Exception {
+        byte[] decryptCbcPadding = decryptCBCPadding(SM4_KEY_STRING.getBytes(), VI_BYTE, Base64.base64ToByteArray(cipherText));
+        return new String(decryptCbcPadding);
+    }
+
+    public static String decryptSM4(boolean usingDecrypt, String user, String password) {
+        if (usingDecrypt) {
+            //type:user:password
+            //0:test:test
+            try {
+                String[] passwords = DecryptUtil.decryptSM4(password).split(":");
+                if (passwords.length == 3 && "2".equals(passwords[0]) && user.equals(passwords[1])) {
+                    return passwords[2];
+                }
+            } catch (Exception e2) {
+                throw new ConfigException("user " + user + " password need to decrypt ,but failed !", e2);
+            }
+            throw new ConfigException("user " + user + " password need to decrypt, but the result is not obey the encryption rule!");
+        }
+        return password;
+    }
+
+
+    public static String dbHostDecryptSM4(boolean usingDecrypt, String name, String user, String password) {
+        if (usingDecrypt) {
+            //type:host:user:password
+            //1:my_host1:test:test
+            try {
+                String[] passwords = DecryptUtil.decryptSM4(password).split(":");
+                if (passwords.length == 4 && "3".equals(passwords[0]) && name.equals(passwords[1]) && user.equals(passwords[2])) {
+                    return passwords[3];
+                }
+            } catch (Exception e2) {
+                throw new ConfigException("host " + name + ",user " + user + " password need to decrypt, but failed !", e2);
+            }
+            throw new ConfigException("host " + name + ",user " + user + " password need to decrypt, but the result is not obey the encryption rule!");
+        }
+        return password;
+    }
+
+    private static byte[] encryptCBCPadding(byte[] key, byte[] iv, byte[] data)
+            throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException,
+            NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException,
+            InvalidAlgorithmParameterException {
+        Cipher cipher = generateCBCCipher(SM4_ALGORITHM_NAME_CBC_PADDING, Cipher.ENCRYPT_MODE, key, iv);
+        return cipher.doFinal(data);
+    }
+
+    private static byte[] decryptCBCPadding(byte[] key, byte[] iv, byte[] cipherText)
+            throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException,
+            NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException,
+            InvalidAlgorithmParameterException {
+        Cipher cipher = generateCBCCipher(SM4_ALGORITHM_NAME_CBC_PADDING, Cipher.DECRYPT_MODE, key, iv);
+        return cipher.doFinal(cipherText);
+    }
+
+    private static Cipher generateCBCCipher(String algorithmName, int mode, byte[] key, byte[] iv)
+            throws InvalidKeyException, InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+            NoSuchProviderException, NoSuchPaddingException {
+        Cipher cipher = Cipher.getInstance(algorithmName, BouncyCastleProvider.PROVIDER_NAME);
+        Key sm4Key = new SecretKeySpec(key, SM4_ALGORITHM_NAME);
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+        cipher.init(mode, sm4Key, ivParameterSpec);
+        return cipher;
     }
 
     static class Base64 {

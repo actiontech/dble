@@ -132,7 +132,8 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
     public int updateRows(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws SQLException {
         affectPks.forEach(affectPk -> {
             if (Boolean.FALSE.toString().equalsIgnoreCase(affectPk.get(COLUMN_ENCRYPT_CONFIGURED))) {
-                String password = DecryptUtil.decrypt(true, affectPk.get(COLUMN_USERNAME), affectPk.get(COLUMN_PASSWORD_ENCRYPT));
+                //String password = DecryptUtil.decrypt(true, affectPk.get(COLUMN_USERNAME), affectPk.get(COLUMN_PASSWORD_ENCRYPT));
+                String password = DecryptUtil.decryptSM4(true, affectPk.get(COLUMN_USERNAME), affectPk.get(COLUMN_PASSWORD_ENCRYPT));
                 affectPk.put(COLUMN_PASSWORD_ENCRYPT, password);
             }
             affectPk.putAll(values);

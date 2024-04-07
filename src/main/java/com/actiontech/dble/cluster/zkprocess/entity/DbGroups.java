@@ -71,7 +71,9 @@ public class DbGroups {
 
     private static String getPasswordEncrypt(String instanceName, String name, String password) {
         try {
-            return DecryptUtil.encrypt("1:" + instanceName + ":" + name + ":" + password);
+            //return DecryptUtil.encrypt("1:" + instanceName + ":" + name + ":" + password);
+            //SM4
+            return DecryptUtil.encryptSM4("3:" + instanceName + ":" + name + ":" + password);
         } catch (Exception e) {
             return "******";
         }

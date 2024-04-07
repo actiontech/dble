@@ -429,7 +429,8 @@ public class XMLUserLoader {
         if (!StringUtil.isEmpty(usingDecryptStr)) {
             usingDecryptStr = ConfigUtil.checkBoolAttribute("usingDecrypt", usingDecryptStr, "false", problemReporter, xmlFile);
             usingDecrypt = Boolean.parseBoolean(usingDecryptStr);
-            password = DecryptUtil.decrypt(usingDecrypt, name, password);
+            //password = DecryptUtil.decrypt(usingDecrypt, name, password);
+            password = DecryptUtil.decryptSM4(usingDecrypt, name, password);
         }
 
         String strWhiteIPs = element.getAttribute("whiteIPs");

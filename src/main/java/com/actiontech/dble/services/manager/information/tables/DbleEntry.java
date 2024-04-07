@@ -144,7 +144,10 @@ public class DbleEntry extends ManagerBaseTable {
 
     public static String getPasswordEncrypt(UserConfig userConfig) {
         try {
-            return DecryptUtil.encrypt("0:" + userConfig.getName() + ":" + userConfig.getPassword());
+            // return DecryptUtil.encrypt("0:" + userConfig.getName() + ":" + userConfig.getPassword());
+            //SM4
+            return DecryptUtil.encryptSM4("2:" + userConfig.getName() + ":" + userConfig.getPassword());
+
         } catch (Exception e) {
             return "******";
         }

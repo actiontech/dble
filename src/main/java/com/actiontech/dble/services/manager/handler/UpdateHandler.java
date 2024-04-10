@@ -25,7 +25,10 @@ import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerTableUtil;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
+import com.actiontech.dble.services.manager.information.tables.DbleDbInstance;
 import com.actiontech.dble.services.manager.response.ReloadConfig;
+import com.actiontech.dble.services.manager.response.ReloadContext;
+import com.actiontech.dble.services.manager.response.UniqueDbInstance;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
@@ -39,7 +42,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
 
 public final class UpdateHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateHandler.class);
@@ -181,7 +186,17 @@ public final class UpdateHandler {
         if (!affectPks.isEmpty()) {
             rowSize = managerTable.updateRows(affectPks, values);
             if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_UPDATE, managerTable.getTableName()), packetResult);
+
+                ReloadContext reloadContext = new ReloadContext();
+                if (managerTable instanceof DbleDbInstance) {
+                    for (LinkedHashMap<String, String> affectPk : affectPks) {
+                        String instanceName = affectPk.get("name");
+                        String dbGroup = affectPk.get("db_group");
+                        reloadContext.addAffectDbInstance(new UniqueDbInstance(dbGroup, instanceName));
+                    }
+                }
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_UPDATE, managerTable.getTableName()), packetResult, reloadContext);
+
             }
         }
         return rowSize;

@@ -74,15 +74,17 @@ public final class ReloadConfig {
             writeErrorResult(service, e.getMessage() == null ? e.toString() : e.getMessage());
         }
     }
-
-
     public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus) throws Exception {
+        execute(service, loadAllMode, returnFlag, confStatus, new ReloadContext());
+    }
+
+    public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus, ReloadContext reloadContext) throws Exception {
         try {
             PacketResult packetResult = new PacketResult();
             if (ClusterConfig.getInstance().isClusterEnable()) {
-                reloadWithCluster(service, loadAllMode, confStatus, packetResult);
+                reloadWithCluster(service, loadAllMode, confStatus, packetResult, reloadContext);
             } else {
-                reloadWithoutCluster(service, loadAllMode, returnFlag, confStatus, packetResult);
+                reloadWithoutCluster(service, loadAllMode, returnFlag, confStatus, packetResult, reloadContext);
             }
             writePacket(packetResult.isSuccess(), service, packetResult.getErrorMsg(), packetResult.getErrorCode());
         } finally {
@@ -90,19 +92,19 @@ public final class ReloadConfig {
         }
     }
 
-    public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus, PacketResult packetResult) throws Exception {
+    public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus, PacketResult packetResult, ReloadContext reloadContext) throws Exception {
         try {
             if (ClusterConfig.getInstance().isClusterEnable()) {
-                reloadWithCluster(service, loadAllMode, confStatus, packetResult);
+                reloadWithCluster(service, loadAllMode, confStatus, packetResult, reloadContext);
             } else {
-                reloadWithoutCluster(service, loadAllMode, returnFlag, confStatus, packetResult);
+                reloadWithoutCluster(service, loadAllMode, returnFlag, confStatus, packetResult, reloadContext);
             }
         } finally {
             ReloadManager.reloadFinish();
         }
     }
 
-    private static void reloadWithCluster(ManagerService service, int loadAllMode, ConfStatus confStatus, PacketResult packetResult) throws Exception {
+    private static void reloadWithCluster(ManagerService service, int loadAllMode, ConfStatus confStatus, PacketResult packetResult, ReloadContext reloadContext) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-with-cluster");
         try {
             DistributeLock distributeLock = null;
@@ -133,9 +135,9 @@ public final class ReloadConfig {
                     ReloadResult reloadResult;
                     if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
                             confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
-                        reloadResult = reloadByConfig(loadAllMode, true);
+                        reloadResult = reloadByConfig(loadAllMode, true, reloadContext);
                     } else {
-                        reloadResult = reloadByLocalXml(loadAllMode);
+                        reloadResult = reloadByLocalXml(loadAllMode, reloadContext);
                     }
                     if (!reloadResult.isSuccess()) {
                         packetResult.setSuccess(false);
@@ -188,7 +190,7 @@ public final class ReloadConfig {
     }
 
 
-    private static void reloadWithoutCluster(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus, PacketResult packetResult) throws Exception {
+    private static void reloadWithoutCluster(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus, PacketResult packetResult, ReloadContext reloadContext) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-in-local");
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.writeLock().lock();
@@ -202,9 +204,9 @@ public final class ReloadConfig {
             ReloadResult reloadResult;
             if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
                     confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
-                reloadResult = reloadByConfig(loadAllMode, true);
+                reloadResult = reloadByConfig(loadAllMode, true, reloadContext);
             } else {
-                reloadResult = reloadByLocalXml(loadAllMode);
+                reloadResult = reloadByLocalXml(loadAllMode, reloadContext);
             }
             if (reloadResult.isSuccess() && returnFlag) {
                 // ok package
@@ -228,11 +230,11 @@ public final class ReloadConfig {
     }
 
     @Deprecated
-    public static ReloadResult reloadByLocalXml(final int loadAllMode) throws Exception {
-        return reload(loadAllMode, null, null, null, null);
+    public static ReloadResult reloadByLocalXml(final int loadAllMode, ReloadContext reloadContext) throws Exception {
+        return reload(loadAllMode, null, null, null, null, reloadContext);
     }
 
-    public static ReloadResult reloadByConfig(final int loadAllMode, boolean isWriteToLocal) throws Exception {
+    public static ReloadResult reloadByConfig(final int loadAllMode, boolean isWriteToLocal, ReloadContext reloadContext) throws Exception {
         String userConfig = DbleTempConfig.getInstance().getUserConfig();
         userConfig = StringUtil.isBlank(userConfig) ? DbleServer.getInstance().getConfig().getUserConfig() : userConfig;
         String dbConfig = DbleTempConfig.getInstance().getDbConfig();
@@ -241,14 +243,14 @@ public final class ReloadConfig {
         shardingConfig = StringUtil.isBlank(shardingConfig) ? DbleServer.getInstance().getConfig().getShardingConfig() : shardingConfig;
         String sequenceConfig = DbleTempConfig.getInstance().getSequenceConfig();
         sequenceConfig = StringUtil.isBlank(sequenceConfig) ? DbleServer.getInstance().getConfig().getSequenceConfig() : sequenceConfig;
-        ReloadResult reloadResult = reload(loadAllMode, userConfig, dbConfig, shardingConfig, sequenceConfig);
+        ReloadResult reloadResult = reload(loadAllMode, userConfig, dbConfig, shardingConfig, sequenceConfig, reloadContext);
         DbleTempConfig.getInstance().clean();
         //sync json to local
         DbleServer.getInstance().getConfig().syncJsonToLocal(isWriteToLocal);
         return reloadResult;
     }
 
-    private static ReloadResult reload(final int loadAllMode, String userConfig, String dbConfig, String shardingConfig, String sequenceConfig) throws Exception {
+    private static ReloadResult reload(final int loadAllMode, String userConfig, String dbConfig, String shardingConfig, String sequenceConfig, ReloadContext reloadContext) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("self-reload");
         try {
             /*
@@ -264,6 +266,7 @@ public final class ReloadConfig {
                 } else {
                     loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
                 }
+                loader.setReloadContext(reloadContext);
             } catch (Exception e) {
                 throw new Exception(e);
             }

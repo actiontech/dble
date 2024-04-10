@@ -79,7 +79,7 @@ public final class InsertHandler {
                 managerTable.checkPrimaryKeyDuplicate(rows);
                 rowSize = managerTable.insertRows(rows);
                 if (rowSize != 0) {
-                    ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()), packetResult);
+                    ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()), packetResult, null);
                 }
                 managerTable.afterExecute();
                 packetResult.setRowSize(rowSize);

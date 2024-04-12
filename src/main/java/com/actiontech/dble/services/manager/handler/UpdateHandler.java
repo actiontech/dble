@@ -162,7 +162,7 @@ public final class UpdateHandler {
                     for (LinkedHashMap<String, String> affectPk : affectPks) {
                         String instanceName = affectPk.get("name");
                         String dbGroup = affectPk.get("db_group");
-                        reloadContext.addAffectDbInstance(new UniqueDbInstance(dbGroup, instanceName));
+                        reloadContext.getAffectDbInstanceList().add(new UniqueDbInstance(dbGroup, instanceName));
                     }
                 }
                 ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_UPDATE, managerTable.getTableName()), reloadContext);

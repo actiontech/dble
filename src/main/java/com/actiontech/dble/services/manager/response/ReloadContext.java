@@ -7,17 +7,12 @@
 package com.actiontech.dble.services.manager.response;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class ReloadContext {
-    private final List<UniqueDbInstance> affectDbInstanceList = new ArrayList<>();
+    List<UniqueDbInstance> affectDbInstanceList = new ArrayList<>();
 
     public List<UniqueDbInstance> getAffectDbInstanceList() {
-        return Collections.unmodifiableList(affectDbInstanceList);
-    }
-
-    public void addAffectDbInstance(UniqueDbInstance dbInstance) {
-        affectDbInstanceList.add(dbInstance);
+        return affectDbInstanceList;
     }
 }

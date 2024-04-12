@@ -200,14 +200,12 @@ public class ConfigInitializer implements ProblemReporter {
             // check whether dbInstance is connected
             String dbGroupName;
             PhysicalDbGroup dbGroup;
-            boolean skipTestConnectionOnUpdate = false;
             if (SystemConfig.getInstance().isSkipTestConOnUpdate()) {
                 if (reloadContext != null && !reloadContext.getAffectDbInstanceList().isEmpty()) {
                     boolean useSharding = reloadContext.getAffectDbInstanceList().stream().map(ele -> dbGroups.get(ele.getGroupName())).anyMatch((ele) -> ele != null && !ele.isShardingUseless());
-
-                    //not support for sharding db group
-                    if (!useSharding) {
-                        skipTestConnectionOnUpdate = true;
+                    if (useSharding) {
+                        //not support for sharding db group
+                        reloadContext.getAffectDbInstanceList().clear();
                     }
                 }
             }
@@ -223,12 +221,14 @@ public class ConfigInitializer implements ProblemReporter {
                 }
 
                 for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
-                    if (skipTestConnectionOnUpdate) {
-                        String finalDbGroupName = dbGroupName;
-                        boolean find = reloadContext.getAffectDbInstanceList().stream().anyMatch((ele) -> ele.getGroupName().equals(finalDbGroupName) && ele.getInstanceName().equals(ds.getName()));
-                        if (!find) {
-                            //skip test connection on this dbInstance
-                            continue;
+                    if (SystemConfig.getInstance().isSkipTestConOnUpdate()) {
+                        if (reloadContext != null && !reloadContext.getAffectDbInstanceList().isEmpty()) {
+                            String finalDbGroupName = dbGroupName;
+                            boolean find = reloadContext.getAffectDbInstanceList().stream().anyMatch((ele) -> ele.getGroupName().equals(finalDbGroupName) && ele.getInstanceName().equals(ds.getName()));
+                            if (!find) {
+                                //skip test connection on this dbInstance
+                                continue;
+                            }
                         }
                     }
                     if (ds.getConfig().isDisabled()) {

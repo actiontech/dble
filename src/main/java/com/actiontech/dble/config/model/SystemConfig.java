@@ -1244,6 +1244,7 @@ public final class SystemConfig {
     public void setRoutePenetrationRules(String sqlPenetrationRegexesTmp) {
         routePenetrationRules = sqlPenetrationRegexesTmp;
     }
+
     public String getDistrict() {
         return district;
     }
@@ -1353,6 +1354,7 @@ public final class SystemConfig {
                 ", enableAsyncRelease=" + enableAsyncRelease +
                 ", district='" + district +
                 ", dataCenter='" + dataCenter +
+                ", skipTestConOnUpdate=" + skipTestConOnUpdate +
                 "]";
     }
 

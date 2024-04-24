@@ -74,9 +74,8 @@ public final class ReloadConfig {
             writeErrorResult(service, e.getMessage() == null ? e.toString() : e.getMessage());
         }
     }
-
-    public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus, PacketResult packetResult) throws Exception {
-        execute(service, loadAllMode, returnFlag, confStatus, packetResult, new ReloadContext());
+    public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus) throws Exception {
+        execute(service, loadAllMode, returnFlag, confStatus, new ReloadContext());
     }
 
     public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus, ReloadContext reloadContext) throws Exception {

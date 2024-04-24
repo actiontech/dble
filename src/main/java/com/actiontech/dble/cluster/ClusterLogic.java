@@ -42,7 +42,6 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.util.PropertiesUtil;
-import com.actiontech.dble.services.manager.response.ReloadContext;
 import com.actiontech.dble.services.manager.response.ReloadConfig;
 import com.actiontech.dble.services.manager.response.ShowBinlogStatus;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -289,7 +288,7 @@ public final class ClusterLogic {
                     return;
                 }
                 try {
-                    ReloadConfig.ReloadResult result = ReloadConfig.reloadByConfig(Integer.parseInt(params), false, new ReloadContext());
+                    ReloadConfig.ReloadResult result = ReloadConfig.reloadByConfig(Integer.parseInt(params), false);
                     if (!checkLocalResult(result.isSuccess())) {
                         return;
                     }

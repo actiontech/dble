@@ -26,8 +26,6 @@ import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.util.Pair;
-import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
-import com.actiontech.dble.services.manager.response.ReloadContext;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Maps;
@@ -44,7 +42,6 @@ public class ConfigInitializer implements ProblemReporter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigInitializer.class);
 
-    private volatile ReloadContext reloadContext;
     private volatile Map<UserName, UserConfig> users;
     private volatile Map<String, SchemaConfig> schemas = Maps.newHashMap();
     private volatile Map<String, ShardingNode> shardingNodes = Maps.newHashMap();
@@ -209,17 +206,6 @@ public class ConfigInitializer implements ProblemReporter {
             // check whether dbInstance is connected
             String dbGroupName;
             PhysicalDbGroup dbGroup;
-            boolean skipTestConnectionOnUpdate = false;
-            if (SystemConfig.getInstance().isSkipTestConOnUpdate()) {
-                if (reloadContext != null && !reloadContext.getAffectDbInstanceList().isEmpty()) {
-                    boolean useSharding = reloadContext.getAffectDbInstanceList().stream().map(ele -> dbGroups.get(ele.getGroupName())).anyMatch((ele) -> ele != null && !ele.isShardingUseless());
-
-                    //not support for sharding db group
-                    if (!useSharding) {
-                        skipTestConnectionOnUpdate = true;
-                    }
-                }
-            }
             for (Map.Entry<String, PhysicalDbGroup> entry : this.dbGroups.entrySet()) {
                 dbGroup = entry.getValue();
                 dbGroupName = entry.getKey();
@@ -232,14 +218,6 @@ public class ConfigInitializer implements ProblemReporter {
                 }
 
                 for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
-                    if (skipTestConnectionOnUpdate) {
-                        String finalDbGroupName = dbGroupName;
-                        boolean find = reloadContext.getAffectDbInstanceList().stream().anyMatch((ele) -> ele.getGroupName().equals(finalDbGroupName) && ele.getInstanceName().equals(ds.getName()));
-                        if (!find) {
-                            //skip test connection on this dbInstance
-                            continue;
-                        }
-                    }
                     if (ds.getConfig().isDisabled()) {
                         errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + dbGroupName + "," + ds.getName() + "] is disabled"));
                         LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
@@ -378,9 +356,5 @@ public class ConfigInitializer implements ProblemReporter {
 
     public String getSequenceConfig() {
         return sequenceConfig;
-    }
-
-    public void setReloadContext(ReloadContext reloadContext) {
-        this.reloadContext = reloadContext;
     }
 }

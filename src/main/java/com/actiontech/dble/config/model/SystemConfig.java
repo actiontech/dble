@@ -66,7 +66,6 @@ public final class SystemConfig {
     private int useCostTimeStat = 0;
     private int maxCostStatSize = 100;
     private int costSamplePercent = 1;
-    private boolean skipTestConOnUpdate = false;
     //connection
     private String charset = "utf8mb4";
     private int maxPacketSize = 4 * 1024 * 1024;
@@ -630,14 +629,6 @@ public final class SystemConfig {
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "xaSessionCheckPeriod", xaSessionCheckPeriod, this.xaSessionCheckPeriod));
         }
-    }
-
-    public boolean isSkipTestConOnUpdate() {
-        return skipTestConOnUpdate;
-    }
-
-    public void setSkipTestConOnUpdate(boolean skipTestConOnUpdate) {
-        this.skipTestConOnUpdate = skipTestConOnUpdate;
     }
 
     public long getXaLogCleanPeriod() {
@@ -1535,7 +1526,6 @@ public final class SystemConfig {
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
                 ", releaseTimeout=" + releaseTimeout +
                 ", enableAsyncRelease=" + enableAsyncRelease +
-                ", skipTestConOnUpdate=" + skipTestConOnUpdate +
                 ", enableCheckSchema=" + enableCheckSchema +
                 "]";
     }

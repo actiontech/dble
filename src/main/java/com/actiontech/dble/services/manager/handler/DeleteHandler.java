@@ -119,7 +119,7 @@ public final class DeleteHandler {
                 Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);
                 rowSize = managerTable.deleteRows(affectPks);
                 if (rowSize != 0) {
-                    ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()), packetResult, null);
+                    ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()), packetResult);
                 }
                 packetResult.setRowSize(rowSize);
             } catch (SQLException e) {

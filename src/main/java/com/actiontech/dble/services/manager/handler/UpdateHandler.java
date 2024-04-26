@@ -158,6 +158,7 @@ public final class UpdateHandler {
             if (rowSize != 0) {
 
                 ReloadContext reloadContext = new ReloadContext();
+                reloadContext.setConfStatus(ConfStatus.Status.MANAGER_UPDATE);
                 if (managerTable instanceof DbleDbInstance) {
                     for (LinkedHashMap<String, String> affectPk : affectPks) {
                         String instanceName = affectPk.get("name");

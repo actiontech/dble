@@ -13,6 +13,8 @@ import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.services.manager.response.ReloadContext;
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,12 +56,17 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
 
         //step 1 check if the change is from itself
         ConfStatus status = new ConfStatus(value);
+        ReloadContext reloadContext = new ReloadContext();
+        if (status.getExtraInfo() != null) {
+            Gson gson = new Gson();
+            reloadContext = gson.fromJson(status.getExtraInfo(), ReloadContext.class);
+        }
         if (status.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
             //self node
             return;
         }
         //step 2reload the config and set the self config status
-        ClusterLogic.reloadConfigEvent(value, status.getParams());
+        ClusterLogic.reloadConfigEvent(value, status.getParams(), reloadContext);
     }
 
 

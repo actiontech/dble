@@ -270,7 +270,7 @@ public final class ClusterLogic {
         }
     }
 
-    public static void reloadConfigEvent(String value, String params) throws Exception {
+    public static void reloadConfigEvent(String value, String params, ReloadContext reloadContext) throws Exception {
         try {
             ClusterDelayProvider.delayBeforeSlaveReload();
             LOGGER.info("reload_all " + ClusterPathUtil.getConfStatusOperatorPath() + " " + value);
@@ -284,7 +284,7 @@ public final class ClusterLogic {
                     return;
                 }
                 try {
-                    boolean result = ReloadConfig.reloadAll(Integer.parseInt(params), new ReloadContext());
+                    boolean result = ReloadConfig.reloadAll(Integer.parseInt(params), reloadContext);
                     if (!checkLocalResult(result)) {
                         return;
                     }

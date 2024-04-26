@@ -8,6 +8,7 @@ package com.actiontech.dble.config;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.helper.TestSchemasTask;
 import com.actiontech.dble.config.helper.TestTask;
 import com.actiontech.dble.config.loader.xml.XMLDbLoader;
@@ -203,11 +204,17 @@ public class ConfigInitializer implements ProblemReporter {
             boolean skipTestConnectionOnUpdate = false;
             if (SystemConfig.getInstance().isSkipTestConOnUpdate()) {
                 if (reloadContext != null && !reloadContext.getAffectDbInstanceList().isEmpty()) {
-                    boolean useSharding = reloadContext.getAffectDbInstanceList().stream().map(ele -> dbGroups.get(ele.getGroupName())).anyMatch((ele) -> ele != null && !ele.isShardingUseless());
-
-                    //not support for sharding db group
-                    if (!useSharding) {
+                    if (reloadContext.getConfStatus() == ConfStatus.Status.MANAGER_DELETE) {
                         skipTestConnectionOnUpdate = true;
+                        LOGGER.info("will skip all test connection.");
+                    } else {
+                        boolean useSharding = reloadContext.getAffectDbInstanceList().stream().map(ele -> dbGroups.get(ele.getGroupName())).anyMatch((ele) -> ele != null && !ele.isShardingUseless());
+
+                        //not support for sharding db group
+                        if (!useSharding) {
+                            skipTestConnectionOnUpdate = true;
+                            LOGGER.info("will skip test connection exclude self.");
+                        }
                     }
                 }
             }
@@ -223,14 +230,6 @@ public class ConfigInitializer implements ProblemReporter {
                 }
 
                 for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
-                    if (skipTestConnectionOnUpdate) {
-                        String finalDbGroupName = dbGroupName;
-                        boolean find = reloadContext.getAffectDbInstanceList().stream().anyMatch((ele) -> ele.getGroupName().equals(finalDbGroupName) && ele.getInstanceName().equals(ds.getName()));
-                        if (!find) {
-                            //skip test connection on this dbInstance
-                            continue;
-                        }
-                    }
                     if (ds.getConfig().isDisabled()) {
                         errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + dbGroupName + "," + ds.getName() + "] is disabled"));
                         LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
@@ -241,6 +240,18 @@ public class ConfigInitializer implements ProblemReporter {
                         LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
                         ds.setTestConnSuccess(false);
                         continue;
+                    }
+                    if (skipTestConnectionOnUpdate) {
+                        String finalDbGroupName = dbGroupName;
+                        boolean find = reloadContext.getAffectDbInstanceList().stream().anyMatch((ele) -> ele.getGroupName().equals(finalDbGroupName) && ele.getInstanceName().equals(ds.getName()));
+                        if (!find) {
+                            //skip test connection on this dbInstance
+                            ds.setTestConnSuccess(true);
+                            LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] instance " + ds.getName() + " is skiped,because of option skipTestConOnUpdate");
+                            continue;
+                        } else {
+
+                        }
                     }
                     if (!testDbInstance(dbGroupName, ds, schemaList)) {
                         isAllDbInstanceConnected = false;

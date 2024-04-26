@@ -16,7 +16,10 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
+import com.actiontech.dble.services.manager.information.tables.DbleDbInstance;
 import com.actiontech.dble.services.manager.response.ReloadConfig;
+import com.actiontech.dble.services.manager.response.ReloadContext;
+import com.actiontech.dble.services.manager.response.UniqueDbInstance;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
@@ -67,7 +70,16 @@ public final class InsertHandler {
             managerTable.checkPrimaryKeyDuplicate(rows);
             rowSize = managerTable.insertRows(rows);
             if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()));
+                ReloadContext reloadContext = new ReloadContext();
+                reloadContext.setConfStatus(ConfStatus.Status.MANAGER_INSERT);
+                if (managerTable instanceof DbleDbInstance) {
+                    for (LinkedHashMap<String, String> affectPk : rows) {
+                        String instanceName = affectPk.get("name");
+                        String dbGroup = affectPk.get("db_group");
+                        reloadContext.addAffectDbInstance(new UniqueDbInstance(dbGroup, instanceName));
+                    }
+                }
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()), reloadContext);
             }
             managerTable.afterExecute();
         } catch (SQLException e) {

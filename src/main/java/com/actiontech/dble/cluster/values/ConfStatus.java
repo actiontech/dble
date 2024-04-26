@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.cluster.values;
 
+import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
+
 /**
  * Created by huqing.yan on 2017/7/10.
  */
@@ -35,8 +37,14 @@ public class ConfStatus {
         this.status = Status.valueOf(infoDetail[1]);
         if (infoDetail.length == 3)
             this.params = infoDetail[2];
-        else
+        else if (infoDetail.length == 4) {
+            this.params = infoDetail[2];
+            this.extraInfo = new String(Base64.decode(infoDetail[3]));
+        } else {
             this.params = null;
+            this.extraInfo = null;
+        }
+
     }
 
     public ConfStatus(Status status, String extraInfo) {
@@ -56,6 +64,10 @@ public class ConfStatus {
         if (params != null) {
             ss.append(split);
             ss.append(params);
+            if (extraInfo != null) {
+                ss.append(split);
+                ss.append(Base64.encode(extraInfo.getBytes()));
+            }
         }
 
         return ss.toString();
@@ -85,5 +97,9 @@ public class ConfStatus {
 
     public String getExtraInfo() {
         return extraInfo;
+    }
+
+    public void setExtraInfo(String extraInfo) {
+        this.extraInfo = extraInfo;
     }
 }

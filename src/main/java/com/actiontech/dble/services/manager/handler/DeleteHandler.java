@@ -18,7 +18,10 @@ import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerTableUtil;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
+import com.actiontech.dble.services.manager.information.tables.DbleDbInstance;
 import com.actiontech.dble.services.manager.response.ReloadConfig;
+import com.actiontech.dble.services.manager.response.ReloadContext;
+import com.actiontech.dble.services.manager.response.UniqueDbInstance;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
@@ -101,7 +104,16 @@ public final class DeleteHandler {
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);
             rowSize = managerTable.deleteRows(affectPks);
             if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()));
+                ReloadContext reloadContext = new ReloadContext();
+                reloadContext.setConfStatus(ConfStatus.Status.MANAGER_DELETE);
+                if (managerTable instanceof DbleDbInstance) {
+                    for (LinkedHashMap<String, String> affectPk : affectPks) {
+                        String instanceName = affectPk.get("name");
+                        String dbGroup = affectPk.get("db_group");
+                        reloadContext.addAffectDbInstance(new UniqueDbInstance(dbGroup, instanceName));
+                    }
+                }
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()), reloadContext);
             }
         } catch (SQLException e) {
             isSuccess = false;

@@ -39,6 +39,8 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.StringUtil;
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,6 +123,10 @@ public final class ReloadConfig {
                 //step 4 write the reload flag and self reload result into cluster center,notify the other dble to reload
                 ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
                         ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
+                if (reloadContext != null && !reloadContext.getAffectDbInstanceList().isEmpty()) {
+                    Gson gson = new Gson();
+                    status.setExtraInfo(gson.toJson(reloadContext));
+                }
                 ClusterHelper.setKV(ClusterPathUtil.getConfStatusOperatorPath(), status.toString());
                 ReloadLogHelper.info("reload config: sent config status to cluster center", LOGGER);
                 //step 5 start a loop to check if all the dble in cluster is reload finished

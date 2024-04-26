@@ -6,12 +6,25 @@
 
 package com.actiontech.dble.services.manager.response;
 
+import com.actiontech.dble.cluster.values.ConfStatus;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class ReloadContext {
     private final List<UniqueDbInstance> affectDbInstanceList = new ArrayList<>();
+
+    private ConfStatus.Status confStatus = null;
+
+
+    public ConfStatus.Status getConfStatus() {
+        return confStatus;
+    }
+
+    public void setConfStatus(ConfStatus.Status confStatus) {
+        this.confStatus = confStatus;
+    }
 
     public List<UniqueDbInstance> getAffectDbInstanceList() {
         return Collections.unmodifiableList(affectDbInstanceList);

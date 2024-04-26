@@ -11,6 +11,8 @@ import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.services.manager.response.ReloadContext;
+import com.google.gson.Gson;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
@@ -61,6 +63,11 @@ public class ConfigStatusListener implements PathChildrenCacheListener {
         String value = new String(childData.getData(), StandardCharsets.UTF_8);
 
         ConfStatus status = new ConfStatus(value);
+        ReloadContext reloadContext = new ReloadContext();
+        if (status.getExtraInfo() != null) {
+            Gson gson = new Gson();
+            reloadContext = gson.fromJson(status.getExtraInfo(), ReloadContext.class);
+        }
         if (status.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
             return; //self node
         }
@@ -72,6 +79,6 @@ public class ConfigStatusListener implements PathChildrenCacheListener {
                 LOGGER.warn("ConfigStatusListener notify  error :" + service + " ,Exception info:", e);
             }
         }
-        ClusterLogic.reloadConfigEvent(value, status.getParams());
+        ClusterLogic.reloadConfigEvent(value, status.getParams(), reloadContext);
     }
 }

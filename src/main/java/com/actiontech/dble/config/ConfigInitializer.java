@@ -249,8 +249,6 @@ public class ConfigInitializer implements ProblemReporter {
                             ds.setTestConnSuccess(true);
                             LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] instance " + ds.getName() + " is skiped,because of option skipTestConOnUpdate");
                             continue;
-                        } else {
-
                         }
                     }
                     if (!testDbInstance(dbGroupName, ds, schemaList)) {

@@ -204,10 +204,7 @@ public class ConfigInitializer implements ProblemReporter {
             boolean skipTestConnectionOnUpdate = false;
             if (SystemConfig.getInstance().isSkipTestConOnUpdate()) {
                 if (reloadContext != null && !reloadContext.getAffectDbInstanceList().isEmpty()) {
-                    if (reloadContext.getConfStatus() == ConfStatus.Status.MANAGER_DELETE) {
-                        skipTestConnectionOnUpdate = true;
-                        LOGGER.info("will skip all test connection.");
-                    } else {
+                    if (reloadContext.getConfStatus() != ConfStatus.Status.MANAGER_DELETE) {
                         boolean useSharding = reloadContext.getAffectDbInstanceList().stream().map(ele -> dbGroups.get(ele.getGroupName())).anyMatch((ele) -> ele != null && !ele.isShardingUseless());
 
                         //not support for sharding db group
@@ -246,7 +243,7 @@ public class ConfigInitializer implements ProblemReporter {
                         boolean find = reloadContext.getAffectDbInstanceList().stream().anyMatch((ele) -> ele.getGroupName().equals(finalDbGroupName) && ele.getInstanceName().equals(ds.getName()));
                         if (!find) {
                             //skip test connection on this dbInstance
-                            ds.setTestConnSuccess(true);
+                            ds.setTestConnSuccess(false);
                             LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] instance " + ds.getName() + " is skiped,because of option skipTestConOnUpdate");
                             continue;
                         }

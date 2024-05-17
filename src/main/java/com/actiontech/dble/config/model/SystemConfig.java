@@ -71,7 +71,7 @@ public final class SystemConfig {
     private int useCostTimeStat = 0;
     private int maxCostStatSize = 100;
     private int costSamplePercent = 1;
-    private boolean skipTestConOnUpdate = false;
+    private boolean skipTestConOnUpdate = true;
     //connection
     private String charset = "utf8mb4";
     private int maxPacketSize = 4 * 1024 * 1024;

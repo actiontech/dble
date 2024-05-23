@@ -285,7 +285,7 @@ public class TraceResult implements Cloneable {
                         schema, sql, sqlType, currentSession.getShardingService().getTxId(), examinedRows, sqlRows,
                         netOutBytes, resultSize, requestEnd, requestEndMs, new ArrayList<String>(tableList));
                 StatisticManager.getInstance().push(f);
-                if (isDetailTrace) {
+                if (isDetailTrace && getOverAllMilliSecond() > SlowQueryLog.getInstance().getSlowTime()) {
                     SlowQueryLog.getInstance().putSlowQueryLog(currentSession.getShardingService(), this.clone());
                 }
                 if (LOGGER.isDebugEnabled()) {
@@ -451,6 +451,10 @@ public class TraceResult implements Cloneable {
             return SqlTraceType.SIMPLE_QUERY;
         }
         return this.type;
+    }
+
+    public double getOverAllMilliSecond() {
+        return (double) (this.requestEnd - this.requestStart) / 1000000000;
     }
 
     public String getOverAllSecond() {

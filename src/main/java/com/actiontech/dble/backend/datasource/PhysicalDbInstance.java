@@ -391,7 +391,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
             return false;
         }
         boolean isSync = dbSynStatus == MySQLHeartbeat.DB_SYN_NORMAL;
-        boolean isNotDelay = slaveBehindMaster <= this.dbGroupConfig.getDelayThreshold();
+        boolean isNotDelay = slaveBehindMaster <= (this.dbGroupConfig.getDelayThreshold() / 1000);
         return isSync && isNotDelay;
     }
 

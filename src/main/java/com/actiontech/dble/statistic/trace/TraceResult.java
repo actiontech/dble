@@ -454,7 +454,7 @@ public class TraceResult implements Cloneable {
     }
 
     public double getOverAllMilliSecond() {
-        return (double) (this.requestEnd - this.requestStart) / 1000000000;
+        return (double) (this.requestEnd - this.requestStart) / 1000000;
     }
 
     public String getOverAllSecond() {

@@ -457,11 +457,13 @@ public final class DbleServer {
     }
 
     public NIOProcessor nextFrontProcessor() {
-        int i = ++nextFrontProcessor;
-        if (i >= frontProcessors.length) {
-            i = nextFrontProcessor = 0;
+        synchronized (this) {
+            int i = ++nextFrontProcessor;
+            if (i >= frontProcessors.length) {
+                i = nextFrontProcessor = 0;
+            }
+            return frontProcessors[i];
         }
-        return frontProcessors[i];
     }
 
     public NIOProcessor nextBackendProcessor() {

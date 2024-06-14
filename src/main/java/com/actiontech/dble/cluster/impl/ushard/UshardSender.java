@@ -41,7 +41,7 @@ public class UshardSender extends AbstractClusterSender {
         serverId = getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID);
         sourceComponentId = getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext().build();
+                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
         stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
     }
 
@@ -51,7 +51,7 @@ public class UshardSender extends AbstractClusterSender {
         serverId = getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID);
         sourceComponentId = getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext().build();
+                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
         stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
         startUpdateNodes();
     }
@@ -302,7 +302,7 @@ public class UshardSender extends AbstractClusterSender {
                     } catch (Exception e) {
                         LOGGER.warn("error in ucore nodes watch,try for another time", e);
                         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext().build();
+                                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
                         stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     }
                 }

@@ -76,7 +76,7 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>3.21.7</version>
+            <version>3.16.3</version>
         </dependency>
         <dependency>
             <groupId>org.iq80.leveldb</groupId>
@@ -89,10 +89,9 @@
             <version>0.7</version>
         </dependency>
         <dependency>
-            <!--      version  match grpc-->
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>31.1-jre</version>
+            <version>19.0</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -195,6 +194,11 @@
             <artifactId>grpc-testing</artifactId>
             <version>${grpc.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>3.16.3</version>
         </dependency>
         <!--DOM4J FOR XML -->
         <dependency>

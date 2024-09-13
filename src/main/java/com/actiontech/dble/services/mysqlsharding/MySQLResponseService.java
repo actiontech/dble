@@ -368,6 +368,15 @@ public class MySQLResponseService extends VariablesService {
         String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
         int setSqlFlag = setSql == null ? 0 : 1;
         int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) || connection.getSchema() == null ? 0 : 1;
+        if (!Objects.equals(connection.getOldSchema(), connection.getSchema())) {
+            LOGGER.info("back connection {} switch schema ,before is {},current is {},user is {}", connection.getId(), connection.getOldSchema(), connection.getSchema(), session == null ? "" : session.getSource());
+            try {
+                throw new IllegalStateException();
+            } catch (Exception e) {
+                LOGGER.error("", e);
+            }
+        }
+
         int charsetSyn = this.getConnection().getCharsetName().equals(clientCharset) ? 0 : 1;
         int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
         int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
@@ -918,6 +927,7 @@ public class MySQLResponseService extends VariablesService {
 
         private void updateConnectionInfo(MySQLResponseService service) {
             if (schema != null) {
+                LOGGER.info("back connection {} switch schema ,before is {},current is {}", service.getConnection().getId(), service.connection.getSchema(), schema);
                 service.connection.setSchema(schema);
                 service.connection.setOldSchema(schema);
             }

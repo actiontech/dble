@@ -88,6 +88,7 @@ public abstract class FrontEndService extends VariablesService {
     }
 
     public void setSchema(String schema) {
+        LOGGER.info("connection set   schema {} to {}", this.schema, schema);
         this.schema = schema;
     }
 

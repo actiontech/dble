@@ -42,6 +42,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             }
             int rs = RwSplitServerParse.parse(sql);
             int hintLength = RouteService.isHintSql(sql);
+            LOGGER.info("connection sql {} ,user is {},front is {}", sql, session.getService().getUser(), session.getService().getConnection());
             int sqlType = rs & 0xff;
             if (hintLength >= 0) {
                 session.executeHint(sqlType, sql, null);
@@ -53,6 +54,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                 switch (sqlType) {
                     case RwSplitServerParse.USE:
                         String schema = UseHandler.getSchemaName(sql, rs >>> 8);
+                        LOGGER.info("connection {} switch schema ,before is {},current is {},user is {}", session.getRwGroup().getGroupName(), session.getService().getSchema(), schema, session.getService().getUser());
                         session.execute(true, (isSuccess, resp, rwSplitService) -> rwSplitService.setSchema(schema));
                         break;
                     case RwSplitServerParse.SHOW:

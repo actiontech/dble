@@ -95,6 +95,7 @@ public abstract class PooledConnection extends AbstractConnection {
     }
 
     public void setSchema(String schema) {
+        LOGGER.info("connection set  schema {} to {}", this.schema, schema);
         this.schema = schema;
     }
 

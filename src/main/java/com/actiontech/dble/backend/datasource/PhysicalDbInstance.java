@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
@@ -138,10 +139,20 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                     }
                     TraceManager.crossThread(con.getBackendService(), "backend-response-service", service);
                     con.getBackendService().setAttachment(attachment);
+
+                    if (!Objects.equals(con.getOldSchema(), con.getSchema())) {
+                        LOGGER.info("get connection {}, conn schema before is [{}], current is[{}], conn id is [{}],user is [{}]", this.dbGroup.getGroupName() + "." + name, con.getOldSchema(), con.getSchema(), con.getId(), service);
+                        try {
+                            throw new IllegalStateException();
+                        } catch (Exception e) {
+                            LOGGER.error("", e);
+                        }
+                    }
                     handler.connectionAcquired(con);
                     return;
                 }
             }
+
 
             DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
                 BackendConnection conn;
@@ -150,6 +161,15 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                 } catch (IOException e) {
                     handler.connectionError(e, attachment);
                     return;
+                }
+
+                if (!Objects.equals(conn.getOldSchema(), conn.getSchema())) {
+                    LOGGER.info("get connection {}, conn schema before is [{}], current is[{}], conn id is [{}],user is [{}]", this.dbGroup.getGroupName() + "." + name, conn.getOldSchema(), conn.getSchema(), conn.getId(), service);
+                    try {
+                        throw new IllegalStateException();
+                    } catch (Exception e) {
+                        LOGGER.error("", e);
+                    }
                 }
                 if (!StringUtil.equals(conn.getSchema(), schema)) {
                     // need do sharding syn in before sql send

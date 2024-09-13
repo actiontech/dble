@@ -173,6 +173,7 @@ public class RWSplitService extends BusinessService {
         String switchSchema;
         try {
             switchSchema = mm.readString(getCharset().getClient());
+            LOGGER.info("connection {} switch schema ,before is {},current is {},user is {},front is {}", session.getRwGroup().getGroupName(), session.getService().getSchema(), switchSchema, session.getService().getUser(), session.getService().getConnection());
             session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
                 if (isSuccess) rwSplitService.setSchema(switchSchema);
             });

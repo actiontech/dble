@@ -37,6 +37,7 @@ public final class DbGroupHaSwitch {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
+            ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.HA);
             PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(dbGroupName);
             if (dh == null) {
                 packetResult.setSuccess(false);
@@ -58,6 +59,11 @@ public final class DbGroupHaSwitch {
                 try {
                     //dble start in single mode
                     RawJson result = dh.switchMaster(masterName, true);
+
+                    if (ClusterConfig.getInstance().isClusterEnable()) {
+                        clusterHelper.setKV(ClusterMetaUtil.getHaStatusPath(dh.getGroupName()), result);
+                    }
+
                     HaConfigManager.getInstance().haFinish(id, null, result);
                 } catch (Exception e) {
                     packetResult.setSuccess(false);

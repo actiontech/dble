@@ -7,6 +7,7 @@ package com.actiontech.dble.server.variables;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.OneTimeConnJob;
@@ -69,6 +70,21 @@ public class VarsExtractorHandler {
         if (ds == null) {
             for (PhysicalDbGroup dbGroup : dbGroups.values()) {
                 for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
+                    if (dsTest.isTestConnSuccess()) {
+                        ds = dsTest;
+                        break;
+                    }
+                }
+                if (ds != null) {
+                    break;
+                }
+            }
+        }
+
+        if (ds == null && SystemConfig.getInstance().isSkipTestConOnUpdate()) {
+            for (PhysicalDbGroup dbGroup : dbGroups.values()) {
+                for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(true)) {
+                    //this DbInstance should use createConnectionSkipPool
                     if (dsTest.isTestConnSuccess()) {
                         ds = dsTest;
                         break;

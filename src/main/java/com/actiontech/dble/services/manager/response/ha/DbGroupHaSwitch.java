@@ -61,6 +61,11 @@ public final class DbGroupHaSwitch {
                 try {
                     //dble start in single mode
                     String result = dh.switchMaster(masterName, true);
+
+                    if (ClusterConfig.getInstance().isClusterEnable()) {
+                        ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), result);
+                    }
+
                     HaConfigManager.getInstance().haFinish(id, null, result);
                 } catch (Exception e) {
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);

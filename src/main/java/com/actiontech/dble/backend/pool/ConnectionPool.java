@@ -143,7 +143,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     }
 
     private void newPooledEntry(final String schema, final int waiting, boolean createByWaiter) {
-        if (instance.isDisabled() || isClosed.get()) {
+        if (isInActive()) {
             return;
         }
 
@@ -421,6 +421,10 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             evictor = new Evictor();
             EvictionTimer.schedule(evictor, 0, poolConfig.getTimeBetweenEvictionRunsMillis());
         }
+    }
+
+    public boolean isInActive() {
+        return instance.isDisabled() || isClosed.get();
     }
 
     /**

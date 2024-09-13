@@ -472,6 +472,10 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         return connectionPool.size() - connectionPool.getCount(PooledConnection.STATE_REMOVED);
     }
 
+    public boolean isConnectionPoolInActive() {
+        return connectionPool.isInActive();
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {

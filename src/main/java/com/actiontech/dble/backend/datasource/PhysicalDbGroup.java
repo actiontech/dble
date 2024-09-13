@@ -451,6 +451,10 @@ public class PhysicalDbGroup {
             }
             newWriteHost.setReadInstance(false);
             writeDbInstance = newWriteHost;
+            if (!newWriteHost.isDisabled() && rwSplitMode == RW_SPLIT_OFF && newWriteHost.isConnectionPoolInActive()) {
+                //need init connection pool
+                newWriteHost.start("ha switch", false);
+            }
             return this.getClusterHaJson();
         } catch (Exception e) {
             LOGGER.warn("switchMaster Exception ", e);

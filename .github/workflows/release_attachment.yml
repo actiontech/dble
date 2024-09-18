@@ -2,27 +2,27 @@ name: Publish
 on:
   push:
     tags:
-      - '*'
+      - '**'
 
 jobs:
   build:
     name: Publish binaries
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '8'
-        cache: 'maven'
-    - name: Build
-      run: mvn -B package --file pom.xml
-    - name: Upload binaries to release
-      uses: svenstaro/upload-release-action@2.9.0
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: target/*-linux.tar.gz
-        tag: ${{ github.ref }}
-        overwrite: true
-        file_glob: true
-        draft: true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'maven'
+      - name: Build
+        run: mvn -B package --file pom.xml
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@2.9.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/*-linux.tar.gz
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
+          draft: true

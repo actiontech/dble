@@ -248,7 +248,7 @@ public abstract class PhysicalDatasource {
                 break;
             } else if (con.isClosed()) {
                 continue;
-            } else if (!con.isBorrowed()) { //if the connection is idle for a long time
+            } else if (con.getLastTime() < hearBeatTime) { //if the connection is idle for a long time
                 con.setBorrowed(true);
                 new ConnectionHeartBeatHandler().doHeartBeat(con);
             } else {

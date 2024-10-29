@@ -253,7 +253,6 @@ public abstract class PhysicalDatasource {
                 new ConnectionHeartBeatHandler().doHeartBeat(con);
             } else {
                 linkedQueue.offer(con);
-                break;
             }
         }
     }

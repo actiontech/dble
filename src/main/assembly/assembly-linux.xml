@@ -21,8 +21,15 @@
             <directory>target/generated-resources/appassembler/jsw/OBsharding-D/lib</directory>
             <outputDirectory>OBsharding-D/lib</outputDirectory>
             <includes>
-                <include>*.jar</include>
+                <include>wrapper.jar</include>
                 <include>libwrapper-linux*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>target/</directory>
+            <outputDirectory>OBsharding-D/lib</outputDirectory>
+            <includes>
+                <include>${project.artifactId}-${project.version}.jar</include>
             </includes>
         </fileSet>
         <fileSet>

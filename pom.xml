@@ -468,7 +468,7 @@
                     <daemons>
                         <daemon>
                             <id>OBsharding-D</id>
-                            <mainClass>com/oceanbase/obsharding_d/OBsharding_DStartup</mainClass>
+                            <mainClass>com.oceanbase.obsharding_d.OBsharding_DStartup</mainClass>
                             <commandLineArguments>
                                 <commandLineArgument>start</commandLineArgument>
                             </commandLineArguments>

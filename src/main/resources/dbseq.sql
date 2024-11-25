@@ -1,13 +1,13 @@
-DROP TABLE IF EXISTS DBLE_SEQUENCE;
-CREATE TABLE DBLE_SEQUENCE (  name VARCHAR(64) NOT NULL,  current_value BIGINT(20) NOT NULL,  increment INT NOT NULL DEFAULT 1, PRIMARY KEY (name) ) ENGINE=InnoDB;
+DROP TABLE IF EXISTS OBsharding-D_SEQUENCE;
+CREATE TABLE OBsharding-D_SEQUENCE (  name VARCHAR(64) NOT NULL,  current_value BIGINT(20) NOT NULL,  increment INT NOT NULL DEFAULT 1, PRIMARY KEY (name) ) ENGINE=InnoDB;
 
 
 -- ----------------------------
--- Function structure for `dble_seq_nextval`
+-- Function structure for `OBsharding-D_seq_nextval`
 -- ----------------------------
-DROP FUNCTION IF EXISTS `dble_seq_nextval`;
+DROP FUNCTION IF EXISTS `OBsharding-D_seq_nextval`;
 DELIMITER ;;
-CREATE FUNCTION `dble_seq_nextval`(seq_name VARCHAR(64)) RETURNS varchar(64) CHARSET latin1
+CREATE FUNCTION `OBsharding-D_seq_nextval`(seq_name VARCHAR(64)) RETURNS varchar(64) CHARSET latin1
     DETERMINISTIC
 BEGIN
     DECLARE retval VARCHAR(64);
@@ -19,9 +19,9 @@ BEGIN
     SET seq_lock = -1;
     SELECT GET_LOCK(seq_name, 15) into seq_lock;
     if seq_lock = 1 then
-      SELECT current_value + increment, increment INTO val, inc FROM DBLE_SEQUENCE WHERE name = seq_name for update;
+      SELECT current_value + increment, increment INTO val, inc FROM OBsharding-D_SEQUENCE WHERE name = seq_name for update;
       if val != -1 then
-          UPDATE DBLE_SEQUENCE SET current_value = val WHERE name = seq_name;
+          UPDATE OBsharding-D_SEQUENCE SET current_value = val WHERE name = seq_name;
       end if;
       SELECT RELEASE_LOCK(seq_name) into seq_lock;
     end if;
@@ -32,4 +32,4 @@ END
 DELIMITER ;
 
 
-INSERT INTO DBLE_SEQUENCE VALUES ('`testdb`.`testTable`', 0, 1);
+INSERT INTO OBsharding-D_SEQUENCE VALUES ('`testdb`.`testTable`', 0, 1);

@@ -35,14 +35,14 @@ services:
               ipv4_address: 172.18.0.3
         environment:
             MYSQL_ROOT_PASSWORD: 123456
-    dble-server:
-        image: actiontech/dble:latest
-        container_name: dble-server
-        hostname: dble-server
+    OBsharding-D-server:
+        image: actiontech/OBsharding-D:latest
+        container_name: OBsharding-D-server
+        hostname: OBsharding-D-server
         privileged: true
         stdin_open: true
         tty: true
-        command: ["/opt/dble/bin/wait-for-it.sh", "backend-mysql1:3306","--","/opt/dble/bin/docker_init_start.sh"]
+        command: ["/opt/OBsharding-D/bin/wait-for-it.sh", "backend-mysql1:3306","--","/opt/OBsharding-D/bin/docker_init_start.sh"]
         ports:
             - "8066:8066"
             - "9066:9066"

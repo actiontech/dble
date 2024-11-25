@@ -2,7 +2,7 @@
 cd "$(dirname "$0")"
 echo "check JAVA_HOME & java"
 JAVA_CMD=$JAVA_HOME/bin/java
-MAIN_CLASS=com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain
+MAIN_CLASS=com.oceanbase.obsharding_d.cluster.zkprocess.xmltozk.XmltoZkMain
 if [ ! -d "$JAVA_HOME" ]; then
     echo ---------------------------------------------------
     echo WARN: JAVA_HOME environment variable is not set. 
@@ -13,7 +13,7 @@ fi
 echo "---------set HOME_DIR------------"
 CURR_DIR=`pwd`
 cd ..
-DBLE_HOME=`pwd`
+OBsharding-D_HOME=`pwd`
 cd $CURR_DIR
-$JAVA_CMD -Xms256M -Xmx1G  -DhomePath=$DBLE_HOME -cp "$DBLE_HOME/conf:$DBLE_HOME/lib/*" $MAIN_CLASS
+$JAVA_CMD -Xms256M -Xmx1G  -DhomePath=$OBsharding-D_HOME -cp "$OBsharding-D_HOME/conf:$OBsharding-D_HOME/lib/*" $MAIN_CLASS
 echo "---------finished------------"

@@ -2,13 +2,13 @@
 
     <!-- protocol:ignore -->
     <Match>
-        <Package name="com.actiontech.dble.cluster.general.impl.ushard"/>
+        <Package name="com.oceanbase.obsharding_d.cluster.general.impl.ushard"/>
     </Match>
     <Match>
-        <Package name="com.actiontech.dble.alarm"/>
+        <Package name="com.oceanbase.obsharding_d.alarm"/>
     </Match>
     <Match>
-        <Class name="com.actiontech.dble.log.AlarmAppender"/>
+        <Class name="com.oceanbase.obsharding_d.log.AlarmAppender"/>
     </Match>
     <!-- protocol:ignore -->
 
@@ -28,7 +28,7 @@
     <Match>
         <Bug category="STYLE"/>
         <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
-        <Class name="com.actiontech.dble.plan.common.item.function.timefunc.ItemTemporalHybridFunc"/>
+        <Class name="com.oceanbase.obsharding_d.plan.common.item.function.timefunc.ItemTemporalHybridFunc"/>
     </Match>
 
 
@@ -36,31 +36,31 @@
     <Match>
         <Bug category="STYLE"/>
         <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
-        <Class name="com.actiontech.dble.plan.common.time.MySQLTimeStatus"/>
+        <Class name="com.oceanbase.obsharding_d.plan.common.time.MySQLTimeStatus"/>
     </Match>
     <!-- need refactor -->
     <Match>
         <Bug category="STYLE"/>
         <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
-        <Class name="com.actiontech.dble.plan.common.time.MyTime"/>
+        <Class name="com.oceanbase.obsharding_d.plan.common.time.MyTime"/>
     </Match>
     <!-- need refactor -->
     <Match>
         <Bug category="STYLE"/>
         <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
-        <Class name="com.actiontech.dble.backend.mysql.BindValue"/>
+        <Class name="com.oceanbase.obsharding_d.backend.mysql.BindValue"/>
     </Match>
     <!-- need refactor -->
     <Match>
         <Bug category="STYLE"/>
         <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
-        <Class name="com.actiontech.dble.net.mysql.ExecutePacket"/>
+        <Class name="com.oceanbase.obsharding_d.net.mysql.ExecutePacket"/>
     </Match>
     <!-- need refactor -->
     <Match>
         <Bug category="STYLE"/>
         <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
-        <Class name="com.actiontech.dble.server.parser.ServerParseSelect"/>
+        <Class name="com.oceanbase.obsharding_d.server.parser.ServerParseSelect"/>
     </Match>
 
     <!-- always throw new exception-->
@@ -75,7 +75,7 @@
     </Match>
     <Match>
         <Bug category="STYLE"/>
-        <Class name="com.actiontech.dble.plan.common.time.MyTime"/>
+        <Class name="com.oceanbase.obsharding_d.plan.common.time.MyTime"/>
         <Method name="extractDateTime"/>
         <Bug pattern="SF_SWITCH_FALLTHROUGH"/>
     </Match>
@@ -87,12 +87,12 @@
     </Match>
     <Match>
         <Bug category="STYLE"/>
-        <Class name="com.actiontech.dble.net.mysql.BinaryRowDataPacket"/>
+        <Class name="com.oceanbase.obsharding_d.net.mysql.BinaryRowDataPacket"/>
         <Method name="read"/>
         <Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE"/>
     </Match>
     <Match>
-        <Class name="com.actiontech.dble.meta.ProxyMetaManager"/>
+        <Class name="com.oceanbase.obsharding_d.meta.ProxyMetaManager"/>
         <Method name="notifyResponseClusterDDL"/>
         <Bug pattern="UL_UNRELEASED_LOCK_EXCEPTION_PATH"/>
     </Match>
@@ -108,19 +108,19 @@
     <!-- need refactor -->
     <Match>
         <Bug category="PERFORMANCE"/>
-        <Class name="com.actiontech.dble.plan.common.locale.MyLocale"/>
+        <Class name="com.oceanbase.obsharding_d.plan.common.locale.MyLocale"/>
         <Bug pattern="URF_UNREAD_FIELD"/>
     </Match>
     <!-- need refactor -->
     <Match>
         <Bug category="PERFORMANCE"/>
-        <Class name="com.actiontech.dble.plan.common.locale.MyLocaleErrMsgs"/>
+        <Class name="com.oceanbase.obsharding_d.plan.common.locale.MyLocaleErrMsgs"/>
         <Bug pattern="URF_UNREAD_FIELD"/>
     </Match>
     <!-- need refactor -->
     <Match>
         <Bug category="PERFORMANCE"/>
-        <Class name="com.actiontech.dble.plan.common.typelib.TypeLib"/>
+        <Class name="com.oceanbase.obsharding_d.plan.common.typelib.TypeLib"/>
         <Bug pattern="URF_UNREAD_FIELD"/>
     </Match>
     <!-- PERFORMANCE end -->
@@ -128,7 +128,7 @@
     <!-- CORRECTNESS start -->
     <Match>
         <Bug category="CORRECTNESS"/>
-        <Class name="com.actiontech.dble.plan.node.JoinNode"/>
+        <Class name="com.oceanbase.obsharding_d.plan.node.JoinNode"/>
         <Method name="setRightNode"/>
         <Bug pattern="NP_NULL_PARAM_DEREF_ALL_TARGETS_DANGEROUS"/>
     </Match>
@@ -137,29 +137,29 @@
     <!-- MT_CORRECTNESS -->
     <Match>
         <Bug category="MT_CORRECTNESS"/>
-        <Class name="com.actiontech.dble.DbleServer"/>
+        <Class name="com.oceanbase.obsharding_d.OBsharding_DServer"/>
         <Method name="genXaTxId"/>
         <Bug pattern="JLM_JSR166_UTILCONCURRENT_MONITORENTER"/>
     </Match>
     <Match>
         <Bug category="MT_CORRECTNESS"/>
-        <Class name="com.actiontech.dble.statistic.stat.QueryTimeCostContainer"/>
+        <Class name="com.oceanbase.obsharding_d.statistic.stat.QueryTimeCostContainer"/>
         <Method name="add"/>
         <Bug pattern="JLM_JSR166_UTILCONCURRENT_MONITORENTER"/>
     </Match>
     <Match>
         <Bug category="MT_CORRECTNESS"/>
-        <Class name="com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository"/>
+        <Class name="com.oceanbase.obsharding_d.backend.mysql.xa.recovery.impl.FileSystemRepository"/>
         <Bug pattern="IS2_INCONSISTENT_SYNC"/>
     </Match>
     <Match>
         <Bug category="MT_CORRECTNESS"/>
-        <Class name="com.actiontech.dble.server.handler.ServerLoadDataInfileHandler"/>
+        <Class name="com.oceanbase.obsharding_d.server.handler.ServerLoadDataInfileHandler"/>
         <Bug pattern="IS2_INCONSISTENT_SYNC"/>
     </Match>
     <Match>
         <Bug category="MT_CORRECTNESS"/>
-        <Class name="com.actiontech.dble.services.rwsplit.RWSplitHandler"/>
+        <Class name="com.oceanbase.obsharding_d.services.rwsplit.RWSplitHandler"/>
         <Bug pattern="IS2_INCONSISTENT_SYNC"/>
     </Match>
     <!-- MT_CORRECTNESS end -->
@@ -171,7 +171,7 @@
     </Match>
     <Match>
         <Bug category="BAD_PRACTICE"/>
-        <Class name="com.actiontech.dble.server.handler.SetInnerHandler"/>
+        <Class name="com.oceanbase.obsharding_d.server.handler.SetInnerHandler"/>
         <Method name="isSwitchOn"/>
         <Bug pattern="NP_BOOLEAN_RETURN_NULL"/>
     </Match>

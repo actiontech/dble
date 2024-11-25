@@ -13,7 +13,7 @@
  - See the License for the specific language governing permissions and
  - limitations under the License.
 -->
-<dble:sharding xmlns:dble="http://dble.cloud/">
+<OBsharding-D:sharding xmlns:OBsharding-D="http://OBsharding-D.cloud/">
 
     <!-- schema定义 -->
     <schema name="dbtest">
@@ -51,8 +51,8 @@
 
 
     <function name="func1"
-              class="com.actiontech.dble.route.function.PartitionByLong">
+              class="com.oceanbase.obsharding_d.route.function.PartitionByLong">
         <property name="partitionCount">2</property>
         <property name="partitionLength">512</property>
     </function>
-</dble:sharding>
+</OBsharding-D:sharding>

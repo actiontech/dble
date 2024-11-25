@@ -11,7 +11,7 @@ clusterMode=zk
 clusterIP=10.186.61.132:2181
 # zk not need cluster.port
 clusterPort=5700
-rootPath=/dble
+rootPath=/OBsharding-D
 #cluster namespace, please use the same one in one cluster
 clusterId=cluster-1
 # if HA need sync by cluster, only useful when useOuterHa=true

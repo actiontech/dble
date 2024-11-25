@@ -1,0 +1,81 @@
+/*
+ * Copyright (C) 2016-2023 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.plan.common.item.function.castfunc;
+
+import com.oceanbase.obsharding_d.plan.common.field.Field;
+import com.oceanbase.obsharding_d.plan.common.item.Item;
+import com.oceanbase.obsharding_d.plan.common.item.function.timefunc.ItemTimeFunc;
+import com.oceanbase.obsharding_d.plan.common.time.MySQLTime;
+import com.oceanbase.obsharding_d.plan.common.time.MySQLTimestampType;
+import com.oceanbase.obsharding_d.plan.common.time.MyTime;
+import com.alibaba.druid.sql.ast.SQLDataTypeImpl;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.expr.SQLCastExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ItemTimeTypeCast extends ItemTimeFunc {
+
+    public ItemTimeTypeCast(Item a, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
+        args.add(a);
+    }
+
+    public ItemTimeTypeCast(Item a, int decArg, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
+        args.add(a);
+        decimals = decArg;
+    }
+
+    @Override
+    public final String funcName() {
+        return "cast_as_time";
+    }
+
+    public boolean getTime(MySQLTime ltime) {
+        if (getArg0Time(ltime))
+            return true;
+        if (decimals != NOT_FIXED_DEC) {
+            MyTime.myTimeRound(ltime, decimals);
+        }
+        /*
+         * For MYSQL_TIMESTAMP_TIME value we can have non-zero day part, which
+         * we should not lose.
+         */
+        if (ltime.getTimeType() != MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
+            MyTime.datetimeToTime(ltime);
+        return false;
+    }
+
+    @Override
+    public void fixLengthAndDec() {
+        maybeNull = true;
+    }
+
+    @Override
+    public SQLExpr toExpression() {
+        SQLCastExpr cast = new SQLCastExpr();
+        cast.setExpr(args.get(0).toExpression());
+        SQLDataTypeImpl dataType = new SQLDataTypeImpl("TIME");
+        if (decimals != NOT_FIXED_DEC) {
+            dataType.addArgument(new SQLIntegerExpr(decimals));
+        }
+        cast.setDataType(dataType);
+        return cast;
+    }
+
+    @Override
+    protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
+        List<Item> newArgs = null;
+        if (!forCalculate)
+            newArgs = cloneStructList(args);
+        else
+            newArgs = calArgs;
+        return new ItemTimeTypeCast(newArgs.get(0), this.decimals);
+    }
+}

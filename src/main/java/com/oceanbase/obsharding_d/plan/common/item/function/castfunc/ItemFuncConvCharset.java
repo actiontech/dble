@@ -1,0 +1,73 @@
+/*
+ * Copyright (C) 2016-2023 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.plan.common.item.function.castfunc;
+
+import com.oceanbase.obsharding_d.backend.mysql.CharsetUtil;
+import com.oceanbase.obsharding_d.plan.common.field.Field;
+import com.oceanbase.obsharding_d.plan.common.item.Item;
+import com.oceanbase.obsharding_d.plan.common.item.function.strfunc.ItemStrFunc;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+
+import java.io.UnsupportedEncodingException;
+import java.util.List;
+
+public class ItemFuncConvCharset extends ItemStrFunc {
+    private String mysqlCharset;
+    private String javaCharset;
+
+    public ItemFuncConvCharset(Item a, String charset, int charsetIndex) {
+        super(a, charsetIndex);
+        mysqlCharset = charset;
+        javaCharset = CharsetUtil.getJavaCharset(charset);
+    }
+
+    @Override
+    public final String funcName() {
+        return "CONVERT";
+    }
+
+    @Override
+    public void fixLengthAndDec() {
+
+    }
+
+    @Override
+    public String valStr() {
+        String argVal = args.get(0).valStr();
+        if (argVal == null) {
+            nullValue = true;
+            return null;
+        }
+        try {
+            return new String(argVal.getBytes(), javaCharset);
+        } catch (UnsupportedEncodingException e) {
+            LOGGER.info("convert using charset exception", e);
+            nullValue = true;
+            return null;
+        }
+    }
+
+    @Override
+    public SQLExpr toExpression() {
+        SQLMethodInvokeExpr method = new SQLMethodInvokeExpr(funcName());
+        method.addArgument(args.get(0).toExpression());
+        method.setUsing(new SQLIdentifierExpr(mysqlCharset));
+        return method;
+    }
+
+    @Override
+    protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
+        List<Item> newArgs;
+        if (!forCalculate)
+            newArgs = cloneStructList(args);
+        else
+            newArgs = calArgs;
+        return new ItemFuncConvCharset(newArgs.get(0), mysqlCharset, charsetIndex);
+    }
+
+}

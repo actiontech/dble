@@ -1,5 +1,5 @@
 #!/bin/sh
-APP_NAME='dble'
+APP_NAME='OBsharding-D'
 basepath=$(cd `dirname $0`; pwd)/../..
 basepath=`(cd "$basepath"; pwd)`
 

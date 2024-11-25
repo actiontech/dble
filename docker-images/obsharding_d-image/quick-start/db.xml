@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright (C) 2016-2023 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+<!DOCTYPE OBsharding-D:db SYSTEM "db.dtd">
+<OBsharding-D:db xmlns:OBsharding-D="http://OBsharding-D.cloud/" version="4.0">
+    <dbGroup name="dbGroup1" rwSplitMode="2" delayThreshold="100">
+        <heartbeat>show slave status</heartbeat>
+        <dbInstance name="instanceM1" url="172.18.0.2:3306" user="root" password="123456" maxCon="300" minCon="10"
+                    primary="true" readWeight="1"/>
+    </dbGroup>
+
+    <dbGroup name="dbGroup2" rwSplitMode="0" delayThreshold="100" disableHA="true">
+        <heartbeat errorRetryCount="1" timeout="10">show slave status</heartbeat>
+        <dbInstance name="instanceM2" url="172.18.0.3:3306" user="root" password="123456" maxCon="300" minCon="10"
+                    primary="true"/>
+    </dbGroup>
+</OBsharding-D:db>

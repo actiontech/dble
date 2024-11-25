@@ -5,8 +5,8 @@
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] (%l) - %m%n"/>
         </Console>
 
-        <RollingFile name="RollingFile" fileName="logs/dble.log"
-                     filePattern="logs/$${date:yyyy-MM}/dble-%d{MM-dd}-%i.log.gz">
+        <RollingFile name="RollingFile" fileName="logs/OBsharding-D.log"
+                     filePattern="logs/$${date:yyyy-MM}/OBsharding-D-%d{MM-dd}-%i.log.gz">
             <PatternLayout>
                 <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] (%l) - %m%n</Pattern>
             </PatternLayout>
@@ -18,7 +18,7 @@
         </RollingFile>
     </Appenders>
     <Loggers>
-        <AsyncLogger name="com.actiontech.dble" level="info" includeLocation="true" additivity="false">
+        <AsyncLogger name="com.oceanbase.obsharding_d" level="info" includeLocation="true" additivity="false">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFile"/>
         </AsyncLogger>

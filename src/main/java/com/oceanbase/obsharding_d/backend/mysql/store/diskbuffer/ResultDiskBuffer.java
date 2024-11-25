@@ -1,0 +1,253 @@
+/*
+ * Copyright (C) 2016-2023 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.backend.mysql.store.diskbuffer;
+
+import com.oceanbase.obsharding_d.backend.mysql.ByteUtil;
+import com.oceanbase.obsharding_d.backend.mysql.store.FileStore;
+import com.oceanbase.obsharding_d.backend.mysql.store.result.ResultExternal;
+import com.oceanbase.obsharding_d.buffer.BufferPool;
+import com.oceanbase.obsharding_d.buffer.BufferPoolRecord;
+import com.oceanbase.obsharding_d.net.mysql.MySQLPacket;
+import com.oceanbase.obsharding_d.net.mysql.RowDataPacket;
+import com.oceanbase.obsharding_d.util.exception.NotSupportException;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * a buffer used to store large amount of data on disk or virtual memory mapped
+ * on disk
+ *
+ * @author ActionTech
+ */
+public abstract class ResultDiskBuffer implements ResultExternal {
+    protected final int columnCount;
+    protected final BufferPool pool;
+
+    protected ByteBuffer writeBuffer;
+    protected FileStore file;
+    protected int rowCount = 0;
+    protected BufferPoolRecord.Builder bufferRecordBuilder;
+
+    public ResultDiskBuffer(BufferPool pool, int columnCount, BufferPoolRecord.Builder bufferRecordBuilder) {
+        this.pool = pool;
+        this.columnCount = columnCount;
+        this.bufferRecordBuilder = bufferRecordBuilder;
+        this.writeBuffer = pool.allocate(bufferRecordBuilder);
+        this.file = new FileStore("nioMapped:Memory", "rw");
+    }
+
+    @Override
+    public void done() {
+        this.file.seek(0);
+    }
+
+    @Override
+    public int removeRow(RowDataPacket row) {
+        throw new NotSupportException("unsupportted remove row");
+    }
+
+    @Override
+    public boolean contains(RowDataPacket row) {
+        throw new NotSupportException("unsupportted contains");
+    }
+
+    @Override
+    public int addRow(RowDataPacket row) {
+        throw new NotSupportException("unsupportted addRow");
+    }
+
+    @Override
+    public ResultExternal createShallowCopy() {
+        throw new NotSupportException("unsupportted createShallowCopy");
+    }
+
+    @Override
+    public void close() {
+        if (file != null)
+            file.closeAndDeleteSilently();
+        file = null;
+        pool.recycle(writeBuffer);
+    }
+
+    protected ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer) {
+        int offset = 0;
+        int len = src.length;
+        int remaining = buffer.remaining();
+        while (len > 0) {
+            if (remaining >= len) {
+                buffer.put(src, offset, len);
+                break;
+            } else {
+                buffer.put(src, offset, remaining);
+                buffer.flip();
+                file.write(buffer);
+                buffer.clear();
+                offset += remaining;
+                len -= remaining;
+                remaining = buffer.remaining();
+                continue;
+            }
+        }
+        return buffer;
+    }
+
+    static class TapeItem {
+
+        RowDataPacket row;
+        ResultDiskTape tape;
+
+        TapeItem(RowDataPacket row, ResultDiskTape tape) {
+            this.row = row;
+            this.tape = tape;
+        }
+    }
+
+    /**
+     * Represents a virtual disk tape for the merge sort algorithm. Each virtual
+     * disk tape is a region of the temp file.
+     */
+    static class ResultDiskTape {
+
+        BufferPool pool;
+        FileStore file;
+        int fieldCount;
+        long filePos;
+        long start;
+        long end;
+        long pos;
+        int readBufferOffset;
+        ByteBuffer readBuffer;
+
+        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount, BufferPoolRecord.Builder bufferRecordBuilder) {
+            this.pool = pool;
+            this.file = file;
+            this.fieldCount = fieldCount;
+            this.readBuffer = pool.allocate(bufferRecordBuilder);
+        }
+
+        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int maxReadMemorySize, BufferPoolRecord.Builder bufferRecordBuilder) {
+            this.pool = pool;
+            this.file = file;
+            this.fieldCount = fieldCount;
+            this.readBuffer = pool.allocate(maxReadMemorySize, bufferRecordBuilder);
+        }
+
+        public boolean isEnd() {
+            return isReadAll();
+        }
+
+        public RowDataPacket nextRow() {
+            if (isReadAll())
+                return null;
+            byte[] row;
+            byte[] singlePacket = getSinglePacket();
+            if (singlePacket.length == MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                List<byte[]> rowParts = new ArrayList<>();
+                rowParts.add(singlePacket);
+                byte[] dataTmp;
+                do {
+                    dataTmp = getSinglePacket();
+                    rowParts.add(dataTmp);
+                } while (dataTmp.length == MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+
+                row = new byte[(rowParts.size() - 1) * MySQLPacket.MAX_PACKET_SIZE + dataTmp.length];
+                ByteUtil.writeUB3(row, MySQLPacket.MAX_PACKET_SIZE);
+                row[3] = rowParts.get(0)[3];
+                for (int i = 0; i < rowParts.size(); i++) {
+                    byte[] rowPart = rowParts.get(i);
+                    System.arraycopy(rowPart, 4, row, 4 + i * MySQLPacket.MAX_PACKET_SIZE, rowPart.length - MySQLPacket.PACKET_HEADER_SIZE);
+                }
+            } else {
+                row = singlePacket;
+            }
+            RowDataPacket currentRow = new RowDataPacket(fieldCount);
+            currentRow.read(row);
+            return currentRow;
+        }
+
+        private boolean isReadAll() {
+            return this.end == this.pos;
+        }
+
+        private void readIntoBuffer() {
+            file.seek(filePos);
+            filePos += file.read(readBuffer, end);
+        }
+
+        private byte[] getSinglePacket() {
+            int offset = readBufferOffset, length = 0, position = readBuffer.position();
+            length = getPacketLength(readBuffer, offset);
+            while (length == -1 || position < offset + length) {
+                if (!readBuffer.hasRemaining()) {
+                    checkReadBuffer(offset);
+                }
+                // read new data to buffer
+                readIntoBuffer();
+                // get new offset for buffer compact
+                offset = readBufferOffset;
+                position = readBuffer.position();
+                if (length == -1) {
+                    length = getPacketLength(readBuffer, offset);
+                }
+            }
+
+            readBuffer.position(offset);
+            byte[] data = new byte[length];
+            readBuffer.get(data, 0, length);
+            offset += length;
+            pos += length;
+            if (position == offset) {
+                if (readBufferOffset != 0) {
+                    readBufferOffset = 0;
+                }
+                readBuffer.clear();
+                readIntoBuffer();
+            } else {
+                readBufferOffset = offset;
+                readBuffer.position(position);
+            }
+            return data;
+        }
+
+        private int getPacketLength(ByteBuffer buffer, int offset) {
+            if (buffer.position() < offset + 4) {
+                return -1;
+            } else {
+                int length = buffer.get(offset) & 0xff;
+                length |= (buffer.get(++offset) & 0xff) << 8;
+                length |= (buffer.get(++offset) & 0xff) << 16;
+                return length + 4;
+            }
+        }
+
+        public void clear() {
+            pool.recycle(readBuffer);
+        }
+
+        private void checkReadBuffer(int offset) {
+            // if offset is 0,then expend buffer; else set offset to 0,compact
+            // buffer
+            if (offset == 0) {
+                if (readBuffer.capacity() >= Integer.MAX_VALUE) {
+                    throw new IllegalArgumentException("Packet size over the limit.");
+                }
+                int size = readBuffer.capacity() > (Integer.MAX_VALUE >> 1) ? Integer.MAX_VALUE : readBuffer.capacity() << 1;
+                ByteBuffer newBuffer = ByteBuffer.allocate(size);
+                readBuffer.position(offset);
+                newBuffer.put(readBuffer);
+                pool.recycle(readBuffer);
+                readBuffer = newBuffer;
+            } else {
+                readBuffer.position(offset);
+                readBuffer.compact();
+                readBufferOffset = 0;
+            }
+        }
+    }
+
+}

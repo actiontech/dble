@@ -42,31 +42,31 @@ JAVA_OPTS="-server -Xms2G -Xmx2G  -XX:+AggressiveOpts -XX:MaxDirectMemorySize=2G
 #set HOME
 CURR_DIR=`pwd`
 cd `dirname "$0"`/..
-DBLE_HOME=`pwd`
+OBsharding-D_HOME=`pwd`
 cd $CURR_DIR
-if [ -z "$DBLE_HOME" ] ; then
+if [ -z "$OBsharding-D_HOME" ] ; then
     echo
-    echo "Error: DBLE_HOME environment variable is not defined correctly."
+    echo "Error: OBsharding-D_HOME environment variable is not defined correctly."
     echo
     exit 1
 fi
 #==============================================================================
 
 #set CLASSPATH
-DBLE_CLASSPATH="$DBLE_HOME/conf:$DBLE_HOME/lib/classes"
-for i in "$DBLE_HOME"/lib/*.jar
+OBsharding-D_CLASSPATH="$OBsharding-D_HOME/conf:$OBsharding-D_HOME/lib/classes"
+for i in "$OBsharding-D_HOME"/lib/*.jar
 do
-    DBLE_CLASSPATH="$DBLE_CLASSPATH:$i"
+    OBsharding-D_CLASSPATH="$OBsharding-D_CLASSPATH:$i"
 done
 #==============================================================================
 
 #startup Server
 RUN_CMD="\"$JAVA_HOME/bin/java\""
-RUN_CMD="$RUN_CMD -DhomePath=\"$DBLE_HOME\""
-RUN_CMD="$RUN_CMD -classpath \"$DBLE_CLASSPATH\""
+RUN_CMD="$RUN_CMD -DhomePath=\"$OBsharding-D_HOME\""
+RUN_CMD="$RUN_CMD -classpath \"$OBsharding-D_CLASSPATH\""
 RUN_CMD="$RUN_CMD $JAVA_OPTS"
-RUN_CMD="$RUN_CMD com.actiontech.dble.DbleStartup  $@"
-RUN_CMD="$RUN_CMD >> \"$DBLE_HOME/logs/console.log\" 2>&1 &"
+RUN_CMD="$RUN_CMD com.oceanbase.obsharding_d.OBsharding_DStartup  $@"
+RUN_CMD="$RUN_CMD >> \"$OBsharding-D_HOME/logs/console.log\" 2>&1 &"
 echo $RUN_CMD
 eval $RUN_CMD
 #==============================================================================

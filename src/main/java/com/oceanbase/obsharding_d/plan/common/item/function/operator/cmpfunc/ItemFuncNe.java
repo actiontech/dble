@@ -1,0 +1,58 @@
+/*
+ * Copyright (C) 2016-2023 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.plan.common.item.function.operator.cmpfunc;
+
+import com.oceanbase.obsharding_d.plan.common.field.Field;
+import com.oceanbase.obsharding_d.plan.common.item.Item;
+import com.oceanbase.obsharding_d.plan.common.item.function.operator.ItemBoolFunc2;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
+
+import java.math.BigInteger;
+import java.util.List;
+
+
+public class ItemFuncNe extends ItemBoolFunc2 {
+
+    public ItemFuncNe(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
+    }
+
+    @Override
+    public final String funcName() {
+        return "<>";
+    }
+
+    @Override
+    public Functype functype() {
+        return Functype.NE_FUNC;
+    }
+
+    @Override
+    public BigInteger valInt() {
+        int value = cmp.compare();
+        return value != 0 && !nullValue ? BigInteger.ONE : BigInteger.ZERO;
+    }
+
+    @Override
+    public SQLExpr toExpression() {
+        SQLExpr left = args.get(0).toExpression();
+        SQLExpr right = args.get(1).toExpression();
+        return new SQLBinaryOpExpr(left, SQLBinaryOperator.LessThanOrGreater, right);
+    }
+
+    @Override
+    protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
+        List<Item> newArgs = null;
+        if (!forCalculate)
+            newArgs = cloneStructList(args);
+        else
+            newArgs = calArgs;
+        return new ItemFuncNe(newArgs.get(0), newArgs.get(1), this.charsetIndex);
+    }
+
+}

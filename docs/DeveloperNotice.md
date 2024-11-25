@@ -3,7 +3,7 @@ Dependency Management:maven
 IDE:IntelliJ IDEA  Community  
 
 setting IDE code style:    
-import dble_IntelliJ.xml into IntelliJ
+import OBsharding-D_IntelliJ.xml into IntelliJ
 
 ![codestyle](./codestyle.png)
  

@@ -1,0 +1,80 @@
+/*
+ * Copyright (C) 2016-2023 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.plan.common.locale;
+
+import com.oceanbase.obsharding_d.plan.common.typelib.TypeLib;
+
+/**
+ * @author ActionTech
+ */
+public class MyLocale {
+    private int number;
+    private String name;
+    private String description;
+    private boolean isAscii;
+    private TypeLib monthNames;
+    private TypeLib abMonthNames;
+    private TypeLib dayNames;
+    private TypeLib abDayNames;
+    private int maxMonthNameLength;
+    private int maxDayNameLength;
+    private int decimalPoint;
+    private int thousandSep;
+    private String grouping;
+    private MyLocaleErrMsgs errMsgs;
+
+    MyLocale(int numberPar, String namePar, String descrPar, boolean isAsciiPar, TypeLib monthNamesPar,
+             TypeLib abMonthNamesPar, TypeLib dayNamesPar, TypeLib abDayNamesPar, int maxMonthNameLengthPar,
+             int maxDayNameLengthPar, int decimalPointPar, int thousandSepPar, String groupingPar,
+             MyLocaleErrMsgs errMsgsPar) {
+        this.number = (numberPar);
+        this.name = namePar;
+        this.description = descrPar;
+        this.isAscii = isAsciiPar;
+        this.monthNames = monthNamesPar;
+        this.abMonthNames = abMonthNamesPar;
+        this.dayNames = dayNamesPar;
+        this.abDayNames = abDayNamesPar;
+        this.maxMonthNameLength = maxMonthNameLengthPar;
+        this.maxDayNameLength = maxDayNameLengthPar;
+        this.decimalPoint = decimalPointPar;
+        this.thousandSep = thousandSepPar;
+        this.grouping = groupingPar;
+        this.errMsgs = errMsgsPar;
+    }
+
+    public TypeLib getMonthNames() {
+        return monthNames;
+    }
+
+    public void setMonthNames(TypeLib monthNames) {
+        this.monthNames = monthNames;
+    }
+
+    public TypeLib getAbMonthNames() {
+        return abMonthNames;
+    }
+
+    public void setAbMonthNames(TypeLib abMonthNames) {
+        this.abMonthNames = abMonthNames;
+    }
+
+    public TypeLib getDayNames() {
+        return dayNames;
+    }
+
+    public void setDayNames(TypeLib dayNames) {
+        this.dayNames = dayNames;
+    }
+
+    public TypeLib getAbDayNames() {
+        return abDayNames;
+    }
+
+    public void setAbDayNames(TypeLib abDayNames) {
+        this.abDayNames = abDayNames;
+    }
+}

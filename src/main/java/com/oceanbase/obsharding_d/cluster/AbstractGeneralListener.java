@@ -59,7 +59,7 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
     @Override
     public final void notifyProcess(OriginClusterEvent<?> changeEvent, boolean ignoreTheGrandChild) throws Exception {
 
-        logger.info("event happen in {}, path: {},type: {},data: {}", this.getClass().getSimpleName(), changeEvent.getPath(), changeEvent.getChangeType(), changeEvent.getValue());
+        logger.info("event happen in {},type: {},data: {}", this.getClass().getSimpleName(), changeEvent.getChangeType(), changeEvent.getValue());
         //ucore may receive the grandchildren event.But zk only receive the children event. remove  grandchildren event if needed
         if (ignoreTheGrandChild && ClusterLogic.forGeneral().getPathHeight(changeEvent.getPath()) != pathHeight + 1) {
             return;

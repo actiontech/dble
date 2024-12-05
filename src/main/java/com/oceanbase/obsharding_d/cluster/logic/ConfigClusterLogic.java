@@ -177,7 +177,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
     }
 
     public void syncSequenceJson(String path, RawJson value) throws Exception {
-        LOGGER.info("start sync sequence json config:key[{}],value[{}]", path, value);
+        LOGGER.info("start sync sequence json config:value[{}]", value);
         String lock = clusterHelper.getPathValue(ClusterMetaUtil.getConfChangeLockPath()).map(ClusterValue::getInstanceName).orElse(null);
         if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock)) {
             return;
@@ -185,7 +185,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
 
         OBsharding_DTempConfig.getInstance().setSequenceConfig(value);
 
-        LOGGER.info("end sync sequence json config:key[{}],value[{}]", path, value);
+        LOGGER.info("end sync sequence json config:value[{}]", value);
     }
 
 
@@ -209,7 +209,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
     }
 
     public void syncDbJson(String path, RawJson value) throws Exception {
-        LOGGER.info("start sync db json config:key[{}],value[{}]", path, value);
+        LOGGER.info("start sync db json config:value[{}]", value);
         String lock = clusterHelper.getPathValue(ClusterMetaUtil.getConfChangeLockPath()).map(ClusterValue::getInstanceName).orElse(null);
         if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock)) {
             return;
@@ -217,7 +217,8 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
 
         OBsharding_DTempConfig.getInstance().setDbConfig(value);
 
-        LOGGER.info("end sync db json config:key[{}],value[{}]", path, value);
+        LOGGER.info("end sync db json config:value[{}]", value);
+
     }
 
     /**
@@ -302,7 +303,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
 
 
     public void syncShardingJson(String path, RawJson value) throws Exception {
-        LOGGER.info("start sync sharding json config:key[{}],value[{}]", path, value);
+        LOGGER.info("start sync sharding json config:value[{}]", value);
         String lock = clusterHelper.getPathValue(ClusterMetaUtil.getConfChangeLockPath()).map(ClusterValue::getInstanceName).orElse(null);
         if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock)) {
             return;
@@ -312,7 +313,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
         this.handlerMapFileAddFunction(sharding.getFunction(), true);
         OBsharding_DTempConfig.getInstance().setShardingConfig(value);
 
-        LOGGER.info("end sync sharding json config:key[{}],value[{}]", path, value);
+        LOGGER.info("end sync sharding json config:value[{}]", value);
     }
 
 
@@ -366,7 +367,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
     }
 
     public void syncUserJson(String key, RawJson value) throws Exception {
-        LOGGER.info("start sync user json config:key[{}],value[{}]", key, value);
+        LOGGER.info("start sync user json config:value[{}]", value);
         Optional<String> lock = clusterHelper.getPathValue(ClusterMetaUtil.getConfChangeLockPath()).map(ClusterValue::getInstanceName);
         if (lock.isPresent() && SystemConfig.getInstance().getInstanceName().equals(lock.get())) {
             return;
@@ -374,7 +375,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
 
         OBsharding_DTempConfig.getInstance().setUserConfig(value);
 
-        LOGGER.info("end sync user json config:key[{}],value[{}]", key, value);
+        LOGGER.info("end sync user json config:value[{}]", value);
     }
 
 

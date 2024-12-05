@@ -69,7 +69,8 @@ public class ReloadLogHelper {
     }
 
     public static void graceInfo(String message) {
-        LOGGER.info("[RL][NONE] " + message);
+        String newMessage = message.replace("dble", "OBsharding-D");
+        LOGGER.info("[RL][NONE] " + newMessage);
     }
 
     public static void infoList2(String message, Set<String> keySet) {

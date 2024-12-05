@@ -101,7 +101,7 @@ public abstract class AbstractConsulSender implements ClusterSender {
         }
         setKV(selfPath, value);
 
-        LOGGER.info("writeDirectly self node for path:" + selfPath);
+        //LOGGER.info("writeDirectly self node for path:" + selfPath);
     }
 
 

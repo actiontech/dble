@@ -1,7 +1,7 @@
 syntax = "proto2";
-package com.actiontech.dble.meta.protocol;
+package com.oceanbase.obsharding_d.meta.protocol;
 
-option java_package = "com.actiontech.dble.meta.protocol";
+option java_package = "com.oceanbase.obsharding_d.meta.protocol";
 option java_outer_classname = "StructureMeta";
 option optimize_for = SPEED;
  

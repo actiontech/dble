@@ -1,0 +1,248 @@
+/*
+ * Copyright (C) 2016-2023 OBsharding_D.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+package com.oceanbase.obsharding_d.net;
+
+
+import com.oceanbase.obsharding_d.backend.datasource.PhysicalDbGroup;
+import com.oceanbase.obsharding_d.backend.datasource.PhysicalDbInstance;
+import com.oceanbase.obsharding_d.backend.mysql.nio.handler.transaction.xa.stage.XAStage;
+import com.oceanbase.obsharding_d.backend.mysql.xa.TxState;
+import com.oceanbase.obsharding_d.buffer.BufferPool;
+import com.oceanbase.obsharding_d.config.model.SystemConfig;
+import com.oceanbase.obsharding_d.net.connection.AbstractConnection;
+import com.oceanbase.obsharding_d.net.connection.BackendConnection;
+import com.oceanbase.obsharding_d.net.connection.FrontendConnection;
+import com.oceanbase.obsharding_d.net.connection.PooledConnection;
+import com.oceanbase.obsharding_d.services.mysqlauthenticate.MySQLBackAuthService;
+import com.oceanbase.obsharding_d.services.mysqlsharding.ShardingService;
+import com.oceanbase.obsharding_d.statistic.CommandCount;
+import com.oceanbase.obsharding_d.util.TimeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * @author mycat
+ */
+public final class IOProcessor {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger("IOProcessor");
+
+    private final String name;
+    private final BufferPool bufferPool;
+    private final ConcurrentMap<Long, FrontendConnection> frontends;
+    private final ConcurrentMap<Long, BackendConnection> backends;
+    private final CommandCount commands;
+    private long netInBytes;
+    private long netOutBytes;
+
+    // after reload @@config_all ,old back ends connections stored in backends_old
+    public static final ConcurrentLinkedQueue<PooledConnection> BACKENDS_OLD = new ConcurrentLinkedQueue<>();
+    public static final ConcurrentLinkedQueue<PhysicalDbGroup> BACKENDS_OLD_GROUP = new ConcurrentLinkedQueue<>();
+    public static final ConcurrentLinkedQueue<PhysicalDbInstance> BACKENDS_OLD_INSTANCE = new ConcurrentLinkedQueue<>();
+
+    private AtomicInteger frontEndsLength = new AtomicInteger(0);
+
+    public IOProcessor(String name, BufferPool bufferPool) throws IOException {
+        this.name = name;
+        this.bufferPool = bufferPool;
+        this.frontends = new ConcurrentHashMap<>();
+        this.backends = new ConcurrentHashMap<>();
+        this.commands = new CommandCount();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public BufferPool getBufferPool() {
+        return bufferPool;
+    }
+
+    public int getWriteQueueSize() {
+        int total = 0;
+        for (FrontendConnection frontend : frontends.values()) {
+            total += frontend.getWriteQueue().size();
+        }
+        for (BackendConnection back : backends.values()) {
+            total += back.getWriteQueue().size();
+        }
+        return total;
+    }
+
+    public CommandCount getCommands() {
+        return this.commands;
+    }
+
+    public long getNetInBytes() {
+        return this.netInBytes;
+    }
+
+    public void addNetInBytes(long bytes) {
+        this.netInBytes += bytes;
+    }
+
+    public long getNetOutBytes() {
+        return this.netOutBytes;
+    }
+
+    public void addNetOutBytes(long bytes) {
+        this.netOutBytes += bytes;
+    }
+
+    public void addFrontend(FrontendConnection c) {
+        this.frontends.put(c.getId(), c);
+        this.frontEndsLength.incrementAndGet();
+    }
+
+    public ConcurrentMap<Long, FrontendConnection> getFrontends() {
+        return this.frontends;
+    }
+
+    public int getFrontendsLength() {
+        return this.frontEndsLength.get();
+    }
+
+    public void addBackend(BackendConnection c) {
+        this.backends.put(c.getId(), c);
+    }
+
+    public ConcurrentMap<Long, BackendConnection> getBackends() {
+        return this.backends;
+    }
+
+    public void checkBackendCons() {
+        backendCheck();
+    }
+
+    public void checkFrontCons() {
+        frontendCheck();
+    }
+
+    private void frontendCheck() {
+        Iterator<Entry<Long, FrontendConnection>> it = frontends.entrySet().iterator();
+        while (it.hasNext()) {
+            FrontendConnection c = it.next().getValue();
+
+            // remove empty conn
+            if (c == null) {
+                it.remove();
+                this.frontEndsLength.decrementAndGet();
+                continue;
+            }
+
+            // clean closed conn or check timeout
+            if (c.isClosed()) {
+                c.cleanup("check close");
+                it.remove();
+                this.frontEndsLength.decrementAndGet();
+            } else {
+                checkConSendQueue(c);
+                if (c.isPrepareClosedTimeout()) {
+                    if (!c.isManager()) {
+                        if (c.getService() instanceof ShardingService) {
+                            ShardingService s = (ShardingService) c.getService();
+                            String xaStage = s.getSession2().getTransactionManager().getXAStage();
+                            if (xaStage != null) {
+                                if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE) && !xaStage.equals(XAStage.ROLLBACK_FAIL_STAGE)) {
+                                    s.getConnection().close("Close Timeout");
+                                }
+                                continue;
+                            }
+                        }
+                    }
+                    c.close("close timeout");
+                } else if (c.isIdleTimeout()) {
+                    if (!c.isManager()) {
+                        if (c.getService() instanceof ShardingService) {
+                            ShardingService s = (ShardingService) c.getService();
+                            String xaStage = s.getSession2().getTransactionManager().getXAStage();
+                            if (xaStage != null) {
+                                if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE) && !xaStage.equals(XAStage.ROLLBACK_FAIL_STAGE)) {
+                                    s.getConnection().close("Idle Timeout");
+                                }
+                                continue;
+                            }
+                        }
+                    }
+                    c.close("idle timeout");
+                }
+            }
+        }
+    }
+
+    private void checkConSendQueue(AbstractConnection c) {
+        if (!c.getWriteQueue().isEmpty()) {
+            c.getSocketWR().doNextWriteCheck();
+        }
+    }
+
+    private void backendCheck() {
+        long sqlTimeout = SystemConfig.getInstance().getSqlExecuteTimeout() * 1000L;
+        Iterator<Entry<Long, BackendConnection>> it = backends.entrySet().iterator();
+        while (it.hasNext()) {
+            BackendConnection c = it.next().getValue();
+
+            // remove empty
+            if (c == null) {
+                it.remove();
+                continue;
+            }
+
+            //Active/IDLE/PREPARED XA backends will not be checked
+            if (c.isClosed()) {
+                it.remove();
+                continue;
+            }
+
+            if (c.isPrepareClosedTimeout()) {
+                c.close(c.getCloseReason());
+                continue;
+            }
+
+            // a connection in change user
+            if (c.getService() instanceof MySQLBackAuthService) {
+                continue;
+            }
+
+            if (c.getBackendService().getXaStatus() != null && c.getBackendService().getXaStatus() != TxState.TX_INITIALIZE_STATE) {
+                continue;
+            }
+
+            // close the conn which executeTimeOut
+            if (!c.getBackendService().isDDL() && c.getState() == PooledConnection.STATE_IN_USE && c.getBackendService().isExecuting() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
+                LOGGER.info("found backend connection SQL timeout ,close it " + c);
+                c.close("sql timeout");
+            }
+
+            // clean closed conn or check time out
+            if (c.isClosed()) {
+                it.remove();
+            } else {
+                // very important ,for some data maybe not sent
+                checkConSendQueue(c);
+            }
+        }
+    }
+
+    public void removeConnection(AbstractConnection con) {
+        if (con instanceof BackendConnection) {
+            this.backends.remove(con.getId());
+        } else {
+            this.frontends.remove(con.getId());
+            this.frontEndsLength.decrementAndGet();
+        }
+
+    }
+
+}

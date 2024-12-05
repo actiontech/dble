@@ -20,7 +20,7 @@ deploy:
   file: target/*-linux.tar.gz
   skip_cleanup: true
   on:
-    repo: actiontech/dble
+    repo: oceanbase/OBsharding-D
     tags: true
     jdk: openjdk8
   draft: true

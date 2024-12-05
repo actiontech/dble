@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2016-2023 ActionTech.
+# Copyright (C) 2016-2023 OBsharding_D.
 # License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 #
 
@@ -8,7 +8,7 @@ clusterEnable=true
 clusterMode=ucore
 clusterIP=127.0.0.1
 clusterPort=25700
-rootPath=universe/dble
+rootPath=universe/OBsharding-D
 clusterId=cluster-1
 needSyncHa=true
 showBinlogStatusTimeout=60000

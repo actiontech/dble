@@ -1,0 +1,46 @@
+/*
+ * Copyright (C) 2016-2023 OBsharding_D.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.plan.common.item.function.timefunc;
+
+import com.oceanbase.obsharding_d.plan.common.item.Item;
+import com.oceanbase.obsharding_d.plan.common.item.function.ItemFunc;
+import com.oceanbase.obsharding_d.plan.common.item.function.primary.ItemIntFunc;
+import com.oceanbase.obsharding_d.plan.common.time.MySQLTime;
+
+import java.math.BigInteger;
+import java.util.List;
+
+public class ItemFuncTimeToSec extends ItemIntFunc {
+
+    public ItemFuncTimeToSec(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
+    }
+
+    @Override
+    public final String funcName() {
+        return "time_to_sec";
+    }
+
+    @Override
+    public BigInteger valInt() {
+        MySQLTime ltime = new MySQLTime();
+        if (getArg0Time(ltime))
+            return BigInteger.ZERO;
+        long seconds = ltime.getHour() * 3600L + ltime.getMinute() * 60 + ltime.getSecond();
+        return BigInteger.valueOf(ltime.isNeg() ? -seconds : seconds);
+    }
+
+    @Override
+    public void fixLengthAndDec() {
+        maybeNull = true;
+        fixCharLength(10);
+    }
+
+    @Override
+    public ItemFunc nativeConstruct(List<Item> realArgs) {
+        return new ItemFuncTimeToSec(realArgs, charsetIndex);
+    }
+}

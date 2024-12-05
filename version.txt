@@ -1,10 +1,10 @@
 GitVersion f5928d276537752e7a4760aac6193f5e48531c36
 BuildTime  20220524130848
 MavenVersion 9.9.9.9
-GitUrl https://github.com/actiontech/dble
+GitUrl https://github.com.oceanbase.obsharding_d
 WebSite https://opensource.actionsky.com/
 QQGroup 669663113
-The following is the QR code of ActionTech OpenSource Community, please check it in the terminal use command "cat version.txt" and use WeChat to scan the QR code:
+The following is the QR code of oceanbase OpenSource Community, please check it in the terminal use command "cat version.txt" and use WeChat to scan the QR code:
 [30;47m                                                            [0m
 [30;47m [30;40m              [30;47m      [30;40m  [30;47m            [30;40m        [30;47m  [30;40m              [30;47m [0m
 [30;47m [30;40m  [30;47m          [30;40m  [30;47m    [30;40m  [30;47m      [30;40m      [30;47m    [30;40m    [30;47m    [30;40m  [30;47m          [30;40m  [30;47m [0m

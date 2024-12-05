@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <!--
-  ~ Copyright (C) 2016-2023 ActionTech.
+  ~ Copyright (C) 2016-2023 OBsharding_D.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
-<dble:sharding xmlns:dble="http://dble.cloud/" version="4.0">
+<OBsharding-D:sharding xmlns:OBsharding-D="http://OBsharding-D.cloud/" version="4.0">
 
     <schema name="testdb" sqlMaxLimit="100">
         <shardingTable name="tb_enum_sharding" shardingNode="dn1,dn2" sqlMaxLimit="200" function="func_enum"
@@ -114,4 +114,4 @@
         <property name="patternValue">1024</property>
         <property name="defaultNode">0</property><!--contains string which is not number,router to default node-->
     </function>
-</dble:sharding>
+</OBsharding-D:sharding>

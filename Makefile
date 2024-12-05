@@ -1,4 +1,4 @@
-PROJECT_NAME  = dble
+PROJECT_NAME  = OBsharding-D
 DOCKER        := $(shell which docker)
 
 default:

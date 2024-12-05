@@ -1,0 +1,63 @@
+/*
+ * Copyright (C) 2016-2023 OBsharding_D.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.cluster.zkprocess.entity;
+
+import com.oceanbase.obsharding_d.cluster.zkprocess.entity.user.*;
+import com.oceanbase.obsharding_d.config.Versions;
+
+import javax.xml.bind.annotation.*;
+import java.util.List;
+
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlRootElement(namespace = Versions.DOMAIN, name = "user")
+public class Users {
+    @XmlAttribute
+    protected String version;
+    @XmlElementRefs({
+            @XmlElementRef(name = "ShardingUser", type = ShardingUser.class),
+            @XmlElementRef(name = "ManagerUser", type = ManagerUser.class),
+            @XmlElementRef(name = "RwSplitUser", type = RwSplitUser.class),
+            @XmlElementRef(name = "AnalysisUser", type = AnalysisUser.class)
+    })
+    protected List<Object> user;
+
+    private List<BlackList> blacklist;
+
+    public List<Object> getUser() {
+        return user;
+    }
+
+    public void setUser(List<Object> user) {
+        this.user = user;
+    }
+
+    public List<BlackList> getBlacklist() {
+        return blacklist;
+    }
+
+    public void setBlacklist(List<BlackList> blacklist) {
+        this.blacklist = blacklist;
+    }
+
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    @Override
+    public String toString() {
+        return "users [user=" +
+                user +
+                ", blacklist=" +
+                blacklist +
+                "]";
+    }
+
+}

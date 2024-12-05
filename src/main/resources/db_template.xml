@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <!--
-  ~ Copyright (C) 2016-2023 ActionTech.
+  ~ Copyright (C) 2016-2023 OBsharding_D.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
-<dble:db xmlns:dble="http://dble.cloud/" version="4.0">
+<OBsharding-D:db xmlns:OBsharding-D="http://OBsharding-D.cloud/" version="4.0">
     <dbGroup name="dbGroup1" rwSplitMode="2" delayThreshold="100">
         <heartbeat>show slave status</heartbeat>
         <dbInstance name="instanceM1" url="ip1:3306" user="your_user" password="your_psw" maxCon="1000" minCon="10"
@@ -41,4 +41,4 @@
         <!--<property name="testWhileIdle">true</property>-->
         <!--</dbInstance>-->
     </dbGroup>
-</dble:db>
+</OBsharding-D:db>

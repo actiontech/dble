@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (C) 2016-2023 ActionTech.
+  ~ Copyright (C) 2016-2023 OBsharding_D.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
@@ -18,7 +18,7 @@
  - See the License for the specific language governing permissions and
  - limitations under the License.
 -->
-<dble:db xmlns:dble="http://dble.cloud/">
+<OBsharding-D:db xmlns:OBsharding-D="http://OBsharding-D.cloud/">
 
     <dbGroup name="localhost1" rwSplitMode="0">
         <heartbeat>select user()</heartbeat>
@@ -41,4 +41,4 @@
         </dbInstance>
     </dbGroup>
 
-</dble:db>
+</OBsharding-D:db>

@@ -125,10 +125,10 @@ services:
             MYSQL_ROOT_PASSWORD: 123456
             MYSQL_REPLICATION_USER: repl
             MYSQL_REPLICATION_PASSWORD: 123456
-    dble-server:
-        image: actiontech/dble:latest
-        container_name: dble-server
-        hostname: dble-server
+    OBsharding-D-server:
+        image: oceanbase/OBsharding-D:latest
+        container_name: OBsharding-D-server
+        hostname: OBsharding-D-server
         privileged: true
         stdin_open: true
         tty: true
@@ -137,7 +137,7 @@ services:
             SLAVES: mgr-a-2,mgr-a-3,mgr-b-2,mgr-b-3
             MYSQL_REPLICATION_USER: repl
             MYSQL_REPLICATION_PASSWORD: 123456
-        command: ["/opt/dble/bin/wait-for-it.sh", "mgr-a-1:3306","--","/opt/dble/bin/docker_init_start.sh"]
+        command: ["/opt/OBsharding-D/bin/wait-for-it.sh", "mgr-a-1:3306","--","/opt/OBsharding-D/bin/docker_init_start.sh"]
         ports:
             - "8066:8066"
             - "9066:9066"

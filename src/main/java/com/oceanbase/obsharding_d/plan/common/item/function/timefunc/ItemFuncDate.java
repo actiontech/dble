@@ -1,0 +1,39 @@
+/*
+ * Copyright (C) 2016-2023 OBsharding_D.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.plan.common.item.function.timefunc;
+
+import com.oceanbase.obsharding_d.plan.common.item.Item;
+import com.oceanbase.obsharding_d.plan.common.item.function.ItemFunc;
+import com.oceanbase.obsharding_d.plan.common.time.MySQLTime;
+
+import java.util.List;
+
+
+public class ItemFuncDate extends ItemDateFunc {
+
+    public ItemFuncDate(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
+    }
+
+    @Override
+    public final String funcName() {
+        return "date";
+    }
+
+    @Override
+    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
+        if (nullValue = args.get(0).isNullValue()) {
+            return true;
+        }
+        nullValue = getArg0Date(ltime, fuzzyDate);
+        return nullValue;
+    }
+
+    @Override
+    public ItemFunc nativeConstruct(List<Item> realArgs) {
+        return new ItemFuncDate(realArgs, charsetIndex);
+    }
+}

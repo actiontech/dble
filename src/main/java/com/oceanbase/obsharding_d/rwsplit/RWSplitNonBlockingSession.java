@@ -1,0 +1,421 @@
+/*
+ * Copyright (C) 2016-2023 OBsharding_D.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.rwsplit;
+
+import com.oceanbase.obsharding_d.OBsharding_DServer;
+import com.oceanbase.obsharding_d.backend.datasource.PhysicalDbGroup;
+import com.oceanbase.obsharding_d.backend.datasource.PhysicalDbInstance;
+import com.oceanbase.obsharding_d.backend.mysql.ByteUtil;
+import com.oceanbase.obsharding_d.backend.mysql.nio.handler.RwSplitSelectVariablesHandler;
+import com.oceanbase.obsharding_d.config.ErrorCode;
+import com.oceanbase.obsharding_d.config.model.SystemConfig;
+import com.oceanbase.obsharding_d.config.util.ConfigException;
+import com.oceanbase.obsharding_d.net.Session;
+import com.oceanbase.obsharding_d.net.connection.BackendConnection;
+import com.oceanbase.obsharding_d.net.connection.FrontendConnection;
+import com.oceanbase.obsharding_d.net.mysql.MySQLPacket;
+import com.oceanbase.obsharding_d.route.handler.HintDbInstanceHandler;
+import com.oceanbase.obsharding_d.route.handler.HintMasterDBHandler;
+import com.oceanbase.obsharding_d.route.parser.OBsharding_DHintParser;
+import com.oceanbase.obsharding_d.route.parser.util.ParseUtil;
+import com.oceanbase.obsharding_d.services.mysqlsharding.MySQLResponseService;
+import com.oceanbase.obsharding_d.services.rwsplit.Callback;
+import com.oceanbase.obsharding_d.services.rwsplit.RWSplitHandler;
+import com.oceanbase.obsharding_d.services.rwsplit.RWSplitMultiHandler;
+import com.oceanbase.obsharding_d.services.rwsplit.RWSplitService;
+import com.oceanbase.obsharding_d.services.rwsplit.handle.PSHandler;
+import com.oceanbase.obsharding_d.services.rwsplit.handle.PreparedStatementHolder;
+import com.oceanbase.obsharding_d.statistic.sql.StatisticListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
+
+public class RWSplitNonBlockingSession extends Session {
+
+    public static final Logger LOGGER = LoggerFactory.getLogger(RWSplitNonBlockingSession.class);
+
+    private volatile BackendConnection conn;
+    private final RWSplitService rwSplitService;
+    private PhysicalDbGroup rwGroup;
+
+    private volatile boolean preSendIsWrite = false; // Has the previous SQL been delivered to the write node?
+    private volatile long preWriteResponseTime = 0; // Response time of the previous write node
+    private int reSelectNum;
+
+    private volatile RWSplitMultiHandler multiQueryHandler = null;
+
+    public RWSplitNonBlockingSession(RWSplitService service) {
+        this.rwSplitService = service;
+    }
+
+    @Override
+    public FrontendConnection getSource() {
+        return (FrontendConnection) rwSplitService.getConnection();
+    }
+
+    @Override
+    public void stopFlowControl(int currentWritingSize) {
+        synchronized (this) {
+            if (rwSplitService.isFlowControlled()) {
+                LOGGER.info("Session stop flow control " + this.getSource());
+                rwSplitService.getConnection().setFrontWriteFlowControlled(false);
+            }
+            final BackendConnection con = this.conn;
+            if (con == null) {
+                return;
+            }
+
+            if (con.getService() instanceof MySQLResponseService) {
+                int size = ((MySQLResponseService) (con.getService())).getReadSize();
+                if (size <= con.getFlowLowLevel()) {
+                    con.enableRead();
+                } else {
+                    if (LOGGER.isDebugEnabled())
+                        LOGGER.debug("This front connection want to remove flow control, but mysql conn [{}]'s size [{}] is not lower the FlowLowLevel", con.getThreadId(), size);
+                }
+            } else {
+                con.enableRead();
+            }
+        }
+    }
+
+    @Override
+    public void startFlowControl(int currentWritingSize) {
+        synchronized (this) {
+            if (!rwSplitService.isFlowControlled()) {
+                LOGGER.info("Session start flow control " + this.getSource());
+            }
+            rwSplitService.getConnection().setFrontWriteFlowControlled(true);
+            final BackendConnection con = this.conn;
+            if (con == null) {
+                return;
+            }
+            con.disableRead();
+        }
+    }
+
+    @Override
+    public void releaseConnectionFromFlowControlled(BackendConnection con) {
+        synchronized (this) {
+            con.getSocketWR().enableRead();
+            rwSplitService.getConnection().setFrontWriteFlowControlled(false);
+        }
+    }
+
+    // exec COM_QUERY
+    public void execute(Boolean master, Callback callback) {
+        execute(master, null, callback);
+    }
+
+    // only the SELECT and show statements attempt to localRead
+    public void execute(Boolean master, Callback callback, boolean writeStatistical, boolean localRead) {
+        execute0(master, null, callback, writeStatistical, localRead && !rwGroup.isRwSplitUseless());
+    }
+
+    public void execute(Boolean master, byte[] originPacket, Callback callback) {
+        execute0(master, originPacket, callback, false, false);
+    }
+
+    public void executeMultiSql(Boolean master, Callback callback) {
+        if (isMultiStatement.compareAndSet(false, true)) {
+            execute(master, callback);
+        } else {
+            if (isMultiStatement.get() && multiQueryHandler != null) {
+                multiQueryHandler.executeNext(callback);
+            } else {
+                // not happen
+                LOGGER.warn("multi-query scenarios may have logic problems. multiStatus:[{}], executeNext:[{}]", isMultiStatement.get(), multiQueryHandler);
+            }
+        }
+    }
+
+    private void execute0(Boolean master, byte[] originPacket, Callback callback, boolean writeStatistical, boolean localRead) {
+        try {
+            RWSplitHandler handler = getRwSplitHandler(originPacket != null ? originPacket : getService().getExecuteSqlBytes(), callback);
+            if (handler == null) return;
+            getConnection(handler, master, isWriteStatistical(writeStatistical), localRead);
+        } catch (SQLSyntaxErrorException | IOException se) {
+            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
+        }
+    }
+
+    public void getConnection(RWSplitHandler handler, Boolean master, Boolean writeStatistical, boolean localRead) {
+        try {
+            Boolean isMaster = canRunOnMaster(master); //  first
+            boolean firstValue = isMaster == null ? false : isMaster;
+            long rwStickyTime = SystemConfig.getInstance().getRwStickyTime();
+            boolean rwSticky = rwStickyTime > 0;
+            if (rwGroup.isDelayDetectionStart()) {
+                rwSticky = false;
+            }
+            if (rwGroup.getRwSplitMode() != PhysicalDbGroup.RW_SPLIT_OFF && rwSticky && !firstValue) {
+                if (this.getPreWriteResponseTime() > 0 && System.currentTimeMillis() - this.getPreWriteResponseTime() <= rwStickyTime) {
+                    isMaster = true;
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("because in the sticky time range,so select write instance");
+                    }
+                } else {
+                    resetLastSqlResponseTime();
+                }
+            }
+            PhysicalDbInstance instance = reSelectRWDbGroup(rwGroup).rwSelect(isMaster, writeStatistical, localRead); // second
+            boolean isWrite = !instance.isReadInstance();
+            this.setPreSendIsWrite(isWrite && firstValue); // ensure that the first and second results are write instances
+            checkDest(isWrite);
+            instance.getConnection(rwSplitService.getSchema(), handler, null, false);
+        } catch (SQLSyntaxErrorException se) {
+            rwGroup.unBindRwSplitSession(this);
+            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
+        } catch (IOException e) {
+            LOGGER.warn("select conn error", e);
+            rwGroup.unBindRwSplitSession(this);
+            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+        } catch (Exception | Error e) {
+            rwGroup.unBindRwSplitSession(this);
+            throw e;
+        }
+    }
+
+    @Nullable
+    private RWSplitHandler getRwSplitHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException, IOException {
+        RWSplitHandler handler;
+        if (isMultiStatement.get()) {
+            multiQueryHandler = new RWSplitMultiHandler(rwSplitService, true, originPacket, callback);
+            handler = multiQueryHandler;
+        } else {
+            handler = new RWSplitHandler(rwSplitService, true, originPacket, callback);
+        }
+        if (conn != null && !conn.isClosed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("select bind conn[id={}]", conn.getId());
+            }
+            // for ps needs to send master
+            if ((originPacket != null && originPacket.length > 4 && originPacket[4] == MySQLPacket.COM_STMT_EXECUTE)) {
+                long statementId = ByteUtil.readUB4(originPacket, 5);
+                PreparedStatementHolder holder = rwSplitService.getPrepareStatement(statementId);
+                StatisticListener.getInstance().record(rwSplitService, r -> r.onFrontendSetSql(getService().getSchema(), holder.getPrepareSql()));
+                if (holder.isMustMaster() && conn.getInstance().isReadInstance()) {
+                    holder.setExecuteOrigin(originPacket);
+                    PSHandler psHandler = new PSHandler(rwSplitService, holder);
+                    psHandler.execute(rwGroup);
+                    return null;
+                }
+            }
+            checkDest(!conn.getInstance().isReadInstance());
+            handler.execute(conn);
+            return null;
+        }
+        return handler;
+    }
+
+    private boolean isWriteStatistical(boolean writeStatistical) {
+        if (rwSplitService.isInTransaction() || rwSplitService.isUsingTmpTable()) {
+            return true;
+        }
+        return writeStatistical;
+    }
+
+    /**
+     * jdbc compatible pre-delivery statements
+     * @param master
+     * @param originPacket
+     * @param callback
+     * @param writeStatistical
+     * @param localRead
+     */
+    public void selectCompatibilityVariables(Boolean master, byte[] originPacket, Callback callback, boolean writeStatistical, boolean localRead) {
+        try {
+            RWSplitHandler handler = getRwSplitSelectVariablesHandler(originPacket != null ? originPacket : getService().getExecuteSqlBytes(), callback);
+            if (handler == null) return;
+            getConnection(handler, master, isWriteStatistical(writeStatistical), localRead);
+        } catch (SQLSyntaxErrorException | IOException se) {
+            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
+        }
+    }
+
+    @Nullable
+    private RWSplitHandler getRwSplitSelectVariablesHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException, IOException {
+        if (conn != null && !conn.isClosed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("select bind conn[id={}]", conn.getId());
+            }
+            RWSplitHandler handler = new RwSplitSelectVariablesHandler(rwSplitService, true, originPacket, callback);
+            checkDest(!conn.getInstance().isReadInstance());
+            handler.execute(conn);
+            return null;
+        }
+        return new RwSplitSelectVariablesHandler(rwSplitService, true, originPacket, callback);
+    }
+
+    private Boolean canRunOnMaster(Boolean master) {
+        if ((rwSplitService.isInTransaction() && !rwSplitService.isReadOnly()) || rwSplitService.isUsingTmpTable()) {
+            return true;
+        }
+        return master;
+    }
+
+    private void checkDest(boolean isMaster) throws SQLSyntaxErrorException {
+        String dest = rwSplitService.getExpectedDest();
+        if (dest == null) {
+            return;
+        }
+        if (dest.equalsIgnoreCase("M") && isMaster) {
+            return;
+        }
+        if (dest.equalsIgnoreCase("S") && !isMaster) {
+            return;
+        }
+        throw new SQLSyntaxErrorException("unexpected OBsharding-D_dest_expect,real[" + (isMaster ? "M" : "S") + "],expect[" + dest + "]");
+    }
+
+    public PhysicalDbGroup reSelectRWDbGroup(PhysicalDbGroup dbGroup) {
+        dbGroup.bindRwSplitSession(this);
+        if (dbGroup.isStop()) {
+            dbGroup.unBindRwSplitSession(this);
+            if (reSelectNum == 10) {
+                reSelectNum = 0;
+                LOGGER.warn("dbGroup`{}` is always invalid", rwSplitService.getUserConfig().getDbGroup());
+                throw new ConfigException("the dbGroup`" + rwSplitService.getUserConfig().getDbGroup() + "` is always invalid, pls check reason");
+            }
+            PhysicalDbGroup newDbGroup = OBsharding_DServer.getInstance().getConfig().getDbGroups().get(rwSplitService.getUserConfig().getDbGroup());
+            if (newDbGroup == null) {
+                LOGGER.warn("dbGroup`{}` is invalid", rwSplitService.getUserConfig().getDbGroup());
+                throw new ConfigException("the dbGroup`" + rwSplitService.getUserConfig().getDbGroup() + "` is invalid");
+            } else {
+                reSelectNum++;
+                return reSelectRWDbGroup(newDbGroup);
+            }
+        } else {
+            reSelectNum = 0;
+            this.rwGroup = dbGroup;
+        }
+        return dbGroup;
+    }
+
+    public PhysicalDbGroup getRwGroup() {
+        return rwGroup;
+    }
+
+    public void executeHint(OBsharding_DHintParser.HintInfo hintInfo, int sqlType, String sql, Callback callback) throws SQLException, IOException {
+        try {
+            PhysicalDbInstance dbInstance = routeRwSplit(hintInfo, sqlType, rwSplitService);
+            if (dbInstance == null) {
+                return;
+            }
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("route sql {} to {}", sql, dbInstance);
+            }
+            RWSplitHandler handler = new RWSplitHandler(rwSplitService, false, null, callback);
+            dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
+        } catch (Exception e) {
+            rwSplitService.executeException(e, sql);
+        }
+    }
+
+    private PhysicalDbInstance routeRwSplit(OBsharding_DHintParser.HintInfo hintInfo, int sqlType, RWSplitService service) throws SQLException {
+        PhysicalDbInstance dbInstance = null;
+        int type = hintInfo.getType();
+        if (type == OBsharding_DHintParser.DB_INSTANCE_URL || type == OBsharding_DHintParser.UPROXY_DEST) {
+            dbInstance = HintDbInstanceHandler.route(hintInfo.getRealSql(), service, hintInfo.getHintValue());
+        } else if (type == OBsharding_DHintParser.UPROXY_MASTER || type == OBsharding_DHintParser.DB_TYPE) {
+            dbInstance = HintMasterDBHandler.route(hintInfo.getHintValue(), sqlType, hintInfo.getRealSql(), service);
+        }
+        service.setExecuteSql(hintInfo.getRealSql());
+        return dbInstance;
+    }
+
+    public void setRwGroup(PhysicalDbGroup rwGroup) {
+        this.rwGroup = rwGroup;
+    }
+
+    public void bind(BackendConnection bindConn) {
+        final BackendConnection tmp = conn;
+        if (tmp != null && tmp != bindConn) {
+            LOGGER.warn("last conn is remaining, the session is {}, the backend conn is {}", rwSplitService.getConnection(), tmp);
+            tmp.release();
+        }
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("bind conn is {}", bindConn);
+        this.conn = bindConn;
+    }
+
+    public void unbindIfSafe() {
+        final BackendConnection tmp = conn;
+        if (tmp != null && rwSplitService.isKeepBackendConn()) {
+            this.conn = null;
+            if (rwSplitService.isFlowControlled()) {
+                releaseConnectionFromFlowControlled(tmp);
+            }
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("safe unbind conn is {}", tmp);
+            tmp.release();
+        }
+    }
+
+    public void unbind() {
+        this.conn = null;
+    }
+
+    public void close(String reason) {
+        if (null != rwGroup) {
+            rwGroup.unBindRwSplitSession(this);
+        }
+        final BackendConnection tmp = this.conn;
+        this.conn = null;
+        if (tmp != null) {
+            tmp.close(reason);
+        }
+    }
+
+    public void setPreSendIsWrite(boolean preSendIsWrite) {
+        this.preSendIsWrite = preSendIsWrite;
+    }
+
+    public long getPreWriteResponseTime() {
+        return this.preWriteResponseTime;
+    }
+
+    public void resetLastSqlResponseTime() {
+        this.preWriteResponseTime = 0;
+    }
+
+    public void recordLastSqlResponseTime() {
+        if (SystemConfig.getInstance().getRwStickyTime() >= 0 && preSendIsWrite) {
+            this.preWriteResponseTime = System.currentTimeMillis();
+        }
+    }
+
+    public BackendConnection getConn() {
+        return conn;
+    }
+
+    public boolean closed() {
+        return rwSplitService.getConnection().isClosed();
+    }
+
+    public RWSplitService getService() {
+        return rwSplitService;
+    }
+
+    public void resetMultiStatementStatus() {
+        // not deal
+    }
+
+    public boolean generalNextStatement(String sql) {
+        int index = ParseUtil.findNextBreak(sql);
+        if (index + 1 < sql.length() && !ParseUtil.isEOF(sql, index)) {
+            this.remainingSql = sql.substring(index + 1);
+            return true;
+        } else {
+            this.remainingSql = null;
+            return false;
+        }
+    }
+}

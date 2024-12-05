@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright (C) 2016-2023 ActionTech.
+  ~ Copyright (C) 2016-2023 OBsharding_D.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
-<xs:schema xmlns:dble="http://dble.cloud/" elementFormDefault="qualified"
-           targetNamespace="http://dble.cloud/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xs:schema xmlns:OBsharding-D="http://OBsharding-D.cloud/" elementFormDefault="qualified"
+           targetNamespace="http://OBsharding-D.cloud/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:import schemaLocation="db_detail.xsd"/>
     <xs:element name="db">
         <xs:complexType>

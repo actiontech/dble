@@ -3,7 +3,7 @@
 
 import time
 import logging.config
-import dble_dbgroups_check as Dhcheck
+import OBsharding-D_dbgroups_check as Dhcheck
 
 # Need to update.
 
@@ -14,14 +14,14 @@ def init():
     global logfile
     logfile = './bin/custom_mysql_ha_logging.conf'
     global loggername
-    loggername = 'DBLEDbGroupsCheck'
+    loggername = 'OBsharding_DDbGroupsCheck'
 
-    # dble db.xml.
+    # OBsharding-D db.xml.
 
     global dbxml
     dbxml = './conf/db.xml'
 
-    # dble manage user.
+    # OBsharding-D manage user.
 
     global userxml
     userxml = './conf/user.xml'
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     log = logInit(logfile,loggername)
     log.info("Logger initialization is complete.")
     while "true":
-        log.info("DBLE dbGroups check begin...")
+        log.info("OBsharding-D dbGroups check begin...")
         Dhcheck.main(log,dbxml,userxml,portcnf)
-        log.info("DBLE dbGroups check end.")
+        log.info("OBsharding-D dbGroups check end.")
         time.sleep(5)

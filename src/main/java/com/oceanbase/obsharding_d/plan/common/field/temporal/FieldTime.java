@@ -1,0 +1,77 @@
+/*
+ * Copyright (C) 2016-2023 OBsharding_D.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.plan.common.field.temporal;
+
+import com.oceanbase.obsharding_d.plan.common.MySQLcom;
+import com.oceanbase.obsharding_d.plan.common.field.Field;
+import com.oceanbase.obsharding_d.plan.common.item.FieldTypes;
+import com.oceanbase.obsharding_d.plan.common.time.MySQLTime;
+import com.oceanbase.obsharding_d.plan.common.time.MyTime;
+
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+
+public class FieldTime extends FieldTemporal {
+
+    public FieldTime(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
+        super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
+    }
+
+    @Override
+    public FieldTypes fieldType() {
+        return FieldTypes.MYSQL_TYPE_TIME;
+    }
+
+    @Override
+    protected void internalJob() {
+        String ptrStr = null;
+        try {
+            ptrStr = MySQLcom.getFullString(javaCharsetName, ptr);
+        } catch (UnsupportedEncodingException ue) {
+            Field.LOGGER.info("parse string exception!", ue);
+        }
+        if (ptrStr != null) {
+            MyTime.strToTimeWithWarn(ptrStr, ltime);
+        }
+    }
+
+    @Override
+    public BigInteger valInt() {
+        internalJob();
+        return isNull() ? BigInteger.ZERO : BigInteger.valueOf(MyTime.timeToUlonglongTime(ltime));
+    }
+
+    @Override
+    public long valTimeTemporal() {
+        internalJob();
+        return isNull() ? 0 : MyTime.timeToLonglongTimePacked(ltime);
+    }
+
+    @Override
+    public long valDateTemporal() {
+        internalJob();
+        return isNull() ? 0 : MyTime.timeToLonglongDatetimePacked(ltime);
+    }
+
+    @Override
+    public int compare(byte[] v1, byte[] v2) {
+        if (v1 == null && v2 == null)
+            return 0;
+        try {
+            String sval1 = MySQLcom.getFullString(javaCharsetName, v1);
+            String sval2 = MySQLcom.getFullString(javaCharsetName, v2);
+            MySQLTime ltime1 = new MySQLTime();
+            MySQLTime ltime2 = new MySQLTime();
+            MyTime.strToTimeWithWarn(sval1, ltime1);
+            MyTime.strToTimeWithWarn(sval2, ltime2);
+            return ltime1.getCompareResult(ltime2);
+        } catch (Exception e) {
+            Field.LOGGER.info("String to biginteger exception!", e);
+            return -1;
+        }
+    }
+
+}

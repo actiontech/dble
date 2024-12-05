@@ -1,6 +1,6 @@
 # Roadmap
 
-This document defines the roadmap for dble development.
+This document defines the roadmap for OBsharding-D development.
 ##### __SQL Layer__  
 - [x] DDL
 - [x] Query Plan

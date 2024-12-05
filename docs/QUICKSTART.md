@@ -1,6 +1,6 @@
 # Quick Start
-## 1.Download dble Release 
-Get package from https://github.com/actiontech/dble/releases
+## 1.Download OBsharding-D Release 
+Get package from https://github.com.oceanbase.obsharding_d/releases
 
 ## 2.Prepare
 ### 2.1 MySQL 
@@ -30,8 +30,8 @@ Make sure JAVA version is 1.8 and JAVA_HOME has been set.The older version may o
 
 mkdir -p $working_dir  
 cd $working_dir  
-tar -xvf actiontech-dble-$version.tar.gz  
-cd $working_dir/dble/conf  
+tar -xvf oceanbase-OBsharding-D-$version.tar.gz  
+cd $working_dir/OBsharding-D/conf  
 cp rule_template.xml rule.xml  
 cp schema_template.xml schema.xml  
 cp server_template.xml server.xml  
@@ -56,7 +56,7 @@ Save the schema.xml
 start cmd:  
 
 ```  
-$working_dir/dble/bin/dble start
+$working_dir/OBsharding-D/bin/OBsharding-D start
 
 ```  
 
@@ -67,11 +67,11 @@ check log in $working_dir/logs
 tail -f logs/wrapper.log 
 ```
 
-You should see "Server startup successfully. see logs in logs/dble.log".
+You should see "Server startup successfully. see logs in logs/OBsharding-D.log".
 
 ## 5.connect
 As a distributed-database imitate mysql,you can use all Mysql classic connection.  
-In this case you can connect to the dble using command:
+In this case you can connect to the OBsharding-D using command:
 ```
 mysql -p -P8066 -h 127.0.0.1 -u root
 ```  
@@ -95,8 +95,8 @@ show full tables;
 
 ```   
 
-cd $working_dir/dble
-./bin/dble stop
+cd $working_dir/OBsharding-D
+./bin/OBsharding-D stop
 
 ```
 

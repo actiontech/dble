@@ -2,7 +2,7 @@
 cd "$(dirname "$0")"
 echo "check JAVA_HOME & java"
 JAVA_CMD="$2"/bin/java
-MAIN_CLASS=com.actiontech.dble.cluster.general.xmltoKv.XmltoCluster
+MAIN_CLASS=com.oceanbase.obsharding_d.cluster.general.xmltoKv.XmltoCluster
 if [ ! -n "$2" ]; then
     JAVA_CMD=$JAVA_HOME/bin/java
     if [ ! -d "$JAVA_HOME" ]; then
@@ -16,12 +16,12 @@ fi
 echo "---------set HOME_DIR------------"
 CURR_DIR=`pwd`
 cd ..
-DBLE_HOME="$1"
+OBsharding_D_HOME="$1"
 if [ ! -n "$1" ]; then
-    DBLE_HOME=`pwd`
+    OBsharding_D_HOME=`pwd`
 fi
 cd $CURR_DIR
-$JAVA_CMD -Xms256M -Xmx1G  -DhomePath=$DBLE_HOME -cp "$DBLE_HOME/conf:$DBLE_HOME/lib/*" $MAIN_CLASS
+$JAVA_CMD -Xms256M -Xmx1G  -DhomePath=$OBsharding_D_HOME -cp "$OBsharding_D_HOME/conf:$OBsharding_D_HOME/lib/*" $MAIN_CLASS
 if [ $? -eq 0 ]; then
     echo "--------finish with success -------"
     exit 0

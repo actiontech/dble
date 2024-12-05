@@ -1,5 +1,5 @@
 #!/bin/sh
-APP_NAME='dble'
+APP_NAME='OBsharding-D'
 basepath=$(cd `dirname $0`; pwd)/../..
 basepath=`(cd "$basepath"; pwd)`
 
@@ -13,5 +13,5 @@ fi
 input=$1
 export JAVA_HOME=$basepath/jdk
 pid=`(ps -ef | grep "lib/$APP_NAME" | grep -v grep|awk '{print $2}')`
-echo "su  actiontech-ushard -s /bin/bash timeout $1   $basepath/btrace/bin/btrace $pid $basepath/btrace/bin/BTraceCostTime.java > /$basepath/core/traceCost.log"
-timeout $1 su actiontech-ushard -s /bin/bash $basepath/btrace/bin/btrace $pid $basepath/btrace/bin/BTraceCostTime.java > /$basepath/core/traceCost.log
+echo "su  oceanbase-ushard -s /bin/bash timeout $1   $basepath/btrace/bin/btrace $pid $basepath/btrace/bin/BTraceCostTime.java > /$basepath/core/traceCost.log"
+timeout $1 su oceanbase-ushard -s /bin/bash $basepath/btrace/bin/btrace $pid $basepath/btrace/bin/BTraceCostTime.java > /$basepath/core/traceCost.log

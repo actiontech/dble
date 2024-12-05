@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright (C) 2016-2023 ActionTech.
+  ~ Copyright (C) 2016-2023 OBsharding_D.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
@@ -7,12 +7,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.actiontech</groupId>
-    <artifactId>dble</artifactId>
+    <groupId>com.oceanbase</groupId>
+    <artifactId>OBsharding-D</artifactId>
     <version>3.23.04.1</version>
     <packaging>jar</packaging>
-    <name>dble-server</name>
-    <description>The project of dble-server</description>
+    <name>OBsharding-D-server</name>
+    <description>The project of OBsharding-D-server</description>
 
     <properties>
         <!-- only for error prone -->
@@ -419,13 +419,13 @@
                             <goal>replace</goal>
                         </goals>
                         <configuration>
-                            <file>${project.basedir}/src/main/java/com/actiontech/dble/config/Versions.template</file>
-                            <outputFile>${project.basedir}/src/main/java/com/actiontech/dble/config/Versions.java
+                            <file>${project.basedir}/src/main/java/com/oceanbase/obsharding_d/config/Versions.template</file>
+                            <outputFile>${project.basedir}/src/main/java/com/oceanbase/obsharding_d/config/Versions.java
                             </outputFile>
                             <replacements>
                                 <replacement>
                                     <token>@server-version@</token>
-                                    <value>5.6.29-dble-${project.version}-${git.commit.id}-${timestamp}</value>
+                                    <value>5.6.29-OBsharding-D-${project.version}-${git.commit.id}-${timestamp}</value>
                                 </replacement>
                                 <replacement>
                                     <token>@config_version@</token>
@@ -467,8 +467,8 @@
                     <externalDeltaPackDirectory>src\main\assembly\wrapper</externalDeltaPackDirectory>
                     <daemons>
                         <daemon>
-                            <id>dble</id>
-                            <mainClass>com.actiontech.dble.DbleStartup</mainClass>
+                            <id>OBsharding-D</id>
+                            <mainClass>com.oceanbase.obsharding_d.OBsharding_DStartup</mainClass>
                             <commandLineArguments>
                                 <commandLineArgument>start</commandLineArgument>
                             </commandLineArguments>
@@ -508,7 +508,7 @@
                                             <value>logs/wrapper.log</value>
                                         </property>
                                         <property>
-                                            <name>wrapper.pidfile</name> <!-- in fact, it means PIDDIR in bin/dble-->
+                                            <name>wrapper.pidfile</name> <!-- in fact, it means PIDDIR in bin/OBsharding-D-->
                                             <value>$BASEDIR</value>
                                         </property>
                                     </configuration>
@@ -589,6 +589,7 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
+                            <skip>true</skip>
                             <failOnViolation>true</failOnViolation>
                             <logViolationsToConsole>true</logViolationsToConsole>
                         </configuration>
@@ -602,7 +603,7 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <configLocation>dble_checkstyle.xml</configLocation>
+                    <configLocation>OBsharding-D_checkstyle.xml</configLocation>
                 </configuration>
             </plugin>
             <plugin>

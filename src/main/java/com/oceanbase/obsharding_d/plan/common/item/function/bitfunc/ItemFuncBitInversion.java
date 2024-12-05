@@ -1,0 +1,62 @@
+/*
+ * Copyright (C) 2016-2023 OBsharding_D.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.plan.common.item.function.bitfunc;
+
+import com.oceanbase.obsharding_d.plan.common.MySQLcom;
+import com.oceanbase.obsharding_d.plan.common.field.Field;
+import com.oceanbase.obsharding_d.plan.common.item.Item;
+import com.oceanbase.obsharding_d.plan.common.item.function.primary.ItemFuncBit;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.expr.SQLUnaryExpr;
+import com.alibaba.druid.sql.ast.expr.SQLUnaryOperator;
+
+import java.math.BigInteger;
+import java.util.List;
+
+
+public class ItemFuncBitInversion extends ItemFuncBit {
+
+    public ItemFuncBitInversion(Item a, int charsetIndex) {
+        super(a, charsetIndex);
+    }
+
+    @Override
+    public final String funcName() {
+        return "~";
+    }
+
+    @Override
+    public BigInteger valInt() {
+        BigInteger res = args.get(0).valInt();
+        if (nullValue = args.get(0).isNullValue())
+            return BigInteger.ZERO;
+        // select ~1 18446744073709551614
+        if (res.compareTo(BigInteger.ZERO) > 0) {
+            return MySQLcom.BI64BACK.subtract(BigInteger.ONE).subtract(res);
+        } else if (res.compareTo(BigInteger.ZERO) == 0) {
+            return MySQLcom.BI64BACK.subtract(BigInteger.ONE);
+        } else {
+            // select ~-10; 9
+            return res.negate().subtract(BigInteger.ONE);
+        }
+    }
+
+    @Override
+    public SQLExpr toExpression() {
+        return new SQLUnaryExpr(SQLUnaryOperator.Compl, args.get(0).toExpression());
+    }
+
+    @Override
+    protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
+        List<Item> newArgs = null;
+        if (!forCalculate)
+            newArgs = cloneStructList(args);
+        else
+            newArgs = calArgs;
+        return new ItemFuncBitInversion(newArgs.get(0), charsetIndex);
+    }
+
+}

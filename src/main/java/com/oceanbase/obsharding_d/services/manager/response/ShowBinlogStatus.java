@@ -1,0 +1,286 @@
+/*
+ * Copyright (C) 2016-2023 OBsharding_D.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.services.manager.response;
+
+import com.oceanbase.obsharding_d.OBsharding_DServer;
+import com.oceanbase.obsharding_d.backend.datasource.PhysicalDbGroup;
+import com.oceanbase.obsharding_d.backend.datasource.PhysicalDbInstance;
+import com.oceanbase.obsharding_d.backend.datasource.ShardingNode;
+import com.oceanbase.obsharding_d.backend.mysql.PacketUtil;
+import com.oceanbase.obsharding_d.cluster.ClusterHelper;
+import com.oceanbase.obsharding_d.cluster.DistributeLock;
+import com.oceanbase.obsharding_d.cluster.logic.ClusterLogic;
+import com.oceanbase.obsharding_d.cluster.logic.ClusterOperation;
+import com.oceanbase.obsharding_d.cluster.path.ClusterMetaUtil;
+import com.oceanbase.obsharding_d.cluster.path.PathMeta;
+import com.oceanbase.obsharding_d.cluster.values.Empty;
+import com.oceanbase.obsharding_d.cluster.values.FeedBackType;
+import com.oceanbase.obsharding_d.cluster.values.OnlineType;
+import com.oceanbase.obsharding_d.config.ErrorCode;
+import com.oceanbase.obsharding_d.config.Fields;
+import com.oceanbase.obsharding_d.config.model.ClusterConfig;
+import com.oceanbase.obsharding_d.net.IOProcessor;
+import com.oceanbase.obsharding_d.net.connection.FrontendConnection;
+import com.oceanbase.obsharding_d.net.mysql.*;
+import com.oceanbase.obsharding_d.server.NonBlockingSession;
+import com.oceanbase.obsharding_d.services.manager.ManagerService;
+import com.oceanbase.obsharding_d.services.mysqlsharding.ShardingService;
+import com.oceanbase.obsharding_d.services.rwsplit.RWSplitService;
+import com.oceanbase.obsharding_d.sqlengine.OneRawSQLQueryResultHandler;
+import com.oceanbase.obsharding_d.sqlengine.SQLJob;
+import com.oceanbase.obsharding_d.sqlengine.SQLQueryResult;
+import com.oceanbase.obsharding_d.sqlengine.SQLQueryResultListener;
+import com.oceanbase.obsharding_d.util.StringUtil;
+import com.oceanbase.obsharding_d.util.TimeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Collectors;
+
+public final class ShowBinlogStatus {
+    private ShowBinlogStatus() {
+    }
+
+    private static final int FIELD_COUNT = 6;
+    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+    private static final FieldPacket[] FIELDS_PACKET = new FieldPacket[FIELD_COUNT];
+    private static final EOFPacket EOF = new EOFPacket();
+    private static final String[] FIELDS = new String[]{"File", "Position", "Binlog_Do_DB", "Binlog_Ignore_DB", "Executed_Gtid_Set"};
+
+    static {
+        int i = 0;
+        byte packetId = 0;
+        HEADER.setPacketId(++packetId);
+        FIELDS_PACKET[i] = PacketUtil.getField("Url", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS_PACKET[i++].setPacketId(++packetId);
+        for (String field : FIELDS) {
+            FIELDS_PACKET[i] = PacketUtil.getField(field, Fields.FIELD_TYPE_VAR_STRING);
+            FIELDS_PACKET[i++].setPacketId(++packetId);
+        }
+        EOF.setPacketId(++packetId);
+    }
+
+    private static final String SHOW_BINLOG_QUERY = "SHOW MASTER STATUS";
+    private static Logger logger = LoggerFactory.getLogger(ShowBinlogStatus.class);
+    private static AtomicInteger sourceCount;
+    private static List<RowDataPacket> rows;
+    private static volatile String errMsg = null;
+
+    public static void execute(ManagerService service) {
+        long timeout = ClusterConfig.getInstance().getShowBinlogStatusTimeout();
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            showBinlogWithCluster(service, timeout);
+        } else {
+            if (!OBsharding_DServer.getInstance().getBackupLocked().compareAndSet(false, true)) {
+                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
+            } else {
+                try {
+                    errMsg = null;
+                    if (waitAllSession(service, timeout, TimeUtil.currentTimeMillis())) {
+                        getQueryResult(service.getCharset().getResults());
+                    }
+                    writeResponse(service);
+                } finally {
+                    OBsharding_DServer.getInstance().getBackupLocked().compareAndSet(true, false);
+                }
+            }
+        }
+
+    }
+
+
+    private static void showBinlogWithCluster(ManagerService service, long timeout) {
+        //step 1 get the distributeLock
+        final ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.BINGLOG);
+        DistributeLock distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getBinlogPauseLockPath());
+        try {
+            if (!distributeLock.acquire()) {
+                errMsg = "There is another command is showing BinlogStatus";
+                return;
+            }
+            try {
+                //step 2 try to lock all the commit flag in server
+                if (!OBsharding_DServer.getInstance().getBackupLocked().compareAndSet(false, true)) {
+                    errMsg = "There is another command is showing BinlogStatus";
+                } else {
+                    //step 3 wait til other OBsharding_Ds to feedback the ucore flag
+                    errMsg = null;
+                    long beginTime = TimeUtil.currentTimeMillis();
+                    boolean isPaused = waitAllSession(service, timeout, beginTime);
+                    if (!isPaused) {
+                        return;
+                    }
+                    //step 4 notify other OBsharding-D to stop the commit & set self status
+                    PathMeta<Empty> binlogStatusPath = ClusterMetaUtil.getBinlogPauseStatusPath();
+                    clusterHelper.setKV(binlogStatusPath, new Empty());
+                    clusterHelper.createSelfTempNode(binlogStatusPath.getPath(), FeedBackType.SUCCESS);
+
+                    Map<String, OnlineType> expectedMap = ClusterHelper.getOnlineMap();
+                    while (true) {
+                        StringBuilder errorStringBuf = new StringBuilder();
+                        if (ClusterLogic.forBinlog().checkResponseForOneTime(binlogStatusPath.getPath(), expectedMap, errorStringBuf)) {
+                            errMsg = errorStringBuf.length() <= 0 ? null : errorStringBuf.toString();
+                            break;
+                        } else if (TimeUtil.currentTimeMillis() > beginTime + 2 * timeout) {
+                            errMsg = "timeout while waiting for unfinished distributed transactions.";
+                            logger.info(errMsg);
+                            break;
+                        }
+                    }
+
+                    // step 6 query for the GTID and write back to frontend connections
+                    if (errMsg == null) {
+                        getQueryResult(service.getCharset().getResults());
+                    }
+                    //step 7 delete the KVtree and notify the cluster
+                    ClusterHelper.cleanPath(binlogStatusPath);
+                }
+            } catch (Exception e) {
+                errMsg = e.getMessage();
+                logger.warn("catch Exception", e);
+            } finally {
+                OBsharding_DServer.getInstance().getBackupLocked().compareAndSet(true, false);
+                distributeLock.release();
+            }
+        } catch (Exception e) {
+            errMsg = e.getMessage();
+        } finally {
+            writeResponse(service);
+        }
+    }
+
+
+    private static void writeResponse(ManagerService service) {
+        if (errMsg == null) {
+            ByteBuffer buffer = service.allocate();
+            buffer = HEADER.write(buffer, service, true);
+            for (FieldPacket field : FIELDS_PACKET) {
+                buffer = field.write(buffer, service, true);
+            }
+            buffer = EOF.write(buffer, service, true);
+            byte packetId = EOF.getPacketId();
+            for (RowDataPacket row : rows) {
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, service, true);
+            }
+            rows.clear();
+            EOFRowPacket lastEof = new EOFRowPacket();
+            lastEof.setPacketId(++packetId);
+
+            lastEof.write(buffer, service);
+        } else {
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, errMsg);
+            errMsg = null;
+        }
+    }
+
+    public static boolean waitAllSession() {
+        logger.info("waiting all sessions of distributed transaction which are not finished.");
+        long timeout = ClusterConfig.getInstance().getShowBinlogStatusTimeout();
+        long beginTime = TimeUtil.currentTimeMillis();
+        List<NonBlockingSession> fcList = getNeedWaitSession();
+        while (!fcList.isEmpty()) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+            fcList.removeIf(session -> !session.isNeedWaitFinished());
+            if ((TimeUtil.currentTimeMillis() > beginTime + timeout)) {
+                logger.info("wait session finished timeout");
+                return false;
+            }
+        }
+        logger.info("all sessions of distributed transaction  are paused.");
+        return true;
+    }
+
+    private static boolean waitAllSession(ManagerService service, long timeout, long beginTime) {
+        logger.info("waiting all sessions of distributed transaction which are not finished.");
+        List<NonBlockingSession> fcList = getNeedWaitSession();
+        while (!fcList.isEmpty()) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+            fcList.removeIf(session -> !session.isNeedWaitFinished());
+            if (service.getConnection().isClosed()) {
+                errMsg = "client closed while waiting for unfinished distributed transactions.";
+                logger.info(errMsg);
+                return false;
+            }
+            if (TimeUtil.currentTimeMillis() > beginTime + timeout) {
+                errMsg = "timeout while waiting for unfinished distributed transactions.";
+                logger.info(errMsg);
+                return false;
+            }
+        }
+        logger.info("all sessions of distributed transaction  are paused.");
+        return true;
+    }
+
+    private static List<NonBlockingSession> getNeedWaitSession() {
+        List<NonBlockingSession> fcList = new ArrayList<>();
+        for (IOProcessor process : OBsharding_DServer.getInstance().getFrontProcessors()) {
+            for (FrontendConnection front : process.getFrontends().values()) {
+                if (front.isManager() || front.getService() instanceof RWSplitService) {
+                    continue;
+                }
+                NonBlockingSession session = ((ShardingService) front.getService()).getSession2();
+                if (session.isNeedWaitFinished()) {
+                    fcList.add(session);
+                }
+            }
+        }
+        return fcList;
+    }
+
+    /**
+     * getQueryResult: show master status
+     *
+     * @param charset
+     */
+    private static void getQueryResult(final String charset) {
+        Map<String, ShardingNode> shardingNodes = OBsharding_DServer.getInstance().getConfig().getShardingNodes();
+        Set<PhysicalDbGroup> dbGroupSet = shardingNodes.values().stream().map(ShardingNode::getDbGroup).collect(Collectors.toSet());
+        sourceCount = new AtomicInteger(dbGroupSet.size());
+        rows = new CopyOnWriteArrayList<>();
+        for (PhysicalDbGroup pool : dbGroupSet) {
+            //if WRITE_RANDOM_NODE ,may the binlog is not ready.
+            final PhysicalDbInstance source = pool.getWriteDbInstance();
+            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(FIELDS,
+                    new SQLQueryResultListener<SQLQueryResult<Map<String, String>>>() {
+                        @Override
+                        public void onResult(SQLQueryResult<Map<String, String>> result) {
+                            String url = source.getConfig().getUrl();
+                            if (!result.isSuccess()) {
+                                errMsg = "Getting binlog status from this instance[" + url + "] is failed";
+                            } else {
+                                rows.add(getRow(url, result.getResult(), charset));
+                            }
+                            sourceCount.decrementAndGet();
+                        }
+
+                    });
+            SQLJob sqlJob = new SQLJob(SHOW_BINLOG_QUERY, null, resultHandler, source);
+            sqlJob.run();
+        }
+        while (sourceCount.get() > 0) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+        }
+    }
+
+    private static RowDataPacket getRow(String url, Map<String, String> result, String charset) {
+        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+        row.add(StringUtil.encode(url, charset));
+        for (String field : FIELDS) {
+            row.add(StringUtil.encode(result.get(field), charset));
+        }
+        return row;
+    }
+}

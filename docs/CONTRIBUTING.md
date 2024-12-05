@@ -1,5 +1,5 @@
 # Contribution Guide
-dble is a community driven open source project and we welcome any contributor.This guide documents the best way to make various types of contribution to dble, including what is required before submitting a code change.  
+OBsharding-D is a community driven open source project and we welcome any contributor.This guide documents the best way to make various types of contribution to OBsharding-D, including what is required before submitting a code change.  
 Of course, contributing doesn't just mean writing code. Improving documentation and reporting bugs are also welcome.
 
 ## Contributing Bug Reports  
@@ -51,7 +51,7 @@ If you're making code more resilient, test it locally to demonstrate how exactly
 
 ### Step 1: Fork in the cloud
 
-1. Visit https://github.com/actiontech/dble
+1. Visit https://github.com.oceanbase.obsharding_d
 2. Click `Fork` button (top right) to establish a cloud-based fork.
 
 ### Step 2: Clone fork to local storage
@@ -63,22 +63,22 @@ Create your clone:
 ```
 mkdir -p $working_dir
 cd $working_dir
-git clone git@github.com:$user/dble.git
+git clone git@github.com:$user/OBsharding-D.git
 # the following is recommended
-# or: git clone https://github.com/$user/dble.git 
+# or: git clone https://github.com/$user/OBsharding-D.git 
 
-cd $working_dir/dble
-git remote add upstream git@github.com:actiontech/dble.git
-# or:git remote add upstream https://github.com/actiontech/dble.git
+cd $working_dir/OBsharding-D
+git remote add upstream git@github.com.oceanbase.obsharding_d.git
+# or:git remote add upstream https://github.com.oceanbase.obsharding_d.git
 
 # Never push to upstream master since you do not have write access
 git remote set-url --push upstream no_push
 
 # Confirm that your remotes make sense:
 # It should look like:
-# origin    git@github.com:$(user)/dble.git (fetch)
-# origin    git@github.com:$(user)/dble.git (push)
-# upstream  https://github.com/actiontech/dble (fetch)
+# origin    git@github.com:$(user)/OBsharding-D.git (fetch)
+# origin    git@github.com:$(user)/OBsharding-D.git (push)
+# upstream  https://github.com.oceanbase.obsharding_d (fetch)
 # upstream  no_push (push)
 git remote -v
 ```
@@ -89,7 +89,7 @@ git remote -v
 Get your local master up to date:
 
 ```sh
-cd $working_dir/dble
+cd $working_dir/OBsharding-D
 git fetch upstream
 git checkout master
 git rebase upstream/master
@@ -144,7 +144,7 @@ git push -f origin yours-issue
 
 ### Step 8: Create a pull request
 
-1. Visit your fork at https://github.com/$user/dble (replace `$user` obviously).
+1. Visit your fork at https://github.com/$user/OBsharding-D (replace `$user` obviously).
 2. Click the `Compare & pull request` button next to your `yours-issue` branch.
 
 #### Step 9: get a code review
@@ -162,7 +162,7 @@ review.
 
 ## Commit message style
 
-Please follow this style to make dble easy to review, maintain and develop.
+Please follow this style to make OBsharding-D easy to review, maintain and develop.
 
 ```
 <what changed>

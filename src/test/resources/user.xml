@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (C) 2016-2023 ActionTech.
+  ~ Copyright (C) 2016-2023 OBsharding_D.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
@@ -12,7 +12,7 @@
 	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the
 	License for the specific language governing permissions and - limitations
 	under the License. -->
-<dble:user xmlns:dble="http://dble.cloud/" version="3.0">
+<OBsharding-D:user xmlns:OBsharding-D="http://OBsharding-D.cloud/" version="3.0">
     <managerUser name="man1" password="654321" whiteIPs="127.0.0.1,0:0:0:0:0:0:0:1" readOnly="false"/>
     <shardingUser name="test" password="test"
                   schemas="testdb,dbtest,mysqldb,cndb,TESTDB,dubbo,dubbo2,config,none_node_test,solo1,ignoreSchemaTest">
@@ -23,4 +23,4 @@
             </schema>
         </privileges>
     </shardingUser>
-</dble:user>
+</OBsharding-D:user>

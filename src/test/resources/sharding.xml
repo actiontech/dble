@@ -1,9 +1,9 @@
 <!--
-  ~ Copyright (C) 2016-2023 ActionTech.
+  ~ Copyright (C) 2016-2023 OBsharding_D.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
-<dble:sharding xmlns:dble="http://dble.cloud/" version="3.0">
+<OBsharding-D:sharding xmlns:OBsharding-D="http://OBsharding-D.cloud/" version="3.0">
     <schema name="cndb">
         <shardingTable name="offer" shardingNode="offer_dn$0-127" function="func" shardingColumn="member_id"/>
         <shardingTable name="offer_detail" shardingNode="detail_dn0,detail_dn$1-127" function="func2"
@@ -87,39 +87,39 @@
     <shardingNode name="dnTest2" dbGroup="localhost4" database="db2"/>
     <shardingNode name="dnTest3" dbGroup="localhost4" database="db3"/>
     <!-- 路由函数定义 -->
-    <function name="func0" class="com.actiontech.dble.route.function.PartitionByLong">
+    <function name="func0" class="com.oceanbase.obsharding_d.route.function.PartitionByLong">
         <property name="partitionCount">2</property>
         <property name="partitionLength">512</property>
     </function>
 
 
     <function name="func1"
-              class="com.actiontech.dble.route.function.PartitionByFileMap">
+              class="com.oceanbase.obsharding_d.route.function.PartitionByFileMap">
         <property name="defaultNode">0</property>
         <property name="mapFile">sharding.txt</property>
     </function>
     <function name="func"
-              class="com.actiontech.dble.route.function.PartitionByString">
+              class="com.oceanbase.obsharding_d.route.function.PartitionByString">
         <property name="partitionCount">128</property>
         <property name="partitionLength">8</property>
         <property name="hashSlice">:8</property>
     </function>
-    <function name="func2" class="com.actiontech.dble.route.function.PartitionByLong">
+    <function name="func2" class="com.oceanbase.obsharding_d.route.function.PartitionByLong">
         <property name="partitionCount">128</property>
         <property name="partitionLength">8</property>
     </function>
     <function name="rang-long"
-              class="com.actiontech.dble.route.function.AutoPartitionByLong">
+              class="com.oceanbase.obsharding_d.route.function.AutoPartitionByLong">
         <property name="mapFile">autopartition-long.txt</property>
     </function>
     <function name="rang-long2"
-              class="com.actiontech.dble.route.function.AutoPartitionByLong">
+              class="com.oceanbase.obsharding_d.route.function.AutoPartitionByLong">
         <property name="mapFile">autopartition-long2.txt</property>
     </function>
     <function name="by-date"
-              class="com.actiontech.dble.route.function.PartitionByDate">
+              class="com.oceanbase.obsharding_d.route.function.PartitionByDate">
         <property name="sBeginDate">2014-01-01</property>
         <property name="sPartionDay">10</property>
         <property name="dateFormat">yyyy-MM-dd</property>
     </function>
-</dble:sharding>
+</OBsharding-D:sharding>

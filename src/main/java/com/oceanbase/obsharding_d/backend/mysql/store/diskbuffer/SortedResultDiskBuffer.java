@@ -1,0 +1,155 @@
+/*
+ * Copyright (C) 2016-2023 OBsharding_D.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.oceanbase.obsharding_d.backend.mysql.store.diskbuffer;
+
+import com.oceanbase.obsharding_d.backend.mysql.nio.handler.util.ArrayMinHeap;
+import com.oceanbase.obsharding_d.backend.mysql.nio.handler.util.RowDataComparator;
+import com.oceanbase.obsharding_d.buffer.BufferPool;
+import com.oceanbase.obsharding_d.buffer.BufferPoolRecord;
+import com.oceanbase.obsharding_d.net.mysql.RowDataPacket;
+import com.oceanbase.obsharding_d.util.MinHeap;
+import com.oceanbase.obsharding_d.util.TimeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+/**
+ * sort need diskbuffer, when done() is called,users use next() to get the
+ * result rows which have been sorted already
+ *
+ * @author oceanbase
+ */
+public class SortedResultDiskBuffer extends ResultDiskBuffer {
+    private final Logger logger = LoggerFactory.getLogger(SortedResultDiskBuffer.class);
+
+    /**
+     * the tapes to store data, which is sorted each, so we can use minheap to
+     * sort them
+     */
+    protected final ArrayList<ResultDiskTape> tapes;
+    /**
+     * the sort comparator
+     */
+    private final RowDataComparator comparator;
+    /**
+     * the heap used for sorting the sorted tapes
+     */
+    protected MinHeap<TapeItem> heap;
+    protected Comparator<TapeItem> heapCmp;
+
+    public SortedResultDiskBuffer(BufferPool pool, int columnCount, RowDataComparator cmp, BufferPoolRecord.Builder bufferRecordBuilder) {
+        super(pool, columnCount, bufferRecordBuilder);
+        tapes = new ArrayList<>();
+        this.comparator = cmp;
+        this.heapCmp = new Comparator<TapeItem>() {
+            @Override
+            public int compare(TapeItem o1, TapeItem o2) {
+                RowDataPacket row1 = o1.row;
+                RowDataPacket row2 = o2.row;
+                if (row1 == null || row2 == null) {
+                    if (row1 == row2)
+                        return 0;
+                    if (row1 == null)
+                        return -1;
+                    return 1;
+                }
+                return comparator.compare(row1, row2);
+            }
+        };
+    }
+
+    @Override
+    public final int tapeCount() {
+        return tapes.size();
+    }
+
+    @Override
+    public final int addRows(List<RowDataPacket> rows) {
+        /**
+         * we should make rows sorted first, then writeDirectly them into file
+         */
+        if (logger.isDebugEnabled()) {
+            logger.debug(" convert list to array start:" + TimeUtil.currentTimeMillis());
+        }
+        RowDataPacket[] rowArray = new RowDataPacket[rows.size()];
+        rows.toArray(rowArray);
+        final long start = file.getFilePointer();
+        for (RowDataPacket row : rowArray) {
+            byte[] b = row.toBytes();
+            writeBuffer = writeToBuffer(b, writeBuffer);
+        }
+        // help for gc
+        rowArray = null;
+        writeBuffer.flip();
+        file.write(writeBuffer);
+        writeBuffer.clear();
+        /* make a new tape */
+        ResultDiskTape tape = makeResultDiskTape();
+        tape.start = start;
+        tape.filePos = start;
+        tape.end = file.getFilePointer();
+        tapes.add(tape);
+        rowCount += rows.size();
+        if (logger.isDebugEnabled()) {
+            logger.debug("writeDirectly rows to disk end:" + TimeUtil.currentTimeMillis());
+        }
+        return rowCount;
+    }
+
+    /**
+     * to override by group by
+     *
+     * @return
+     */
+    protected ResultDiskTape makeResultDiskTape() {
+        return new ResultDiskTape(pool, file, columnCount, bufferRecordBuilder);
+    }
+
+    @Override
+    public RowDataPacket next() {
+        if (heap.isEmpty())
+            return null;
+        TapeItem tapeItem = heap.poll();
+        RowDataPacket newRow = tapeItem.tape.nextRow();
+        if (newRow != null) {
+            heap.add(new TapeItem(newRow, tapeItem.tape));
+        }
+        return tapeItem.row;
+    }
+
+    @Override
+    public final void reset() {
+        for (ResultDiskTape tape : tapes) {
+            tape.filePos = tape.start;
+            tape.pos = tape.start;
+            tape.readBufferOffset = 0;
+            tape.readBuffer.clear();
+        }
+        resetHeap();
+    }
+
+    @Override
+    public void close() {
+        for (ResultDiskTape tape : tapes) {
+            tape.clear();
+        }
+        super.close();
+    }
+
+    protected void resetHeap() {
+        if (heap == null)
+            heap = new ArrayMinHeap<>(tapes.size(), this.heapCmp);
+        heap.clear();
+        // init heap
+        for (ResultDiskTape tape : tapes) {
+            heap.add(new TapeItem(tape.nextRow(), tape));
+        }
+    }
+
+}

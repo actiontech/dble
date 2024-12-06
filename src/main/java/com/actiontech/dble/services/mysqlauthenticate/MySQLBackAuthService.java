@@ -17,10 +17,8 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.AuthService;
-import com.actiontech.dble.net.service.ServiceTask;
-import com.actiontech.dble.net.service.WriteFlags;
+import com.actiontech.dble.net.service.*;
+import com.actiontech.dble.net.ssl.OpenSSLWrapper;
 import com.actiontech.dble.services.BackendService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -167,7 +165,13 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         String serverPlugin = new String(handshakePacket.getAuthPluginName());
         try {
             pluginName = PluginName.valueOf(serverPlugin);
-            sendAuthPacket(++data[3]);
+            if (connection.isSupportSSL()) {//todo:move config in dbinstance scope
+                sendSSLRequestPacket(++data[3]);
+                connection.sendSSLHandShake(OpenSSLWrapper.PROTOCOL);
+            } else {
+                sendAuthPacket(++data[3]);
+            }
+
         } catch (IllegalArgumentException | NoSuchAlgorithmException e) {
             String authPluginErrorMessage = "Client don't support the password plugin " + serverPlugin + ",please check the default auth Plugin";
             throw new RuntimeException(authPluginErrorMessage);
@@ -187,6 +191,17 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         packet.setDatabase(schema);
         packet.bufferWrite(connection);
     }
+
+    private void sendSSLRequestPacket(byte packetId) throws NoSuchAlgorithmException {
+        SSLRequestPacket packet = new SSLRequestPacket();
+        packet.setPacketId(packetId);
+        packet.setMaxPacketSize(SystemConfig.getInstance().getMaxPacketSize());
+        int charsetIndex = CharsetUtil.getCharsetDefaultIndex(SystemConfig.getInstance().getCharset());
+        packet.setCharsetIndex(charsetIndex);
+        packet.setClientFlags(getClientFlagSha());
+        packet.bufferWrite(connection);
+    }
+
 
     private void sendSwitchResponse(byte[] authData, byte packetId) {
         AuthSwitchResponsePackage packet = new AuthSwitchResponsePackage();
@@ -255,7 +270,7 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         }
     }
 
-    private static long initClientFlags() {
+    private long initClientFlags() {
         int flag = 0;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
         boolean isEnableCapClientFoundRows = CapClientFoundRows.getInstance().isEnableCapClientFoundRows();
@@ -274,6 +289,9 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         flag |= Capabilities.CLIENT_IGNORE_SPACE;
         flag |= Capabilities.CLIENT_PROTOCOL_41;
         flag |= Capabilities.CLIENT_INTERACTIVE;
+        if (connection.isSupportSSL()) {
+            flag |= Capabilities.CLIENT_SSL;
+        }
         // flag |= Capabilities.CLIENT_SSL;
         flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;
         flag |= Capabilities.CLIENT_TRANSACTIONS;
@@ -323,4 +341,35 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
             return DbleServer.getInstance().getBackendExecutor();
         }
     }
+
+    @Override
+    public void consumeSingleTask(ServiceTask serviceTask) {
+        //The close packet can't be filtered
+        if (beforeHandlingTask(serviceTask) || (serviceTask.getType() == ServiceTaskType.CLOSE)) {
+            if (serviceTask.getType() == ServiceTaskType.NORMAL) {
+                final byte[] data = ((NormalServiceTask) serviceTask).getOrgData();
+                handleInnerData(data);
+            } else if (serviceTask.getType() == ServiceTaskType.SSL) {
+                final byte[] data = ((SSLProtoServerTask) serviceTask).getOrgData();
+                handleSSLProtoData(data);
+            } else {
+                handleSpecialInnerData((InnerServiceTask) serviceTask);
+            }
+        }
+        afterDispatchTask(serviceTask);
+    }
+
+    private void handleSSLProtoData(byte[] data) {
+        final boolean prevSslHandshakeSuccess = this.connection.isSSLHandshakeSuccess();
+        connection.doSSLHandShake(data);
+        if (this.connection.isSSLHandshakeSuccess() && !prevSslHandshakeSuccess) {
+            try {
+                final int sslHandshakeResponsePacketId = 2;
+                sendAuthPacket((byte) sslHandshakeResponsePacketId);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
 }

@@ -73,6 +73,9 @@ public class XAAnalysisHandler extends XAHandler {
     }
 
     private void checkResidualXid(boolean isStartup) {
+        if (SystemConfig.getInstance().getBackendMode() == SystemConfig.BackendMode.OB) {
+            return;
+        }
         Set<Long> usedXaid = getCurrentUsedXaids();
         usedXaid.add(DbleServer.getInstance().getXaIDInc());
         if (LOGGER.isDebugEnabled()) {

@@ -82,6 +82,21 @@ public final class ParameterMapping {
                     src.remove(propertyName);
                     continue;
                 }
+            } else if (cls.isEnum()) {
+                try {
+                    value = Enum.valueOf((Class<Enum>) cls, (valStr).toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    String propertyName = pd.getName();
+                    String message = getEnumErrorMessage(propertyName, valStr, cls);
+                    if (problemReporter != null) {
+                        problemReporter.warn(message);
+                        errorParameters.add(message);
+                    } else {
+                        LOGGER.warn(message);
+                    }
+                    src.remove(propertyName);
+                    continue;
+                }
             }
             if (value != null) {
                 Method method = pd.getWriteMethod();
@@ -127,6 +142,19 @@ public final class ParameterMapping {
                     value = convert(cls, valStr);
                 } catch (NumberFormatException nfe) {
                     String msg = getTypeErrorMessage(propertyName, valStr, cls);
+                    if (problemReporter != null) {
+                        problemReporter.warn(msg);
+                    } else {
+                        LOGGER.warn(msg);
+                    }
+                    systemProperties.remove(propertyName);
+                    continue;
+                }
+            } else if (cls.isEnum()) {
+                try {
+                    value = Enum.valueOf((Class<Enum>) cls, valStr);
+                } catch (IllegalArgumentException e) {
+                    String msg = getEnumErrorMessage(propertyName, valStr, cls);
                     if (problemReporter != null) {
                         problemReporter.warn(msg);
                     } else {
@@ -275,5 +303,13 @@ public final class ParameterMapping {
         sb.append("property [ ").append(name).append(" ] '").append(values).append("' data type should be ").append(cls.toString());
         return sb.toString();
     }
+
+    private static String getEnumErrorMessage(String name, String values, Class<?> cls) {
+        String message = getErrorCompatibleMessage(name);
+        StringBuilder sb = new StringBuilder(message);
+        sb.append("property [ ").append(name).append(" ] '").append(values).append("'  isn't a valid value.");
+        return sb.toString();
+    }
+
 
 }

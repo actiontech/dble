@@ -8,6 +8,7 @@ package com.actiontech.dble.net.ssl;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.factory.TrustAllManager;
 import com.actiontech.dble.util.StringUtil;
+import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
-public class GMSslWrapper extends OpenSSLWrapper {
+public class GMSslWrapper implements IOpenSSLWrapper {
     private static final Logger LOGGER = LoggerFactory.getLogger(GMSslWrapper.class);
 
     public static final Integer PROTOCOL = 2;
@@ -27,6 +28,7 @@ public class GMSslWrapper extends OpenSSLWrapper {
 
     private SSLContext context;
 
+    @Override
     public boolean initContext() {
         try {
 
@@ -105,7 +107,8 @@ public class GMSslWrapper extends OpenSSLWrapper {
     }
 
 
-    public SSLEngine appleSSLEngine(boolean isAuthClient) {
+    @Override
+    public SSLEngine createServerSSLEngine(boolean isAuthClient) {
         SSLEngine engine = context.createSSLEngine();
         engine.setUseClientMode(false);
         engine.setEnabledProtocols("GMSSLv1.1".split(","));
@@ -116,4 +119,8 @@ public class GMSslWrapper extends OpenSSLWrapper {
         return engine;
     }
 
+    @Override
+    public SSLEngine createClientSSLEngine() {
+        throw new NotImplementedException();
+    }
 }

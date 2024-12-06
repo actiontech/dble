@@ -152,9 +152,12 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration.The default value is ''"));
         readOnlyParams.add(new ParamInfo("enableSessionActiveRatioStat", FrontActiveRatioStat.getInstance().isEnable() ? "1" : "0", "Whether frontend connection activity ratio statistics are enabled. The default value is 1."));
         readOnlyParams.add(new ParamInfo("enableConnectionAssociateThread", ConnectionAssociateThreadManager.getInstance().isEnable() ? "1" : "0", "Whether to open frontend connection and backend connection are associated with threads. The default value is 1."));
-        readOnlyParams.add(new ParamInfo("isSupportSSL", SystemConfig.getInstance().isSupportSSL() + "", "isSupportSSL in configuration"));
+        readOnlyParams.add(new ParamInfo("isSupportFrontSSL", SystemConfig.getInstance().isSupportFrontSSL() + "", "isSupportFrontSSL in configuration"));
+        readOnlyParams.add(new ParamInfo("isSupportBackSSL", SystemConfig.getInstance().isSupportBackSSL() + "", "isSupportBackSSL in configuration"));
+        readOnlyParams.add(new ParamInfo("getBackendMode", SystemConfig.getInstance().getBackendMode() + "", "getBackendMode in configuration"));
         readOnlyParams.add(new ParamInfo("isSupportOpenSSL", (SSLWrapperRegistry.getInstance(OpenSSLWrapper.PROTOCOL) != null) + "", "Whether OpenSSL is actually supported"));
         readOnlyParams.add(new ParamInfo("serverCertificateKeyStoreUrl", SystemConfig.getInstance().getServerCertificateKeyStoreUrl() + "", "Service certificate required of OpenSSL"));
+        readOnlyParams.add(new ParamInfo("clientCertificateKeyStoreUrl", SystemConfig.getInstance().getClientCertificateKeyStoreUrl() + "", "client certificate required of OpenSSL"));
         readOnlyParams.add(new ParamInfo("trustCertificateKeyStoreUrl", SystemConfig.getInstance().getTrustCertificateKeyStoreUrl() + "", "Trust certificate required of OpenSSL"));
         readOnlyParams.add(new ParamInfo("isSupportGMSSL", (SSLWrapperRegistry.getInstance(GMSslWrapper.PROTOCOL) != null) + "", "Whether GMSSL is actually supported"));
         readOnlyParams.add(new ParamInfo("gmsslBothPfx", SystemConfig.getInstance().getGmsslBothPfx() + "", "National secret dual certificate/private key file in PFX format"));

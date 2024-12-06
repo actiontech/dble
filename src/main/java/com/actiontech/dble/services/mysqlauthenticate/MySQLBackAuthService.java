@@ -165,7 +165,8 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         String serverPlugin = new String(handshakePacket.getAuthPluginName());
         try {
             pluginName = PluginName.valueOf(serverPlugin);
-            if (connection.isSupportSSL()) {//todo:move config in dbinstance scope
+            if (connection.isSupportSSL()) {
+                //todo:move config in dbinstance scope
                 sendSSLRequestPacket(++data[3]);
                 connection.sendSSLHandShake(OpenSSLWrapper.PROTOCOL);
             } else {

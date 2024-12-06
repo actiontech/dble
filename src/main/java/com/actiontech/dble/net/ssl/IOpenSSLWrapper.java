@@ -13,9 +13,9 @@ import javax.net.ssl.SSLEngine;
  * Create Date: 2024-12-05
  */
 public interface IOpenSSLWrapper {
-    public SSLEngine createClientSSLEngine();
+    SSLEngine createClientSSLEngine();
 
-    public boolean initContext();
+    boolean initContext();
 
-    public SSLEngine createServerSSLEngine(boolean isAuthClient);
+    SSLEngine createServerSSLEngine(boolean isAuthClient);
 }

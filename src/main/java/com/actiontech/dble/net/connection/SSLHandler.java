@@ -6,7 +6,7 @@
 package com.actiontech.dble.net.connection;
 
 import com.actiontech.dble.net.service.WriteFlags;
-import com.actiontech.dble.net.ssl.OpenSSLWrapper;
+import com.actiontech.dble.net.ssl.IOpenSSLWrapper;
 import com.actiontech.dble.util.ByteBufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,16 +23,17 @@ import java.util.Objects;
 
 public class SSLHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(SSLHandler.class);
-    private final FrontendConnection con;
+    private final AbstractConnection con;
     private final NetworkChannel channel;
 
     private volatile ByteBuffer decryptOut;
 
-    private OpenSSLWrapper sslWrapper;
+    private IOpenSSLWrapper sslWrapper;
     private volatile SSLEngine engine;
     private volatile boolean isHandshakeSuccess = false;
 
-    public SSLHandler(FrontendConnection con) {
+
+    public SSLHandler(AbstractConnection con) {
         this.con = con;
         this.channel = con.getChannel();
     }
@@ -41,7 +42,14 @@ public class SSLHandler {
         if (sslWrapper == null) {
             return;
         }
-        this.engine = sslWrapper.appleSSLEngine(true);
+
+        if (con instanceof BackendConnection) {
+            this.engine = sslWrapper.createClientSSLEngine();
+            engine.beginHandshake();
+        } else if (con instanceof FrontendConnection) {
+            this.engine = sslWrapper.createServerSSLEngine(true);
+        }
+
         if (this.channel instanceof SocketChannel) {
             ((SocketChannel) this.channel).configureBlocking(false);
         }
@@ -50,6 +58,26 @@ public class SSLHandler {
 
     public void handShake(byte[] data) throws SSLException {
         unwrapNonAppData(data);
+    }
+
+
+    public void sendhandShake() throws SSLException {
+
+        try {
+            final SSLEngineResult.HandshakeStatus handshakeStatus = engine.getHandshakeStatus();
+
+            switch (handshakeStatus) {
+                case NEED_WRAP:
+                    wrapNonAppData();
+                    break;
+                default:
+                    throw new IllegalStateException("unknown handshake status: " + handshakeStatus);
+            }
+
+        } catch (SSLException e) {
+            LOGGER.warn("during the handshake, unwrap data exception: ", e);
+            con.close("during the handshake, unwrap data fail");
+        }
     }
 
     /**
@@ -61,16 +89,17 @@ public class SSLHandler {
         in.flip();
 
         try {
-            for (; ; ) {
+
                 final SSLEngineResult result = unwrap(engine, in);
                 final Status status = result.getStatus();
-                final SSLEngineResult.HandshakeStatus handshakeStatus = result.getHandshakeStatus();
+
                 final int produced = result.bytesProduced();
                 final int consumed = result.bytesConsumed();
                 if (status == Status.CLOSED) {
                     return;
                 }
-
+            for (; ; ) {
+                final SSLEngineResult.HandshakeStatus handshakeStatus = engine.getHandshakeStatus();
                 switch (handshakeStatus) {
                     case NEED_WRAP:
                         wrapNonAppData();
@@ -79,13 +108,23 @@ public class SSLHandler {
                         runDelegatedTasks();
                         break;
                     case FINISHED:
-                        /*setHandshakeSuccess();
-                        continue;*/
+                        setHandshakeSuccess();
+                        break;
                     case NEED_UNWRAP:
+                        break;
                     case NOT_HANDSHAKING:
+                        LOGGER.info("connection {} migrate status to NOT_HANDSHAKING", con);
+                        setHandshakeSuccess();
                         break;
                     default:
                         throw new IllegalStateException("unknown handshake status: " + handshakeStatus);
+                }
+
+                if (handshakeStatus == SSLEngineResult.HandshakeStatus.FINISHED || handshakeStatus == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
+                    break;
+                }
+                if (handshakeStatus == SSLEngineResult.HandshakeStatus.NEED_UNWRAP) {
+                    break;
                 }
                 if (status == Status.BUFFER_UNDERFLOW || consumed == 0 && produced == 0) {
                     break;
@@ -180,6 +219,9 @@ public class SSLHandler {
                         break;
                     default:
                         throw new IllegalStateException("Unknown handshake status: " + result.getHandshakeStatus());
+                }
+                if (result.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_WRAP) {
+                    break;
                 }
                 if (result.bytesProduced() == 0) {
                     break;
@@ -294,7 +336,7 @@ public class SSLHandler {
         return newBuffer;
     }
 
-    public void setSslWrapper(OpenSSLWrapper sslWrapper) {
+    public void setSslWrapper(IOpenSSLWrapper sslWrapper) {
         this.sslWrapper = sslWrapper;
     }
 

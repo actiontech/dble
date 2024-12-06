@@ -53,7 +53,14 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
         if (columnIsolation == null) {
             return keyVariables;
         }
-        String[] columns = new String[]{COLUMN_LOWER_CASE, COLUMN_AUTOCOMMIT, COLUMN_READONLY, COLUMN_MAX_PACKET, columnIsolation, COLUMN_VERSION, COLUMN_BACK_LOG};
+
+        String[] columns;
+        if (SystemConfig.getInstance().getBackendMode() == SystemConfig.BackendMode.OB) {
+            columns = new String[]{COLUMN_LOWER_CASE, COLUMN_AUTOCOMMIT, COLUMN_READONLY, COLUMN_MAX_PACKET, columnIsolation, COLUMN_VERSION};
+        } else {
+            columns = new String[]{COLUMN_LOWER_CASE, COLUMN_AUTOCOMMIT, COLUMN_READONLY, COLUMN_MAX_PACKET, columnIsolation, COLUMN_VERSION, COLUMN_BACK_LOG};
+        }
+
         StringBuilder sql = new StringBuilder("select ");
         for (int i = 0; i < columns.length; i++) {
             if (i != 0) {
@@ -125,7 +132,9 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
                 keyVariablesTmp.setTargetMaxPacketSize(SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE);
                 keyVariablesTmp.setReadOnly(result.getResult().get(COLUMN_READONLY).equals("1"));
                 keyVariablesTmp.setVersion(result.getResult().get(COLUMN_VERSION));
-                keyVariablesTmp.setBackLog(Integer.parseInt(result.getResult().get(COLUMN_BACK_LOG)));
+                if (SystemConfig.getInstance().getBackendMode() != SystemConfig.BackendMode.OB) {
+                    keyVariablesTmp.setBackLog(Integer.parseInt(result.getResult().get(COLUMN_BACK_LOG)));
+                }
 
                 if (needSync) {
                     boolean checkNeedSync = false;

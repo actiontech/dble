@@ -245,6 +245,10 @@ public final class SystemConfig {
 
     private String serverCertificateKeyStoreUrl = null;
     private String serverCertificateKeyStorePwd = null;
+    private String clientCertificateKeyStoreUrl = null;
+    private String clientCertificateKeyStorePwd = null;
+
+
     private String trustCertificateKeyStoreUrl = null;
     private String trustCertificateKeyStorePwd = null;
 
@@ -253,8 +257,10 @@ public final class SystemConfig {
     private String gmsslBothPfxPwd = null;
     private String gmsslRcaPem = null;
     private String gmsslOcaPem = null;
-    private boolean supportSSL = false;
+    private boolean supportFrontSSL = false;
+    private boolean supportBackSSL = false;
 
+    private BackendMode backendMode = BackendMode.MYSQL;
     private int enableAsyncRelease = 1;
     //unit: ms
     private long releaseTimeout = 10L;
@@ -307,6 +313,22 @@ public final class SystemConfig {
         if (serverCertificateKeyStorePwd != null) {
             this.serverCertificateKeyStorePwd = serverCertificateKeyStorePwd;
         }
+    }
+
+    public String getClientCertificateKeyStoreUrl() {
+        return clientCertificateKeyStoreUrl;
+    }
+
+    public void setClientCertificateKeyStoreUrl(String clientCertificateKeyStoreUrl) {
+        this.clientCertificateKeyStoreUrl = clientCertificateKeyStoreUrl;
+    }
+
+    public String getClientCertificateKeyStorePwd() {
+        return clientCertificateKeyStorePwd;
+    }
+
+    public void setClientCertificateKeyStorePwd(String clientCertificateKeyStorePwd) {
+        this.clientCertificateKeyStorePwd = clientCertificateKeyStorePwd;
     }
 
     public String getTrustCertificateKeyStoreUrl() {
@@ -1842,15 +1864,30 @@ public final class SystemConfig {
         this.dataCenter = dataCenter;
     }
 
-    public boolean isSupportSSL() {
-        return supportSSL;
+    public boolean isSupportFrontSSL() {
+        return supportFrontSSL;
     }
 
     @SuppressWarnings("unused")
-    public void setSupportSSL(boolean supportSSL) {
-        this.supportSSL = supportSSL;
+    public void setSupportFrontSSL(boolean supportFrontSSL) {
+        this.supportFrontSSL = supportFrontSSL;
     }
 
+    public boolean isSupportBackSSL() {
+        return supportBackSSL;
+    }
+
+    public void setSupportBackSSL(boolean supportBackSSL) {
+        this.supportBackSSL = supportBackSSL;
+    }
+
+    public BackendMode getBackendMode() {
+        return backendMode;
+    }
+
+    public void setBackendMode(BackendMode backendMode) {
+        this.backendMode = backendMode;
+    }
 
     public int getEnableMemoryBufferMonitor() {
         return enableMemoryBufferMonitor;
@@ -2039,13 +2076,16 @@ public final class SystemConfig {
                 ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 ", serverCertificateKeyStoreUrl=" + serverCertificateKeyStoreUrl +
                 ", serverCertificateKeyStorePwd=" + serverCertificateKeyStorePwd +
+                ", clientCertificateKeyStoreUrl=" + clientCertificateKeyStoreUrl +
+                ", clientCertificateKeyStorePwd=" + clientCertificateKeyStorePwd +
+                ", supportBackSSL=" + supportBackSSL +
                 ", trustCertificateKeyStoreUrl=" + trustCertificateKeyStoreUrl +
                 ", trustCertificateKeyStorePwd=" + trustCertificateKeyStorePwd +
                 ", gmsslBothPfx=" + gmsslBothPfx +
                 ", gmsslBothPfxPwd=" + gmsslBothPfxPwd +
                 ", gmsslRcaPem=" + gmsslRcaPem +
                 ", gmsslOcaPem=" + gmsslOcaPem +
-                ", supportSSL=" + supportSSL +
+                ", supportFrontSSL=" + supportFrontSSL +
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
                 ", enableSessionActiveRatioStat=" + enableSessionActiveRatioStat +
@@ -2101,5 +2141,9 @@ public final class SystemConfig {
         if (!StringUtil.isChinese(chinese)) {
             problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal,the " + Charset.defaultCharset().name() + " encoding is recommended, Property [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
         }
+    }
+
+    public enum BackendMode {
+        MYSQL, OB
     }
 }

@@ -297,7 +297,7 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
         flag |= Capabilities.CLIENT_IGNORE_SPACE;
         flag |= Capabilities.CLIENT_PROTOCOL_41;
         flag |= Capabilities.CLIENT_INTERACTIVE;
-        if (SystemConfig.getInstance().isSupportSSL()) {
+        if (connection.isSupportSSL()) {
             flag |= Capabilities.CLIENT_SSL;
         }
         flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;

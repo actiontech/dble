@@ -9,6 +9,8 @@ package com.actiontech.dble.net.connection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.PooledConnectionListener;
 import com.actiontech.dble.backend.pool.ReadTimeStatusInstance;
+import com.actiontech.dble.buffer.BufferType;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
@@ -21,6 +23,8 @@ import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.util.TimeUtil;
 
+import javax.net.ssl.SSLException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
 
@@ -128,6 +132,8 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public synchronized void close(final String reason) {
+        if (isUseSSL()) sslHandler.close();
+
         if (getCloseReason() == null || !getCloseReason().equals(reason))
             LOGGER.info("connection id " + id + " mysqlId " + threadId + " close for reason " + reason);
         boolean isAuthed = !this.getService().isFakeClosed() && !(this.getService() instanceof AuthService);
@@ -217,6 +223,12 @@ public class BackendConnection extends PooledConnection {
         this.socketWR.doNextWriteCheck();
     }
 
+
+    protected void handleNonSSL(ByteBuffer dataBuffer) throws IOException {
+        super.handle(dataBuffer, false);
+    }
+
+
     public long getThreadId() {
         return threadId;
     }
@@ -251,4 +263,96 @@ public class BackendConnection extends PooledConnection {
     public String toString2() {
         return "BackendConnection[id = " + id + " host = " + host + " port = " + port + " localPort = " + localPort + " mysqlId = " + threadId + " db config = " + instance + "]";
     }
+
+
+    @Override
+    public void compactReadBuffer(ByteBuffer dataBuffer, int offset, boolean isSSL) throws IOException {
+        if (dataBuffer == null) {
+            return;
+        }
+        if (isSupportSSL && isSSL) {
+            dataBuffer.flip();
+            dataBuffer.position(offset);
+            int len = netReadBuffer.position() + (dataBuffer.limit() - dataBuffer.position());
+            if (netReadBuffer.capacity() < len) {
+                processSSLPacketNotBigEnough(netReadBuffer, 0, len);
+            }
+            this.netReadBuffer.put(dataBuffer);
+            dataBuffer.clear();
+            handleSSLData(netReadBuffer);
+        } else {
+            dataBuffer.limit(dataBuffer.position());
+            dataBuffer.position(offset);
+            setBottomReadBuffer(dataBuffer.compact());
+        }
+    }
+
+    @Override
+    public ByteBuffer wrap(ByteBuffer orgBuffer) throws SSLException {
+        if (!isUseSSL()) return orgBuffer;
+        return sslHandler.wrapAppData(orgBuffer);
+    }
+
+    @Override
+    public ByteBuffer findReadBuffer() {
+        if (isSupportSSL && maybeUseSSL()) {
+            if (this.netReadBuffer == null) {
+                netReadBuffer = allocate(processor.getBufferPool().getChunkSize(), generateBufferRecordBuilder().withType(BufferType.POOL));
+            }
+            return netReadBuffer;
+        } else {
+            //only recycle this read buffer
+            recycleNetReadBuffer();
+            return super.findReadBuffer();
+        }
+    }
+
+    private void recycleNetReadBuffer() {
+        if (this.netReadBuffer != null) {
+            this.recycle(this.netReadBuffer);
+            this.netReadBuffer = null;
+        }
+    }
+
+    @Override
+    ByteBuffer getReadBuffer() {
+        if (isSupportSSL && maybeUseSSL()) {
+            return netReadBuffer;
+        } else {
+            return super.getReadBuffer();
+        }
+    }
+
+    private void transferToReadBuffer(ByteBuffer dataBuffer) {
+        if (!isSupportSSL || !maybeUseSSL()) return;
+        dataBuffer.flip();
+        ByteBuffer readBuffer = findBottomReadBuffer();
+        int len = readBuffer.position() + dataBuffer.limit();
+        if (readBuffer.capacity() < len) {
+            readBuffer = ensureReadBufferFree(readBuffer, len);
+        }
+        readBuffer.put(dataBuffer);
+        dataBuffer.clear();
+    }
+
+
+    @Override
+    protected void handle(ByteBuffer dataBuffer, boolean isContainSSLData) throws IOException {
+        if (this.isSupportSSL && isUseSSL() && isSSLHandshakeSuccess()) {
+            //after ssl-client hello
+            handleSSLData(dataBuffer);
+        } else {
+            //ssl buffer -> bottomRead buffer
+            transferToReadBuffer(dataBuffer);
+            if (maybeUseSSL()) {
+                //ssl login request(non ssl)&client hello(ssl)
+                super.handle(getBottomReadBuffer(), true);
+            } else {
+                //no ssl
+                handleNonSSL(getBottomReadBuffer());
+            }
+        }
+    }
+
+
 }

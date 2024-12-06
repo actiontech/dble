@@ -20,17 +20,25 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
-public class OpenSSLWrapper {
+public class OpenSSLWrapper implements IOpenSSLWrapper {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSSLWrapper.class);
 
     private static final String PROTO = "TLS";
 
-    private SSLContext context;
+    private SSLContext clientContext;
+    private SSLContext serverContext;
 
     public static final Integer PROTOCOL = 1;
     protected static final String NAME = "OpenSSL";
 
+    @Override
     public boolean initContext() {
+        final boolean a = initClientContext();
+        final boolean b = initServerContext();
+        return a || b;
+    }
+
+    private boolean initServerContext() {
         String serverCertificateKeyStoreUrl = SystemConfig.getInstance().getServerCertificateKeyStoreUrl();
         String serverCertificateKeyStorePwd = SystemConfig.getInstance().getServerCertificateKeyStorePwd();
         String trustCertificateKeyStoreUrl = SystemConfig.getInstance().getTrustCertificateKeyStoreUrl();
@@ -50,18 +58,51 @@ public class OpenSSLWrapper {
                 return false;
             }
 
-            context = SSLContext.getInstance(PROTO);
+            serverContext = SSLContext.getInstance(PROTO);
 
             KeyManager[] keyM = createKeyManagers(serverCertificateKeyStoreUrl, serverCertificateKeyStorePwd);
             TrustManager[] trustM = StringUtil.isBlank(trustCertificateKeyStoreUrl) ? null : createTrustManagers(trustCertificateKeyStoreUrl, trustCertificateKeyStorePwd);
 
-            context.init(keyM, trustM, null);
+            serverContext.init(keyM, trustM, null);
             return true;
         } catch (Exception e) {
             LOGGER.error("OpenSSL initialization exception: ", e);
         }
         return false;
     }
+
+    private boolean initClientContext() {
+        final String clientCertificateKeyStoreUrl = SystemConfig.getInstance().getClientCertificateKeyStoreUrl();
+        final String clientCertificateKeyStorePwd = SystemConfig.getInstance().getClientCertificateKeyStorePwd();
+        String trustCertificateKeyStoreUrl = SystemConfig.getInstance().getTrustCertificateKeyStoreUrl();
+        String trustCertificateKeyStorePwd = SystemConfig.getInstance().getTrustCertificateKeyStorePwd();
+        try {
+
+            if (!StringUtil.isBlank(trustCertificateKeyStoreUrl) && StringUtil.isBlank(trustCertificateKeyStorePwd)) {
+                LOGGER.warn("Please set the correct [trustCertificateKeyStoreUrl] value.");
+                return false;
+            }
+
+            clientContext = SSLContext.getInstance(PROTO);
+
+
+            TrustManager[] trustM = StringUtil.isBlank(trustCertificateKeyStoreUrl) ? null : createTrustManagers(trustCertificateKeyStoreUrl, trustCertificateKeyStorePwd);
+
+            if (StringUtil.isBlank(clientCertificateKeyStorePwd) && StringUtil.isBlank(clientCertificateKeyStoreUrl)) {
+                LOGGER.warn("doesn't detect client Certificate for server ssl, use One-way Authentication instead.");
+                clientContext.init(null, trustM, null);
+            } else {
+                KeyManager[] keyM = createKeyManagers(clientCertificateKeyStoreUrl, clientCertificateKeyStorePwd);
+                clientContext.init(keyM, trustM, null);
+            }
+
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("OpenSSL initialization exception: ", e);
+        }
+        return false;
+    }
+
 
 
     private static KeyManager[] createKeyManagers(String filepath, String keystorePassword) throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException {
@@ -90,13 +131,14 @@ public class OpenSSLWrapper {
         return trustFactory.getTrustManagers();
     }
 
-    public SSLEngine appleSSLEngine(boolean isAuthClient) {
-        SSLEngine engine = context.createSSLEngine();
+    @Override
+    public SSLEngine createServerSSLEngine(boolean isAuthClient) {
+        SSLEngine engine = serverContext.createSSLEngine();
         engine.setUseClientMode(false);
 
-        /*engine.setEnabledCipherSuites(context.getServerSocketFactory().getSupportedCipherSuites());
-        engine.setEnabledProtocols(new String[]{"TLSv1.1","TLSv1.2"});*/
+        //        engine.setEnabledCipherSuites(serverContext.getServerSocketFactory().getSupportedCipherSuites());
 
+        engine.setEnabledProtocols(new String[]{"TLSv1.1", "TLSv1.2"});
         if (isAuthClient) {
             engine.setWantClientAuth(true); // request the client authentication.
             // engine.setNeedClientAuth(true);  // require client authentication.
@@ -104,4 +146,15 @@ public class OpenSSLWrapper {
         return engine;
     }
 
+    @Override
+    public SSLEngine createClientSSLEngine() {
+        SSLEngine engine = clientContext.createSSLEngine();
+        engine.setUseClientMode(true);
+        engine.setEnabledProtocols(new String[]{"TLSv1.1", "TLSv1.2"});
+
+        /*engine.setEnabledCipherSuites(context.getServerSocketFactory().getSupportedCipherSuites());
+        engine.setEnabledProtocols(new String[]{"TLSv1.1","TLSv1.2"});*/
+
+        return engine;
+    }
 }

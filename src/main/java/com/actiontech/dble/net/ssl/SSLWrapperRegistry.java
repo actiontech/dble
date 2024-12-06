@@ -11,7 +11,7 @@ import java.util.Map;
 
 public final class SSLWrapperRegistry {
 
-    protected static final Map<Integer, OpenSSLWrapper> SSL_CONTEXT_REGISTRY = Maps.newHashMap();
+    protected static final Map<Integer, IOpenSSLWrapper> SSL_CONTEXT_REGISTRY = Maps.newHashMap();
 
     static {
         register(OpenSSLWrapper.PROTOCOL, new OpenSSLWrapper());
@@ -21,11 +21,11 @@ public final class SSLWrapperRegistry {
     private SSLWrapperRegistry() {
     }
 
-    static void register(int protocol, OpenSSLWrapper sslWrapper) {
+    static void register(int protocol, IOpenSSLWrapper sslWrapper) {
         SSL_CONTEXT_REGISTRY.put(protocol, sslWrapper);
     }
 
-    public static OpenSSLWrapper getInstance(int protocol) {
+    public static IOpenSSLWrapper getInstance(int protocol) {
         return SSL_CONTEXT_REGISTRY.get(protocol);
     }
 

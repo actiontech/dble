@@ -6,6 +6,7 @@
 package com.actiontech.dble.net.connection;
 
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
+import com.actiontech.dble.backend.mysql.proto.handler.Impl.SSLProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResultCode;
@@ -18,6 +19,8 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.service.*;
+import com.actiontech.dble.net.ssl.IOpenSSLWrapper;
+import com.actiontech.dble.net.ssl.SSLWrapperRegistry;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.TransactionOperate;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLFrontAuthService;
@@ -26,6 +29,7 @@ import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.statistic.stat.FrontActiveRatioStat;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
+import com.actiontech.dble.util.exception.NotSupportException;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -93,6 +97,12 @@ public abstract class AbstractConnection implements Connection {
 
     protected volatile Boolean requestSSL;
 
+    protected volatile boolean isSupportSSL;
+    protected volatile SSLHandler sslHandler;
+    protected String sslName;
+
+    protected volatile ByteBuffer netReadBuffer;
+
     public AbstractConnection(NetworkChannel channel, SocketWR socketWR) {
         this.channel = channel;
         this.socketWR = socketWR;
@@ -102,6 +112,11 @@ public abstract class AbstractConnection implements Connection {
         this.lastWriteTime = startupTime;
         this.proto = new MySQLProtoHandlerImpl(this);
         FrontActiveRatioStat.getInstance().register(this, startupTime);
+        if (this instanceof BackendConnection) {
+            this.isSupportSSL = SystemConfig.getInstance().isSupportBackSSL();
+        } else if (this instanceof FrontendConnection) {
+            this.isSupportSSL = SystemConfig.getInstance().isSupportFrontSSL();
+        }
     }
 
     public void onReadData(int got) throws IOException {
@@ -813,7 +828,177 @@ public abstract class AbstractConnection implements Connection {
     }
 
 
-    public void initSSLContext(int protocol) {
 
+    public void initSSLContext(int protocol) {
+        if (sslHandler != null) {
+            return;
+        }
+        sslHandler = new SSLHandler(this);
+        IOpenSSLWrapper sslWrapper = SSLWrapperRegistry.getInstance(protocol);
+        if (sslWrapper == null) {
+            throw new NotSupportException("not support " + SSLWrapperRegistry.SSLProtocol.nameOf(protocol));
+        }
+        sslName = SSLWrapperRegistry.SSLProtocol.nameOf(protocol);
+        sslHandler.setSslWrapper(sslWrapper);
     }
+
+    public ByteBuffer ensureReadBufferFree(ByteBuffer oldBuffer, int expectSize) {
+        ByteBuffer newBuffer = allocate(expectSize < 0 ? processor.getBufferPool().getChunkSize() : expectSize, generateBufferRecordBuilder().withType(BufferType.POOL));
+        oldBuffer.flip();
+        newBuffer.put(oldBuffer);
+        setBottomReadBuffer(newBuffer);
+
+        oldBuffer.clear();
+        recycle(oldBuffer);
+
+        return newBuffer;
+    }
+
+
+    public void handleSSLData(ByteBuffer dataBuffer) throws IOException {
+        if (dataBuffer == null) {
+            return;
+        }
+        int offset = 0;
+        SSLProtoHandler proto = new SSLProtoHandler(this);
+        boolean hasRemaining = true;
+        while (hasRemaining) {
+            ProtoHandlerResult result = proto.handle(dataBuffer, offset, false, true);
+            switch (result.getCode()) {
+                case SSL_PROTO_PACKET:
+                case SSL_CLOSE_PACKET:
+                    if (!result.isHasMorePacket()) {
+                        netReadReachEnd();
+                        final ByteBuffer tmpReadBuffer = getBottomReadBuffer();
+                        if (tmpReadBuffer != null) {
+                            tmpReadBuffer.clear();
+                        }
+                    }
+                    processSSLProto(result.getPacketData(), result.getCode());
+                    if (!result.isHasMorePacket()) {
+                        dataBuffer.clear();
+                    }
+                    break;
+                case SSL_APP_PACKET:
+                    if (!result.isHasMorePacket()) {
+                        netReadReachEnd();
+                    }
+                    processSSLAppData(result.getPacketData());
+                    if (!result.isHasMorePacket()) {
+                        dataBuffer.clear();
+                    }
+                    break;
+                case BUFFER_PACKET_UNCOMPLETE:
+                    processSSLPacketUnComplete(dataBuffer, offset);
+                    break;
+                case SSL_BUFFER_NOT_BIG_ENOUGH:
+                    processSSLPacketNotBigEnough(dataBuffer, result.getOffset(), result.getPacketLength());
+                    break;
+                default:
+                    break;
+            }
+            hasRemaining = result.isHasMorePacket();
+            if (hasRemaining) {
+                offset = result.getOffset();
+            }
+        }
+    }
+
+
+    private void netReadReachEnd() {
+        // if cur buffer is temper none direct byte buffer and not
+        // received large message in recent 30 seconds
+        // then change to direct buffer for performance
+        ByteBuffer localReadBuffer = netReadBuffer;
+        if (localReadBuffer != null && !localReadBuffer.isDirect() && lastLargeMessageTime < lastReadTime - 30 * 1000L) {  // used temp heap
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + localReadBuffer.capacity());
+            }
+            recycle(localReadBuffer);
+            netReadBuffer = allocate(readBufferChunk, generateBufferRecordBuilder().withType(BufferType.POOL));
+        } else {
+            if (localReadBuffer != null) {
+                IODelayProvider.inReadReachEnd();
+                localReadBuffer.clear();
+            }
+        }
+    }
+
+    private void processSSLAppData(byte[] packetData) throws IOException {
+        if (packetData == null) return;
+        sslHandler.unwrapAppData(packetData);
+        handleNonSSL(getBottomReadBuffer());
+    }
+
+    public void processSSLPacketNotBigEnough(ByteBuffer buffer, int offset, final int pkgLength) {
+        ByteBuffer newBuffer = allocate(pkgLength, generateBufferRecordBuilder().withType(BufferType.POOL));
+        buffer.position(offset);
+        newBuffer.put(buffer);
+        this.netReadBuffer = newBuffer;
+        recycle(buffer);
+    }
+
+    private void processSSLPacketUnComplete(ByteBuffer buffer, int offset) {
+        if (buffer == null) {
+            return;
+        }
+        buffer.limit(buffer.position());
+        buffer.position(offset);
+        netReadBuffer = buffer.compact();
+    }
+
+    protected abstract void handleNonSSL(ByteBuffer dataBuffer) throws IOException;
+
+    public void doSSLHandShake(byte[] data) {
+        try {
+            if (!isUseSSL()) {
+                close("SSL not initialized");
+                return;
+            }
+            if (!sslHandler.isCreateEngine()) {
+                sslHandler.createEngine();
+            }
+            sslHandler.handShake(data);
+        } catch (SSLException e) {
+            LOGGER.warn("SSL handshake failed, exception: ", e);
+            close("SSL handshake failed");
+        } catch (IOException e) {
+            LOGGER.warn("SSL initialization failed, exception: ", e);
+            close("SSL initialization failed");
+        }
+    }
+
+    public void sendSSLHandShake(int protocol) {
+        try {
+            this.initSSLContext(protocol);
+            if (!isUseSSL()) {
+                close("SSL not initialized");
+                return;
+            }
+            if (!sslHandler.isCreateEngine()) {
+                sslHandler.createEngine();
+            }
+            sslHandler.sendhandShake();
+        } catch (SSLException e) {
+            LOGGER.warn("SSL handshake failed, exception: ", e);
+            close("SSL handshake failed");
+        } catch (IOException e) {
+            LOGGER.warn("SSL initialization failed, exception: ", e);
+            close("SSL initialization failed");
+        }
+    }
+
+
+    public boolean isUseSSL() {
+        return sslHandler != null;
+    }
+
+    public boolean isSupportSSL() {
+        return isSupportSSL;
+    }
+
+    public boolean isSSLHandshakeSuccess() {
+        return sslHandler != null && sslHandler.isHandshakeSuccess();
+    }
+
 }

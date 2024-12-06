@@ -11,6 +11,7 @@ import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.connection.AbstractConnection;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
 
 /**
@@ -53,4 +54,8 @@ public class FakeConnection extends AbstractConnection {
 
     }
 
+    @Override
+    protected void handleNonSSL(ByteBuffer dataBuffer) throws IOException {
+
+    }
 }

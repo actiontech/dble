@@ -343,7 +343,7 @@ public class BackendConnection extends PooledConnection {
         } else {
             //ssl buffer -> bottomRead buffer
             transferToReadBuffer(dataBuffer);
-            if (maybeUseSSL()) {
+            if (isSupportSSL && maybeUseSSL()) {
                 //ssl login request(non ssl)&client hello(ssl)
                 super.handle(getBottomReadBuffer(), true);
             } else {

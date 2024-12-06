@@ -860,10 +860,10 @@ public abstract class AbstractConnection implements Connection {
             return;
         }
         int offset = 0;
-        SSLProtoHandler proto = new SSLProtoHandler(this);
+        SSLProtoHandler sslProtoHandler = new SSLProtoHandler(this);
         boolean hasRemaining = true;
         while (hasRemaining) {
-            ProtoHandlerResult result = proto.handle(dataBuffer, offset, false, true);
+            ProtoHandlerResult result = sslProtoHandler.handle(dataBuffer, offset, false, true);
             switch (result.getCode()) {
                 case SSL_PROTO_PACKET:
                 case SSL_CLOSE_PACKET:

@@ -73,7 +73,6 @@ public class SSLHandler {
                 default:
                     throw new IllegalStateException("unknown handshake status: " + handshakeStatus);
             }
-
         } catch (SSLException e) {
             LOGGER.warn("during the handshake, unwrap data exception: ", e);
             con.close("during the handshake, unwrap data fail");
@@ -90,14 +89,14 @@ public class SSLHandler {
 
         try {
 
-                final SSLEngineResult result = unwrap(engine, in);
-                final Status status = result.getStatus();
+            final SSLEngineResult result = unwrap(engine, in);
+            final Status status = result.getStatus();
 
-                final int produced = result.bytesProduced();
-                final int consumed = result.bytesConsumed();
-                if (status == Status.CLOSED) {
-                    return;
-                }
+            final int produced = result.bytesProduced();
+            final int consumed = result.bytesConsumed();
+            if (status == Status.CLOSED) {
+                return;
+            }
             for (; ; ) {
                 final SSLEngineResult.HandshakeStatus handshakeStatus = engine.getHandshakeStatus();
                 switch (handshakeStatus) {

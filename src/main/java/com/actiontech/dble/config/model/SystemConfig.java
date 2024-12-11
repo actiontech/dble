@@ -84,6 +84,7 @@ public final class SystemConfig {
     private long idleTimeout = DEFAULT_IDLE_TIMEOUT;
     // sql execute timeout (second)
     private long sqlExecuteTimeout = 300;
+    private long heartbeatSqlExecuteTimeout = 10;
     // connection will force close if received close packet but haven't been closed after closeTimeout milliseconds.
     // set the value too big is not a good idea.
     private long closeTimeout = 100;
@@ -781,6 +782,14 @@ public final class SystemConfig {
         }
     }
 
+
+    public long getHeartbeatSqlExecuteTimeout() {
+        return heartbeatSqlExecuteTimeout;
+    }
+
+    public void setHeartbeatSqlExecuteTimeout(long heartbeatSqlExecuteTimeout) {
+        this.heartbeatSqlExecuteTimeout = heartbeatSqlExecuteTimeout;
+    }
 
     public int getTxIsolation() {
         return txIsolation;
@@ -1698,6 +1707,7 @@ public final class SystemConfig {
                 ", groupConcatMaxLen='" + groupConcatMaxLen +
                 ", releaseTimeout=" + releaseTimeout +
                 ", enableAsyncRelease=" + enableAsyncRelease +
+                ", heartbeatSqlExecuteTimeout=" + heartbeatSqlExecuteTimeout +
                 "]";
     }
 

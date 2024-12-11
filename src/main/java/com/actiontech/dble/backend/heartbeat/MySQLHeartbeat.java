@@ -46,6 +46,7 @@ public class MySQLHeartbeat {
     private final DbInstanceSyncRecorder asyncRecorder = new DbInstanceSyncRecorder();
     private final PhysicalDbInstance source;
     protected volatile MySQLHeartbeatStatus status;
+    private volatile long beginTimeoutTime = 0;
     private String heartbeatSQL;
     private long heartbeatTimeout; // during the time, heart failed will ignore
     private final AtomicInteger errorCount = new AtomicInteger(0);
@@ -257,8 +258,14 @@ public class MySQLHeartbeat {
         }
         if (status != MySQLHeartbeatStatus.TIMEOUT) {
             LOGGER.warn("heartbeat to [{}] setTimeout, previous status is {}", source.getDbGroupConfig().getName() + ":" + source.getConfig().getInstanceName() + ":" + source.getConfig().getUrl(), status);
+            beginTimeoutTime = System.currentTimeMillis();
             status = MySQLHeartbeatStatus.TIMEOUT;
         }
+    }
+
+
+    public long getBeginTimeoutTime() {
+        return beginTimeoutTime;
     }
 
     public boolean isHeartBeatOK() {

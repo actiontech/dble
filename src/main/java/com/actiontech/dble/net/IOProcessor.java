@@ -7,9 +7,6 @@ package com.actiontech.dble.net;
 
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.heartbeat.HeartbeatSQLJob;
-import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
-import com.actiontech.dble.backend.heartbeat.MySQLHeartbeatStatus;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAStage;
 import com.actiontech.dble.backend.mysql.xa.TxState;
@@ -192,7 +189,6 @@ public final class IOProcessor {
 
     private void backendCheck() {
         long sqlTimeout = SystemConfig.getInstance().getSqlExecuteTimeout() * 1000L;
-        final long heartbeatSqlExecuteTimeout = SystemConfig.getInstance().getHeartbeatSqlExecuteTimeout() * 1000L;
         Iterator<Entry<Long, BackendConnection>> it = backends.entrySet().iterator();
         while (it.hasNext()) {
             BackendConnection c = it.next().getValue();
@@ -232,14 +228,6 @@ public final class IOProcessor {
             if (!c.getBackendService().isDDL() && c.getState() == PooledConnection.STATE_IN_USE && c.getBackendService().isExecuting() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
                 LOGGER.info("found backend connection SQL timeout ,close it " + c);
                 c.close("sql timeout");
-            } else if ((c.getBackendService().getResponseHandler() instanceof HeartbeatSQLJob)) {
-                if (heartbeatSqlExecuteTimeout > 0) {
-                    final MySQLHeartbeat heartbeat = ((HeartbeatSQLJob) c.getBackendService().getResponseHandler()).getHeartbeat();
-                    if (c.getBackendService().isExecuting() && heartbeat.getStatus() == MySQLHeartbeatStatus.TIMEOUT && heartbeat.getBeginTimeoutTime() < System.currentTimeMillis() - heartbeatSqlExecuteTimeout) {
-                        LOGGER.info("found backend heartbeat connection SQL timeout ,close it " + c);
-                        c.close("heart sql timeout");
-                    }
-                }
             }
 
             // clean closed conn or check time out

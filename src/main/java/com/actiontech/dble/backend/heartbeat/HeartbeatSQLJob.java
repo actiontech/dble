@@ -206,9 +206,4 @@ public class HeartbeatSQLJob implements ResponseHandler {
     public boolean isQuit() {
         return connectionRef.getStamp() == 2;
     }
-
-
-    public MySQLHeartbeat getHeartbeat() {
-        return heartbeat;
-    }
 }

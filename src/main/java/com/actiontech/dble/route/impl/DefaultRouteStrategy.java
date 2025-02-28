@@ -21,6 +21,8 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DefaultRouteStrategy extends AbstractRouteStrategy {
 
@@ -41,6 +43,18 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
     }
 
     private SQLStatement parserSQL(String originSql, ServerConnection c) throws SQLSyntaxErrorException {
+
+        // 提取 SELECT 和 FROM 之间的字段部分（忽略大小写）
+        Pattern pattern = Pattern.compile("(?i)SELECT\\s+(.*?)\\s+FROM", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(originSql);
+        if (matcher.find()) {
+            String selectList = matcher.group(1);
+            // 仅检查字段列表中的逗号
+            if (Pattern.compile("[，\\uFF0C]").matcher(selectList).find()) {
+                throw new SQLSyntaxErrorException("invalid chinese symbol ，");
+            }
+        }
+
         SQLStatementParser parser = new MySqlStatementParser(originSql);
         try {
             return parser.parseStatement(true);

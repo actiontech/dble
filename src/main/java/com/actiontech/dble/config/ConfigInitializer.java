@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.cluster.values.ConfStatus;
+import com.actiontech.dble.config.helper.CreateDelayDetectTableTask;
 import com.actiontech.dble.config.helper.TestSchemasTask;
 import com.actiontech.dble.config.helper.TestTask;
 import com.actiontech.dble.config.loader.xml.XMLDbLoader;
@@ -161,7 +162,7 @@ public class ConfigInitializer implements ProblemReporter {
             if (allUseShardingNode.contains(shardingNodeName)) {
                 shardingNodeGroup = entry.getValue().getDbGroup();
                 if (shardingNodeGroup != null) {
-                    shardingNodeGroup.setShardingUseless(false);
+                    shardingNodeGroup.setUsedForSharding();
                 } else {
                     throw new ConfigException("dbGroup not exists " + entry.getValue().getDbGroupName());
                 }
@@ -183,10 +184,30 @@ public class ConfigInitializer implements ProblemReporter {
                 group = this.dbGroups.get(rwSplitUserConfig.getDbGroup());
                 if (group == null) {
                     throw new ConfigException("The user's group[" + rwSplitUserConfig.getName() + "." + rwSplitUserConfig.getDbGroup() + "] for rwSplit isn't configured in db.xml.");
-                } else if (!group.isShardingUseless()) {
+                } else if (group.usedForSharding()) {
                     throw new ConfigException("The group[" + rwSplitUserConfig.getName() + "." + rwSplitUserConfig.getDbGroup() + "] has been used by sharding node, can't be used by rwSplit.");
                 } else {
-                    group.setRwSplitUseless(false);
+                    group.setUsedForRW();
+                }
+            }
+        }
+    }
+
+    public void createDelayDetectTable() {
+        String dbGroupName;
+        PhysicalDbGroup dbGroup;
+        for (Map.Entry<String, PhysicalDbGroup> entry : this.dbGroups.entrySet()) {
+            dbGroup = entry.getValue();
+            dbGroupName = entry.getKey();
+            if (dbGroup.usedForRW()) {
+                for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
+                    if (ds.getDbGroupConfig().isDelayDetection() && !ds.isSalveOrRead()) {
+                        BoolPtr createTablePtr = new BoolPtr(false);
+                        createDelayDetectTable(ds, createTablePtr);
+                        if (!createTablePtr.get()) {
+                            throw new ConfigException("create delay table error, please check dbInstance[" + dbGroupName + "." + ds.getName() + "].");
+                        }
+                    }
                 }
             }
         }
@@ -205,7 +226,7 @@ public class ConfigInitializer implements ProblemReporter {
             if (SystemConfig.getInstance().isSkipTestConOnUpdate()) {
                 if (reloadContext != null && !reloadContext.getAffectDbInstanceList().isEmpty()) {
                     if (reloadContext.getConfStatus() != ConfStatus.Status.MANAGER_DELETE) {
-                        boolean useSharding = reloadContext.getAffectDbInstanceList().stream().map(ele -> dbGroups.get(ele.getGroupName())).anyMatch((ele) -> ele != null && !ele.isShardingUseless());
+                        boolean useSharding = reloadContext.getAffectDbInstanceList().stream().map(ele -> dbGroups.get(ele.getGroupName())).anyMatch((ele) -> ele != null && ele.usedForSharding());
 
                         //not support for sharding db group
                         if (!useSharding) {
@@ -311,6 +332,17 @@ public class ConfigInitializer implements ProblemReporter {
             isConnectivity = false;
         }
         return isConnectivity;
+    }
+
+    private void createDelayDetectTable(PhysicalDbInstance ds, BoolPtr createTablePtr) {
+        try {
+            CreateDelayDetectTableTask testSchemaTask = new CreateDelayDetectTableTask(ds, createTablePtr);
+            testSchemaTask.start();
+            testSchemaTask.join(3000);
+        } catch (InterruptedException e) {
+            LOGGER.warn("SelfCheck### createDelayDetectTable error", e);
+            createTablePtr.set(false);
+        }
     }
 
     private Map<String, List<Pair<String, String>>> genDbInstanceSchemaMap() {

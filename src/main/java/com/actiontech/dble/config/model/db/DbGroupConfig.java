@@ -8,6 +8,7 @@ package com.actiontech.dble.config.model.db;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.base.Strings;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,6 +24,8 @@ public class DbGroupConfig {
     private boolean isShowSlaveSql = false;
     private boolean isSelectReadOnlySql = false;
     private int delayThreshold;
+    private int delayPeriodMillis;
+    private String delayDatabase;
 
     private int heartbeatTimeout = 0;
     private int errorRetryCount = 1;
@@ -130,5 +133,25 @@ public class DbGroupConfig {
 
     public void setDisableHA(boolean disableHA) {
         this.disableHA = disableHA;
+    }
+
+    public int getDelayPeriodMillis() {
+        return delayPeriodMillis;
+    }
+
+    public void setDelayPeriodMillis(int delayPeriodMillis) {
+        this.delayPeriodMillis = delayPeriodMillis;
+    }
+
+    public String getDelayDatabase() {
+        return delayDatabase;
+    }
+
+    public void setDelayDatabase(String delayDatabase) {
+        this.delayDatabase = delayDatabase;
+    }
+
+    public boolean isDelayDetection() {
+        return !Strings.isNullOrEmpty(delayDatabase) && delayThreshold > 0 && delayPeriodMillis > 0;
     }
 }

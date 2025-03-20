@@ -364,18 +364,8 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
             return;
         }
 
-        heartbeat.start();
         if (initHeartbeat.compareAndSet(false, true)) {
-
-            heartbeat.setScheduledFuture(Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
-                if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
-                    if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
-                        return;
-                    }
-
-                    heartbeat.heartbeat();
-                }
-            }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS));
+            heartbeat.start(heartbeatRecoveryTime);
         } else {
             LOGGER.warn("init dbInstance[{}] heartbeat, but it has been initialized, skip initialization.", heartbeat.getSource().getName());
         }

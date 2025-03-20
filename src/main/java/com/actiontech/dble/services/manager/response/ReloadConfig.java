@@ -238,6 +238,8 @@ public final class ReloadConfig {
                 }
             }
 
+            loader.createDelayDetectTable();
+
             boolean forceAllReload = false;
 
             if ((loadAllMode & ManagerParseConfig.OPTR_MODE) != 0) {
@@ -285,6 +287,9 @@ public final class ReloadConfig {
                 }
             }
             checkTestConnIfNeed(loadAllMode, loader);
+            if (loader.isFullyConfigured()) {
+                loader.createDelayDetectTable();
+            }
 
             Map<UserName, UserConfig> newUsers = serverConfig.getUsers();
             Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
@@ -394,6 +399,9 @@ public final class ReloadConfig {
                 }
             }
             checkTestConnIfNeed(loadAllMode, loader);
+            if (loader.isFullyConfigured()) {
+                loader.createDelayDetectTable();
+            }
 
             Map<UserName, UserConfig> newUsers = serverConfig.getUsers();
             Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();

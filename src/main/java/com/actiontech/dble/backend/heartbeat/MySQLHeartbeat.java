@@ -51,6 +51,7 @@ public class MySQLHeartbeat {
     public static final int TIMEOUT_STATUS = -2;
 
     private final AtomicBoolean isChecking = new AtomicBoolean(false);
+    private final AtomicBoolean initHeartbeat = new AtomicBoolean(false);
     private final PhysicalDbInstance source;
     protected volatile int status;
     private String heartbeatSQL;
@@ -112,27 +113,31 @@ public class MySQLHeartbeat {
             stop("the legacy thread is not closed");
         }
         isStop = false;
-
-        long heartbeatPeriodMillis;
-        long initialDelay = 0;
-        if (isDelayDetection) {
-            heartbeatPeriodMillis = source.getDbGroupConfig().getDelayPeriodMillis();
-            if (source.isReadInstance()) {
-                initialDelay = source.getDbGroupConfig().getDelayPeriodMillis();
+        if (initHeartbeat.compareAndSet(false, true)) {
+            long heartbeatPeriodMillis;
+            long initialDelay = 0;
+            if (isDelayDetection) {
+                heartbeatPeriodMillis = source.getDbGroupConfig().getDelayPeriodMillis();
+                if (source.isReadInstance()) {
+                    initialDelay = source.getDbGroupConfig().getDelayPeriodMillis();
+                }
+            } else {
+                heartbeatPeriodMillis = (int) source.getConfig().getPoolConfig().getHeartbeatPeriodMillis();
             }
+
+            this.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
+                if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
+                    if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
+                        return;
+                    }
+
+                    heartbeat();
+                }
+            }, initialDelay, heartbeatPeriodMillis, TimeUnit.MILLISECONDS);
         } else {
-            heartbeatPeriodMillis = (int) source.getConfig().getPoolConfig().getHeartbeatPeriodMillis();
+            LOGGER.warn("init dbInstance[{}] heartbeat, but it has been initialized, skip initialization.", source.getName());
         }
 
-        this.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
-            if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
-                if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
-                    return;
-                }
-
-                heartbeat();
-            }
-        }, initialDelay, heartbeatPeriodMillis, TimeUnit.MILLISECONDS);
     }
 
     public void stop(String reason) {
@@ -143,6 +148,7 @@ public class MySQLHeartbeat {
         LOGGER.info("stop heartbeat of instance[{}], due to {}", source.getConfig().getUrl(), reason);
         isStop = true;
         scheduledFuture.cancel(false);
+        initHeartbeat.set(false);
         this.status = INIT_STATUS;
         if (detector != null && !detector.isQuit()) {
             detector.quit();

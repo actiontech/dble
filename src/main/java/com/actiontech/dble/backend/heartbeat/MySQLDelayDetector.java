@@ -7,7 +7,6 @@ package com.actiontech.dble.backend.heartbeat;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.backend.delyDetection.DelayDetectionStatus;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,26 +33,28 @@ public class MySQLDelayDetector extends MySQLDetector {
         if (source.isReadInstance()) {
             String logicTimestamp = Optional.ofNullable(resultResult.get("logic_timestamp")).orElse("0");
             long logic = Long.parseLong(logicTimestamp);
-            delayCal(logic);
+            delayCal(logic, source.getDbGroupConfig().getDelayThreshold());
+        } else {
+            heartbeat.setSlaveBehindMaster(null);
+            heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_NORMAL);
         }
     }
 
-    public void delayCal(long delay) {
+    private void delayCal(long delay, long delayThreshold) {
         PhysicalDbGroup dbGroup = heartbeat.getSource().getDbGroup();
         long logic = dbGroup.getLogicTimestamp().get();
         long result = logic - delay;
-        int writeDbStatus = dbGroup.getWriteDbInstance().getHeartbeat().getDbSynStatus();
-        // writeDbStatus is error,salve was considered normal
-        if (writeDbStatus == MySQLHeartbeat.DB_SYN_ERROR) {
+        if (result >= 0) {
+            long delayVal = result * dbGroup.getDbGroupConfig().getDelayPeriodMillis();
+            if (delayThreshold > 0 && delayVal > delayThreshold) {
+                MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " + heartbeat.getSource().getConfig() + ", binlog sync time delay: " + delayVal + "ms");
+            }
+            heartbeat.setSlaveBehindMaster((int) delayVal);
             heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_NORMAL);
         } else {
-            // master-slave switch need ignore
-            if (result >= 0) {
-                long delayVal = result * dbGroup.getDbGroupConfig().getDelayPeriodMillis();
-                heartbeat.setSlaveBehindMaster((int) delayVal);
-                heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_NORMAL);
-            }
+            // master and slave maybe switch
+            heartbeat.setSlaveBehindMaster(null);
+            heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_ERROR);
         }
-
     }
 }

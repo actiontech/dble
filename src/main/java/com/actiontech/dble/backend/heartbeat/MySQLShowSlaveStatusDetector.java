@@ -44,7 +44,7 @@ public class MySQLShowSlaveStatusDetector extends MySQLDetector {
                 int behindMaster = Integer.parseInt(secondsBehindMaster) * 1000;
                 int delayThreshold = source.getDbGroupConfig().getDelayThreshold();
                 if (delayThreshold > 0 && behindMaster > delayThreshold) {
-                    MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " + heartbeat.getSource().getConfig() + ", binlog sync time delay: " + behindMaster + "s");
+                    MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " + heartbeat.getSource().getConfig() + ", binlog sync time delay: " + behindMaster + "ms");
                 }
                 heartbeat.setSlaveBehindMaster(behindMaster);
             } else {

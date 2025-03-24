@@ -574,6 +574,8 @@ public class PhysicalDbGroup {
                 pool.getDbGroupConfig().getErrorRetryCount() == this.dbGroupConfig.getErrorRetryCount() &&
                 pool.getDbGroupConfig().getRwSplitMode() == this.dbGroupConfig.getRwSplitMode() &&
                 pool.getDbGroupConfig().getDelayThreshold() == this.dbGroupConfig.getDelayThreshold() &&
+                pool.getDbGroupConfig().getDelayPeriodMillis() == this.dbGroupConfig.getDelayPeriodMillis() &&
+                pool.getDbGroupConfig().getDelayDatabase().equals(this.dbGroupConfig.getDelayDatabase()) &&
                 pool.getDbGroupConfig().isDisableHA() == this.dbGroupConfig.isDisableHA() &&
                 pool.getGroupName().equals(this.groupName) && pool.getUsedFor() == this.getUsedFor();
     }

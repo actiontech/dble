@@ -199,7 +199,7 @@ public class ConfigInitializer implements ProblemReporter {
         for (Map.Entry<String, PhysicalDbGroup> entry : this.dbGroups.entrySet()) {
             dbGroup = entry.getValue();
             dbGroupName = entry.getKey();
-            if (dbGroup.usedForRW()) {
+            if (!dbGroup.isUseless()) {
                 for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
                     if (ds.getDbGroupConfig().isDelayDetection() && !ds.isSalveOrRead()) {
                         BoolPtr createTablePtr = new BoolPtr(false);

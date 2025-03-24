@@ -24,7 +24,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatSQLJob.class);
 
-    private final String sql;
+    private volatile String sql;
     private final SQLJobHandler jobHandler;
     /*
      *   (null, 0) -> initial
@@ -37,9 +37,17 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     public HeartbeatSQLJob(MySQLHeartbeat heartbeat, SQLJobHandler jobHandler) {
         super();
-        this.sql = heartbeat.getHeartbeatSQL();
         this.jobHandler = jobHandler;
         this.heartbeat = heartbeat;
+    }
+
+    public long getConnectionId() {
+        final BackendConnection con = this.connectionRef.getReference();
+        long connId = 0;
+        if (con != null) {
+            connId = con.getId();
+        }
+        return connId;
     }
 
     public void terminate() {
@@ -72,6 +80,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("[heartbeat]do heartbeat,conn is " + conn);
             }
+            this.sql = heartbeat.getHeartbeatSQL();
             conn.getBackendService().query(sql);
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             LOGGER.warn("[heartbeat]send heartbeat error", e);
@@ -89,6 +98,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("[heartbeat]do heartbeat,conn is {}", conn);
                 }
+                this.sql = heartbeat.getHeartbeatSQL();
                 conn.getBackendService().query(sql);
             } catch (Exception e) { // (UnsupportedEncodingException e) {
                 LOGGER.warn("[heartbeat]send heartbeat error", e);

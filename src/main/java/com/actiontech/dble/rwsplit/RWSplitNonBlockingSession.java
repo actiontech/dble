@@ -44,7 +44,7 @@ public class RWSplitNonBlockingSession {
      * @param localRead        only the SELECT and show statements attempt to localRead
      */
     public void execute(Boolean master, Callback callback, boolean writeStatistical, boolean localRead) {
-        execute(master, null, callback, writeStatistical, localRead && !rwGroup.isRwSplitUseless());
+        execute(master, null, callback, writeStatistical, localRead && rwGroup.usedForRW());
     }
 
 

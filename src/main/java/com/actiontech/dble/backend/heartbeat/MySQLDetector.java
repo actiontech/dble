@@ -14,7 +14,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import org.slf4j.Logger;
@@ -25,36 +24,17 @@ import java.util.Map;
 /**
  * @author mycat
  */
-public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
+public abstract class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
     public static final Logger LOGGER = LoggerFactory.getLogger(MySQLDetector.class);
-    private static final String[] MYSQL_SLAVE_STATUS_COLS = new String[]{
-            "Seconds_Behind_Master",
-            "Slave_IO_Running",
-            "Slave_SQL_Running",
-            "Slave_IO_State",
-            "Master_Host",
-            "Master_User",
-            "Master_Port",
-            "Connect_Retry",
-            "Last_IO_Error"};
-    private static final String[] MYSQL_READ_ONLY_COLS = new String[]{"@@read_only"};
 
-    private final MySQLHeartbeat heartbeat;
     private volatile long lastSendQryTime;
     private volatile long lastReceivedQryTime;
-    private final HeartbeatSQLJob sqlJob;
+
+    protected final MySQLHeartbeat heartbeat;
+    protected HeartbeatSQLJob sqlJob;
 
     public MySQLDetector(MySQLHeartbeat heartbeat) {
         this.heartbeat = heartbeat;
-        String[] fetchCols = {};
-        if (heartbeat.getSource().getDbGroupConfig().isShowSlaveSql()) {
-            fetchCols = MYSQL_SLAVE_STATUS_COLS;
-        } else if (heartbeat.getSource().getDbGroupConfig().isSelectReadOnlySql()) {
-            fetchCols = MYSQL_READ_ONLY_COLS;
-        }
-
-        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(fetchCols, this);
-        this.sqlJob = new HeartbeatSQLJob(heartbeat, resultHandler);
     }
 
     public void heartbeat() {
@@ -90,19 +70,20 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         if (result.isSuccess()) {
             PhysicalDbInstance source = heartbeat.getSource();
             Map<String, String> resultResult = result.getResult();
-            if (source.getDbGroupConfig().isShowSlaveSql()) {
-                setStatusBySlave(source, resultResult);
-            } else if (source.getDbGroupConfig().isSelectReadOnlySql()) {
-                setStatusByReadOnly(source, resultResult);
-            } else {
-                setStatusForNormalHeartbeat(source);
-            }
+            setStatus(source, resultResult);
+            if (checkRecoverFail(source)) return;
+            heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
         }
     }
 
-    private void setStatusForNormalHeartbeat(PhysicalDbInstance source) {
-        if (checkRecoverFail(source)) return;
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
+    protected abstract void setStatus(PhysicalDbInstance source, Map<String, String> resultResult);
+
+    public long getHeartbeatConnId() {
+        if (sqlJob != null) {
+            return sqlJob.getConnectionId();
+        } else {
+            return 0L;
+        }
     }
 
     /**
@@ -169,47 +150,4 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         }
         return false;
     }
-
-    private void setStatusBySlave(PhysicalDbInstance source, Map<String, String> resultResult) {
-        String slaveIoRunning = resultResult != null ? resultResult.get("Slave_IO_Running") : null;
-        String slaveSqlRunning = resultResult != null ? resultResult.get("Slave_SQL_Running") : null;
-        if (slaveIoRunning != null && slaveIoRunning.equals(slaveSqlRunning) && slaveSqlRunning.equals("Yes")) {
-            heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_NORMAL);
-            String secondsBehindMaster = resultResult.get("Seconds_Behind_Master");
-            if (null != secondsBehindMaster && !"".equals(secondsBehindMaster) && !"NULL".equalsIgnoreCase(secondsBehindMaster)) {
-                int behindMaster = Integer.parseInt(secondsBehindMaster);
-                int delayThreshold = source.getDbGroupConfig().getDelayThreshold();
-                if (delayThreshold > 0 && behindMaster > delayThreshold) {
-                    MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " + heartbeat.getSource().getConfig() + ", binlog sync time delay: " + behindMaster + "s");
-                }
-                heartbeat.setSlaveBehindMaster(behindMaster);
-            } else {
-                heartbeat.setSlaveBehindMaster(null);
-            }
-        } else if (source.isSalveOrRead()) {
-            //String Last_IO_Error = resultResult != null ? resultResult.get("Last_IO_Error") : null;
-            MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication err !!! " +
-                    heartbeat.getSource().getConfig() + ", " + resultResult);
-            heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_ERROR);
-            heartbeat.setSlaveBehindMaster(null);
-        }
-        heartbeat.getAsyncRecorder().setBySlaveStatus(resultResult);
-        if (checkRecoverFail(source)) return;
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
-    }
-
-    private void setStatusByReadOnly(PhysicalDbInstance source, Map<String, String> resultResult) {
-        String readonly = resultResult != null ? resultResult.get("@@read_only") : null;
-        if (readonly == null) {
-            heartbeat.setErrorResult("result of select @@read_only is null");
-            return;
-        } else if (readonly.equals("0")) {
-            source.setReadOnly(false);
-        } else {
-            source.setReadOnly(true);
-        }
-        if (checkRecoverFail(source)) return;
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
-    }
-
 }

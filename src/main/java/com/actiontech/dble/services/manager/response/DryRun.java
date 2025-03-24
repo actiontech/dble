@@ -87,6 +87,11 @@ public final class DryRun {
             }
         }
         try {
+            loader.createDelayDetectTable();
+        } catch (Exception e) {
+            list.add(new ErrorInfo("Backend", "ERROR", e.getMessage()));
+        }
+        try {
             String msg = ConfigUtil.getAndSyncKeyVariables(loader.getDbGroups(), false);
             if (msg != null) {
                 list.add(new ErrorInfo("Backend", "WARNING", msg));

@@ -113,6 +113,14 @@ public class ServerConfig {
         }
     }
 
+    public void createDelayDetectTable() {
+        confInitNew.createDelayDetectTable();
+    }
+
+    public void create() throws Exception {
+        ConfigUtil.getAndSyncKeyVariables(confInitNew.getDbGroups(), true);
+    }
+
     public void getAndSyncKeyVariables() throws Exception {
         ConfigUtil.getAndSyncKeyVariables(confInitNew.getDbGroups(), true);
     }

@@ -212,8 +212,8 @@ public class PhysicalDbGroup {
     }
 
     private boolean checkSlaveSynStatus() {
-        return ((dbGroupConfig.getDelayThreshold() != -1) &&
-                (dbGroupConfig.isShowSlaveSql())) || dbGroupConfig.isDelayDetection();
+        return ((dbGroupConfig.getDelayThreshold() != -1) && dbGroupConfig.isShowSlaveSql()) ||
+                dbGroupConfig.isDelayDetection();
     }
 
     public PhysicalDbInstance getWriteDbInstance() {

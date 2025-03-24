@@ -119,7 +119,7 @@ public class MySQLHeartbeat {
             if (isDelayDetection) {
                 heartbeatPeriodMillis = source.getDbGroupConfig().getDelayPeriodMillis();
                 if (source.isReadInstance()) {
-                    initialDelay = source.getDbGroupConfig().getDelayPeriodMillis();
+                    initialDelay = source.getDbGroupConfig().getDelayPeriodMillis() / 2;
                 }
             } else {
                 heartbeatPeriodMillis = (int) source.getConfig().getPoolConfig().getHeartbeatPeriodMillis();

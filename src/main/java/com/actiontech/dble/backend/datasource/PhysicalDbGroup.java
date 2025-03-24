@@ -44,7 +44,7 @@ public class PhysicalDbGroup {
     // weight
     public static final int WEIGHT = 0;
 
-    enum USAGE {
+    private enum Usage {
         NONE, RW, SHARDING;
     }
 
@@ -63,7 +63,7 @@ public class PhysicalDbGroup {
     //delayDetection
     private AtomicLong logicTimestamp = new AtomicLong();
 
-    private USAGE usedFor = USAGE.NONE;
+    private Usage usedFor = Usage.NONE;
 
     public PhysicalDbGroup(String name, DbGroupConfig config, PhysicalDbInstance writeDbInstances, PhysicalDbInstance[] readDbInstances, int rwSplitMode) {
         this.groupName = name;
@@ -188,26 +188,26 @@ public class PhysicalDbGroup {
     }
 
     public boolean isUseless() {
-        return usedFor == USAGE.NONE;
+        return usedFor == Usage.NONE;
     }
 
     public boolean usedForSharding() {
-        return usedFor == USAGE.SHARDING;
+        return usedFor == Usage.SHARDING;
     }
 
     public boolean usedForRW() {
-        return usedFor == USAGE.RW;
+        return usedFor == Usage.RW;
     }
 
     public void setUsedForSharding() {
-        usedFor = USAGE.SHARDING;
+        usedFor = Usage.SHARDING;
     }
 
     public void setUsedForRW() {
-        usedFor = USAGE.RW;
+        usedFor = Usage.RW;
     }
 
-    public USAGE getUsedFor() {
+    public Usage getUsedFor() {
         return usedFor;
     }
 

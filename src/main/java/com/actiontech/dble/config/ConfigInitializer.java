@@ -193,26 +193,6 @@ public class ConfigInitializer implements ProblemReporter {
         }
     }
 
-    public void createDelayDetectTable() {
-        String dbGroupName;
-        PhysicalDbGroup dbGroup;
-        for (Map.Entry<String, PhysicalDbGroup> entry : this.dbGroups.entrySet()) {
-            dbGroup = entry.getValue();
-            dbGroupName = entry.getKey();
-            if (!dbGroup.isUseless()) {
-                for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
-                    if (ds.getDbGroupConfig().isDelayDetection() && !ds.isSalveOrRead()) {
-                        BoolPtr createTablePtr = new BoolPtr(false);
-                        createDelayDetectTable(ds, createTablePtr);
-                        if (!createTablePtr.get()) {
-                            throw new ConfigException("create delay table error, please check dbInstance[" + dbGroupName + "." + ds.getName() + "].");
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     public void testConnection() {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("test-connection");
         try {
@@ -332,6 +312,26 @@ public class ConfigInitializer implements ProblemReporter {
             isConnectivity = false;
         }
         return isConnectivity;
+    }
+
+    public void createDelayDetectTable() {
+        String dbGroupName;
+        PhysicalDbGroup dbGroup;
+        for (Map.Entry<String, PhysicalDbGroup> entry : this.dbGroups.entrySet()) {
+            dbGroup = entry.getValue();
+            dbGroupName = entry.getKey();
+            if (!dbGroup.isUseless()) {
+                for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
+                    if (ds.getDbGroupConfig().isDelayDetection() && !ds.isSalveOrRead()) {
+                        BoolPtr createTablePtr = new BoolPtr(false);
+                        createDelayDetectTable(ds, createTablePtr);
+                        if (!createTablePtr.get()) {
+                            throw new ConfigException("create delay table error, please check dbInstance[" + dbGroupName + "." + ds.getName() + "].");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void createDelayDetectTable(PhysicalDbInstance ds, BoolPtr createTablePtr) {

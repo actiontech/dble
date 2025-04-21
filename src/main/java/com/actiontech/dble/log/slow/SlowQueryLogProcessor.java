@@ -9,8 +9,8 @@ import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.DailyRotateLogStore;
 import com.actiontech.dble.server.status.SlowQueryLog;
-import com.actiontech.dble.server.trace.TraceResult;
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.server.trace.ITraceResult;
+import com.actiontech.dble.services.BusinessService;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,15 +136,26 @@ public class SlowQueryLogProcessor extends Thread {
         };
     }
 
-    public void putSlowQueryLog(ShardingService service, TraceResult log) {
-        if (log.isCompleted() && log.getOverAllMilliSecond() > SlowQueryLog.getInstance().getSlowTime()) {
-            SlowQueryLogEntry logEntry = new SlowQueryLogEntry(service.getExecuteSql(), log, service.getUser(), service.getConnection().getHost(), service.getConnection().getId());
+    public void putSlowQueryLog(BusinessService service, ITraceResult log, String executeSql) {
+        if (log.isCompleted() && log.getOverAllMilliSecond() >= SlowQueryLog.getInstance().getSlowTime()) {
+            SlowQueryLogEntry logEntry = new SlowQueryLogEntry(executeSql, log, service.getUser(), service.getConnection().getHost(), service.getConnection().getId());
             final boolean enQueue = queue.offer(logEntry);
             if (!enQueue) {
                 //abort
                 String errorMsg = "since there are too many slow query logs to be written, some slow query logs will be discarded so as not to affect business requirements. Discard log entry: {" + logEntry.toString() + "}";
                 LOGGER.warn(errorMsg);
             }
+        }
+    }
+
+
+    public void putSlowQueryLogForce(BusinessService service, ITraceResult log, String executeSql) {
+        SlowQueryLogEntry logEntry = new SlowQueryLogEntry(executeSql, log, service.getUser(), service.getConnection().getHost(), service.getConnection().getId());
+        final boolean enQueue = queue.offer(logEntry);
+        if (!enQueue) {
+            //abort
+            String errorMsg = "since there are too many slow query logs to be written, some slow query logs will be discarded so as not to affect business requirements. Discard log entry: {" + logEntry.toString() + "}";
+            LOGGER.warn(errorMsg);
         }
     }
 }

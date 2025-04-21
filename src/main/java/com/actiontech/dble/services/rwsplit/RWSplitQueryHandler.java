@@ -3,16 +3,21 @@ package com.actiontech.dble.services.rwsplit;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
+import com.actiontech.dble.net.mysql.CommandPacket;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.ServerQueryHandler;
 import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.UseHandler;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
+import com.actiontech.dble.singleton.AppendTraceId;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
+
 
 public class RWSplitQueryHandler implements FrontendQueryHandler {
 
@@ -41,11 +46,28 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                 return;
             }
             int rs = RwSplitServerParse.parse(sql);
+            if (AppendTraceId.getInstance().isEnable()) {
+                sql = String.format("/*+ trace_id=%d-%d */ %s", session.getService().getConnection().getId(), session.getService().getSqlUniqueId().incrementAndGet(), sql);
+            }
+
+            session.getService().setExecuteSql(sql);
+            session.endParse();
             int hintLength = RouteService.isHintSql(sql);
             int sqlType = rs & 0xff;
             if (hintLength >= 0) {
                 session.executeHint(sqlType, sql, null);
             } else {
+
+                if (AppendTraceId.getInstance().isEnable()) {
+                    CommandPacket packet = new CommandPacket();
+                    final byte COM_QUERY = 0x3;
+                    packet.setCommand(COM_QUERY);
+                    packet.setArg(sql.getBytes());
+                    packet.setPacketId(session.getService().getExecuteSqlBytes()[3]);
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    packet.write(out);
+                    session.getService().setExecuteSqlBytes(out.toByteArray());
+                }
                 if (sqlType != RwSplitServerParse.START && sqlType != RwSplitServerParse.BEGIN &&
                         sqlType != RwSplitServerParse.COMMIT && sqlType != RwSplitServerParse.ROLLBACK && sqlType != RwSplitServerParse.SET) {
                     session.getService().singleTransactionsCount();

@@ -19,6 +19,9 @@ public final class ManagerParseOnOff {
     public static final int CUSTOM_MYSQL_HA = 3;
     public static final int CAP_CLIENT_FOUND_ROWS = 4;
 
+
+    public static final int APPEND_TRACE_ID = 5;
+
     public static int parse(String stmt, int offset) {
         int i = offset;
         for (; i < stmt.length(); i++) {
@@ -63,6 +66,9 @@ public final class ManagerParseOnOff {
             String prefix = stmt.substring(offset).toUpperCase();
             if (prefix.startsWith("ALERT") && (stmt.length() == offset + 5 || ParseUtil.isEOF(stmt, offset + 5))) {
                 return ALERT;
+            }
+            if (prefix.startsWith("APPENDTRACEID") && (stmt.length() == offset + 13 || ParseUtil.isEOF(stmt, offset + 13))) {
+                return APPEND_TRACE_ID;
             }
         }
         return OTHER;

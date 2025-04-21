@@ -50,6 +50,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     public void execute(final BackendConnection conn) {
         MySQLResponseService mysqlService = conn.getBackendService();
         mysqlService.setResponseHandler(this);
+        mysqlService.setSession2(rwSplitService.getSession());
         if (originPacket != null) {
             mysqlService.execute(rwSplitService, originPacket);
         } else if (isHint) {
@@ -106,7 +107,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         MySQLResponseService mysqlService = (MySQLResponseService) service;
         boolean executeResponse = mysqlService.syncAndExecute();
         if (executeResponse) {
-
+            rwSplitService.getSession().setBackendResponseEndTime((MySQLResponseService) service);
             final OkPacket packet = new OkPacket();
             packet.read(data);
             if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
@@ -118,6 +119,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
             synchronized (this) {
                 if (!write2Client) {
+                    rwSplitService.getSession().setResponseTime(true);
                     data[3] = (byte) rwSplitService.nextPacketId();
                     frontedConnection.write(data);
                     if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
@@ -157,6 +159,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         synchronized (this) {
+            rwSplitService.getSession().setBackendResponseEndTime((MySQLResponseService) service);
             if (!write2Client) {
                 eof[3] = (byte) rwSplitService.nextPacketId();
                 if ((eof[7] & HAS_MORE_RESULTS) == 0) {
@@ -180,6 +183,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 buffer = null;
                 if ((eof[7] & HAS_MORE_RESULTS) == 0) {
                     write2Client = true;
+                    rwSplitService.getSession().setResponseTime(true);
                 }
             }
         }
@@ -217,6 +221,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void preparedOkResponse(byte[] ok, List<byte[]> fields, List<byte[]> params, MySQLResponseService service) {
         synchronized (this) {
+            rwSplitService.getSession().setBackendResponseEndTime((MySQLResponseService) service);
             if (buffer == null) {
                 buffer = frontedConnection.allocate();
             }
@@ -239,6 +244,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                     callback.callback(true, ok, rwSplitService);
                 }
                 frontedConnection.write(buffer);
+                service.getSession2().setResponseTime(true);
                 write2Client = true;
                 buffer = null;
             }

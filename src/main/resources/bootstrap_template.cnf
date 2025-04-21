@@ -90,7 +90,7 @@
 -DflushSlowLogSize=1000
 #  the threshold for judging if the query is slow , unit is millisecond
 -DsqlSlowTime=100
-
+-DappendTraceId=0
 
 #-DenableAsyncRelease=1
 #-DreleaseTimeout=10

@@ -17,6 +17,7 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.BusinessService;
@@ -61,6 +62,7 @@ public class MySQLResponseService extends VariablesService {
     private volatile Object attachment;
 
     private volatile NonBlockingSession session;
+    private volatile RWSplitNonBlockingSession session2;
 
     private volatile boolean metaDataSynced = true;
 
@@ -209,6 +211,11 @@ public class MySQLResponseService extends VariablesService {
                 return false;
             }
             session.setBackendResponseTime(this);
+        } else if (session2 != null) {
+            //            if (session2.isKilled()) {
+            //                return false;
+            //            }
+            session2.setBackendResponseTime(this);
         }
         return true;
     }
@@ -783,6 +790,17 @@ public class MySQLResponseService extends VariablesService {
 
     public void setSession(NonBlockingSession session) {
         this.session = session;
+        this.session2 = null;
+    }
+
+
+    public void setSession2(RWSplitNonBlockingSession session2) {
+        this.session = null;
+        this.session2 = session2;
+    }
+
+    public RWSplitNonBlockingSession getSession2() {
+        return session2;
     }
 
     public ResponseHandler getResponseHandler() {

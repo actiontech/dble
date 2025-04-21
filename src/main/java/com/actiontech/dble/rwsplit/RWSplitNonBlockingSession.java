@@ -3,9 +3,15 @@ package com.actiontech.dble.rwsplit;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.ByteUtil;
+import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.server.SessionStage;
+import com.actiontech.dble.server.status.SlowQueryLog;
+import com.actiontech.dble.server.trace.RwTraceResult;
+import com.actiontech.dble.server.trace.TraceRecord;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.rwsplit.*;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.util.StringUtil;
@@ -16,6 +22,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RWSplitNonBlockingSession {
 
@@ -24,6 +32,9 @@ public class RWSplitNonBlockingSession {
     private volatile BackendConnection conn;
     private final RWSplitService rwSplitService;
     private PhysicalDbGroup rwGroup;
+    private volatile RwTraceResult traceResult = new RwTraceResult();
+
+    private volatile SessionStage sessionStage = SessionStage.Init;
 
     public RWSplitNonBlockingSession(RWSplitService service) {
         this.rwSplitService = service;
@@ -62,6 +73,10 @@ public class RWSplitNonBlockingSession {
             if (handler == null) return;
             PhysicalDbInstance instance = rwGroup.rwSelect(canRunOnMaster(master), isWriteStatistical(writeStatistical), localRead);
             checkDest(!instance.isReadInstance());
+            endRoute();
+            setPreExecuteEnd(RwTraceResult.SqlTraceType.RWSPLIT_QUERY);
+            setTraceSimpleHandler((ResponseHandler) handler);
+            traceResult.setDBInstance(instance);
             instance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (IOException e) {
             LOGGER.warn("select conn error", e);
@@ -78,6 +93,10 @@ public class RWSplitNonBlockingSession {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select bind conn[id={}]", conn.getId());
             }
+            endRoute();
+            setPreExecuteEnd(RwTraceResult.SqlTraceType.RWSPLIT_QUERY);
+            setTraceSimpleHandler(handler);
+            traceResult.setDBInstance((PhysicalDbInstance) conn.getInstance());
             // for ps needs to send master
             if ((originPacket != null && originPacket.length > 4 && originPacket[4] == MySQLPacket.COM_STMT_EXECUTE)) {
                 long statementId = ByteUtil.readUB4(originPacket, 5);
@@ -204,4 +223,105 @@ public class RWSplitNonBlockingSession {
     public BackendConnection getConn() {
         return conn;
     }
+
+
+    public void setRequestTime() {
+        sessionStage = SessionStage.Read_SQL;
+        long requestTime = 0;
+
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            requestTime = System.nanoTime();
+            traceResult.setVeryStartPrepare(requestTime);
+        }
+
+    }
+
+    public void startProcess() {
+        sessionStage = SessionStage.Parse_SQL;
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.setParseStartPrepare(new TraceRecord(System.nanoTime()));
+        }
+    }
+
+    public void endParse() {
+        sessionStage = SessionStage.Route_Calculation;
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.ready();
+            //            traceResult.setRouteStart(new TraceRecord(System.nanoTime()));
+        }
+    }
+
+
+    public void endRoute() {
+        sessionStage = SessionStage.Prepare_to_Push;
+    }
+
+
+    public void setPreExecuteEnd(RwTraceResult.SqlTraceType type) {
+        sessionStage = SessionStage.Execute_SQL;
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.setType(type);
+            traceResult.setPreExecuteEnd(new TraceRecord(System.nanoTime()));
+            traceResult.clearConnReceivedMap();
+            traceResult.clearConnFlagMap();
+        }
+    }
+
+    public void setTraceSimpleHandler(ResponseHandler simpleHandler) {
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.setSimpleHandler(simpleHandler);
+        }
+    }
+
+
+    public void setResponseTime(boolean isSuccess) {
+        sessionStage = SessionStage.Finished;
+        long responseTime = 0;
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            responseTime = System.nanoTime();
+            traceResult.setVeryEnd(responseTime);
+            if (isSuccess && SlowQueryLog.getInstance().isEnableSlowLog()) {
+                SlowQueryLog.getInstance().putSlowQueryLog(this.rwSplitService, (RwTraceResult) traceResult);
+                traceResult = new RwTraceResult();
+            }
+        }
+    }
+
+    public void setBackendResponseEndTime(MySQLResponseService service) {
+        sessionStage = SessionStage.First_Node_Fetched_Result;
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            ResponseHandler responseHandler = service.getResponseHandler();
+            if (responseHandler != null) {
+                TraceRecord record = new TraceRecord(System.nanoTime());
+                Map<String, TraceRecord> connMap = new ConcurrentHashMap<>();
+                String key = String.valueOf(service.getConnection().getId());
+                connMap.put(key, record);
+                traceResult.addToConnFinishedMap(responseHandler, connMap);
+            }
+        }
+
+    }
+
+
+
+    public void setBackendResponseTime(MySQLResponseService service) {
+        sessionStage = SessionStage.Fetching_Result;
+        long responseTime = 0;
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            ResponseHandler responseHandler = service.getResponseHandler();
+            String key = String.valueOf(service.getConnection().getId());
+            if (responseHandler != null && traceResult.addToConnFlagMap(key) == null) {
+                responseTime = System.nanoTime();
+                TraceRecord record = new TraceRecord(responseTime);
+                Map<String, TraceRecord> connMap = new ConcurrentHashMap<>();
+                connMap.put(key, record);
+                traceResult.addToConnReceivedMap(responseHandler, connMap);
+            }
+        }
+
+
+    }
+
+
+
 }

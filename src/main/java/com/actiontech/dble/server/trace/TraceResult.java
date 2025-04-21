@@ -20,12 +20,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class TraceResult implements Cloneable {
+public class TraceResult implements Cloneable, ITraceResult {
 
 
-    public enum SqlTraceType {
-        SINGLE_NODE_QUERY, MULTI_NODE_QUERY, MULTI_NODE_GROUP, COMPLEX_QUERY;
-    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TraceResult.class);
     private boolean prepareFinished = false;
@@ -573,6 +570,7 @@ public class TraceResult implements Cloneable {
         return String.valueOf(milliSecond);
     }
 
+    @Override
     public boolean isCompleted() {
         return veryStart != 0 && veryEnd != 0 && connFlagMap.size() != 0 && connReceivedMap.size() == connFinishedMap.size() && recordStartMap.size() == recordEndMap.size();
     }

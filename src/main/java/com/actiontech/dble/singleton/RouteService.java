@@ -94,6 +94,10 @@ public final class RouteService {
                 int endPos = stmt.substring(hintLength).indexOf("*/") + hintLength;
                 if (endPos > 0) {
                     hintInfo = parseHintSql(stmt, hintLength, endPos);
+                    if (AppendTraceId.getInstance().isEnable()) {
+                        String sql = String.format("/*+ trace_id=%d-%d */ %s", service.getConnection().getId(), service.getSqlUniqueId().incrementAndGet(), hintInfo.getRealSQL());
+                        hintInfo.setRealSQL(sql);
+                    }
                     service.setExecuteSql(hintInfo.getRealSQL());
                 }
             }

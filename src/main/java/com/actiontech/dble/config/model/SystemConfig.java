@@ -180,7 +180,7 @@ public final class SystemConfig {
     //unit: ms
     private long releaseTimeout = 10L;
 
-    private int appendTraceId = 1;
+    private int appendTraceId = 0;
 
 
     public int getAppendTraceId() {

@@ -13,7 +13,7 @@ import java.util.List;
  * Create Date: 2025-04-17
  */
 public interface ITraceResult {
-    public enum SqlTraceType {
+    enum SqlTraceType {
         SINGLE_NODE_QUERY, MULTI_NODE_QUERY, MULTI_NODE_GROUP, COMPLEX_QUERY, RWSPLIT_QUERY;
     }
 

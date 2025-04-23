@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.actiontech.dble.net.mysql.MySQLPacket.COM_STMT_PREPARE;
+
 public class RWSplitService extends BusinessService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RWSplitService.class);
@@ -122,7 +124,7 @@ public class RWSplitService extends BusinessService {
                 handleComQuery(data);
                 break;
             // prepared statement
-            case MySQLPacket.COM_STMT_PREPARE:
+            case COM_STMT_PREPARE:
                 commands.doStmtPrepare();
                 handleComStmtPrepare(data);
                 break;
@@ -225,15 +227,13 @@ public class RWSplitService extends BusinessService {
                 sql = sql.substring(0, sql.length() - 1).trim();
             }
             sql = sql.trim();
-            int rs = ServerParse.parse(sql);
-            int sqlType = rs & 0xff;
+
 
             String tmpSql = sql;
             byte[] tmpData = data;
             if (AppendTraceId.getInstance().isEnable()) {
                 tmpSql = String.format("/*+ trace_id=%d-%d */ %s", session.getService().getConnection().getId(), getSqlUniqueId().incrementAndGet(), sql);
                 CommandPacket packet = new CommandPacket();
-                final byte COM_STMT_PREPARE = 0x16;
                 packet.setCommand(COM_STMT_PREPARE);
                 packet.setArg(tmpSql.getBytes());
                 packet.setPacketId(data[3]);
@@ -242,6 +242,8 @@ public class RWSplitService extends BusinessService {
                 tmpData = out.toByteArray();
             }
 
+            int rs = ServerParse.parse(sql);
+            int sqlType = rs & 0xff;
             final String finalSql = tmpSql;
             setExecuteSql(finalSql);
             final byte[] finalData = tmpData;

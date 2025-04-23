@@ -48,8 +48,8 @@ public class RwTraceResult implements Cloneable, ITraceResult {
         this.requestStartPrepare = new TraceRecord(veryStartPrepare);
     }
 
-    public void setDBInstance(PhysicalDbInstance dbInstance) {
-        this.dbInstance = dbInstance;
+    public void setDBInstance(PhysicalDbInstance tmpDbInstance) {
+        this.dbInstance = tmpDbInstance;
     }
 
     public void setParseStartPrepare(TraceRecord parseStartPrepare) {

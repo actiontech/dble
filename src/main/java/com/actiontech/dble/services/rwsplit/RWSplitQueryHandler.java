@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 
+import static com.actiontech.dble.net.mysql.MySQLPacket.COM_QUERY;
+
 
 public class RWSplitQueryHandler implements FrontendQueryHandler {
 
@@ -46,6 +48,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                 return;
             }
             int rs = RwSplitServerParse.parse(sql);
+            int sqlType = rs & 0xff;
             if (AppendTraceId.getInstance().isEnable()) {
                 sql = String.format("/*+ trace_id=%d-%d */ %s", session.getService().getConnection().getId(), session.getService().getSqlUniqueId().incrementAndGet(), sql);
             }
@@ -53,14 +56,13 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             session.getService().setExecuteSql(sql);
             session.endParse();
             int hintLength = RouteService.isHintSql(sql);
-            int sqlType = rs & 0xff;
+
             if (hintLength >= 0) {
                 session.executeHint(sqlType, sql, null);
             } else {
 
                 if (AppendTraceId.getInstance().isEnable()) {
                     CommandPacket packet = new CommandPacket();
-                    final byte COM_QUERY = 0x3;
                     packet.setCommand(COM_QUERY);
                     packet.setArg(sql.getBytes());
                     packet.setPacketId(session.getService().getExecuteSqlBytes()[3]);

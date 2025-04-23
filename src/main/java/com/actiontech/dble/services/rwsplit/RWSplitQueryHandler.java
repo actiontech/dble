@@ -49,18 +49,18 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             }
             int rs = RwSplitServerParse.parse(sql);
             int sqlType = rs & 0xff;
-            if (AppendTraceId.getInstance().isEnable()) {
-                sql = String.format("/*+ trace_id=%d-%d */ %s", session.getService().getConnection().getId(), session.getService().getSqlUniqueId().incrementAndGet(), sql);
-            }
 
-            session.getService().setExecuteSql(sql);
+
             session.endParse();
             int hintLength = RouteService.isHintSql(sql);
 
             if (hintLength >= 0) {
                 session.executeHint(sqlType, sql, null);
             } else {
-
+                if (AppendTraceId.getInstance().isEnable()) {
+                    sql = String.format("/*+ trace_id=%d-%d */ %s", session.getService().getConnection().getId(), session.getService().getSqlUniqueId().incrementAndGet(), sql);
+                }
+                session.getService().setExecuteSql(sql);
                 if (AppendTraceId.getInstance().isEnable()) {
                     CommandPacket packet = new CommandPacket();
                     packet.setCommand(COM_QUERY);

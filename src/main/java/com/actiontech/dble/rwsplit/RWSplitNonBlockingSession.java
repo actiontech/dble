@@ -158,6 +158,10 @@ public class RWSplitNonBlockingSession {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("route sql {} to {}", sql, dbInstance);
             }
+            endRoute();
+            setPreExecuteEnd(RwTraceResult.SqlTraceType.RWSPLIT_QUERY);
+            setTraceSimpleHandler((ResponseHandler) handler);
+            traceResult.setDBInstance(dbInstance);
             dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (Exception e) {
             executeException(e, sql);

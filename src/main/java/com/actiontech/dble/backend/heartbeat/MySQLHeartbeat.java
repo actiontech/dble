@@ -300,7 +300,8 @@ public class MySQLHeartbeat {
                 this.status = OK_STATUS;
                 this.errorCount.set(0);
                 this.startErrorTime.set(-1);
-                alert();
+                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
+                AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
         }
         if (isStop) {
             LOGGER.warn("heartbeat[{}] had been stop", source.getConfig().getUrl());

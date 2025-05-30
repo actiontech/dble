@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class PhysicalDbGroup {
@@ -42,11 +43,15 @@ public class PhysicalDbGroup {
     public static final int RW_SPLIT_ALL = 2;
     // weight
     public static final int WEIGHT = 0;
-    private final List<PhysicalDbInstance> writeInstanceList;
+
+    private enum Usage {
+        NONE, RW, SHARDING;
+    }
 
     private final String groupName;
     private final DbGroupConfig dbGroupConfig;
     private volatile PhysicalDbInstance writeDbInstance;
+    private final List<PhysicalDbInstance> writeInstanceList;
     private Map<String, PhysicalDbInstance> allSourceMap = new HashMap<>();
 
     private final int rwSplitMode;
@@ -55,8 +60,10 @@ public class PhysicalDbGroup {
     private final LocalReadLoadBalancer localReadLoadBalancer = new LocalReadLoadBalancer();
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
 
-    private boolean shardingUseless = true;
-    private boolean rwSplitUseless = true;
+    //delayDetection
+    private AtomicLong logicTimestamp = new AtomicLong();
+
+    private Usage usedFor = Usage.NONE;
 
     public PhysicalDbGroup(String name, DbGroupConfig config, PhysicalDbInstance writeDbInstances, PhysicalDbInstance[] readDbInstances, int rwSplitMode) {
         this.groupName = name;
@@ -66,8 +73,8 @@ public class PhysicalDbGroup {
         writeDbInstances.setDbGroup(this);
         this.writeDbInstance = writeDbInstances;
         this.writeInstanceList = Collections.singletonList(writeDbInstance);
-        allSourceMap.put(writeDbInstances.getName(), writeDbInstances);
 
+        allSourceMap.put(writeDbInstances.getName(), writeDbInstances);
         for (PhysicalDbInstance readDbInstance : readDbInstances) {
             readDbInstance.setDbGroup(this);
             allSourceMap.put(readDbInstance.getName(), readDbInstance);
@@ -87,6 +94,54 @@ public class PhysicalDbGroup {
             }
         }
         writeInstanceList = Collections.singletonList(writeDbInstance);
+    }
+
+    public void init(String reason) {
+        for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
+            entry.getValue().init(reason);
+        }
+    }
+
+    // only fresh backend connection pool
+    public void init(List<String> sourceNames, String reason) {
+        for (String sourceName : sourceNames) {
+            if (allSourceMap.containsKey(sourceName)) {
+                allSourceMap.get(sourceName).init(reason, false);
+            }
+        }
+    }
+
+    public void stop(String reason) {
+        stop(reason, false);
+    }
+
+    public void stop(String reason, boolean closeFront) {
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+            dbInstance.stop(reason, closeFront);
+        }
+    }
+
+    // only fresh backend connection pool
+    public void stop(List<String> sourceNames, String reason, boolean closeFront) {
+        for (String sourceName : sourceNames) {
+            if (allSourceMap.containsKey(sourceName)) {
+                allSourceMap.get(sourceName).stop(reason, closeFront, false);
+            }
+        }
+
+        if (closeFront) {
+            Iterator<PooledConnection> iterator = IOProcessor.BACKENDS_OLD.iterator();
+            while (iterator.hasNext()) {
+                PooledConnection con = iterator.next();
+                if (con instanceof BackendConnection) {
+                    BackendConnection backendCon = (BackendConnection) con;
+                    if (backendCon.getPoolDestroyedTime() != 0 && sourceNames.contains(backendCon.getInstance().getConfig().getInstanceName())) {
+                        backendCon.closeWithFront("old active backend conn will be forced closed by closing front conn");
+                        iterator.remove();
+                    }
+                }
+            }
+        }
     }
 
     public String getGroupName() {
@@ -125,7 +180,7 @@ public class PhysicalDbGroup {
     }
 
     boolean isSlave(PhysicalDbInstance ds) {
-        return !(writeDbInstance == ds);
+        return writeDbInstance != ds;
     }
 
     public int getRwSplitMode() {
@@ -133,78 +188,36 @@ public class PhysicalDbGroup {
     }
 
     public boolean isUseless() {
-        return shardingUseless && rwSplitUseless;
+        return usedFor == Usage.NONE;
     }
 
-    public boolean isShardingUseless() {
-        return shardingUseless;
+    public boolean usedForSharding() {
+        return usedFor == Usage.SHARDING;
     }
 
-    public boolean isRwSplitUseless() {
-        return rwSplitUseless;
+    public boolean usedForRW() {
+        return usedFor == Usage.RW;
     }
 
-    public void setShardingUseless(boolean shardingUseless) {
-        this.shardingUseless = shardingUseless;
+    public void setUsedForSharding() {
+        usedFor = Usage.SHARDING;
     }
 
-    public void setRwSplitUseless(boolean rwSplitUseless) {
-        this.rwSplitUseless = rwSplitUseless;
+    public void setUsedForRW() {
+        usedFor = Usage.RW;
+    }
+
+    public Usage getUsedFor() {
+        return usedFor;
     }
 
     private boolean checkSlaveSynStatus() {
-        return (dbGroupConfig.getDelayThreshold() != -1) &&
-                (dbGroupConfig.isShowSlaveSql());
+        return ((dbGroupConfig.getDelayThreshold() != -1) && dbGroupConfig.isShowSlaveSql()) ||
+                dbGroupConfig.isDelayDetection();
     }
 
     public PhysicalDbInstance getWriteDbInstance() {
         return writeDbInstance;
-    }
-
-    public void init(String reason) {
-        for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
-            entry.getValue().init(reason);
-        }
-    }
-
-    public void init(List<String> sourceNames, String reason) {
-        for (String sourceName : sourceNames) {
-            if (allSourceMap.containsKey(sourceName)) {
-                allSourceMap.get(sourceName).init(reason, false);
-            }
-        }
-    }
-
-    public void stop(String reason) {
-        stop(reason, false);
-    }
-
-    public void stop(String reason, boolean closeFront) {
-        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-            dbInstance.stop(reason, closeFront);
-        }
-    }
-
-    public void stop(List<String> sourceNames, String reason, boolean closeFront) {
-        for (String sourceName : sourceNames) {
-            if (allSourceMap.containsKey(sourceName)) {
-                allSourceMap.get(sourceName).stop(reason, closeFront, false);
-            }
-        }
-
-        if (closeFront) {
-            Iterator<PooledConnection> iterator = IOProcessor.BACKENDS_OLD.iterator();
-            while (iterator.hasNext()) {
-                PooledConnection con = iterator.next();
-                if (con instanceof BackendConnection) {
-                    BackendConnection backendCon = (BackendConnection) con;
-                    if (backendCon.getPoolDestroyedTime() != 0 && sourceNames.contains(backendCon.getInstance().getConfig().getInstanceName())) {
-                        backendCon.closeWithFront("old active backend conn will be forced closed by closing front conn");
-                        iterator.remove();
-                    }
-                }
-            }
-        }
     }
 
     public Collection<PhysicalDbInstance> getDbInstances(boolean isAll) {
@@ -228,18 +241,6 @@ public class PhysicalDbGroup {
             readSources[i++] = source;
         }
         return readSources;
-    }
-
-    /**
-     * rwsplit user
-     *
-     * @param master
-     * @param writeStatistical
-     * @return
-     * @throws IOException
-     */
-    public PhysicalDbInstance rwSelect(Boolean master, Boolean writeStatistical) throws IOException {
-        return rwSelect(master, writeStatistical, false);
     }
 
     /**
@@ -546,6 +547,14 @@ public class PhysicalDbGroup {
         return true;
     }
 
+    public AtomicLong getLogicTimestamp() {
+        return logicTimestamp;
+    }
+
+    public void setLogicTimestamp(AtomicLong logicTimestamp) {
+        this.logicTimestamp = logicTimestamp;
+    }
+
     private void reportHeartbeatError(PhysicalDbInstance ins) throws IOException {
         final DbInstanceConfig config = ins.getConfig();
         String heartbeatError = "the dbInstance[" + config.getUrl() + "] can't reach. Please check the dbInstance status";
@@ -565,7 +574,9 @@ public class PhysicalDbGroup {
                 pool.getDbGroupConfig().getErrorRetryCount() == this.dbGroupConfig.getErrorRetryCount() &&
                 pool.getDbGroupConfig().getRwSplitMode() == this.dbGroupConfig.getRwSplitMode() &&
                 pool.getDbGroupConfig().getDelayThreshold() == this.dbGroupConfig.getDelayThreshold() &&
+                pool.getDbGroupConfig().getDelayPeriodMillis() == this.dbGroupConfig.getDelayPeriodMillis() &&
+                pool.getDbGroupConfig().getDelayDatabase().equals(this.dbGroupConfig.getDelayDatabase()) &&
                 pool.getDbGroupConfig().isDisableHA() == this.dbGroupConfig.isDisableHA() &&
-                pool.getGroupName().equals(this.groupName) && pool.isShardingUseless() == this.isShardingUseless() && pool.isRwSplitUseless() == this.isRwSplitUseless();
+                pool.getGroupName().equals(this.groupName) && pool.getUsedFor() == this.getUsedFor();
     }
 }

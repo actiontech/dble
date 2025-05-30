@@ -45,6 +45,8 @@ public class DbleDbGroup extends ManagerWritableTable {
     public static final String COLUMN_DELAY_THRESHOLD = "delay_threshold";
     public static final String COLUMN_DISABLE_HA = "disable_ha";
     public static final String COLUMN_ACTIVE = "active";
+    public static final String DELAY_PERIOD_MILLIS = "delay_period_millis";
+    public static final String DELAY_DATABASE = "delay_database";
 
     private final List<LinkedHashMap<String, String>> tempRowList = Lists.newArrayList();
 
@@ -76,6 +78,12 @@ public class DbleDbGroup extends ManagerWritableTable {
 
         columns.put(COLUMN_DELAY_THRESHOLD, new ColumnMeta(COLUMN_DELAY_THRESHOLD, "int(11)", true, "-1"));
         columnsType.put(COLUMN_DELAY_THRESHOLD, Fields.FIELD_TYPE_LONG);
+
+        columns.put(DELAY_PERIOD_MILLIS, new ColumnMeta(DELAY_PERIOD_MILLIS, "int(11)", true, "-1"));
+        columnsType.put(DELAY_PERIOD_MILLIS, Fields.FIELD_TYPE_LONG);
+
+        columns.put(DELAY_DATABASE, new ColumnMeta(DELAY_DATABASE, "varchar(255)", true, null));
+        columnsType.put(DELAY_DATABASE, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_DISABLE_HA, new ColumnMeta(COLUMN_DISABLE_HA, "varchar(5)", true, "false"));
         columnsType.put(COLUMN_DISABLE_HA, Fields.FIELD_TYPE_VAR_STRING);
@@ -198,6 +206,12 @@ public class DbleDbGroup extends ManagerWritableTable {
                 case COLUMN_DELAY_THRESHOLD:
                     dbGroup.setDelayThreshold(Integer.parseInt(value));
                     break;
+                case DELAY_PERIOD_MILLIS:
+                    dbGroup.setDelayPeriodMillis(Integer.parseInt(value));
+                    break;
+                case DELAY_DATABASE:
+                    dbGroup.setDelayDatabase(String.valueOf(value));
+                    break;
                 case COLUMN_DISABLE_HA:
                     dbGroup.setDisableHA(value);
                     break;
@@ -270,6 +284,12 @@ public class DbleDbGroup extends ManagerWritableTable {
         }
     }
 
+    private void delayDetectionCheck(String delayPeriodMillis) {
+        if (!StringUtil.isBlank(delayPeriodMillis) && IntegerUtil.parseInt(delayPeriodMillis) < -1) {
+            throw new ConfigException("Column '" + COLUMN_DELAY_THRESHOLD + "' should be an integer greater than -1!");
+        }
+    }
+
     public static DbGroups getDbGroups() {
         XmlProcessBase xmlProcess = new XmlProcessBase();
         DbGroups dbs = null;
@@ -299,6 +319,8 @@ public class DbleDbGroup extends ManagerWritableTable {
         if (row.containsKey(COLUMN_HEARTBEAT_RETRY) && (StringUtil.isBlank(heartbeatRetryStr) || IntegerUtil.parseInt(heartbeatRetryStr) < 0)) {
             throw new ConfigException("Column '" + COLUMN_HEARTBEAT_RETRY + "' should be an integer greater than or equal to 0!");
         }
+        String delayPeriodMillis = row.get(DELAY_PERIOD_MILLIS);
+        delayDetectionCheck(delayPeriodMillis);
     }
 
     private LinkedHashMap<String, String> initMap(DbGroupConfig dbGroupConfig) {
@@ -309,6 +331,8 @@ public class DbleDbGroup extends ManagerWritableTable {
         map.put(COLUMN_HEARTBEAT_RETRY, String.valueOf(dbGroupConfig.getErrorRetryCount()));
         map.put(COLUMN_RW_SPLIT_MODE, String.valueOf(dbGroupConfig.getRwSplitMode()));
         map.put(COLUMN_DELAY_THRESHOLD, String.valueOf(dbGroupConfig.getDelayThreshold()));
+        map.put(DELAY_PERIOD_MILLIS, String.valueOf(dbGroupConfig.getDelayPeriodMillis()));
+        map.put(DELAY_DATABASE, String.valueOf(dbGroupConfig.getDelayDatabase()));
         map.put(COLUMN_DISABLE_HA, String.valueOf(dbGroupConfig.isDisableHA()));
         return map;
     }

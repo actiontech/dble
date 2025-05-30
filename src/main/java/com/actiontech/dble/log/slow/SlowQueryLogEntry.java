@@ -7,21 +7,21 @@ package com.actiontech.dble.log.slow;
 
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.trace.TraceResult;
+import com.actiontech.dble.server.trace.ITraceResult;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
 public class SlowQueryLogEntry {
-    private TraceResult trace;
+    private ITraceResult trace;
     private long timeStamp;
     private String sql;
     private UserName user;
     private String clientIp;
     private long connID;
 
-    SlowQueryLogEntry(String sql, TraceResult traceResult, UserName user, String clientIp, long connID) {
+    SlowQueryLogEntry(String sql, ITraceResult traceResult, UserName user, String clientIp, long connID) {
         this.timeStamp = System.currentTimeMillis();
         this.sql = RouterUtil.getFixedSql(sql);
         this.trace = traceResult;

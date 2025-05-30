@@ -144,6 +144,7 @@ public final class SystemParams {
         params.add(new ParamInfo("flushSlowLogSize", SlowQueryLog.getInstance().getFlushSize() + "", "The max size for flushing log to disk, the default is 1000"));
         params.add(new ParamInfo("enableAlert", AlertUtil.isEnable() + "", "enable or disable alert"));
         params.add(new ParamInfo("capClientFoundRows", CapClientFoundRows.getInstance().isEnableCapClientFoundRows() + "", "Whether to turn on EOF_Packet to return found rows,The default value is false"));
+        params.add(new ParamInfo("appendTraceId", AppendTraceId.getInstance().getValue() + "", "append the trace id to the sql"));
 
         return params;
     }

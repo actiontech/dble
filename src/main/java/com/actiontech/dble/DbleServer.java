@@ -208,6 +208,9 @@ public final class DbleServer {
         this.config.testConnection();
         LOGGER.info("==========================================Test connection finish==================================");
 
+        this.config.createDelayDetectTable();
+        LOGGER.info("==========================================Create delay detect table finish==================================");
+
         // sync global status
         this.config.getAndSyncKeyVariables();
         LOGGER.info("=====================================Get And Sync KeyVariables finish=============================");

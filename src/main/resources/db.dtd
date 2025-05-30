@@ -26,6 +26,8 @@
                 rwSplitMode NMTOKEN #REQUIRED
                 name NMTOKEN #REQUIRED
                 delayThreshold NMTOKEN #IMPLIED
+                delayPeriodMillis NMTOKEN #IMPLIED
+                delayDatabase NMTOKEN #IMPLIED
                 disableHA NMTOKEN #IMPLIED>
 
         <!ELEMENT dbInstance (property*)>

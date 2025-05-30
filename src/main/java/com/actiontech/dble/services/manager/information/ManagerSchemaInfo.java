@@ -47,6 +47,7 @@ public final class ManagerSchemaInfo {
         registerTable(new ProcessList());
         registerTable(new SessionVariables());
         registerTable(new BackendVariables());
+        registerTable(new DbleDelayDetection());
     }
 
 

@@ -180,6 +180,17 @@ public final class SystemConfig {
     //unit: ms
     private long releaseTimeout = 10L;
 
+    private int appendTraceId = 0;
+
+
+    public int getAppendTraceId() {
+        return appendTraceId;
+    }
+
+    public void setAppendTraceId(int appendTraceId) {
+        this.appendTraceId = appendTraceId;
+    }
+
     public int getEnableAsyncRelease() {
         return enableAsyncRelease;
     }

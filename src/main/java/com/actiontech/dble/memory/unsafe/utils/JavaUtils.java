@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -150,7 +151,7 @@ public final class JavaUtils {
             }
 
             // If suffix is valid use that, otherwise none was provided and use the default passed
-            return unit.convert(val, suffix != null ? TIME_SUFFIXES.get(suffix) : unit);
+            return unit.convert(val, suffix != null ? Optional.ofNullable(TIME_SUFFIXES.get(suffix)).orElse(unit) : unit);
         } catch (NumberFormatException e) {
             String timeError = "Time must be specified as seconds (s), " +
                     "milliseconds (ms), microseconds (us), minutes (m or min), hour (h), or day (d). " +
@@ -197,7 +198,7 @@ public final class JavaUtils {
                 }
 
                 // If suffix is valid use that, otherwise none was provided and use the default passed
-                return unit.convertFrom(val, suffix != null ? BYTE_SUFFIXES.get(suffix) : unit);
+                return unit.convertFrom(val, suffix != null ? Optional.ofNullable(BYTE_SUFFIXES.get(suffix)).orElse(unit) : unit);
             } else if (fractionMatcher.matches()) {
                 throw new NumberFormatException("Fractional values are not supported. Input was: " +
                         fractionMatcher.group(1));

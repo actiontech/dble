@@ -187,7 +187,11 @@ public class RWSplitService extends BusinessService {
             switchSchema = mm.readString(getCharset().getClient());
             session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
                 if (isSuccess && SlowQueryLog.getInstance().isEnableSlowLog()) {
-                    SlowQueryLog.getInstance().putSlowQueryLogForce(this.session.getService(), new RwTraceResult(), "use " + switchSchema);
+                    String sql = "use " + switchSchema;
+                    if (AppendTraceId.getInstance().isEnable()) {
+                        sql = String.format("/*+ trace_id=%d-%d */ %s", session.getService().getConnection().getId(), session.getService().getSqlUniqueId().incrementAndGet(), sql);
+                    }
+                    SlowQueryLog.getInstance().putSlowQueryLogForce(this.session.getService(), new RwTraceResult(), sql);
                 }
                 if (isSuccess) rwSplitService.setSchema(switchSchema);
             });

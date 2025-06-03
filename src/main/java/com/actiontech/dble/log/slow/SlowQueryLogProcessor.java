@@ -150,12 +150,14 @@ public class SlowQueryLogProcessor extends Thread {
 
 
     public void putSlowQueryLogForce(BusinessService service, ITraceResult log, String executeSql) {
-        SlowQueryLogEntry logEntry = new SlowQueryLogEntry(executeSql, log, service.getUser(), service.getConnection().getHost(), service.getConnection().getId());
-        final boolean enQueue = queue.offer(logEntry);
-        if (!enQueue) {
-            //abort
-            String errorMsg = "since there are too many slow query logs to be written, some slow query logs will be discarded so as not to affect business requirements. Discard log entry: {" + logEntry.toString() + "}";
-            LOGGER.warn(errorMsg);
+        if (log.getOverAllMilliSecond() >= SlowQueryLog.getInstance().getSlowTime()) {
+            SlowQueryLogEntry logEntry = new SlowQueryLogEntry(executeSql, log, service.getUser(), service.getConnection().getHost(), service.getConnection().getId());
+            final boolean enQueue = queue.offer(logEntry);
+            if (!enQueue) {
+                //abort
+                String errorMsg = "since there are too many slow query logs to be written, some slow query logs will be discarded so as not to affect business requirements. Discard log entry: {" + logEntry.toString() + "}";
+                LOGGER.warn(errorMsg);
+            }
         }
     }
 }

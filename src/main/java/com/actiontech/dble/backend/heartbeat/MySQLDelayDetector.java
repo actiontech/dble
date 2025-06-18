@@ -45,9 +45,9 @@ public class MySQLDelayDetector extends MySQLDetector {
         long logic = dbGroup.getLogicTimestamp().get();
         long result = logic - delay;
         if (result >= 0) {
-            int delayPeriodMillis = dbGroup.getDbGroupConfig().getDelayPeriodMillis();
             long delayVal = 0;
             if (result > 0) {
+                int delayPeriodMillis = dbGroup.getDbGroupConfig().getDelayPeriodMillis();
                 delayVal = (result * delayPeriodMillis) + (delayPeriodMillis / 2);
             }
             if (delayThreshold > 0 && delayVal > delayThreshold) {

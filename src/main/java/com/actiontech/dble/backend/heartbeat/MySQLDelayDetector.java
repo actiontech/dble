@@ -45,7 +45,7 @@ public class MySQLDelayDetector extends MySQLDetector {
         long logic = dbGroup.getLogicTimestamp().get();
         long result = logic - delay;
         if (result >= 0) {
-            long delayVal = result * (dbGroup.getDbGroupConfig().getDelayPeriodMillis() / 2);
+            long delayVal = result * dbGroup.getDbGroupConfig().getDelayPeriodMillis();
             if (delayThreshold > 0 && delayVal > delayThreshold) {
                 MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " + heartbeat.getSource().getConfig() + ", binlog sync time delay: " + delayVal + "ms");
             }

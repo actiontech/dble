@@ -159,8 +159,24 @@ public final class ByteUtil {
         // (bytes[2] << 16)) | (0xff000000 & (bytes[3] << 24));
     }
 
+    public static int getUnsignedInt(byte[] bytes) {
+        return Integer.parseUnsignedInt(new String(bytes));
+        // return (0xff & bytes[0]) | (0xff00 & (bytes[1] << 8)) | (0xff0000 &
+        // (bytes[2] << 16)) | (0xff000000 & (bytes[3] << 24));
+    }
+
     public static long getLong(byte[] bytes) {
         return Long.parseLong(new String(bytes));
+        // return(0xffL & (long)bytes[0]) | (0xff00L & ((long)bytes[1] << 8)) |
+        // (0xff0000L & ((long)bytes[2] << 16)) | (0xff000000L & ((long)bytes[3]
+        // << 24))
+        // | (0xff00000000L & ((long)bytes[4] << 32)) | (0xff0000000000L &
+        // ((long)bytes[5] << 40)) | (0xff000000000000L & ((long)bytes[6] <<
+        // 48)) | (0xff00000000000000L & ((long)bytes[7] << 56));
+    }
+
+    public static long getUnsignedLong(byte[] bytes) {
+        return Long.parseUnsignedLong(new String(bytes));
         // return(0xffL & (long)bytes[0]) | (0xff00L & ((long)bytes[1] << 8)) |
         // (0xff0000L & ((long)bytes[2] << 16)) | (0xff000000L & ((long)bytes[3]
         // << 24))

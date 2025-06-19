@@ -11,6 +11,7 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.WriteFlags;
+import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.ByteUtil;
 import com.actiontech.dble.util.DateUtil;
@@ -91,6 +92,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
     private void convert(byte[] fv, FieldPacket fieldPk) {
 
         int fieldType = fieldPk.getType();
+        boolean unsigned = (fieldPk.getFlags() & FieldUtil.UNSIGNED_FLAG) != 0;
         switch (fieldType) {
             case Fields.FIELD_TYPE_STRING:
             case Fields.FIELD_TYPE_VARCHAR:
@@ -118,8 +120,14 @@ public class BinaryRowDataPacket extends MySQLPacket {
 
                 // Example
                 // 01 00 00 00 00 00 00 00 -- int64 = 1
-                long longVar = ByteUtil.getLong(fv);
-                this.fieldValues.add(ByteUtil.getBytes(longVar));
+                if (unsigned) {
+                    long longVar = ByteUtil.getUnsignedLong(fv);
+                    this.fieldValues.add(ByteUtil.getBytes(longVar));
+                } else {
+                    long longVar = ByteUtil.getLong(fv);
+                    this.fieldValues.add(ByteUtil.getBytes(longVar));
+                }
+
                 break;
             case Fields.FIELD_TYPE_LONG:
             case Fields.FIELD_TYPE_INT24:
@@ -128,8 +136,14 @@ public class BinaryRowDataPacket extends MySQLPacket {
 
                 // Example
                 // 01 00 00 00 -- int32 = 1
-                int intVar = ByteUtil.getInt(fv);
-                this.fieldValues.add(ByteUtil.getBytes(intVar));
+                if (unsigned) {
+                    int intVar = ByteUtil.getUnsignedInt(fv);
+                    this.fieldValues.add(ByteUtil.getBytes(intVar));
+                } else {
+                    int intVar = ByteUtil.getInt(fv);
+                    this.fieldValues.add(ByteUtil.getBytes(intVar));
+                }
+
                 break;
             case Fields.FIELD_TYPE_SHORT:
             case Fields.FIELD_TYPE_YEAR:

@@ -1084,9 +1084,8 @@ public final class MyTime {
         String stime = String.format("%s%02d:%02d:%02d", (lTime.isNeg() ? "-" : ""), lTime.getHour(), lTime.getMinute(),
                 lTime.getSecond());
         if (dec != 0) {
-            // TODO: 6 digits after Decimal point
-            // String stmp = String.format("%06d", l_time.second_part);
-            // stime += "." + stmp.substring(0, (int) dec);
+            String temp = String.format("%06d", lTime.getSecondPart());
+            stime += "." + temp.substring(0, (int) dec);
         }
         return stime;
     }
@@ -1107,9 +1106,8 @@ public final class MyTime {
         timeToDatetimeStr(ptrtmp, lTime);
         String res = ptrtmp.get();
         if (dec != 0) {
-            // TODO: 6 digits after Decimal point
-            // String stmp = String.format("%06d", l_time.second_part);
-            // res += "." + stmp.substring(0, (int) dec);
+            String temp = String.format("%06d", lTime.getSecondPart());
+            res += "." + temp.substring(0, (int) dec);
         }
         return res;
     }

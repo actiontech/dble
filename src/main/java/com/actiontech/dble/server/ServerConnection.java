@@ -300,7 +300,7 @@ public class ServerConnection extends FrontendConnection {
     }
 
     private void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
-        RouteResultset rrs;
+        RouteResultset rrs = null;
         try {
             rrs = DbleServer.getInstance().getRouterService().route(schema, type, sql, this);
             if (rrs == null) {
@@ -316,6 +316,9 @@ public class ServerConnection extends FrontendConnection {
                 }
             }
         } catch (Exception e) {
+            if (rrs != null && rrs.getSqlType() == ServerParse.DDL) {
+                session.handleSpecial(rrs, false);
+            }
             executeException(e, sql);
             return;
         }

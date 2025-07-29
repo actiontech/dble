@@ -491,7 +491,6 @@ public class NonBlockingSession implements Session {
                 } catch (Exception ex) {
                     LOGGER.warn("notifyResponseZKDdl error", e);
                 }
-                DbleServer.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
             }
         } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {

@@ -205,7 +205,6 @@ public class ProxyMetaManager {
         } catch (Exception e) {
             LOGGER.warn("notifyResponseClusterDDL error", e);
         }
-        removeMetaLock(schema, table);
         return true;
     }
 
@@ -295,7 +294,6 @@ public class ProxyMetaManager {
         }
         DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, tableName, dataNodes, selfNode);
         handler.execute();
-        removeMetaLock(schema, tableName);
     }
 
 
@@ -611,6 +609,7 @@ public class ProxyMetaManager {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
             }
         }
+        removeMetaLock(schema, table);
     }
 
     /**
@@ -643,12 +642,14 @@ public class ProxyMetaManager {
             } finally {
                 ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
                 ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(nodeName) + "/");
+                removeMetaLock(schema, table);
                 //release the lock
                 ClusterDelayProvider.delayBeforeDdlLockRelease();
                 DistrbtLockManager.releaseLock(ClusterPathUtil.getDDLPath(nodeName));
             }
+        } else {
+            removeMetaLock(schema, table);
         }
-
     }
 
 
@@ -683,7 +684,6 @@ public class ProxyMetaManager {
         } catch (Exception e) {
             LOGGER.warn("notifyResponseClusterDDL error", e);
         }
-        removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
         return result;
     }
 
@@ -694,7 +694,6 @@ public class ProxyMetaManager {
         } catch (Exception e) {
             LOGGER.warn("notifyResponseClusterDDL error", e);
         }
-        removeMetaLock(schema, table);
         return true;
     }
 
@@ -710,7 +709,6 @@ public class ProxyMetaManager {
         } catch (Exception e) {
             LOGGER.warn("notifyResponseClusterDDL error", e);
         }
-        removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
         return result;
     }
 

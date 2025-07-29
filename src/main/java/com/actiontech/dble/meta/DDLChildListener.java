@@ -91,7 +91,6 @@ public class DDLChildListener implements PathChildrenCacheListener {
         ClusterDelayProvider.delayBeforeUpdateMeta();
         // just release local lock
         if (ddlInfo.getStatus() == DDLStatus.FAILED) {
-            DbleServer.getInstance().getTmManager().removeMetaLock(ddlInfo.getSchema(), table);
             try {
                 DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.FAILED, ddlInfo.getType(), false);
             } catch (Exception e) {

@@ -77,6 +77,7 @@ public class DdlChildResponse implements ClusterXmlLoader {
                 } else {
                     //else get the lastest table meta from db
                     DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table);
+                    DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
                 }
 
                 ClusterDelayProvider.delayBeforeDdlResponse();

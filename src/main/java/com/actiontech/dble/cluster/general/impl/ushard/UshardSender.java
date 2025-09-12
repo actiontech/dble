@@ -38,7 +38,7 @@ public class UshardSender extends AbstractConsulSender {
     @Override
     public void initConInfo() {
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
+                ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
         stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
     }
 
@@ -47,7 +47,7 @@ public class UshardSender extends AbstractConsulSender {
         serverId = SystemConfig.getInstance().getServerId();
         sourceComponentId = SystemConfig.getInstance().getInstanceName();
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
+                ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
         stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
         startUpdateNodes();
         ClusterToXml.loadKVtoFile(this);
@@ -285,7 +285,7 @@ public class UshardSender extends AbstractConsulSender {
                     } catch (Exception e) {
                         LOGGER.warn("error in ucore nodes watch,try for another time", e);
                         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
+                                ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
                         stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     }
                 }

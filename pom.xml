@@ -24,7 +24,7 @@
             UTF-8
         </project.build.sourceEncoding>
         <grpc.version>1.75.0</grpc.version><!-- CURRENT_GRPC_VERSION -->
-        <netty.version>4.1.124.Final</netty.version>
+        <netty.version>4.1.125.Final</netty.version>
         <log4j2.version>2.18.0</log4j2.version>
     </properties>
     <repositories>
@@ -61,7 +61,17 @@
             <url>https://maven.aliyun.com/nexus/content/groups/public/</url>
         </pluginRepository>
     </pluginRepositories>
-
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>org.iq80.leveldb</groupId>
@@ -273,25 +283,7 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-api</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-handler</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-transport-native-epoll</artifactId>
-                </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-handler</artifactId>
-            <version>${netty.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-transport-native-epoll</artifactId>
-            <version>${netty.version}</version>
         </dependency>
         <!-- joda time execute time -->
         <dependency>

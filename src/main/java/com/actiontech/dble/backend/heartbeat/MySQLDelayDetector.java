@@ -56,7 +56,7 @@ public class MySQLDelayDetector extends MySQLDetector {
             heartbeat.setSlaveBehindMaster((int) delayVal);
             heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_NORMAL);
         } else {
-            if (heartbeat.getStatus() != MySQLHeartbeat.OK_STATUS) {
+            if (logic == 0) {
                 long updatedLogic = dbGroup.getLogicTimestamp().updateAndGet(current -> Math.max(current, delay));
                 LOGGER.warn("delay detection rebased logic_timestamp to {} for dbGroup {}", updatedLogic, dbGroup.getGroupName());
                 heartbeat.setSlaveBehindMaster(0);

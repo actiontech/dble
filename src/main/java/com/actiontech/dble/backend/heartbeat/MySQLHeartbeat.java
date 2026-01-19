@@ -84,7 +84,8 @@ public class MySQLHeartbeat {
         this.heartbeatTimeout = dbInstance.getDbGroupConfig().getHeartbeatTimeout();
         this.isDelayDetection = dbInstance.getDbGroupConfig().isDelayDetection();
         if (isDelayDetection) {
-            this.heartbeatSQL = getDetectorSql(dbInstance.getDbGroupConfig().getName(), dbInstance.getDbGroupConfig().getDelayDatabase());
+            this.heartbeatSQL = getDetectorSql(dbInstance.getDbGroupConfig().getName(),
+                    dbInstance.getDbGroupConfig().getDelayDatabase(), dbInstance.isReadInstance());
         } else {
             this.heartbeatSQL = source.getDbGroupConfig().getHeartbeatSQL();
         }
@@ -181,12 +182,12 @@ public class MySQLHeartbeat {
         }
     }
 
-    private String getDetectorSql(String dbGroupName, String delayDatabase) {
+    private String getDetectorSql(String dbGroupName, String delayDatabase, boolean readInstance) {
         String[] str = {"dble", dbGroupName, SystemConfig.getInstance().getInstanceName()};
         String sourceName = Joiner.on("_").join(str);
         String sqlTableName = delayDatabase + ".u_delay ";
         String detectorSql;
-        if (!source.isReadInstance()) {
+        if (!readInstance) {
             String update = "replace into ? (source,real_timestamp,logic_timestamp) values ('?','?',?)";
             detectorSql = convert(update, Lists.newArrayList(sqlTableName, sourceName));
         } else {
@@ -199,9 +200,14 @@ public class MySQLHeartbeat {
     private String convert(String template, List<String> list) {
         StringBuilder sb = new StringBuilder(template);
         String replace = "?";
+        int fromIndex = 0;
         for (String str : list) {
-            int index = sb.indexOf(replace);
-            sb.replace(index, index + 1, str);
+            int index = sb.indexOf(replace, fromIndex);
+            if (index < 0) {
+                throw new IllegalArgumentException("heartbeat sql template placeholder '?' not enough, template=" + template + ", values=" + list);
+            }
+            sb.replace(index, index + replace.length(), str);
+            fromIndex = index + str.length();
         }
         return sb.toString();
     }
@@ -387,11 +393,17 @@ public class MySQLHeartbeat {
     }
 
     String getHeartbeatSQL() {
-        if (isDelayDetection && !source.isReadInstance()) {
-            return convert(heartbeatSQL, Lists.newArrayList(String.valueOf(LocalDateTime.now()), String.valueOf(source.getDbGroup().getLogicTimestamp().incrementAndGet())));
-        } else {
-            return heartbeatSQL;
+        if (isDelayDetection) {
+            boolean readInstance = source.isReadInstance();
+            String detectorSql = getDetectorSql(source.getDbGroupConfig().getName(),
+                    source.getDbGroupConfig().getDelayDatabase(), readInstance);
+            if (!readInstance) {
+                return convert(detectorSql, Lists.newArrayList(String.valueOf(LocalDateTime.now()),
+                        String.valueOf(source.getDbGroup().getLogicTimestamp().incrementAndGet())));
+            }
+            return detectorSql;
         }
+        return heartbeatSQL;
     }
 
     public DbInstanceSyncRecorder getAsyncRecorder() {

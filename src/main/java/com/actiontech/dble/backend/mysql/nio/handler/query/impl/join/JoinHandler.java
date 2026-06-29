@@ -50,6 +50,8 @@ public class JoinHandler extends OwnThreadDMLHandler {
     protected List<FieldPacket> leftFieldPackets;
     protected List<FieldPacket> rightFieldPackets;
     private AtomicBoolean fieldSent = new AtomicBoolean(false);
+    // merge loop ended; set before terminateHandlerTree so late backend rows skip putLast on a full queue
+    private final AtomicBoolean joinMergeFinished = new AtomicBoolean(false);
     private BufferPool pool;
     private RowDataComparator leftComparator;
     private RowDataComparator rightComparator;
@@ -122,13 +124,17 @@ public class JoinHandler extends OwnThreadDMLHandler {
     @Override
     public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         LOGGER.debug("rowresponse");
-        if (terminate.get()) {
+        // return true: interrupted; do not block on putLast after merge or during terminate
+        if (terminate.get() || joinMergeFinished.get()) {
             return true;
         }
         try {
             if (isLeft) {
                 leftLock.lock();
                 try {
+                    if (terminate.get() || joinMergeFinished.get()) {
+                        return true;
+                    }
                     addRowToDeque(rowPacket, leftFieldPackets.size(), leftQueue, leftComparator);
                 } finally {
                     leftLock.unlock();
@@ -136,6 +142,9 @@ public class JoinHandler extends OwnThreadDMLHandler {
             } else {
                 rightLock.lock();
                 try {
+                    if (terminate.get() || joinMergeFinished.get()) {
+                        return true;
+                    }
                     addRowToDeque(rowPacket, rightFieldPackets.size(), rightQueue, rightComparator);
                 } finally {
                     rightLock.unlock();
@@ -151,7 +160,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
         LOGGER.debug("roweof");
-        if (terminate.get()) {
+        if (terminate.get() || joinMergeFinished.get()) {
             return;
         }
         RowDataPacket eofRow = TERMINATED_ROW;
@@ -219,6 +228,9 @@ public class JoinHandler extends OwnThreadDMLHandler {
                     rightLocal = takeFirst(rightQueue);
                 }
             }
+            // stop accepting backend rows and drain queues before waiting on connections in terminateHandlerTree
+            joinMergeFinished.set(true);
+            clearJoinQueuesAfterMerge();
 
             HandlerTool.terminateHandlerTree(this);
             // for trace, when join end before all rows return ,the handler should mark as finished
@@ -241,6 +253,15 @@ public class JoinHandler extends OwnThreadDMLHandler {
             if (rightLocal != null)
                 rightLocal.close();
         }
+    }
+
+    /**
+     * Clear join queues after merge. Unlocked poll first so producers blocked on a full
+     * deque can finish;
+     */
+    private void clearJoinQueuesAfterMerge() {
+        clearDeque(leftQueue);
+        clearDeque(rightQueue);
     }
 
     private LocalResult takeFirst(FairLinkedBlockingDeque<LocalResult> deque) throws InterruptedException {

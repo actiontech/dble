@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class NotInHandler extends OwnThreadDMLHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(NotInHandler.class);
@@ -43,7 +44,12 @@ public class NotInHandler extends OwnThreadDMLHandler {
     private RowDataComparator leftComparator;
     private RowDataComparator rightComparator;
     private AtomicBoolean fieldSent = new AtomicBoolean(false);
+    // merge loop ended; set before terminateHandlerTree so late backend rows skip putLast on a full queue
+    private final AtomicBoolean joinMergeFinished = new AtomicBoolean(false);
     private String charset = "UTF-8";
+    // prevent multi thread rowresponse
+    protected ReentrantLock leftLock = new ReentrantLock();
+    protected ReentrantLock rightLock = new ReentrantLock();
 
     public NotInHandler(long id, NonBlockingSession session, List<Order> leftOrder, List<Order> rightOrder) {
         super(id, session);
@@ -88,14 +94,31 @@ public class NotInHandler extends OwnThreadDMLHandler {
     @Override
     public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         LOGGER.debug("rowresponse");
-        if (terminate.get()) {
+        // return true: interrupted; do not block on putLast after merge or during terminate
+        if (terminate.get() || joinMergeFinished.get()) {
             return true;
         }
         try {
             if (isLeft) {
-                addRowToDeque(rowPacket, leftFieldPackets.size(), leftQueue, leftComparator);
+                leftLock.lock();
+                try {
+                    if (terminate.get() || joinMergeFinished.get()) {
+                        return true;
+                    }
+                    addRowToDeque(rowPacket, leftFieldPackets.size(), leftQueue, leftComparator);
+                } finally {
+                    leftLock.unlock();
+                }
             } else {
-                addRowToDeque(rowPacket, rightFieldPackets.size(), rightQueue, rightComparator);
+                rightLock.lock();
+                try {
+                    if (terminate.get() || joinMergeFinished.get()) {
+                        return true;
+                    }
+                    addRowToDeque(rowPacket, rightFieldPackets.size(), rightQueue, rightComparator);
+                } finally {
+                    rightLock.unlock();
+                }
             }
         } catch (InterruptedException e) {
             LOGGER.info("not in row exception", e);
@@ -107,7 +130,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
         LOGGER.info("roweof");
-        if (terminate.get()) {
+        if (terminate.get() || joinMergeFinished.get()) {
             return;
         }
         RowDataPacket eofRow = TERMINATED_ROW;
@@ -164,6 +187,9 @@ public class NotInHandler extends OwnThreadDMLHandler {
                     rightLocal = takeFirst(rightQueue);
                 }
             }
+            // stop accepting backend rows and drain queues before waiting on connections in terminateHandlerTree
+            joinMergeFinished.set(true);
+            clearJoinQueuesAfterMerge();
             session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, isLeft, conn);
             HandlerTool.terminateHandlerTree(this);
@@ -177,6 +203,15 @@ public class NotInHandler extends OwnThreadDMLHandler {
             if (rightLocal != null)
                 rightLocal.close();
         }
+    }
+
+    /**
+     * Clear join queues after merge. Unlocked poll first so producers blocked on a full
+     * deque can finish;
+     */
+    private void clearJoinQueuesAfterMerge() {
+        clearDeque(leftQueue);
+        clearDeque(rightQueue);
     }
 
     private LocalResult takeFirst(FairLinkedBlockingDeque<LocalResult> deque) throws InterruptedException {

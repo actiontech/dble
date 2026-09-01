@@ -58,7 +58,9 @@ public final class FilterUtils {
                 if (!CollectionUtil.isEmpty(itemMap)) {
                     for (Map.Entry<String, List<Item>> entry : itemMap.entrySet()) {
                         ItemCondOr x = new ItemCondOr(entry.getValue());
-                        x.getReferTables().addAll(entry.getValue().get(0).getReferTables());
+                        // Keep withIsNull from children (e.g. IS NULL OR col=?) so
+                        // PlanUtil.canPush still refuses LEFT JOIN right-side push.
+                        PlanUtil.refreshReferTables(x);
                         x.setWithUnValAble(true);
                         filterList.add(x);
                     }
@@ -133,7 +135,7 @@ public final class FilterUtils {
                         }
                         if (entry.getValue().size() != 1) {
                             ItemCondAnd x = new ItemCondAnd(entry.getValue());
-                            x.getReferTables().addAll(entry.getValue().get(0).getReferTables());
+                            PlanUtil.refreshReferTables(x);
                             itemMap.get(tableName).add(x);
                         } else {
                             itemMap.get(tableName).add(entry.getValue().get(0));

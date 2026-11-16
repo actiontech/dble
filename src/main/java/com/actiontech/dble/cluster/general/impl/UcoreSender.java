@@ -411,9 +411,12 @@ public final class UcoreSender extends AbstractConsulSender {
      */
     private static Map<String, Object> retryServiceConfig() {
         Map<String, Object> retryPolicy = new HashMap<>();
+        // 2 retries, backoff 0.2s then 0.4s: the whole thing fits well inside GENERAL_GRPC_TIMEOUT so a retry never
+        // eats the deadline. maxBackoff is above the last computed backoff on purpose, it only has to stay a ceiling
+        // that this policy does not reach, raising it would not change anything and lowering it below 0.4s would.
         retryPolicy.put("maxAttempts", 3.0);
         retryPolicy.put("initialBackoff", "0.2s");
-        retryPolicy.put("maxBackoff", "2s");
+        retryPolicy.put("maxBackoff", "0.5s");
         retryPolicy.put("backoffMultiplier", 2.0);
         retryPolicy.put("retryableStatusCodes", Collections.singletonList("UNAVAILABLE"));
 

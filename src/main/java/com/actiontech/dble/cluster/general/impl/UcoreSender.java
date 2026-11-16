@@ -21,12 +21,19 @@ import com.actiontech.dble.util.PropertiesUtil;
 import com.actiontech.dble.util.StringUtil;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.NameResolverRegistry;
+import io.grpc.Status;
+import io.grpc.StatusException;
+import io.grpc.StatusRuntimeException;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -41,11 +48,23 @@ import static com.actiontech.dble.cluster.ClusterController.*;
 public final class UcoreSender extends AbstractConsulSender {
 
 
-    private volatile UcoreGrpc.UcoreBlockingStub stub = null;
+    /**
+     * the single channel to the ucore cluster. the name resolver feeds it the ip list, the default pick_first policy
+     * picks the node, reconnects with backoff and moves to the next ip by itself, so it is built once and never replaced
+     */
     private volatile ManagedChannel channel = null;
+    /**
+     * pushes ucore node list changes to the channel
+     */
+    private volatile UcoreNameResolverProvider resolverProvider = null;
     private ConcurrentHashMap<String, Thread> lockMap = new ConcurrentHashMap<>();
     private List<String> ipList = new ArrayList<>();
     private static final String SOURCE_COMPONENT_TYPE = "dble";
+    /**
+     * methods that are safe to run twice, the only ones that get a retry policy
+     */
+    private static final List<String> IDEMPOTENT_METHODS = Arrays.asList("GetKv", "GetKvTree", "PutKv", "DeleteKv",
+            "DeleteKvTree", "RenewSession", "UnlockOnSession");
     private String serverId = null;
     private String sourceComponentId = null;
 
@@ -56,9 +75,7 @@ public final class UcoreSender extends AbstractConsulSender {
         } catch (Exception e) {
             LOGGER.error("error:", e);
         }
-        channel = ManagedChannelBuilder.forAddress(getIpList().get(0),
-                ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-        stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+        initChannel();
     }
 
     @Override
@@ -70,9 +87,7 @@ public final class UcoreSender extends AbstractConsulSender {
         } catch (Exception e) {
             LOGGER.error("error:", e);
         }
-        channel = ManagedChannelBuilder.forAddress(getIpList().get(0),
-                ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-        stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+        initChannel();
         if (!skipSyncUcores()) {
             startUpdateNodes();
         }
@@ -84,7 +99,7 @@ public final class UcoreSender extends AbstractConsulSender {
         UcoreInterface.LockOnSessionOutput output;
 
         try {
-            output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).lockOnSession(input);
+            output = call(GENERAL_GRPC_TIMEOUT, target -> target.lockOnSession(input));
             if (!"".equals(output.getSessionId())) {
                 final String session = output.getSessionId();
                 Thread renewThread = new Thread(new Runnable() {
@@ -128,24 +143,9 @@ public final class UcoreSender extends AbstractConsulSender {
             }
             return output.getSessionId();
         } catch (Exception e1) {
-            for (String ip : getIpList()) {
-                ManagedChannel newChannel = null;
-                try {
-                    newChannel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-                    UcoreGrpc.UcoreBlockingStub newStub = UcoreGrpc.newBlockingStub(newChannel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                    output = newStub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).lockOnSession(input);
-                    replaceChannelAndStub(newChannel, newStub);
-                    return output.getSessionId();
-                } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ", e2);
-                    if (newChannel != null) {
-                        newChannel.shutdownNow();
-                    }
-                }
-            }
+            LOGGER.info("lock " + path + " error, ips:" + getIpList(), e1);
+            throw e1;
         }
-        throw new IOException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
     }
 
     @Override
@@ -156,64 +156,29 @@ public final class UcoreSender extends AbstractConsulSender {
             if (renewThread != null) {
                 renewThread.interrupt();
             }
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).unlockOnSession(put);
+            call(GENERAL_GRPC_TIMEOUT, target -> target.unlockOnSession(put));
         } catch (Exception e) {
-            LOGGER.info(sessionId + " unlockKey " + path + " error ," + stub, e);
+            LOGGER.info(sessionId + " unlockKey " + path + " error, ips:" + getIpList(), e);
         }
     }
 
     @Override
     public void setKV(String path, String value) throws Exception {
         UcoreInterface.PutKvInput input = UcoreInterface.PutKvInput.newBuilder().setKey(path).setValue(value).build();
-        try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).putKv(input);
-        } catch (Exception e1) {
-            for (String ip : getIpList()) {
-                ManagedChannel newChannel = null;
-                try {
-                    newChannel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-                    UcoreGrpc.UcoreBlockingStub newStub = UcoreGrpc.newBlockingStub(newChannel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                    newStub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).putKv(input);
-                    replaceChannelAndStub(newChannel, newStub);
-                    return;
-                } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ", e2);
-                    if (newChannel != null) {
-                        newChannel.shutdownNow();
-                    }
-                }
-            }
-            throw new IOException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
-        }
+        call(GENERAL_GRPC_TIMEOUT, target -> {
+            target.putKv(input);
+            return null;
+        });
     }
 
     @Override
     public KvBean getKV(String path) {
         UcoreInterface.GetKvInput input = UcoreInterface.GetKvInput.newBuilder().setKey(path).build();
-        UcoreInterface.GetKvOutput output = null;
-
+        UcoreInterface.GetKvOutput output;
         try {
-            output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKv(input);
-        } catch (Exception e1) {
-            for (String ip : getIpList()) {
-                ManagedChannel newChannel = null;
-                try {
-                    newChannel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-                    UcoreGrpc.UcoreBlockingStub newStub = UcoreGrpc.newBlockingStub(newChannel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                    output = newStub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKv(input);
-                    replaceChannelAndStub(newChannel, newStub);
-                } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ", e2);
-                    if (newChannel != null) {
-                        newChannel.shutdownNow();
-                    }
-                }
-            }
-            if (output == null) {
-                throw new RuntimeException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
-            }
+            output = call(GENERAL_GRPC_TIMEOUT, target -> target.getKv(input));
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
         }
 
         return new KvBean(path, output.getValue(), 0);
@@ -227,29 +192,11 @@ public final class UcoreSender extends AbstractConsulSender {
         List<KvBean> result = new ArrayList<KvBean>();
         UcoreInterface.GetKvTreeInput input = UcoreInterface.GetKvTreeInput.newBuilder().setKey(path).build();
 
-        UcoreInterface.GetKvTreeOutput output = null;
-
+        UcoreInterface.GetKvTreeOutput output;
         try {
-            output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKvTree(input);
-        } catch (Exception e1) {
-            for (String ip : getIpList()) {
-                ManagedChannel newChannel = null;
-                try {
-                    newChannel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-                    UcoreGrpc.UcoreBlockingStub newStub = UcoreGrpc.newBlockingStub(newChannel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                    output = newStub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKvTree(input);
-                    replaceChannelAndStub(newChannel, newStub);
-                } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ", e2);
-                    if (newChannel != null) {
-                        newChannel.shutdownNow();
-                    }
-                }
-            }
-        }
-        if (output == null) {
-            throw new RuntimeException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
+            output = call(GENERAL_GRPC_TIMEOUT, target -> target.getKvTree(input));
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
         }
         for (int i = 0; i < output.getKeysCount(); i++) {
             KvBean bean = new KvBean(output.getKeys(i), output.getValues(i), output.getIndex());
@@ -265,28 +212,12 @@ public final class UcoreSender extends AbstractConsulSender {
         }
         UcoreInterface.DeleteKvTreeInput input = UcoreInterface.DeleteKvTreeInput.newBuilder().setKey(path).build();
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
-        } catch (Exception e1) {
-            boolean flag = false;
-            for (String ip : getIpList()) {
-                ManagedChannel newChannel = null;
-                try {
-                    newChannel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-                    UcoreGrpc.UcoreBlockingStub newStub = UcoreGrpc.newBlockingStub(newChannel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                    newStub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
-                    flag = true;
-                    replaceChannelAndStub(newChannel, newStub);
-                } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ", e2);
-                    if (newChannel != null) {
-                        newChannel.shutdownNow();
-                    }
-                }
-            }
-            if (!flag) {
-                throw new RuntimeException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
-            }
+            call(GENERAL_GRPC_TIMEOUT, target -> {
+                target.deleteKvTree(input);
+                return null;
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
         }
         cleanKV(path.substring(0, path.length() - 1));
     }
@@ -294,25 +225,12 @@ public final class UcoreSender extends AbstractConsulSender {
     public void cleanKV(String path) {
         UcoreInterface.DeleteKvInput input = UcoreInterface.DeleteKvInput.newBuilder().setKey(path).build();
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKv(input);
-        } catch (Exception e1) {
-            for (String ip : getIpList()) {
-                ManagedChannel newChannel = null;
-                try {
-                    newChannel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-                    UcoreGrpc.UcoreBlockingStub newStub = UcoreGrpc.newBlockingStub(newChannel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                    newStub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKv(input);
-                    replaceChannelAndStub(newChannel, newStub);
-                    return;
-                } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ", e2);
-                    if (newChannel != null) {
-                        newChannel.shutdownNow();
-                    }
-                }
-            }
-            throw new RuntimeException("cleanKV failure for" + path);
+            call(GENERAL_GRPC_TIMEOUT, target -> {
+                target.deleteKv(input);
+                return null;
+            });
+        } catch (IOException e) {
+            throw new RuntimeException("cleanKV failure for" + path, e);
         }
     }
 
@@ -321,52 +239,20 @@ public final class UcoreSender extends AbstractConsulSender {
 
         UcoreInterface.SubscribeKvPrefixInput input = UcoreInterface.SubscribeKvPrefixInput.newBuilder().
                 setIndex(request.getIndex()).setDuration(request.getDuration()).setKeyPrefix(request.getPath()).build();
-        try {
-            UcoreInterface.SubscribeKvPrefixOutput output = stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeKvPrefix(input);
-            return groupSubscribeResult(output);
-        } catch (Exception e1) {
-            for (String ip : getIpList()) {
-                ManagedChannel newChannel = null;
-                try {
-                    newChannel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-                    UcoreGrpc.UcoreBlockingStub newStub = UcoreGrpc.newBlockingStub(newChannel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
-                    UcoreInterface.SubscribeKvPrefixOutput output = newStub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeKvPrefix(input);
-                    replaceChannelAndStub(newChannel, newStub);
-                    return groupSubscribeResult(output);
-
-                } catch (Exception e2) {
-                    LOGGER.info("connect to ucore at " + ip + " failure", e2);
-                    if (newChannel != null) {
-                        newChannel.shutdownNow();
-                    }
-                }
-            }
-        }
-        throw new IOException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
+        UcoreInterface.SubscribeKvPrefixOutput output = call(GRPC_SUBTIMEOUT, target -> target.subscribeKvPrefix(input));
+        return groupSubscribeResult(output);
     }
 
     @Override
     public void alert(ClusterAlertBean alert) {
         UcoreInterface.AlertInput input = getInput(alert);
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(input);
+            call(GENERAL_GRPC_TIMEOUT, target -> {
+                target.alert(input);
+                return null;
+            });
         } catch (Exception e) {
-            for (String ip : getIpList()) {
-                ManagedChannel newChannel = null;
-                try {
-                    newChannel = ManagedChannelBuilder.forAddress(ip, ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-                    UcoreGrpc.UcoreBlockingStub newStub = UcoreGrpc.newBlockingStub(newChannel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                    newStub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(input);
-                    replaceChannelAndStub(newChannel, newStub);
-                    return;
-                } catch (Exception e2) {
-                    LOGGER.info("alert to ucore error ", e2);
-                    if (newChannel != null) {
-                        newChannel.shutdownNow();
-                    }
-                }
-            }
+            LOGGER.info("alert to ucore error, ips:" + getIpList(), e);
         }
     }
 
@@ -374,25 +260,13 @@ public final class UcoreSender extends AbstractConsulSender {
     public boolean alertResolve(ClusterAlertBean alert) {
         UcoreInterface.AlertInput input = getInput(alert);
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alertResolve(input);
+            call(GENERAL_GRPC_TIMEOUT, target -> {
+                target.alertResolve(input);
+                return null;
+            });
             return true;
         } catch (Exception e) {
-            for (String ip : getIpList()) {
-                ManagedChannel newChannel = null;
-                try {
-                    newChannel = ManagedChannelBuilder.forAddress(ip, ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-                    UcoreGrpc.UcoreBlockingStub newStub = UcoreGrpc.newBlockingStub(newChannel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                    newStub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alertResolve(input);
-                    replaceChannelAndStub(newChannel, newStub);
-                    return true;
-                } catch (Exception e2) {
-                    LOGGER.info("alertResolve to ucore error ", e2);
-                    if (newChannel != null) {
-                        newChannel.shutdownNow();
-                    }
-                    return false;
-                }
-            }
+            LOGGER.info("alertResolve to ucore error, ips:" + getIpList(), e);
             return false;
         }
     }
@@ -419,26 +293,13 @@ public final class UcoreSender extends AbstractConsulSender {
     public boolean renewLock(String sessionId) throws Exception {
         UcoreInterface.RenewSessionInput input = UcoreInterface.RenewSessionInput.newBuilder().setSessionId(sessionId).build();
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).renewSession(input);
+            call(GENERAL_GRPC_TIMEOUT, target -> {
+                target.renewSession(input);
+                return null;
+            });
             return true;
         } catch (Exception e1) {
-            LOGGER.info("connect to ucore renew error and will retry");
-            for (String ip : getIpList()) {
-                ManagedChannel newChannel = null;
-                try {
-                    newChannel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-                    UcoreGrpc.UcoreBlockingStub newStub = UcoreGrpc.newBlockingStub(newChannel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                    newStub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).renewSession(input);
-                    replaceChannelAndStub(newChannel, newStub);
-                    return true;
-                } catch (Exception e2) {
-                    LOGGER.info("connect to ucore renew error " + stub, e2);
-                    if (newChannel != null) {
-                        newChannel.shutdownNow();
-                    }
-                }
-            }
+            LOGGER.info("connect to ucore renew error, ips:" + getIpList(), e1);
             return false;
         }
     }
@@ -457,28 +318,7 @@ public final class UcoreSender extends AbstractConsulSender {
     }
 
     public UcoreInterface.SubscribeNodesOutput subscribeNodes(UcoreInterface.SubscribeNodesInput subscribeNodesInput) throws IOException {
-        try {
-            return stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeNodes(subscribeNodesInput);
-        } catch (Exception e) {
-            //the first try failure ,try for all the other ucore ip
-            for (String ip : getIpList()) {
-                ManagedChannel newChannel = null;
-                try {
-                    newChannel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext().build();
-                    UcoreGrpc.UcoreBlockingStub newStub = UcoreGrpc.newBlockingStub(newChannel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
-                    UcoreInterface.SubscribeNodesOutput output = newStub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeNodes(subscribeNodesInput);
-                    replaceChannelAndStub(newChannel, newStub);
-                    return output;
-                } catch (Exception e2) {
-                    LOGGER.info("try connection IP " + ip + " failure ", e2);
-                    if (newChannel != null) {
-                        newChannel.shutdownNow();
-                    }
-                }
-            }
-        }
-        throw new IOException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
+        return call(GRPC_SUBTIMEOUT, target -> target.subscribeNodes(subscribeNodesInput));
     }
 
 
@@ -523,6 +363,10 @@ public final class UcoreSender extends AbstractConsulSender {
 
     private void setIpList(List<String> ipList) {
         this.ipList = ipList;
+        UcoreNameResolverProvider provider = resolverProvider;
+        if (provider != null) {
+            provider.update(ipList);
+        }
     }
 
     private List<String> getIpList() {
@@ -538,13 +382,118 @@ public final class UcoreSender extends AbstractConsulSender {
         return false;
     }
 
-    private synchronized void replaceChannelAndStub(ManagedChannel newChannel, UcoreGrpc.UcoreBlockingStub newStub) {
+    /**
+     * build the one channel to the ucore cluster, the way grpc-java's examples/nameresolve and examples/retrying do:
+     * a custom scheme resolved by our NameResolverProvider, pick_first load balancing, and a service config that
+     * enables retries for the idempotent calls. the channel connects lazily on the first rpc.
+     */
+    private synchronized void initChannel() {
         if (channel != null) {
-            channel.shutdownNow();
+            return;
         }
-        channel = newChannel;
-        stub = newStub;
+        UcoreNameResolverProvider provider = new UcoreNameResolverProvider(getIpList(), ClusterConfig.getInstance().getClusterPort());
+        NameResolverRegistry.getDefaultRegistry().register(provider);
+        resolverProvider = provider;
+        channel = ManagedChannelBuilder.forTarget(UcoreNameResolverProvider.TARGET).
+                defaultLoadBalancingPolicy("pick_first").
+                defaultServiceConfig(retryServiceConfig()).
+                enableRetry().
+                usePlaintext().
+                build();
     }
 
+    /**
+     * per-method retry policy, see https://grpc.io/docs/guides/retry/. a retry goes through the load balancer again,
+     * so it can land on another ucore node. only calls that can safely run twice are listed: LockOnSession (not
+     * idempotent), Alert/AlertResolve (a duplicate alert is noise) and the long polls (the caller loops anyway) are
+     * left to the transparent retry, which only re-sends an rpc that never left the process.
+     * numbers have to be Double, ManagedChannelBuilder#defaultServiceConfig does not accept Integer.
+     */
+    private static Map<String, Object> retryServiceConfig() {
+        Map<String, Object> retryPolicy = new HashMap<>();
+        // 2 retries, backoff 0.2s then 0.4s: the whole thing fits well inside GENERAL_GRPC_TIMEOUT so a retry never
+        // eats the deadline. maxBackoff is above the last computed backoff on purpose, it only has to stay a ceiling
+        // that this policy does not reach, raising it would not change anything and lowering it below 0.4s would.
+        retryPolicy.put("maxAttempts", 3.0);
+        retryPolicy.put("initialBackoff", "0.2s");
+        retryPolicy.put("maxBackoff", "0.5s");
+        retryPolicy.put("backoffMultiplier", 2.0);
+        retryPolicy.put("retryableStatusCodes", Collections.singletonList("UNAVAILABLE"));
+
+        List<Object> names = new ArrayList<>();
+        for (String method : IDEMPOTENT_METHODS) {
+            Map<String, Object> name = new HashMap<>();
+            name.put("service", UcoreGrpc.SERVICE_NAME);
+            name.put("method", method);
+            names.add(name);
+        }
+        Map<String, Object> methodConfig = new HashMap<>();
+        methodConfig.put("name", names);
+        methodConfig.put("retryPolicy", retryPolicy);
+
+        Map<String, Object> serviceConfig = new HashMap<>();
+        serviceConfig.put("methodConfig", Collections.singletonList(methodConfig));
+        return serviceConfig;
+    }
+
+    /**
+     * run one rpc on the shared channel. the stub is derived for every call, so the deadline is computed at call
+     * time and the only thing shared between threads is the long-lived channel. failover between ucore nodes is the
+     * channel's job (pick_first reconnects to the next ip with backoff), and the retry policy of the service config
+     * re-sends the idempotent calls. wait-for-ready (https://grpc.io/docs/guides/wait-for-ready/) queues the rpc while
+     * the channel is connecting instead of failing it at once, the deadline still bounds the wait.
+     * a connection level failure is reported as IOException, any other status is ucore's answer on a healthy
+     * connection and is rethrown unchanged.
+     */
+    private <T> T call(int timeoutSeconds, UcoreCall<T> rpc) throws IOException {
+        initChannel();
+        try {
+            return rpc.invoke(UcoreGrpc.newBlockingStub(channel).withWaitForReady().withDeadlineAfter(timeoutSeconds, TimeUnit.SECONDS));
+        } catch (RuntimeException e) {
+            if (isConnectionFailure(e)) {
+                throw new IOException(ERROR_MSG + "ips:" + getIpList() + ",port:" + ClusterConfig.getInstance().getClusterPort() +
+                        " " + describe(e), e);
+            }
+            throw e;
+        }
+    }
+
+    private static boolean isConnectionFailure(Throwable e) {
+        Status status = statusOf(e);
+        if (status == null) {
+            return false;
+        }
+        return status.getCode() == Status.Code.UNAVAILABLE || status.getCode() == Status.Code.DEADLINE_EXCEEDED;
+    }
+
+    /**
+     * grpc statuses reach us bare or wrapped, so look through the cause chain
+     */
+    private static Status statusOf(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof StatusRuntimeException) {
+                return ((StatusRuntimeException) t).getStatus();
+            }
+            if (t instanceof StatusException) {
+                return ((StatusException) t).getStatus();
+            }
+        }
+        return null;
+    }
+
+    private static String describe(Throwable e) {
+        Status status = statusOf(e);
+        if (status == null) {
+            return e.toString();
+        }
+        return status.getCode() + (status.getDescription() == null ? "" : " (" + status.getDescription() + ")");
+    }
+
+    /**
+     * one rpc on a stub derived for the current call, kept last in the class (checkstyle InnerTypeLast)
+     */
+    private interface UcoreCall<T> {
+        T invoke(UcoreGrpc.UcoreBlockingStub target);
+    }
 
 }

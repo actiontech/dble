@@ -394,12 +394,12 @@ public final class UcoreSender extends AbstractConsulSender {
         UcoreNameResolverProvider provider = new UcoreNameResolverProvider(getIpList(), ClusterConfig.getInstance().getClusterPort());
         NameResolverRegistry.getDefaultRegistry().register(provider);
         resolverProvider = provider;
-        channel = ManagedChannelBuilder.forTarget(UcoreNameResolverProvider.TARGET)
-                .defaultLoadBalancingPolicy("pick_first")
-                .defaultServiceConfig(retryServiceConfig())
-                .enableRetry()
-                .usePlaintext()
-                .build();
+        channel = ManagedChannelBuilder.forTarget(UcoreNameResolverProvider.TARGET).
+                defaultLoadBalancingPolicy("pick_first").
+                defaultServiceConfig(retryServiceConfig()).
+                enableRetry().
+                usePlaintext().
+                build();
     }
 
     /**
@@ -448,8 +448,8 @@ public final class UcoreSender extends AbstractConsulSender {
             return rpc.invoke(UcoreGrpc.newBlockingStub(channel).withWaitForReady().withDeadlineAfter(timeoutSeconds, TimeUnit.SECONDS));
         } catch (RuntimeException e) {
             if (isConnectionFailure(e)) {
-                throw new IOException(ERROR_MSG + "ips:" + getIpList() + ",port:" + ClusterConfig.getInstance().getClusterPort()
-                        + " " + describe(e), e);
+                throw new IOException(ERROR_MSG + "ips:" + getIpList() + ",port:" + ClusterConfig.getInstance().getClusterPort() +
+                        " " + describe(e), e);
             }
             throw e;
         }

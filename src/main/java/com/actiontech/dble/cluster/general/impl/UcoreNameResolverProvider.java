@@ -47,6 +47,13 @@ final class UcoreNameResolverProvider extends NameResolverProvider {
     }
 
     /**
+     * the node list the channel is currently fed with
+     */
+    List<String> getIps() {
+        return ips;
+    }
+
+    /**
      * called when ucore reports a new node list, every live resolver pushes it to its channel
      */
     void update(List<String> newIps) {

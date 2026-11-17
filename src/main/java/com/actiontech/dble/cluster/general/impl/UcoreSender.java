@@ -56,7 +56,6 @@ public final class UcoreSender extends AbstractConsulSender {
      */
     private volatile UcoreNameResolverProvider resolverProvider = null;
     private ConcurrentHashMap<String, Thread> lockMap = new ConcurrentHashMap<>();
-    private volatile List<String> ipList = new ArrayList<>();
     private static final String SOURCE_COMPONENT_TYPE = "dble";
     /**
      * methods that are safe to run twice, the only ones that get a retry policy
@@ -68,11 +67,6 @@ public final class UcoreSender extends AbstractConsulSender {
 
     @Override
     public void initConInfo() {
-        try {
-            ipList.addAll(Arrays.asList(ClusterConfig.getInstance().getClusterIP().split(",")));
-        } catch (Exception e) {
-            LOGGER.error("error:", e);
-        }
         initChannel();
     }
 
@@ -80,11 +74,6 @@ public final class UcoreSender extends AbstractConsulSender {
     public void initCluster() {
         serverId = SystemConfig.getInstance().getServerId();
         sourceComponentId = SystemConfig.getInstance().getInstanceName();
-        try {
-            ipList.addAll(Arrays.asList(ClusterConfig.getInstance().getClusterIP().split(",")));
-        } catch (Exception e) {
-            LOGGER.error("error:", e);
-        }
         initChannel();
         if (!skipSyncUcores()) {
             startUpdateNodes();
@@ -325,7 +314,7 @@ public final class UcoreSender extends AbstractConsulSender {
                             for (int i = 0; i < output.getIpsList().size(); i++) {
                                 ips.add(output.getIps(i));
                             }
-                            LOGGER.info("old ucore ips :" + StringUtils.join(ipList, ','));
+                            LOGGER.info("old ucore ips :" + StringUtils.join(getIpList(), ','));
                             setIpList(ips);
                             String strIPs = StringUtils.join(ips, ',');
                             LOGGER.info("new ucore ips :" + strIPs);
@@ -342,16 +331,16 @@ public final class UcoreSender extends AbstractConsulSender {
         nodes.start();
     }
 
+    /**
+     * the channel was built by the rpc that delivered this list, so the provider is there
+     */
     private void setIpList(List<String> ipList) {
-        this.ipList = ipList;
-        UcoreNameResolverProvider provider = resolverProvider;
-        if (provider != null) {
-            provider.update(ipList);
-        }
+        resolverProvider.update(ipList);
     }
 
     private List<String> getIpList() {
-        return ipList;
+        UcoreNameResolverProvider provider = resolverProvider;
+        return provider == null ? Collections.<String>emptyList() : provider.getIps();
     }
 
 
@@ -372,7 +361,7 @@ public final class UcoreSender extends AbstractConsulSender {
         if (channel != null) {
             return;
         }
-        UcoreNameResolverProvider provider = new UcoreNameResolverProvider(getIpList(), ClusterConfig.getInstance().getClusterPort());
+        UcoreNameResolverProvider provider = new UcoreNameResolverProvider(configuredIps(), ClusterConfig.getInstance().getClusterPort());
         NameResolverRegistry.getDefaultRegistry().register(provider);
         resolverProvider = provider;
         channel = ManagedChannelBuilder.forTarget(UcoreNameResolverProvider.TARGET).
@@ -381,6 +370,19 @@ public final class UcoreSender extends AbstractConsulSender {
                 enableRetry().
                 usePlaintext().
                 build();
+    }
+
+    /**
+     * the ip list of cluster.cnf, it only seeds the resolver: from then on the list lives in the provider, ucore's node
+     * updates replace it there
+     */
+    private static List<String> configuredIps() {
+        try {
+            return Arrays.asList(ClusterConfig.getInstance().getClusterIP().split(","));
+        } catch (Exception e) {
+            LOGGER.error("error:", e);
+            return Collections.emptyList();
+        }
     }
 
     /**

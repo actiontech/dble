@@ -98,6 +98,16 @@ public class UcoreNameResolverProviderTest {
     }
 
     @Test
+    public void providerKeepsTheLatestNodeList() {
+        UcoreNameResolverProvider provider = new UcoreNameResolverProvider(UCORE_IPS, UCORE_PORT);
+        Assert.assertEquals(UCORE_IPS, provider.getIps());
+
+        provider.update(Collections.singletonList("10.186.63.93"));
+
+        Assert.assertEquals(Collections.singletonList("10.186.63.93"), provider.getIps());
+    }
+
+    @Test
     public void emptyNodeListIsReportedAsUnavailable() {
         UcoreNameResolverProvider provider = new UcoreNameResolverProvider(UCORE_IPS, UCORE_PORT);
         RecordingListener listener = new RecordingListener();

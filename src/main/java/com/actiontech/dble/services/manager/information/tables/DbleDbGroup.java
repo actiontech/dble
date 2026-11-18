@@ -210,7 +210,8 @@ public class DbleDbGroup extends ManagerWritableTable {
                     dbGroup.setDelayPeriodMillis(Integer.parseInt(value));
                     break;
                 case DELAY_DATABASE:
-                    dbGroup.setDelayDatabase(String.valueOf(value));
+                    // Omit an unconfigured attribute: an empty value is invalid for NMTOKEN in db.dtd.
+                    dbGroup.setDelayDatabase(StringUtil.isEmpty(value) ? null : value);
                     break;
                 case COLUMN_DISABLE_HA:
                     dbGroup.setDisableHA(value);
